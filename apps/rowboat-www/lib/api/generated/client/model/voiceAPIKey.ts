@@ -13,7 +13,7 @@ export interface VoiceAPIKey {
   /** Row creation timestamp. */
   created_at: string;
   /**
-   * Credential or one-time ticket expiry timestamp.
+   * Expiry time.
    * @nullable
    */
   expires_at?: string | null;
@@ -24,15 +24,15 @@ export interface VoiceAPIKey {
    * @nullable
    */
   key?: string | null;
-  /** Safe display prefix. */
+  /** First 16 characters of the secret. Safe to display. */
   key_prefix: string;
   /**
-   * Timestamp when the connector credential was last minted or used.
+   * Last-use time.
    * @nullable
    */
   last_used_at?: string | null;
   /** Display name. */
   name: string;
-  /** OAuth scopes granted or requested. */
+  /** Granted scopes. */
   scopes: string[];
 }

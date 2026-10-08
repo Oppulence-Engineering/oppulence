@@ -5,7 +5,6 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { CommunicationShareGrantReason } from "./communicationShareGrantReason";
 import type { RevenueWorkspace } from "./revenueWorkspace";
 import type { User } from "./user";
 
@@ -18,8 +17,8 @@ export interface CommunicationShareGrant {
   /** Stable UUID primary key. */
   id: string;
   owner: User;
-  /** Reason code for the ledger entry. */
-  reason?: CommunicationShareGrantReason;
+  /** Why this content was shared. */
+  reason?: string;
   resource_id: string;
   resource_type: string;
   revoked_at?: string;

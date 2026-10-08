@@ -10,6 +10,6 @@
  * Routable model id exposed to the desktop.
  */
 export interface LLMModel {
-  /** Stable UUID primary key. */
+  /** Model id accepted by the model gateway. */
   id: string;
 }

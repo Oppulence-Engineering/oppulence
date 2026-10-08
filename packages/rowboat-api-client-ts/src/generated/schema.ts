@@ -284,7 +284,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/agents": {
+  "/v1/action-proposals": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Agent approvals
+     * @description Agent approvals loads the pending queue. The request asks for pending proposals. This workspace has no pending proposal, so the page is empty.
+     */
+    get: operations["listActionProposals"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/action-proposals/{id}/approve": {
     parameters: {
       query?: never;
       header?: never;
@@ -294,10 +314,50 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Create agent
-     * @description Create agent posts the display name Customer concierge, the short name customer-concierge, and the purpose from the dialog. The stored agent keeps that name, that short name, that purpose, source tenant, and no tools.
+     * Approve and run
+     * @description Approve and run posts no body. The page receives the approved proposal and a one-time value, then runs the action.
      */
-    post: operations["createAgent"];
+    post: operations["approveActionProposal"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/action-proposals/{id}/execute": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Execute
+     * @description Execute posts the one-time value Approve and run returned. The page shows the result while it waits for the product to confirm the change.
+     */
+    post: operations["executeActionProposal"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/action-proposals/{id}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reject
+     * @description Reject posts a short reason. The page discards the action and keeps that reason on the audit trail.
+     */
+    post: operations["rejectActionProposal"];
     delete?: never;
     options?: never;
     head?: never;
@@ -328,6 +388,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/agent-sessions/{id}/approvals/{approvalId}/token": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve payment
+     * @description Approve on a payment request posts no body. The API returns the approval token for that pending payment, valid until 2026-09-02T15:10:00Z, with no extra sign-in check.
+     */
+    post: operations["mintAgentApprovalToken"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/agent-sessions/{id}/events": {
     parameters: {
       query?: never;
@@ -336,8 +416,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Open conversation
-     * @description Open conversation reads the history row Review the Acme renewal. The first read asks for 1000 events and sends no cursor. The stored page starts at sequence 0 for Assistant, includes both completed turns, the relationship.read tool call, and three model calls on anthropic/claude-sonnet-4-5, and does not name another page.
+     * List agent session events
+     * @description Returns ordered durable events used to reconstruct a conversation after navigation or reload.
      */
     get: operations["listAgentSessionEvents"];
     put?: never;
@@ -361,6 +441,50 @@ export interface paths {
      */
     get: operations["streamAgentSession"];
     put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/agents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create agent
+     * @description Create agent posts the display name Customer concierge, the short name customer-concierge, and the purpose from the dialog. The stored agent keeps that name, that short name, that purpose, source tenant, and no tools.
+     */
+    post: operations["createAgent"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/agents/{slug}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Configure
+     * @description Configure loads this agent's name, purpose, model, and tools.
+     */
+    get: operations["getAgent"];
+    /**
+     * Save changes
+     * @description Save changes stores this agent's name, purpose, model, and tools.
+     */
+    put: operations["putAgent"];
     post?: never;
     delete?: never;
     options?: never;
@@ -604,26 +728,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/background-tasks/{slug}/schedule-state": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Next run
-     * @description Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger.
-     */
-    get: operations["getBackgroundTaskScheduleState"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/v1/background-tasks/{slug}/runs": {
     parameters: {
       query?: never;
@@ -796,6 +900,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/background-tasks/{slug}/schedule-state": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Next run
+     * @description Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger.
+     */
+    get: operations["getBackgroundTaskScheduleState"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/background-tasks/{slug}/trigger": {
     parameters: {
       query?: never;
@@ -810,6 +934,26 @@ export interface paths {
      * @description Run now posts a manual start from the visual workflow editor. The stored cloud run stays queued, keeps the note Started from the visual workflow editor, uses cloud execution, and records revision 2.
      */
     post: operations["triggerBackgroundTask"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/billing/checkout-session": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Upgrade to Pro
+     * @description Upgrade to Pro opens checkout. The request asks for the Pro plan. This server has not configured checkout, so the request is refused.
+     */
+    post: operations["createCheckoutSession"];
     delete?: never;
     options?: never;
     head?: never;
@@ -864,8 +1008,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List the commitment register
-     * @description Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register. A full page is the end of the register when hasMore is false.
+     * What we owe
+     * @description What we owe loads promises we made that are still open. The request asks for promised by us, open and at risk, 200 at a time, and it does not ask for an older page. This workspace has no open promise we made, so the page is empty.
      */
     get: operations["listCommitments"];
     put?: never;
@@ -888,6 +1032,66 @@ export interface paths {
      * @description Export record downloads this promise as Markdown. The request uses format md. The file names the company, the promise, the state, the due date, the quoted mail, and the history.
      */
     get: operations["exportCommitment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/composio/connections": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Connected
+     * @description Connected lists the Jira account linked from More products.
+     */
+    get: operations["listComposioConnections"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/composio/connections/{connectionID}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Disconnect Jira
+     * @description Disconnect Jira removes that connection. The request sends no body.
+     */
+    delete: operations["deleteComposioConnection"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/composio/toolkits": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * More products
+     * @description More products lists Jira and Asana. Gmail, Google Calendar, and HubSpot stay on their own cards.
+     */
+    get: operations["listComposioToolkits"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1010,26 +1214,6 @@ export interface paths {
      * @description Validates an active non-revoked connection, exact audience, granted scope subset, current catalog availability, and current entitlement. OAuth credentials are refreshed and rotated server-side, then rowboat-api returns an RS256 product token carrying bounded actor claims. Provider tokens and API keys are never returned.
      */
     post: operations["createMCPToken"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/composio/connections": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Connect
-     * @description Connect opens the Jira sign-in page. The account is linked only after that page is finished.
-     */
-    post: operations["startComposioConnection"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1164,8 +1348,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Profile
-     * @description Profile loads the saved display name, the default agent, and whether usage data is shared. Before a name is saved, the name and the agent are empty, usage sharing is off, notifications are off, and the theme follows the system.
+     * Get console preferences
+     * @description Returns defaults before the caller's first write.
      */
     get: operations["getConsolePreferences"];
     put?: never;
@@ -1188,8 +1372,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List console resources
-     * @description Lists only the caller's resources in the exact organization workspace asserted by the token. A full page is the end of the list when hasMore is false.
+     * Reusable note templates
+     * @description Reusable note templates loads the first page. The request asks for note templates, one hundred at a time, starting at the beginning. This workspace has no template, so the page is empty.
      */
     get: operations["listConsoleResources"];
     put?: never;
@@ -1230,26 +1414,6 @@ export interface paths {
      * @description Save template posts the name and payload of an existing note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0, and the update time is later.
      */
     patch: operations["patchConsoleResource"];
-    trace?: never;
-  };
-  "/v1/composio/toolkits": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * More products
-     * @description More products lists Jira and Asana. Gmail, Google Calendar, and HubSpot stay on their own cards.
-     */
-    get: operations["listComposioToolkits"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
     trace?: never;
   };
   "/v1/entities": {
@@ -1380,26 +1544,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/composio/connections/{connectionID}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Disconnect Jira
-     * @description Disconnect Jira removes that connection. The request sends no body.
-     */
-    delete: operations["deleteComposioConnection"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/v1/google-oauth": {
     parameters: {
       query?: never;
@@ -1438,26 +1582,6 @@ export interface paths {
      * @description Consumes a one-time Google OAuth session ticket, requires the authenticated user to match the user that started it, persists the refresh token when present, and returns the token bundle to the desktop.
      */
     post: operations["claimGoogleOAuth"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/composio/connections": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Connected
-     * @description Connected lists the Jira account linked from More products.
-     */
-    get: operations["listComposioConnections"];
-    put?: never;
-    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1584,26 +1708,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/agents/{slug}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Configure
-     * @description Configure loads this agent's name, purpose, model, and tools.
-     */
-    get: operations["getAgent"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/v1/llm/chat/completions": {
     parameters: {
       query?: never;
@@ -1618,26 +1722,6 @@ export interface paths {
      * @description Credit-gated chat completion endpoint. The gateway estimates and reserves credits, routes the desktop model id to OpenAI or OpenRouter, forwards the request, streams or buffers the upstream response, then settles actual token usage.
      */
     post: operations["createChatCompletion"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/agents/{slug}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Save changes
-     * @description Save changes stores this agent's name, purpose, model, and tools.
-     */
-    put: operations["putAgent"];
-    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1698,26 +1782,6 @@ export interface paths {
     get: operations["listLLMModels"];
     put?: never;
     post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/billing/checkout-session": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Upgrade to Pro
-     * @description Upgrade to Pro opens checkout. The request asks for the Pro plan. This server has not configured checkout, so the request is refused.
-     */
-    post: operations["createCheckoutSession"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1838,8 +1902,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Confirm plan
-     * @description Confirm plan records that the other person confirmed the shared plan. The owner's records stay unchanged.
+     * Respond to a scoped plan
+     * @description Appends an idempotent external response for internal review; it never directly changes canonical commitments.
      */
     post: operations["respondPublicMutualActionPlan"];
     delete?: never;
@@ -1856,8 +1920,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List portfolio attention
-     * @description Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.
+     * Attention queue
+     * @description Attention queue loads the open page. The request asks for open items, 50 at a time, and it does not ask for an older page. This workspace has no open company in the queue, so the page is empty.
      */
     get: operations["listRelationshipAttention"];
     put?: never;
@@ -1878,8 +1942,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Review
-     * @description Review records that this attention item was reviewed. It leaves the open queue.
+     * Decide attention item
+     * @description Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.
      */
     post: operations["decideRelationshipAttention"];
     delete?: never;
@@ -1916,8 +1980,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List identity review candidates
-     * @description Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.
+     * Review possible duplicates
+     * @description Review possible duplicates loads the pending page. The request asks for pending duplicates, 50 at a time, and it does not ask for an older page. This workspace has no pending duplicate, so the page is empty.
      */
     get: operations["listRelationshipIdentityCandidates"];
     put?: never;
@@ -1958,8 +2022,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Merge
-     * @description Merge combines this possible duplicate into the company that already exists. The extra company is archived.
+     * Decide identity candidate
+     * @description Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.
      */
     post: operations["decideRelationshipIdentityCandidate"];
     delete?: never;
@@ -1978,8 +2042,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Save a note
-     * @description Save a note posts the note the editor stores. The summary is Renewal context. The stored facts keep note id note-1, that title, the body Use the updated terms., one editor paragraph, and meeting link false. Each save uses a new external id and source version 1. The stored observation copies those fields and its content hash. The projection completed, and this save was not a duplicate.
+     * Ingest relationship observations
+     * @description Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.
      */
     post: operations["ingestRelationshipObservations"];
     delete?: never;
@@ -2000,6 +2064,46 @@ export interface paths {
      * @description People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked.
      */
     get: operations["listRelationshipPersons"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-persons/{personId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove a person
+     * @description Confirm remove sends reason user_action. The server stores that reason, deletes the person and every derived row, and writes suppression anchors so the next sync cannot recreate them.
+     */
+    delete: operations["deleteRelationshipPerson"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-persons/{personId}/attributes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Open person
+     * @description Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there.
+     */
+    get: operations["getRelationshipPersonAttributes"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2076,8 +2180,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Connected sources
-     * @description Connected sources lists each account connected to this workspace. The page shows the account and whether its history is still syncing.
+     * Get source health
+     * @description Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.
      */
     get: operations["getRelationshipSourceStatuses"];
     put?: never;
@@ -2156,8 +2260,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List relationships
-     * @description Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.
+     * All companies
+     * @description All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention.
      */
     get: operations["listRelationships"];
     put?: never;
@@ -2180,8 +2284,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get the relationship graph
-     * @description Returns the shared versioned graph read model for an account or the authorized portfolio. Historical asOf reads exclude later evidence and proposed actions.
+     * Company graph
+     * @description Company graph loads the portfolio. The request asks for the portfolio at depth 2 and does not ask for an earlier moment or an older page. This workspace has no company, so the graph is empty.
      */
     get: operations["getRelationshipGraph"];
     put?: never;
@@ -2223,7 +2327,7 @@ export interface paths {
     put?: never;
     /**
      * Acknowledge Mission Control state
-     * @description Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.
+     * @description Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.
      */
     post: operations["acknowledgeMissionControl"];
     delete?: never;
@@ -2260,8 +2364,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get relationship changes
-     * @description Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.
+     * What changed
+     * @description What changed loads when a company opens. The request asks for the two newest snapshots and sends no older-page offset. Acme has one snapshot: engagement, health, and lifecycle changed together.
      */
     get: operations["getRelationshipChanges"];
     put?: never;
@@ -2302,8 +2406,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Run commitment recovery
-     * @description Reconciles due commitments against bounded fresh evidence, closes only explicit fulfillment, and queues governed recovery proposals otherwise.
+     * Reconcile now
+     * @description Reconcile now sends an empty body. A past-due promise with nothing newer comes back as classification forgotten, and the company sheet reads that as a forgotten promise.
      */
     post: operations["runCommitmentRecovery"];
     delete?: never;
@@ -2360,8 +2464,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get communication timeline
-     * @description Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
+     * Mail and meetings
+     * @description Mail and meetings loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer is the newest record, the sent message Follow up, and shows this mailbox can see it.
      */
     get: operations["getRelationshipCommunicationTimeline"];
     put?: never;
@@ -2382,8 +2486,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Use this value
-     * @description Use this value closes a disagreement on this company. It sends the evidence you picked and why, and the company comes back with that value current.
+     * Resolve a typed contradiction
+     * @description Records the user's selected evidence side as a top-authority correction without rewriting either source.
      */
     post: operations["resolveRelationshipContradiction"];
     delete?: never;
@@ -2403,7 +2507,7 @@ export interface paths {
     put?: never;
     /**
      * Correct reviewed conversation evidence
-     * @description Correct sends the company id, the review item id, and the edited value. It always sends the focused-review reason.
+     * @description Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.
      */
     post: operations["correctConversationEvidence"];
     delete?: never;
@@ -2422,8 +2526,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Approve
-     * @description Approve accepts this proposed conversation change. The company and its review queue refresh.
+     * Decide a proposed conversation change
+     * @description Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.
      */
     post: operations["decideConversationChange"];
     delete?: never;
@@ -2442,8 +2546,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Confirm delete
-     * @description Confirm delete removes this company's conversation evidence from Oppulence. Copies on this device and at the mailbox stay until they are checked.
+     * Request conversation deletion
+     * @description Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.
      */
     post: operations["requestConversationDeletion"];
     delete?: never;
@@ -2484,8 +2588,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get earlier conversation review
-     * @description Returns focused review items and governance receipts from conversations older than the newest page.
+     * Show earlier evidence
+     * @description Show earlier evidence loads the next page of focused review. It skips the newest 200 conversations. This page has one speaker to resolve, and no older conversation after it.
      */
     get: operations["getRelationshipConversationReview"];
     put?: never;
@@ -2506,8 +2610,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Correct a detail
-     * @description Correct a detail replaces one field on this company. It sends the field, the new value, and why, and the company comes back with that value.
+     * Correct relationship state
+     * @description Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.
      */
     post: operations["correctRelationship"];
     delete?: never;
@@ -2586,8 +2690,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Approve this plan
-     * @description Approve this plan posts an empty body. The stored plan status is internally_approved, which the company sheet reads as Approved in this workspace.
+     * Approve a plan revision
+     * @description Binds internal approval to the exact current revision hash.
      */
     post: operations["approveMutualActionPlan"];
     delete?: never;
@@ -2624,10 +2728,170 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get evidence timeline
-     * @description Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
+     * Activity
+     * @description Activity loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer lists the newest activity first, from Slack, Calendar, Gmail, and HubSpot.
      */
     get: operations["getRelationshipTimeline"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/research/companies": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Fill in companies
+     * @description Fill in companies and people posts the pending company ids first. Each request stays within the estimate batch size.
+     */
+    post: operations["enrichCompanies"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/research/companies/estimate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Estimate companies
+     * @description When public research is allowed, the companies page loads this estimate and prints the company count. One pending company uses the pro processor: 1000 credits, which is usd 0.1. batchSize 25 is the maximum ids one fill request accepts. The page adds this usd to the people estimate.
+     */
+    get: operations["getCompanyResearchEstimate"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/research/companies/pending": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Pending companies
+     * @description Fill in companies and people reads this list first, then posts these relationship ids. The pending company is 9c8dfa9b-a7b2-46ea-982c-622a914c00e5.
+     */
+    get: operations["listPendingCompanyEnrichment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/research/consent": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Allow public research
+     * @description Allow public research sends consented true. Turn off sends consented false. The server stores that choice for the workspace and records consentedAt only while consent is on.
+     */
+    put: operations["setCloudResearchConsent"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/research/people": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Fill in people
+     * @description Fill in companies and people posts the pending person ids after the companies. Each request stays within the estimate batch size.
+     */
+    post: operations["enrichPersons"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/research/people/estimate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Estimate people
+     * @description When public research is allowed, the companies page loads this estimate and prints the people count. One pending person uses the pro processor: 1000 credits, which is usd 0.1. batchSize 25 is the maximum ids one fill request accepts. The page adds this usd to the company estimate.
+     */
+    get: operations["getPersonResearchEstimate"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/research/people/pending": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Pending people
+     * @description Fill in companies and people reads this list after the companies, then posts these person ids. The pending person is 1b8dfa9b-a7b2-46ea-982c-622a914c00e5.
+     */
+    get: operations["listPendingPersonEnrichment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/research/status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Check public research
+     * @description The companies page checks public research before it shows Allow public research. When research is configured, the required plan is intelligence, and consent is still off, the response is available true, allowed false, and reason consent_required.
+     */
+    get: operations["getResearchStatus"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2644,14 +2908,14 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List the action queue
-     * @description Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
+     * Recovery
+     * @description Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty.
      */
     get: operations["listRevenueActions"];
     put?: never;
     /**
-     * Create task
-     * @description Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.
+     * Create a manual action
+     * @description Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.
      */
     post: operations["createRevenueAction"];
     delete?: never;
@@ -2668,8 +2932,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Reload the checked action
-     * @description Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.
+     * Get an action
+     * @description Returns one action with relationship context.
      */
     get: operations["getRevenueAction"];
     put?: never;
@@ -2730,8 +2994,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Dismiss
-     * @description Dismiss removes this follow-up from the queue and stores the reason.
+     * Dismiss an action
+     * @description Dismisses the action with a reason label and records the dismissed outcome.
      */
     post: operations["dismissRevenueAction"];
     delete?: never;
@@ -2830,8 +3094,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Reject
-     * @description Reject declines this follow-up. The decision is stored and the follow-up stays open.
+     * Reject an action
+     * @description Rejects the current revision with a reason.
      */
     post: operations["rejectRevenueAction"];
     delete?: never;
@@ -2972,8 +3236,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Download the report
-     * @description Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.
+     * Get the open promises report
+     * @description Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
      */
     get: operations["getOpenPromisesReport"];
     put?: never;
@@ -3012,8 +3276,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Workspace
-     * @description Connected sources loads this workspace. The request sends no filter. This workspace is local, active, and the sending check is off, so the organization and sending workspace are omitted.
+     * Get current revenue workspace
+     * @description Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.
      */
     get: operations["getRevenueWorkspace"];
     put?: never;
@@ -3044,6 +3308,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/revenue-workspaces/current/communication-privacy-rules": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Protected or blocked addresses
+     * @description Protected or blocked addresses loads this workspace's list. The request sends no filter. This workspace has no protected or blocked address, so the list is empty.
+     */
+    get: operations["listCommunicationPrivacyRules"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-workspaces/current/communication-privacy-rules/{ruleId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove
+     * @description Remove deletes one protected or blocked address and returns no response body.
+     */
+    delete: operations["deleteCommunicationPrivacyRule"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/revenue-workspaces/current/communications/attachments/{attachmentId}/content": {
     parameters: {
       query?: never;
@@ -3056,26 +3360,6 @@ export interface paths {
      * @description Returns one scanned text attachment when policy and grants allow it.
      */
     get: operations["getCommunicationAttachmentContent"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Mailbox policy
-     * @description Email & Calendar privacy loads this mailbox policy after the mailbox account is entered. Metadata stays workspace-visible, subject lines are shared, and bodies and attachments stay private.
-     */
-    get: operations["getCommunicationPolicy"];
     put?: never;
     post?: never;
     delete?: never;
@@ -3114,8 +3398,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Link workspace
-     * @description Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.
+     * Link the OutboundConsole workspace
+     * @description Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.
      */
     post: operations["linkRevenueWorkspace"];
     delete?: never;
@@ -3396,8 +3680,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List workspace notes
-     * @description Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.
+     * Notes
+     * @description Notes loads the newest page. The request asks for 50 notes and does not ask for an older page. This workspace has no company note, so the page is empty.
      */
     get: operations["listWorkspaceNotes"];
     put?: never;
@@ -3582,18 +3866,10 @@ export interface components {
       params_json?: string;
       rationale?: string;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Reason recorded when this proposal is rejected or fails.
+       * @example The invoice was already paid.
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason?: string;
       /** Format: date-time */
       resolved_at?: string;
       result_ref?: string;
@@ -3733,8 +4009,8 @@ export interface components {
       history_time: string;
       /**
        * Format: uuid
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Id of this history row.
+       * @example 223e4567-e89b-12d3-a456-426614174000
        */
       id: string;
       instructions?: string;
@@ -3788,7 +4064,7 @@ export interface components {
       /** Format: date-time */
       completed_at?: string;
       /**
-       * @description Settled credit cost for the request.
+       * @description Credits used across this session.
        * @example 8
        */
       cost_units: number;
@@ -3953,7 +4229,7 @@ export interface components {
       /** Format: date-time */
       completed_at?: string;
       /**
-       * @description Settled credit cost for the request.
+       * @description Credits used during this turn.
        * @example 8
        */
       cost_units: number;
@@ -4423,14 +4699,9 @@ export interface components {
       model?: string | null;
       /**
        * @description Previous run id when this run was created by retry.
-       * @example run-20260604-210000
+       * @example run-20260604-205000
        */
       previousRunId?: string | null;
-      /**
-       * @description Run id this attempt retries.
-       * @example run-20260604-210000
-       */
-      retryOfRunId?: string | null;
       /**
        * @description Human-readable progress message for polling clients.
        * @example Building API-native task artifact.
@@ -5019,8 +5290,8 @@ export interface components {
        */
       instructions: string;
       /**
-       * @description Desktop-facing LLM model id.
-       * @example openai/gpt-4.1-mini
+       * @description Default model id for runs.
+       * @example anthropic/claude-sonnet-4-5
        */
       model?: string | null;
       /**
@@ -5029,8 +5300,8 @@ export interface components {
        */
       name: string;
       /**
-       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
-       * @example openai
+       * @description Default provider for tasks created from this template.
+       * @example openrouter
        */
       provider?: string | null;
       /** @description Connectors this template expects for full fidelity. */
@@ -5075,8 +5346,8 @@ export interface components {
        */
       executionTarget?: "desktop" | "api";
       /**
-       * @description Desktop-facing LLM model id.
-       * @example openai/gpt-4.1-mini
+       * @description Model override.
+       * @example anthropic/claude-sonnet-4-5
        */
       model?: string | null;
       /**
@@ -5085,8 +5356,8 @@ export interface components {
        */
       name?: string | null;
       /**
-       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
-       * @example openai
+       * @description Provider override.
+       * @example openrouter
        */
       provider?: string | null;
       /**
@@ -5210,7 +5481,7 @@ export interface components {
         completeness: string;
         /**
          * @description One-way connection support reference.
-         * @example connection:sha256:ab12
+         * @example connection:sha256:da73462ccdf527f07099a17f
          */
         connectionRef: string;
         /**
@@ -5235,12 +5506,12 @@ export interface components {
         retryCount: number;
         /**
          * @description Provider.
-         * @example hubspot
+         * @example google
          */
         source: string;
         /**
          * @description One-way provider account support reference.
-         * @example source-account:sha256:cd34
+         * @example source-account:sha256:24021bb72aca268d3989017b
          */
         sourceAccountRef: string;
         /**
@@ -5269,7 +5540,7 @@ export interface components {
       }[];
       /**
        * @description One-way workspace support reference.
-       * @example workspace:sha256:ab12
+       * @example workspace:sha256:1d811ce10de82ecb6ed8274b
        */
       workspaceRef: string;
     };
@@ -5638,6 +5909,20 @@ export interface components {
       /** @description Linked runs. */
       runs: components["schemas"]["CloudEventRun"][];
     };
+    /** @description Whether this workspace allows public research to send a counterparty name and domain to the research vendor. */
+    CloudResearchConsentState: {
+      /**
+       * @description Whether public research is allowed.
+       * @example true
+       */
+      consented: boolean;
+      /**
+       * Format: date-time
+       * @description When public research was allowed. Absent after Turn off.
+       * @example 2026-07-31T14:00:00Z
+       */
+      consentedAt?: string | null;
+    };
     Commitment: {
       acceptance: string;
       beneficiary_participant_ref?: string;
@@ -5700,7 +5985,7 @@ export interface components {
       /**
        * Format: uuid
        * @description Dependency id.
-       * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @example 3b8dfa9b-a7b2-46ea-982c-622a914c00e5
        */
       dependencyId: string;
       /** @description Evidence references. */
@@ -5720,13 +6005,13 @@ export interface components {
       /**
        * Format: uuid
        * @description Relationship id.
-       * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
        */
       relationshipId: string;
       /**
        * Format: uuid
        * @description Target commitment id.
-       * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @example 26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51
        */
       toCommitmentId: string;
     };
@@ -5738,8 +6023,8 @@ export interface components {
        */
       action?: string;
       /**
-       * @description Actor reference.
-       * @example participant:owner
+       * @description User who recorded this change.
+       * @example a8dfa9b6-a7b2-46ea-982c-622a914c00e5
        */
       actorRef?: string;
       /**
@@ -5750,7 +6035,7 @@ export interface components {
       actorType: "user" | "source_fact" | "deterministic_rule" | "ai_candidate";
       /**
        * @description Promise beneficiary.
-       * @example participant:beneficiary
+       * @example customer:acme
        */
       beneficiaryParticipantRef?: string;
       /**
@@ -5766,7 +6051,7 @@ export interface components {
       commitmentId: string;
       /**
        * @description Promise counterparty.
-       * @example participant:customer
+       * @example jordan@example.com
        */
       counterpartyParticipantRef?: string;
       /**
@@ -5827,22 +6112,14 @@ export interface components {
       occurredAt: string;
       /**
        * @description Promise owner.
-       * @example participant:owner
+       * @example alex@example.com
        */
       ownerParticipantRef?: string;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Transition rationale.
+       * @example Counterparty accepted in writing.
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason?: string;
       /**
        * @description Idempotent source event id.
        * @example user-accept:commitment-1
@@ -5893,12 +6170,12 @@ export interface components {
     CommunicationAccess: {
       /**
        * @description Attachment visibility.
-       * @example false
+       * @example true
        */
       attachments: boolean;
       /**
        * @description Body visibility.
-       * @example false
+       * @example true
        */
       body: boolean;
       /**
@@ -5917,18 +6194,10 @@ export interface components {
        */
       protected?: boolean;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Decision reason.
+       * @example owner_default
        */
-      reason:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason: string;
       /**
        * @description Subject visibility.
        * @example true
@@ -6126,18 +6395,10 @@ export interface components {
       id: string;
       owner: components["schemas"]["User"];
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Why this content was shared.
+       * @example The account owner asked for the thread.
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason?: string;
       resource_id: string;
       resource_type: string;
       /** Format: date-time */
@@ -6199,12 +6460,12 @@ export interface components {
       attachmentCount?: number;
       /**
        * @description Whether the body remains locked.
-       * @example true
+       * @example false
        */
       bodyLocked: boolean;
       /**
        * @description Direction.
-       * @example inbound
+       * @example outbound
        */
       direction?: string;
       /**
@@ -6222,7 +6483,7 @@ export interface components {
       /**
        * Format: date-time
        * @description When it occurred.
-       * @example 2026-09-06T12:00:00Z
+       * @example 2026-09-17T12:00:00Z
        */
       occurredAt: string;
       /**
@@ -6260,16 +6521,40 @@ export interface components {
       items: components["schemas"]["CommunicationTimelineItem"][];
       /**
        * Format: date-time
-       * @description Cursor for the next page.
-       * @example 2026-09-06T12:00:00Z
+       * @description Time of the last record on this page. Send it to load older records that share that time.
+       * @example 2026-09-17T12:00:00Z
        */
       nextBefore?: string | null;
       /**
        * Format: uuid
-       * @description Id of the last item on this page. Send it with nextBefore so rows that share that time stay on the next page.
-       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @description Id of the last record on this page. Send it with the time so records that share that time stay on the next page.
+       * @example e18dfa9b-a7b2-46ea-982c-622a914c00e5
        */
       nextBeforeId?: string | null;
+    };
+    /** @description Result of filling in one company from public research. */
+    CompanyResearchOutcome: {
+      /**
+       * @description Whether the vendor identified the company.
+       * @example true
+       */
+      matched: boolean;
+      /**
+       * Format: uuid
+       * @description Company relationship id.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      relationshipId: string;
+      /**
+       * @description Whether this company was already filled in at the current version.
+       * @example false
+       */
+      replayed: boolean;
+      /**
+       * @description Details saved.
+       * @example 1
+       */
+      written: number;
     };
     /** @description Public bootstrap values consumed by the desktop before sign-in. */
     ConfigResponse: {
@@ -6318,8 +6603,8 @@ export interface components {
     /** @description Connector connection result. */
     ConnectionConnectedResponse: {
       /**
-       * @description OAuth token audience for the connector.
-       * @example canvas-api
+       * @description Audience accepted by the product resource server.
+       * @example mcp:canvas
        */
       audience?: string;
       /**
@@ -6338,10 +6623,9 @@ export interface components {
        */
       connector?: string;
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Scopes granted by the completed consent flow.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       "canvas:invoices.read"
        *     ]
        */
       scopes?: string[];
@@ -6518,18 +6802,10 @@ export interface components {
       org_id?: string;
       owner_workos_user_id: string;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Why this connector decision was recorded.
+       * @example subscription_ended
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason?: string;
       requested_scopes?: string[];
       result?: string;
       /**
@@ -6600,8 +6876,8 @@ export interface components {
     /** @description Append-only, replay-safe oauth-consent audit event. event_id is globally unique and conflicting replays are rejected. */
     ConsentAuditRequest: {
       /**
-       * @description OAuth token audience for the connector.
-       * @example canvas-api
+       * @description Bound connector audience.
+       * @example mcp:canvas
        */
       audience: string;
       /**
@@ -6645,10 +6921,9 @@ export interface components {
         [key: string]: unknown;
       };
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Shown or granted scope set.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       "canvas:invoices.read"
        *     ]
        */
       scopes: string[];
@@ -6679,16 +6954,16 @@ export interface components {
        */
       display_name: string;
       /**
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Hydra client id.
+       * @example rowboat-desktop
        */
       id: string;
     };
     /** @description Connector identity shown to the user. */
     ConsentConnectorIdentity: {
       /**
-       * @description OAuth token audience for the connector.
-       * @example canvas-api
+       * @description Audience bound to any resulting resource token.
+       * @example mcp:canvas
        */
       audience: string;
       /**
@@ -6697,8 +6972,8 @@ export interface components {
        */
       display_name: string;
       /**
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Connector slug.
+       * @example canvas
        */
       id: string;
     };
@@ -6723,19 +6998,10 @@ export interface components {
        */
       message?: string | null;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string|null}
+       * @description Machine-readable denial reason.
+       * @example scope_not_in_plan
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund"
-        | null;
+      reason?: string | null;
       /**
        * @description Minimum plan required after denial.
        * @example pro
@@ -6783,10 +7049,6 @@ export interface components {
     };
     /** @description Saved graph view payload. */
     ConsoleGraphSavedViewPayload: {
-      /**
-       * @description Opaque one-time OAuth state/session ticket.
-       * @example state_abc123
-       */
       state: components["schemas"]["ConsoleGraphSavedViewState"];
     };
     /** @description Saved relationship graph controls. */
@@ -6838,7 +7100,7 @@ export interface components {
       scope: "portfolio" | "relationship";
       /**
        * @description Optional selected graph node.
-       * @example relationship:123
+       * @example relationship:3a196c5e-b10e-46cb-a177-7c001f7be573
        */
       selectedNodeId?: string | null;
     };
@@ -7054,8 +7316,8 @@ export interface components {
        */
       exactQuote: string;
       /**
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Stable claim id.
+       * @example claim:ab12
        */
       id: string;
       /**
@@ -7128,8 +7390,9 @@ export interface components {
        */
       legalHold: boolean;
       /**
+       * Format: uuid
        * @description Idempotent request id.
-       * @example delete:ab12
+       * @example eb8dfa9b-a7b2-46ea-982c-622a914c00e5
        */
       receiptId: string;
       /**
@@ -7182,7 +7445,7 @@ export interface components {
           | "provider";
         /**
          * @description Content-free verification hash.
-         * @example sha256:ab12
+         * @example sha256:5c15791fbeefd579cf530b240c1a3d5eec1d94058e045c8a4eadf0d1385ebfbf
          */
         verificationHash?: string;
       }[];
@@ -7223,7 +7486,7 @@ export interface components {
       participantDisclosure: string;
       /**
        * @description Receipt id.
-       * @example governance:ab12
+       * @example governance:session-42:2026-07-31T14:00:00Z
        */
       receiptId: string;
       /**
@@ -7289,7 +7552,7 @@ export interface components {
       baselineVersion?: number;
       /**
        * @description Idempotent review batch id.
-       * @example review:ab12
+       * @example review:8aafa89c553bd3f9b65e0bee
        */
       batchId?: string;
       /** @description State pinned before conversation processing. */
@@ -7300,7 +7563,7 @@ export interface components {
       caveats?: string[];
       /**
        * @description Material claim id.
-       * @example claim:ab12
+       * @example claim-risk
        */
       claimId?: string;
       /**
@@ -7321,8 +7584,8 @@ export interface components {
        */
       exactQuote?: string;
       /**
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Stable review item id.
+       * @example review:ab12
        */
       id: string;
       /**
@@ -7905,10 +8168,9 @@ export interface components {
        */
       connectedAt: string;
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Granted Google OAuth scopes.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       "https://www.googleapis.com/auth/gmail.readonly"
        *     ]
        */
       scopes: string[];
@@ -8017,8 +8279,8 @@ export interface components {
        */
       createdAt?: string | null;
       /**
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description HubSpot record id.
+       * @example 101
        */
       id: string;
       properties: {
@@ -8079,8 +8341,8 @@ export interface components {
        */
       description: string;
       /**
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Stable block id within the connector.
+       * @example invoice-context
        */
       id: string;
       /** @description MCP tools backing this capability for an MCP transport connector. */
@@ -8138,8 +8400,8 @@ export interface components {
     /** @description Exact binding extracted from one verified connector resource token. Partial selectors are rejected. */
     InternalConnectionStatusRequest: {
       /**
-       * @description OAuth token audience for the connector.
-       * @example canvas-api
+       * @description Exact product resource audience.
+       * @example mcp:canvas
        */
       audience: string;
       /**
@@ -8199,19 +8461,10 @@ export interface components {
        */
       org_id?: string | null;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string|null}
+       * @description Semantic revocation reason.
+       * @example subscription_ended
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund"
-        | null;
+      reason?: string | null;
       /**
        * @description WorkOS user id used to resolve bearer tokens into local users.
        * @example user_01HABCDEF
@@ -8350,8 +8603,8 @@ export interface components {
        */
       input: unknown;
       /**
-       * @description Desktop-facing LLM model id.
-       * @example openai/gpt-4.1-mini
+       * @description Desktop-facing embedding model id.
+       * @example openai/text-embedding-3-small
        */
       model: string;
     } & {
@@ -8364,8 +8617,8 @@ export interface components {
     /** @description Routable model id exposed to the desktop. */
     LLMModel: {
       /**
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Model id accepted by the model gateway.
+       * @example openai/gpt-4.1-mini
        */
       id: string;
     };
@@ -8452,8 +8705,8 @@ export interface components {
       history_time: string;
       /**
        * Format: uuid
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Id of this history row.
+       * @example 223e4567-e89b-12d3-a456-426614174000
        */
       id: string;
       /**
@@ -8561,10 +8814,9 @@ export interface components {
       revoked_by?: string;
       revoked_reason?: string;
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Scopes granted for this connector.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       "canvas:invoices.read"
        *     ]
        */
       scopes?: string[];
@@ -8623,8 +8875,8 @@ export interface components {
       history_time: string;
       /**
        * Format: uuid
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Id of this history row.
+       * @example 223e4567-e89b-12d3-a456-426614174000
        */
       id: string;
       /**
@@ -8655,10 +8907,9 @@ export interface components {
       revoked_by?: string;
       revoked_reason?: string;
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Scopes recorded for this connector.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       "canvas:invoices.read"
        *     ]
        */
       scopes?: string[];
@@ -8677,8 +8928,8 @@ export interface components {
     /** @description Audience and least-privilege scopes requested for one resource token. */
     MCPTokenRequest: {
       /**
-       * @description OAuth token audience for the connector.
-       * @example canvas-api
+       * @description Must exactly match the connector and stored connection audience.
+       * @example mcp:canvas
        */
       audience?: string | null;
       /** @description Must be a subset of currently granted scopes. */
@@ -8692,8 +8943,8 @@ export interface components {
        */
       access_token: string;
       /**
-       * @description OAuth token audience for the connector.
-       * @example canvas-api
+       * @description Exact product resource-server audience.
+       * @example mcp:canvas
        */
       audience: string;
       /**
@@ -8703,8 +8954,8 @@ export interface components {
       connectionId: string;
       /**
        * Format: int64
-       * @description Credential or one-time ticket expiry timestamp.
-       * @example 2026-06-04T20:48:00Z
+       * @description Unix expiry timestamp in seconds.
+       * @example 1790784000
        */
       expires_at: number;
       /**
@@ -8724,10 +8975,9 @@ export interface components {
        */
       scope: string;
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Validated minted scope subset.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       "canvas:invoices.read"
        *     ]
        */
       scopes: string[];
@@ -8778,8 +9028,9 @@ export interface components {
       /**
        * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
        * @example openai
+       * @enum {string}
        */
-      provider: string;
+      provider: "gmail";
       provider_message_id: string;
       /** Format: byte */
       sealed_body: string;
@@ -8879,8 +9130,9 @@ export interface components {
       /**
        * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
        * @example openai
+       * @enum {string}
        */
-      provider: string;
+      provider: "gmail";
       provider_thread_id: string;
       relationship?: components["schemas"]["Relationship"];
       reply_state: string;
@@ -9001,8 +9253,8 @@ export interface components {
       reviewedAt?: string | null;
       /**
        * Format: uuid
-       * @description Explicit reviewer when present.
-       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @description User who reviewed this value.
+       * @example a8dfa9b6-a7b2-46ea-982c-622a914c00e5
        */
       reviewerId?: string;
       /**
@@ -9047,7 +9299,7 @@ export interface components {
     MissionControlEvidenceReference: {
       /**
        * @description Immutable observation content hash.
-       * @example sha256:ab12
+       * @example c649f448e463924ae2a0923fcc6d409bc5a808004027b16bfbea961336650984
        */
       contentHash: string;
       /**
@@ -9143,7 +9395,7 @@ export interface components {
       projectorVersion: number;
       /**
        * @description Stable state hash.
-       * @example sha256:ab12
+       * @example sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1
        */
       stateHash: string;
       /**
@@ -9170,16 +9422,15 @@ export interface components {
        */
       id: string;
       /**
-       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
-       * @example openai
+       * @description Sign-in service for this connection.
+       * @example google
        */
       provider: string;
       refresh_token_present: boolean;
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Scopes granted on this connection.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       "https://www.googleapis.com/auth/gmail.readonly"
        *     ]
        */
       scopes?: string[];
@@ -9211,8 +9462,8 @@ export interface components {
       history_time: string;
       /**
        * Format: uuid
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Id of this history row.
+       * @example 223e4567-e89b-12d3-a456-426614174000
        */
       id: string;
       /**
@@ -9222,8 +9473,8 @@ export interface components {
        */
       operation: "INSERT" | "UPDATE" | "DELETE";
       /**
-       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
-       * @example openai
+       * @description Sign-in service recorded for this connection.
+       * @example google
        */
       provider: string;
       /**
@@ -9234,10 +9485,9 @@ export interface components {
       ref?: string;
       refresh_token_present: boolean;
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Scopes recorded for this connection.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       "https://www.googleapis.com/auth/gmail.readonly"
        *     ]
        */
       scopes?: string[];
@@ -9290,8 +9540,8 @@ export interface components {
        */
       payload_encrypted: string;
       /**
-       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
-       * @example openai
+       * @description Sign-in service for this handoff. google, canvas, corinthian, or wispr.
+       * @example google
        */
       provider: string;
       redirect_target?: string;
@@ -9318,8 +9568,8 @@ export interface components {
       access_token: string;
       /**
        * Format: int64
-       * @description Credential or one-time ticket expiry timestamp.
-       * @example 2026-06-04T20:48:00Z
+       * @description Unix timestamp in seconds when the access token expires.
+       * @example 1790784000
        */
       expires_at: number;
       /**
@@ -9423,18 +9673,10 @@ export interface components {
       observed_at: string;
       person: components["schemas"]["Person"];
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Why this detail was recorded.
+       * @example The title was in the email signature.
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason?: string;
       /** Format: date-time */
       retracted_at?: string;
       source: string;
@@ -9461,6 +9703,69 @@ export interface components {
       value: string;
       workspace: components["schemas"]["RevenueWorkspace"];
     };
+    /** @description Receipt for removing one person and the rows derived from them. Suppression anchors keep the next sync from recreating that person. */
+    PersonDeletionReceipt: {
+      /**
+       * @description Attribute rows deleted.
+       * @example 1
+       */
+      attributesDeleted: number;
+      /**
+       * Format: date-time
+       * @description Completion time.
+       * @example 2026-07-31T14:01:00Z
+       */
+      completedAt: string;
+      /**
+       * @description Identity rows deleted.
+       * @example 1
+       */
+      identitiesDeleted: number;
+      /**
+       * @description Interaction stat rows deleted.
+       * @example 1
+       */
+      interactionStatsDeleted: number;
+      /**
+       * @description Merge candidates deleted.
+       * @example 0
+       */
+      mergeCandidatesDeleted: number;
+      /**
+       * Format: uuid
+       * @description Removed person id.
+       * @example 1b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      personId: string;
+      /**
+       * @description Person rows deleted.
+       * @example 1
+       */
+      personsDeleted: number;
+      /**
+       * @description Why this person was removed.
+       * @example user_action
+       * @enum {string}
+       */
+      reason: "user_action" | "subject_request";
+      /**
+       * Format: uuid
+       * @description Receipt id.
+       * @example fb8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      receiptId: string;
+      /**
+       * Format: date-time
+       * @description Request time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      requestedAt: string;
+      /**
+       * @description Suppression anchors written.
+       * @example 1
+       */
+      suppressedIdentities: number;
+    };
     PersonIdentity: {
       /** Format: double */
       confidence: number;
@@ -9483,8 +9788,8 @@ export interface components {
       last_seen_at: string;
       person: components["schemas"]["Person"];
       /**
-       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
-       * @example openai
+       * @description Tool this identity came from. For an external record it is the first part of that record, such as hubspot.
+       * @example hubspot
        */
       provider?: string;
       source?: string;
@@ -9586,6 +9891,30 @@ export interface components {
       version: number;
       workspace: components["schemas"]["RevenueWorkspace"];
     };
+    /** @description Result of filling in one person from public research. */
+    PersonResearchOutcome: {
+      /**
+       * @description Whether the vendor identified the person.
+       * @example true
+       */
+      matched: boolean;
+      /**
+       * Format: uuid
+       * @description Person id.
+       * @example 1b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      personId: string;
+      /**
+       * @description Whether this person was already filled in at the current version.
+       * @example false
+       */
+      replayed: boolean;
+      /**
+       * @description Details saved.
+       * @example 1
+       */
+      written: number;
+    };
     PersonSuppression: {
       /**
        * Format: date-time
@@ -9602,18 +9931,11 @@ export interface components {
       kind: string;
       note?: string;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
+       * @description Why this person was removed. subject_request means they asked. user_action means the account holder removed them.
+       * @example user_action
        * @enum {string}
        */
-      reason:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason: "user_action" | "subject_request";
       /** Format: date-time */
       suppressed_at: string;
       /**
@@ -9703,22 +10025,24 @@ export interface components {
     /** @description Strict structured consent context. It contains no state, PKCE verifier, provider credential, or raw owner metadata. */
     PreConsentResponse: {
       client: components["schemas"]["ConsentClientIdentity"];
-      /**
-       * @description Connector slug.
-       * @example canvas
-       */
       connector: components["schemas"]["ConsentConnectorIdentity"];
       entitlement: components["schemas"]["ConsentEntitlement"];
       /**
-       * @description Idempotency and trace anchor for a metered request.
-       * @example 9e2fb15a-936d-4f39-9372-73cfe0476ca8
+       * @description Deterministic context request id bound to the challenge.
+       * @example ctx_01HABCDEF
        */
       request_id: string;
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Exact catalog scope definitions.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       {
+       *         "description": "Read invoice records.",
+       *         "display_name": "Read invoices",
+       *         "name": "canvas:invoices.read",
+       *         "required": true,
+       *         "requires_step_up": false,
+       *         "tier": "low"
+       *       }
        *     ]
        */
       scopes: components["schemas"]["ConsentScopeDefinition"][];
@@ -9889,18 +10213,10 @@ export interface components {
       observation?: components["schemas"]["RelationshipObservation"];
       projector_compat_version: number;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Evidence-backed explanation.
+       * @example CRM deal stage changed to closed won.
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason?: string;
       relationship: components["schemas"]["Relationship"];
       /** Format: date-time */
       retracted_at?: string;
@@ -9938,16 +10254,14 @@ export interface components {
     RelationshipAttentionItem: {
       /**
        * Format: date-time
-       * @description Acknowledged time.
-       * @example 2026-07-31T14:00:00Z
+       * @description When this item was acknowledged. Empty until then.
        */
       acknowledgedAt?: string | null;
       /**
        * Format: uuid
-       * @description Acknowledging actor.
-       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @description User who acknowledged this item. Empty until it is acknowledged.
        */
-      acknowledgedBy?: string;
+      acknowledgedBy?: string | null;
       /**
        * Format: date-time
        * @description Created time.
@@ -9961,16 +10275,14 @@ export interface components {
       detectorVersion: number;
       /**
        * Format: date-time
-       * @description Dismissed time.
-       * @example 2026-07-31T14:00:00Z
+       * @description When this item was dismissed. Empty until then.
        */
       dismissedAt?: string | null;
       /**
        * Format: uuid
-       * @description Dismissing actor.
-       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @description User who dismissed this item. Empty until it is dismissed.
        */
-      dismissedBy?: string;
+      dismissedBy?: string | null;
       /** @description Evidence refs. */
       evidenceRefs: string[];
       /**
@@ -9992,8 +10304,8 @@ export interface components {
       id: string;
       /**
        * Format: uuid
-       * @description Owner id.
-       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @description Assigned user id.
+       * @example a8dfa9b6-a7b2-46ea-982c-622a914c00e5
        */
       ownerId?: string;
       /**
@@ -10050,10 +10362,7 @@ export interface components {
       snoozedUntil?: string | null;
       /** @description Fresh sources required. */
       sourceRequirements: string[];
-      /**
-       * @description Triage reason.
-       * @example Reviewed from the portfolio attention queue.
-       */
+      /** @description Why this item was acknowledged, snoozed, or dismissed. Empty while it is still open. */
       stateReason?: string;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
@@ -10063,7 +10372,7 @@ export interface components {
       status: "open" | "acknowledged" | "snoozed" | "dismissed" | "superseded" | "resolved";
       /**
        * @description Triggering object.
-       * @example commitment:123
+       * @example commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5
        */
       triggeringObjectRef: string;
       /**
@@ -10207,17 +10516,17 @@ export interface components {
        */
       hasMore?: boolean;
       /**
-       * @description An older conversation exists beyond this page.
-       * @example true
-       */
-      observationHasMore?: boolean;
-      /**
        * @description Whether the response is an historical projection.
        * @example false
        */
       historical: boolean;
       /** @description Typed nodes. */
       nodes: components["schemas"]["RelationshipGraphNode"][];
+      /**
+       * @description An older conversation exists beyond this page.
+       * @example true
+       */
+      observationHasMore?: boolean;
       /** @description Viewer capabilities for this projection. */
       permissions: {
         /**
@@ -10271,8 +10580,8 @@ export interface components {
       /** @description Evidence supporting the connection. */
       evidenceRefs: string[];
       /**
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Stable edge id.
+       * @example edge:ab12cd34
        */
       id: string;
       /**
@@ -10301,12 +10610,12 @@ export interface components {
       label: string;
       /**
        * @description Source node id.
-       * @example commitment:1
+       * @example commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5
        */
       source: string;
       /**
        * @description Target node id.
-       * @example commitment:2
+       * @example commitment:26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51
        */
       target: string;
     };
@@ -10356,8 +10665,8 @@ export interface components {
        */
       health?: string;
       /**
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Stable node id.
+       * @example relationship:9c8dfa9b-a7b2-46ea-982c-622a914c00e5
        */
       id: string;
       /**
@@ -10461,15 +10770,15 @@ export interface components {
       /**
        * Format: uuid
        * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @example 1b8dfa9b-a7b2-46ea-982c-622a914c00e5
        */
       id: string;
       kind: string;
       /** Format: date-time */
       last_seen_at: string;
       /**
-       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
-       * @example openai
+       * @description Tool this identity came from. For an external record it is the first part of that record, such as hubspot.
+       * @example hubspot
        */
       provider?: string;
       relationship: components["schemas"]["Relationship"];
@@ -10521,8 +10830,8 @@ export interface components {
       decision?: string;
       /**
        * Format: uuid
-       * @description Actor.
-       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @description User who resolved this review.
+       * @example a8dfa9b6-a7b2-46ea-982c-622a914c00e5
        */
       decisionActorId?: string;
       /**
@@ -10543,7 +10852,12 @@ export interface components {
        * @example 2026-01-01T00:00:00Z
        */
       evidenceFrom?: string | null;
-      /** @description Evidence references. */
+      /**
+       * @description Evidence references.
+       * @example [
+       *       "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+       *     ]
+       */
       evidenceRefs: string[];
       /**
        * Format: date-time
@@ -10593,8 +10907,8 @@ export interface components {
     RelationshipIdentityDecision: {
       /**
        * Format: uuid
-       * @description Decision actor.
-       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @description User who made this decision.
+       * @example a8dfa9b6-a7b2-46ea-982c-622a914c00e5
        */
       actorId: string;
       /**
@@ -10626,30 +10940,33 @@ export interface components {
        */
       id: string;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Decision reason.
+       * @example Confirmed the provider records are the same account.
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason?: string;
     };
     /** @description Immutable graph lineage produced by an identity decision. */
     RelationshipIdentityLineage: {
       /**
        * Format: uuid
-       * @description Actor.
-       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @description User who recorded this change.
+       * @example a8dfa9b6-a7b2-46ea-982c-622a914c00e5
        */
       actorId: string;
-      /** @description Relationship ids after. */
+      /**
+       * @description Relationship ids after.
+       * @example [
+       *       "3a196c5e-b10e-46cb-a177-7c001f7be573"
+       *     ]
+       */
       afterRelationshipIds: string[];
-      /** @description Relationship ids before. */
+      /**
+       * @description Relationship ids before.
+       * @example [
+       *       "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+       *       "3a196c5e-b10e-46cb-a177-7c001f7be573"
+       *     ]
+       */
       beforeRelationshipIds: string[];
       /**
        * Format: uuid
@@ -10657,7 +10974,12 @@ export interface components {
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       id: string;
-      /** @description Affected identity ids. */
+      /**
+       * @description Affected identity ids.
+       * @example [
+       *       "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+       *     ]
+       */
       identityIds: string[];
       /**
        * @description Lineage kind.
@@ -10675,18 +10997,10 @@ export interface components {
        */
       occurredAt: string;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Reason.
+       * @example Confirmed duplicate.
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason?: string;
     };
     /** @description Derived trust surface for a relationship: conversation claims, focused review, exact delta, governance, contradictions, and live cue cards. */
     RelationshipIntelligence: {
@@ -10761,18 +11075,10 @@ export interface components {
       /** Format: date-time */
       occurred_at: string;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Why this identity change was recorded.
+       * @example Confirmed the provider records are the same account.
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason?: string;
       /**
        * Format: date-time
        * @description Last row update timestamp.
@@ -10787,7 +11093,7 @@ export interface components {
     RelationshipObservation: {
       /**
        * @description Hash of summary, facts, and sealed payload.
-       * @example ab12cd34
+       * @example c649f448e463924ae2a0923fcc6d409bc5a808004027b16bfbea961336650984
        */
       contentHash: string;
       /**
@@ -10806,7 +11112,12 @@ export interface components {
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       id: string;
-      /** @description Provider-neutral normalized facts. */
+      /**
+       * @description Provider-neutral normalized facts.
+       * @example {
+       *       "adapter": "gmail"
+       *     }
+       */
       normalizedFacts: {
         [key: string]: unknown;
       };
@@ -11055,8 +11366,8 @@ export interface components {
       connectionId: string;
       /**
        * Format: uuid
-       * @description Actor who initiated consent.
-       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       * @description User who connected this source.
+       * @example a8dfa9b6-a7b2-46ea-982c-622a914c00e5
        */
       consentingActorId?: string;
       /**
@@ -11150,8 +11461,8 @@ export interface components {
        */
       sourceAccountId: string;
       /**
-       * @description Connection lifecycle.
-       * @example live
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
        * @enum {string}
        */
       status:
@@ -11174,7 +11485,12 @@ export interface components {
     };
     /** @description Immutable projection snapshot created only when material relationship state changes. */
     RelationshipStateSnapshot: {
-      /** @description Assertions selected by deterministic precedence. */
+      /**
+       * @description Assertions selected by deterministic precedence.
+       * @example [
+       *       "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+       *     ]
+       */
       assertionIds: string[];
       /** @description Material dimensions that changed. */
       changedDimensions: string[];
@@ -11201,16 +11517,13 @@ export interface components {
        * @example 1
        */
       projectorVersion: number;
-      /**
-       * @description Opaque one-time OAuth state/session ticket.
-       * @example state_abc123
-       */
+      /** @description Projected state at this version. */
       state: {
         [key: string]: unknown;
       };
       /**
        * @description Stable hash of canonical state and winning assertions.
-       * @example sha256:ab12cd34
+       * @example sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1
        */
       stateHash: string;
       /**
@@ -11239,13 +11552,13 @@ export interface components {
       legalHold: boolean;
       /**
        * @description Most permissive model route allowed.
-       * @example local_only
+       * @example hosted_allowed
        * @enum {string}
        */
       modelRoute: "local_only" | "region_restricted" | "hosted_allowed";
       /**
        * @description Hash-bound effective policy version.
-       * @example policy:ab12
+       * @example policy:9373cc30008dcb712c236fc9
        */
       policyVersion: string;
       /**
@@ -11460,8 +11773,8 @@ export interface components {
        */
       queueStatus: "open" | "snoozed" | "dismissed" | "handled";
       /**
-       * @description Why this action was proposed.
-       * @example Follow up on the open promise.
+       * @description Human-readable evidence-backed reason.
+       * @example They asked for a follow-up in July.
        */
       reason: string;
       /**
@@ -11515,7 +11828,7 @@ export interface components {
       revision: number;
       /**
        * @description Canonical hash of the revision content.
-       * @example sha256:ab12...
+       * @example sha256:746c1d9cd3925b8e632fc1b4bd539758514cb1aefdf31948fe8d1b45ce74c29d
        */
       revisionHash: string;
       /**
@@ -11885,8 +12198,8 @@ export interface components {
        */
       startedAt?: string | null;
       /**
-       * @description Scan status.
-       * @example running
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
        * @enum {string}
        */
       status: "pending" | "running" | "completed" | "failed";
@@ -12033,12 +12346,12 @@ export interface components {
       revision: number;
       /**
        * @description Revision hash the decision is bound to.
-       * @example sha256:ab12...
+       * @example sha256:746c1d9cd3925b8e632fc1b4bd539758514cb1aefdf31948fe8d1b45ce74c29d
        */
       revisionHash: string;
       /**
-       * @description Decision status.
-       * @example passed
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
        * @enum {string}
        */
       status: "passed" | "review_required" | "blocked";
@@ -12200,7 +12513,7 @@ export interface components {
       sentiment: "unknown" | "positive" | "mixed" | "negative";
       /**
        * @description Stable hash of canonical projected values and winning assertions.
-       * @example sha256:ab12cd34
+       * @example sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1
        */
       stateHash?: string;
       /**
@@ -12427,12 +12740,12 @@ export interface components {
        */
       text?: string | null;
       /**
-       * @description Usage or ledger event timestamp.
-       * @example 2026-06-04T20:38:00Z
+       * @description Slack message timestamp.
+       * @example 1700000000.000100
        */
       ts?: string | null;
       /**
-       * @description User that owns this row.
+       * @description Slack user id when present.
        * @example U01234567
        */
       user?: string | null;
@@ -12535,10 +12848,10 @@ export interface components {
        */
       connectedAt?: string;
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Granted bot scopes.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       "channels:history",
+       *       "chat:write"
        *     ]
        */
       scopes?: string[];
@@ -12629,8 +12942,8 @@ export interface components {
       history_time: string;
       /**
        * Format: uuid
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Id of this history row.
+       * @example 223e4567-e89b-12d3-a456-426614174000
        */
       id: string;
       /**
@@ -12862,8 +13175,8 @@ export interface components {
       history_time: string;
       /**
        * Format: uuid
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
+       * @description Id of this history row.
+       * @example 223e4567-e89b-12d3-a456-426614174000
        */
       id: string;
       /**
@@ -12926,8 +13239,8 @@ export interface components {
        */
       created_at: string;
       /**
-       * @description Credential or one-time ticket expiry timestamp.
-       * @example 2026-06-04T20:48:00Z
+       * @description Expiry time.
+       * @example 2026-09-20T23:00:00Z
        */
       expires_at?: string | null;
       /**
@@ -12938,17 +13251,17 @@ export interface components {
       id: string;
       /**
        * @description One-time bearer secret.
-       * @example opv_live_example
+       * @example opv_live_exampleAbCdEfGhIjKlMnOpQrStUvWxYz0123456789
        */
       key?: string | null;
       /**
-       * @description Safe display prefix.
+       * @description First 16 characters of the secret. Safe to display.
        * @example opv_live_example
        */
       key_prefix: string;
       /**
-       * @description Timestamp when the connector credential was last minted or used.
-       * @example 2026-06-04T20:45:00Z
+       * @description Last-use time.
+       * @example 2026-08-21T23:00:00Z
        */
       last_used_at?: string | null;
       /**
@@ -12957,10 +13270,9 @@ export interface components {
        */
       name: string;
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Granted scopes.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       "notes:read"
        *     ]
        */
       scopes: string[];
@@ -12978,10 +13290,9 @@ export interface components {
        */
       name: string;
       /**
-       * @description OAuth scopes granted or requested.
+       * @description Granted scopes.
        * @example [
-       *       "invoices:read",
-       *       "customers:read"
+       *       "notes:read"
        *     ]
        */
       scopes?: string[];
@@ -13177,8 +13488,8 @@ export interface components {
       email?: string | null;
       /**
        * Format: int64
-       * @description Credential or one-time ticket expiry timestamp.
-       * @example 2026-06-04T20:48:00Z
+       * @description Unix timestamp in seconds when the access token expires.
+       * @example 1790784000
        */
       expires_at: number;
       /**
@@ -13550,7 +13861,7 @@ export interface operations {
           /**
            * @example {
            *       "data": {
-           *         "key": "opv_live_example"
+           *         "key": "opv_live_exampleAbCdEfGhIjKlMnOpQrStUvWxYz0123456789"
            *       }
            *     }
            */
@@ -13948,176 +14259,385 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
-  createAgent: {
+  listActionProposals: {
     parameters: {
       query?: {
-        /** @description Page offset. */
-        offset?: number;
+        /**
+         * @description pending is the queue. Agent approvals asks for pending.
+         * @example pending
+         */
+        status?: string;
       };
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** @description New agent. */
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "connectorReqs": [],
-         *       "enabledTools": [],
-         *       "instructions": "Explain what this agent should accomplish and how it should behave.",
-         *       "limits": {},
-         *       "model": "",
-         *       "name": "Customer concierge",
-         *       "provider": "",
-         *       "slug": "customer-concierge",
-         *       "subagentRefs": []
-         *     }
-         */
-        "application/json": {
-          /**
-           * @description Connections this agent needs.
-           * @example []
-           */
-          connectorReqs?: string[];
-          /**
-           * @description Tools this agent can use.
-           * @example []
-           */
-          enabledTools?: string[];
-          /**
-           * @description Purpose.
-           * @example Explain what this agent should accomplish and how it should behave.
-           */
-          instructions: string;
-          /** @description Limits. Empty uses the workspace defaults. */
-          limits?: Record<string, never>;
-          /**
-           * @description Model. Empty uses the workspace default.
-           * @example
-           */
-          model?: string;
-          /**
-           * @description Display name.
-           * @example Customer concierge
-           */
-          name: string;
-          /**
-           * @description Provider. Empty uses the workspace default.
-           * @example
-           */
-          provider?: string;
-          /**
-           * @description Short name.
-           * @example customer-concierge
-           */
-          slug: string;
-          /**
-           * @description Other agents this one can call.
-           * @example []
-           */
-          subagentRefs?: string[];
-        };
-      };
-    };
+    requestBody?: never;
     responses: {
-      /** @description Stored agent. */
-      201: {
+      /** @description Empty approval queue. */
+      200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           /**
            * @example {
-           *       "enabledTools": [],
-           *       "instructions": "Explain what this agent should accomplish and how it should behave.",
-           *       "name": "Customer concierge",
-           *       "slug": "customer-concierge",
-           *       "source": "tenant"
+           *       "proposals": []
+           *     }
+           */
+          "application/json": {
+            /** @description Proposals waiting for a decision. */
+            proposals: Record<string, never>[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+    };
+  };
+  approveActionProposal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Proposal id.
+         * @example 5f8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Approved proposal and one-time value. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "expiresAt": "2026-07-31T14:05:00Z",
+           *       "proposal": {
+           *         "approvedAt": "2026-07-31T14:00:00Z",
+           *         "createdAt": "2026-07-31T14:00:00Z",
+           *         "financial": false,
+           *         "id": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "kind": "conduit.dunning.advance",
+           *         "paramsJson": "{\"amount\":100,\"step\":2}",
+           *         "rationale": "Acme is 14 days overdue",
+           *         "status": "approved",
+           *         "target": "conduit:invoice:inv_456"
+           *       },
+           *       "token": "example.not-a-live-approval"
            *     }
            */
           "application/json": {
             /**
-             * @description Connections this agent needs.
-             * @example []
+             * Format: date-time
+             * @description When the one-time value stops working.
+             * @example 2026-07-31T14:05:00Z
              */
-            connectorReqs?: string[];
+            expiresAt: string;
+            /** @description Approved proposal. */
+            proposal: {
+              /**
+               * Format: date-time
+               * @description When it was approved.
+               * @example 2026-07-31T14:00:00Z
+               */
+              approvedAt: string;
+              /**
+               * Format: date-time
+               * @description When the proposal was created.
+               * @example 2026-07-31T14:00:00Z
+               */
+              createdAt: string;
+              /**
+               * @description Whether money moves.
+               * @example false
+               */
+              financial: boolean;
+              /**
+               * Format: uuid
+               * @description Proposal id.
+               * @example 5f8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              id: string;
+              /**
+               * @description Action kind.
+               * @example conduit.dunning.advance
+               */
+              kind: string;
+              /**
+               * @description JSON parameters.
+               * @example {"amount":100,"step":2}
+               */
+              paramsJson?: string;
+              /**
+               * @description Why the action was proposed.
+               * @example Acme is 14 days overdue
+               */
+              rationale?: string;
+              /**
+               * @description Approved.
+               * @example approved
+               */
+              status: string;
+              /**
+               * @description Object the action changes.
+               * @example conduit:invoice:inv_456
+               */
+              target: string;
+            };
             /**
-             * @description Tools this agent can use.
-             * @example []
+             * @description One-time value the page uses to run the action. This sample is not a live approval.
+             * @example example.not-a-live-approval
              */
-            enabledTools: string[];
-            /**
-             * @description Purpose.
-             * @example Explain what this agent should accomplish and how it should behave.
-             */
-            instructions: string;
-            /** @description Limits. Empty uses the workspace defaults. */
-            limits?: Record<string, never>;
-            /**
-             * @description Model. Empty uses the workspace default.
-             * @example
-             */
-            model?: string;
-            /**
-             * @description Display name.
-             * @example Customer concierge
-             */
-            name: string;
-            /**
-             * @description Provider. Empty uses the workspace default.
-             * @example
-             */
-            provider?: string;
-            /**
-             * @description Short name.
-             * @example customer-concierge
-             */
-            slug: string;
-            /**
-             * @description Where this agent comes from.
-             * @example tenant
-             * @enum {string}
-             */
-            source: "tenant" | "builtin";
-            /**
-             * @description Other agents this one can call.
-             * @example []
-             */
-            subagentRefs?: string[];
+            token: string;
           };
         };
       };
       400: components["responses"]["400"];
       401: components["responses"]["401"];
-      /** @description An agent with this short name already exists. */
-      409: {
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  executeActionProposal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Proposal id.
+         * @example 5f8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
+        id: string;
+      };
+      cookie?: never;
+    };
+    /** @description One-time value. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "token": "example.not-a-live-approval"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description One-time value from Approve and run. This sample is not a live approval.
+           * @example example.not-a-live-approval
+           */
+          token: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Executed proposal. */
+      200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           /**
            * @example {
-           *       "code": "conflict",
-           *       "detail": "an agent with this slug already exists",
-           *       "requestId": "req-abc123",
-           *       "status": 409,
-           *       "title": "Conflict",
-           *       "type": "https://api.rowboat.dev/problems/conflict"
+           *       "approvedAt": "2026-07-31T14:00:00Z",
+           *       "createdAt": "2026-07-31T14:00:00Z",
+           *       "executedAt": "2026-07-31T14:00:00Z",
+           *       "financial": false,
+           *       "id": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "kind": "conduit.dunning.advance",
+           *       "paramsJson": "{\"amount\":100,\"step\":2}",
+           *       "rationale": "Acme is 14 days overdue",
+           *       "resultRef": "conduit:step:step_1",
+           *       "status": "executed",
+           *       "target": "conduit:invoice:inv_456"
            *     }
            */
-          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+          "application/json": {
+            /**
+             * Format: date-time
+             * @description When it was approved.
+             * @example 2026-07-31T14:00:00Z
+             */
+            approvedAt: string;
+            /**
+             * Format: date-time
+             * @description When the proposal was created.
+             * @example 2026-07-31T14:00:00Z
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description When it ran.
+             * @example 2026-07-31T14:00:00Z
+             */
+            executedAt: string;
+            /**
+             * @description Whether money moves.
+             * @example false
+             */
+            financial: boolean;
+            /**
+             * Format: uuid
+             * @description Proposal id.
+             * @example 5f8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            id: string;
+            /**
+             * @description Action kind.
+             * @example conduit.dunning.advance
+             */
+            kind: string;
+            /**
+             * @description JSON parameters.
+             * @example {"amount":100,"step":2}
+             */
+            paramsJson?: string;
+            /**
+             * @description Why the action was proposed.
+             * @example Acme is 14 days overdue
+             */
+            rationale?: string;
+            /**
+             * @description Result the page shows.
+             * @example conduit:step:step_1
+             */
+            resultRef?: string;
+            /**
+             * @description Executed.
+             * @example executed
+             */
+            status: string;
+            /**
+             * @description Object the action changes.
+             * @example conduit:invoice:inv_456
+             */
+            target: string;
+          };
         };
       };
-      500: components["responses"]["500"];
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+      503: components["responses"]["503"];
+    };
+  };
+  rejectActionProposal: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Proposal id.
+         * @example 5f8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
+        id: string;
+      };
+      cookie?: never;
+    };
+    /** @description Short reason for the audit trail. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "reason": "Customer paid yesterday"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Why this action is being rejected.
+           * @example Customer paid yesterday
+           */
+          reason: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Rejected proposal. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "createdAt": "2026-07-31T14:00:00Z",
+           *       "financial": false,
+           *       "id": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "kind": "conduit.dunning.advance",
+           *       "paramsJson": "{\"amount\":100,\"step\":2}",
+           *       "rationale": "Acme is 14 days overdue",
+           *       "reason": "Customer paid yesterday",
+           *       "status": "rejected",
+           *       "target": "conduit:invoice:inv_456"
+           *     }
+           */
+          "application/json": {
+            /**
+             * Format: date-time
+             * @description When the proposal was created.
+             * @example 2026-07-31T14:00:00Z
+             */
+            createdAt: string;
+            /**
+             * @description Whether money moves.
+             * @example false
+             */
+            financial: boolean;
+            /**
+             * Format: uuid
+             * @description Proposal id.
+             * @example 5f8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            id: string;
+            /**
+             * @description Action kind.
+             * @example conduit.dunning.advance
+             */
+            kind: string;
+            /**
+             * @description JSON parameters.
+             * @example {"amount":100,"step":2}
+             */
+            paramsJson?: string;
+            /**
+             * @description Why the action was proposed.
+             * @example Acme is 14 days overdue
+             */
+            rationale?: string;
+            /**
+             * @description Why it was rejected.
+             * @example Customer paid yesterday
+             */
+            reason: string;
+            /**
+             * @description Rejected.
+             * @example rejected
+             */
+            status: string;
+            /**
+             * @description Object the action changes.
+             * @example conduit:invoice:inv_456
+             */
+            target: string;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
     };
   };
   listAgentSessions: {
     parameters: {
-      query?: {
-        /** @description Page offset. */
-        offset?: number;
-      };
+      query?: never;
       header?: never;
       path?: never;
       cookie?: never;
@@ -14227,6 +14747,59 @@ export interface operations {
       400: components["responses"]["400"];
       401: components["responses"]["401"];
       502: components["responses"]["502"];
+    };
+  };
+  mintAgentApprovalToken: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Stable session id. */
+        id: string;
+        /** @description Pending approval id. */
+        approvalId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Approval token. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "approvalToken": "agt_example.signature",
+           *       "expiresAt": "2026-09-02T15:10:00Z",
+           *       "mfa": false
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description Token the chat sends with the granted decision.
+             * @example agt_example.signature
+             */
+            approvalToken: string;
+            /**
+             * @description When this token stops working.
+             * @example 2026-09-02T15:10:00Z
+             */
+            expiresAt: string;
+            /**
+             * @description Whether an extra sign-in check backed this approval.
+             * @example false
+             */
+            mfa: boolean;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+      500: components["responses"]["500"];
     };
   };
   listAgentSessionEvents: {
@@ -14444,12 +15017,12 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "seq": 0,
-           *       "type": "agent.session_started",
            *       "data": {
            *         "agent": "assistant",
            *         "sessionId": "session_abc123"
-           *       }
+           *       },
+           *       "seq": 0,
+           *       "type": "agent.session_started"
            *     }
            */
           "application/x-ndjson": components["schemas"]["DurableAgentSessionEvent"];
@@ -14457,6 +15030,440 @@ export interface operations {
       };
       401: components["responses"]["401"];
       404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
+  createAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description New agent. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "connectorReqs": [],
+         *       "enabledTools": [],
+         *       "instructions": "Explain what this agent should accomplish and how it should behave.",
+         *       "limits": {},
+         *       "model": "",
+         *       "name": "Customer concierge",
+         *       "provider": "",
+         *       "slug": "customer-concierge",
+         *       "subagentRefs": []
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Connections this agent needs.
+           * @example []
+           */
+          connectorReqs?: string[];
+          /**
+           * @description Tools this agent can use.
+           * @example []
+           */
+          enabledTools?: string[];
+          /**
+           * @description Purpose.
+           * @example Explain what this agent should accomplish and how it should behave.
+           */
+          instructions: string;
+          /** @description Limits. Empty uses the workspace defaults. */
+          limits?: Record<string, never>;
+          /**
+           * @description Model. Empty uses the workspace default.
+           * @example
+           */
+          model?: string;
+          /**
+           * @description Display name.
+           * @example Customer concierge
+           */
+          name: string;
+          /**
+           * @description Provider. Empty uses the workspace default.
+           * @example
+           */
+          provider?: string;
+          /**
+           * @description Short name.
+           * @example customer-concierge
+           */
+          slug: string;
+          /**
+           * @description Other agents this one can call.
+           * @example []
+           */
+          subagentRefs?: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Stored agent. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "enabledTools": [],
+           *       "instructions": "Explain what this agent should accomplish and how it should behave.",
+           *       "name": "Customer concierge",
+           *       "slug": "customer-concierge",
+           *       "source": "tenant"
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description Connections this agent needs.
+             * @example []
+             */
+            connectorReqs?: string[];
+            /**
+             * @description Tools this agent can use.
+             * @example []
+             */
+            enabledTools: string[];
+            /**
+             * @description Purpose.
+             * @example Explain what this agent should accomplish and how it should behave.
+             */
+            instructions: string;
+            /** @description Limits. Empty uses the workspace defaults. */
+            limits?: Record<string, never>;
+            /**
+             * @description Model. Empty uses the workspace default.
+             * @example
+             */
+            model?: string;
+            /**
+             * @description Display name.
+             * @example Customer concierge
+             */
+            name: string;
+            /**
+             * @description Provider. Empty uses the workspace default.
+             * @example
+             */
+            provider?: string;
+            /**
+             * @description Short name.
+             * @example customer-concierge
+             */
+            slug: string;
+            /**
+             * @description Where this agent comes from.
+             * @example tenant
+             * @enum {string}
+             */
+            source: "tenant" | "builtin";
+            /**
+             * @description Other agents this one can call.
+             * @example []
+             */
+            subagentRefs?: string[];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      /** @description An agent with this short name already exists. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "conflict",
+           *       "detail": "an agent with this slug already exists",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/conflict"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+    };
+  };
+  getAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Agent id.
+         * @example acme-follow-up
+         */
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The agent is ready to configure. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "enabledTools": [
+           *         "relationship.read"
+           *       ],
+           *       "instructions": "Draft the next follow-up for Acme.",
+           *       "model": "openai/gpt-4.1-mini",
+           *       "name": "Acme follow-up",
+           *       "provider": "openrouter",
+           *       "slug": "acme-follow-up",
+           *       "source": "tenant"
+           *     }
+           */
+          "application/json": {
+            /** @description Tools this agent can use. */
+            enabledTools: string[];
+            /**
+             * @description Purpose shown for this agent.
+             * @example Draft the next follow-up for Acme.
+             */
+            instructions?: string;
+            /**
+             * @description Model this agent uses.
+             * @example openai/gpt-4.1-mini
+             */
+            model?: string;
+            /**
+             * @description Name on the agents page.
+             * @example Acme follow-up
+             */
+            name: string;
+            /**
+             * @description Where that model runs.
+             * @example openrouter
+             */
+            provider?: string;
+            /**
+             * @description Agent id.
+             * @example acme-follow-up
+             */
+            slug: string;
+            /**
+             * @description tenant means this workspace owns the agent.
+             * @example tenant
+             */
+            source: string;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
+  putAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Agent id.
+         * @example acme-follow-up
+         */
+        slug: string;
+      };
+      cookie?: never;
+    };
+    /** @description The agent the editor is showing. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "apiVersion": "agent.rowboat.dev/v1",
+         *       "kind": "Agent",
+         *       "metadata": {
+         *         "name": "Acme follow-up",
+         *         "slug": "acme-follow-up"
+         *       },
+         *       "spec": {
+         *         "instructions": "Draft the next follow-up for Acme.",
+         *         "model": "openai/gpt-4.1-mini",
+         *         "provider": "openrouter",
+         *         "tools": [
+         *           "relationship.read"
+         *         ]
+         *       }
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Document version.
+           * @example agent.rowboat.dev/v1
+           */
+          apiVersion: string;
+          /**
+           * @description Document kind.
+           * @example Agent
+           */
+          kind: string;
+          /** @description Name and id. */
+          metadata: {
+            /**
+             * @description Name on the agents page.
+             * @example Acme follow-up
+             */
+            name: string;
+            /**
+             * @description Agent id.
+             * @example acme-follow-up
+             */
+            slug: string;
+          };
+          /** @description Purpose, model, and tools. */
+          spec: {
+            /**
+             * @description Purpose shown for this agent.
+             * @example Draft the next follow-up for Acme.
+             */
+            instructions: string;
+            /**
+             * @description Model this agent uses.
+             * @example openai/gpt-4.1-mini
+             */
+            model?: string;
+            /**
+             * @description Where that model runs.
+             * @example openrouter
+             */
+            provider?: string;
+            /** @description Tools this agent can use. */
+            tools: string[];
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description The agent is saved. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "enabledTools": [
+           *         "relationship.read"
+           *       ],
+           *       "instructions": "Draft the next follow-up for Acme.",
+           *       "model": "openai/gpt-4.1-mini",
+           *       "name": "Acme follow-up",
+           *       "provider": "openrouter",
+           *       "slug": "acme-follow-up",
+           *       "source": "tenant"
+           *     }
+           */
+          "application/json": {
+            /** @description Tools this agent can use. */
+            enabledTools: string[];
+            /**
+             * @description Purpose shown for this agent.
+             * @example Draft the next follow-up for Acme.
+             */
+            instructions?: string;
+            /**
+             * @description Model this agent uses.
+             * @example openai/gpt-4.1-mini
+             */
+            model?: string;
+            /**
+             * @description Name on the agents page.
+             * @example Acme follow-up
+             */
+            name: string;
+            /**
+             * @description Where that model runs.
+             * @example openrouter
+             */
+            provider?: string;
+            /**
+             * @description Agent id.
+             * @example acme-follow-up
+             */
+            slug: string;
+            /**
+             * @description tenant means this workspace owns the agent.
+             * @example tenant
+             */
+            source: string;
+          };
+        };
+      };
+      /** @description The agent was created. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "enabledTools": [
+           *         "relationship.read"
+           *       ],
+           *       "instructions": "Draft the next follow-up for Acme.",
+           *       "model": "openai/gpt-4.1-mini",
+           *       "name": "Acme follow-up",
+           *       "provider": "openrouter",
+           *       "slug": "acme-follow-up",
+           *       "source": "tenant"
+           *     }
+           */
+          "application/json": {
+            /** @description Tools this agent can use. */
+            enabledTools: string[];
+            /**
+             * @description Purpose shown for this agent.
+             * @example Draft the next follow-up for Acme.
+             */
+            instructions?: string;
+            /**
+             * @description Model this agent uses.
+             * @example openai/gpt-4.1-mini
+             */
+            model?: string;
+            /**
+             * @description Name on the agents page.
+             * @example Acme follow-up
+             */
+            name: string;
+            /**
+             * @description Where that model runs.
+             * @example openrouter
+             */
+            provider?: string;
+            /**
+             * @description Agent id.
+             * @example acme-follow-up
+             */
+            slug: string;
+            /**
+             * @description tenant means this workspace owns the agent.
+             * @example tenant
+             */
+            source: string;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      409: components["responses"]["409"];
       500: components["responses"]["500"];
     };
   };
@@ -15782,132 +16789,6 @@ export interface operations {
       500: components["responses"]["500"];
     };
   };
-  getBackgroundTaskScheduleState: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Workflow to read. */
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Next run. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "health": "paused",
-           *       "lastEvaluatedAt": null,
-           *       "lastTriggeredAt": null,
-           *       "mechanism": "none",
-           *       "nextDueAt": null,
-           *       "sources": {
-           *         "event": {
-           *           "health": "paused",
-           *           "lastEvaluatedAt": null,
-           *           "lastTriggeredAt": null,
-           *           "mechanism": "none",
-           *           "nextDueAt": null
-           *         }
-           *       },
-           *       "target": "api",
-           *       "triggerSources": [
-           *         "event"
-           *       ]
-           *     }
-           */
-          "application/json": {
-            /**
-             * @description Whether the next run is ready.
-             * @example paused
-             * @enum {string}
-             */
-            health: "paused" | "current" | "failed" | "unknown" | "syncing";
-            /**
-             * Format: date-time
-             * @description When the schedule was last checked.
-             */
-            lastEvaluatedAt?: string | null;
-            /**
-             * Format: date-time
-             * @description When it last started.
-             */
-            lastTriggeredAt?: string | null;
-            /**
-             * @description What owns the schedule.
-             * @example none
-             * @enum {string}
-             */
-            mechanism: "none" | "desktop_loop" | "rowboat_loop" | "temporal_schedule";
-            /**
-             * Format: date-time
-             * @description When it is due next.
-             */
-            nextDueAt?: string | null;
-            /**
-             * @description Whether a timed cloud schedule matches the workflow.
-             * @enum {string}
-             */
-            scheduleSyncState?: "current" | "syncing" | "failed" | "paused";
-            /** @description One entry for each trigger. */
-            sources?: {
-              [key: string]: {
-                /**
-                 * @description Whether this trigger is ready.
-                 * @example paused
-                 * @enum {string}
-                 */
-                health: "paused" | "current" | "failed" | "unknown" | "syncing";
-                /**
-                 * Format: date-time
-                 * @description When this trigger was last checked.
-                 */
-                lastEvaluatedAt?: string | null;
-                /**
-                 * Format: date-time
-                 * @description When this trigger last started a run.
-                 */
-                lastTriggeredAt?: string | null;
-                /**
-                 * @description What owns this trigger.
-                 * @example none
-                 * @enum {string}
-                 */
-                mechanism: "none" | "desktop_loop" | "rowboat_loop" | "temporal_schedule";
-                /**
-                 * Format: date-time
-                 * @description When this trigger is due.
-                 */
-                nextDueAt?: string | null;
-              };
-            };
-            /**
-             * @description Where this workflow runs.
-             * @example api
-             * @enum {string}
-             */
-            target: "api" | "desktop";
-            /**
-             * @description What can start this workflow.
-             * @example [
-             *       "event"
-             *     ]
-             */
-            triggerSources: ("cron" | "window" | "event")[];
-          };
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      500: components["responses"]["500"];
-    };
-  };
   listBackgroundTaskRuns: {
     parameters: {
       query?: {
@@ -16584,6 +17465,132 @@ export interface operations {
       500: components["responses"]["500"];
     };
   };
+  getBackgroundTaskScheduleState: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Workflow to read. */
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Next run. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "health": "paused",
+           *       "lastEvaluatedAt": null,
+           *       "lastTriggeredAt": null,
+           *       "mechanism": "none",
+           *       "nextDueAt": null,
+           *       "sources": {
+           *         "event": {
+           *           "health": "paused",
+           *           "lastEvaluatedAt": null,
+           *           "lastTriggeredAt": null,
+           *           "mechanism": "none",
+           *           "nextDueAt": null
+           *         }
+           *       },
+           *       "target": "api",
+           *       "triggerSources": [
+           *         "event"
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description Whether the next run is ready.
+             * @example paused
+             * @enum {string}
+             */
+            health: "paused" | "current" | "failed" | "unknown" | "syncing";
+            /**
+             * Format: date-time
+             * @description When the schedule was last checked.
+             */
+            lastEvaluatedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description When it last started.
+             */
+            lastTriggeredAt?: string | null;
+            /**
+             * @description What owns the schedule.
+             * @example none
+             * @enum {string}
+             */
+            mechanism: "none" | "desktop_loop" | "rowboat_loop" | "temporal_schedule";
+            /**
+             * Format: date-time
+             * @description When it is due next.
+             */
+            nextDueAt?: string | null;
+            /**
+             * @description Whether a timed cloud schedule matches the workflow.
+             * @enum {string}
+             */
+            scheduleSyncState?: "current" | "syncing" | "failed" | "paused";
+            /** @description One entry for each trigger. */
+            sources?: {
+              [key: string]: {
+                /**
+                 * @description Whether this trigger is ready.
+                 * @example paused
+                 * @enum {string}
+                 */
+                health: "paused" | "current" | "failed" | "unknown" | "syncing";
+                /**
+                 * Format: date-time
+                 * @description When this trigger was last checked.
+                 */
+                lastEvaluatedAt?: string | null;
+                /**
+                 * Format: date-time
+                 * @description When this trigger last started a run.
+                 */
+                lastTriggeredAt?: string | null;
+                /**
+                 * @description What owns this trigger.
+                 * @example none
+                 * @enum {string}
+                 */
+                mechanism: "none" | "desktop_loop" | "rowboat_loop" | "temporal_schedule";
+                /**
+                 * Format: date-time
+                 * @description When this trigger is due.
+                 */
+                nextDueAt?: string | null;
+              };
+            };
+            /**
+             * @description Where this workflow runs.
+             * @example api
+             * @enum {string}
+             */
+            target: "api" | "desktop";
+            /**
+             * @description What can start this workflow.
+             * @example [
+             *       "event"
+             *     ]
+             */
+            triggerSources: ("cron" | "window" | "event")[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
   triggerBackgroundTask: {
     parameters: {
       query?: never;
@@ -16642,6 +17649,68 @@ export interface operations {
       500: components["responses"]["500"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
+    };
+  };
+  createCheckoutSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Pro plan. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "plan": "pro"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Checkout plan.
+           * @example pro
+           * @enum {string}
+           */
+          plan: "starter" | "pro" | "intelligence";
+        };
+      };
+    };
+    responses: {
+      /** @description Checkout address. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Hosted checkout address. */
+            url: string;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      /** @description Checkout is not configured. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "provider_unconfigured",
+           *       "detail": "Stripe checkout is not configured",
+           *       "requestId": "req-abc123",
+           *       "retryable": true,
+           *       "status": 502,
+           *       "title": "Bad Gateway",
+           *       "type": "https://api.rowboat.dev/problems/provider_unconfigured"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
     };
   };
   ingestCaptureArtifact: {
@@ -16741,23 +17810,32 @@ export interface operations {
   listCommitments: {
     parameters: {
       query?: {
-        /** @description promised_by_me, promised_by_them, or mutual. */
+        /**
+         * @description promised_by_me, promised_by_them, or mutual. What we owe asks for promised_by_me.
+         * @example promised_by_me
+         */
         direction?: string;
-        /** @description Comma-separated register states: open, at_risk, met, missed, waived, disputed. at_risk is derived from the due date. */
+        /**
+         * @description Comma-separated register states. What we owe asks for open and at risk.
+         * @example open,at_risk
+         */
         state?: string;
-        /** @description Owner participant reference. */
+        /** @description Owner participant reference. What we owe does not send this. */
         owner?: string;
-        /** @description Restrict to one account. */
+        /** @description Restrict to one company. What we owe does not send this. */
         relationshipId?: string;
-        /** @description Only commitments due before this instant. */
+        /** @description Only commitments due before this instant. What we owe does not send this. */
         dueBefore?: string;
-        /** @description Only commitments updated at or after this instant. */
+        /** @description Only commitments updated at or after this instant. What we owe does not send this. */
         changedSince?: string;
-        /** @description Page size (default 50, max 200). */
+        /**
+         * @description Page size (max 200). What we owe asks for 200.
+         * @example 200
+         */
         limit?: number;
-        /** @description Page offset. */
+        /** @description How many promises to skip. What we owe does not send this on the first page. */
         offset?: number;
-        /** @description Include unconfirmed extractions for a review surface. */
+        /** @description Include unconfirmed extractions. What we owe does not send this. */
         includeCandidates?: boolean;
       };
       header?: never;
@@ -16766,12 +17844,18 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The register page. */
+      /** @description Empty promise page. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "commitments": [],
+           *       "hasMore": false
+           *     }
+           */
           "application/json": {
             /** @description Register rows, each with its derived state and account. */
             commitments: components["schemas"]["CommitmentRegisterEntry"][];
@@ -16779,7 +17863,7 @@ export interface operations {
              * @description Another promise exists beyond this page.
              * @example false
              */
-            hasMore?: boolean;
+            hasMore: boolean;
           };
         };
       };
@@ -16878,8 +17962,8 @@ export interface operations {
             /** @description Ordered state changes. */
             history: {
               /**
-               * @description Actor reference.
-               * @example alex@example.com
+               * @description User who recorded this change.
+               * @example a8dfa9b6-a7b2-46ea-982c-622a914c00e5
                */
               actorRef?: string;
               /**
@@ -16956,6 +18040,152 @@ export interface operations {
       };
       401: components["responses"]["401"];
       404: components["responses"]["404"];
+    };
+  };
+  listComposioConnections: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Jira is connected. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "connections": [
+           *         {
+           *           "createdAt": "2026-07-15T16:00:00Z",
+           *           "id": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+           *           "status": "ACTIVE",
+           *           "toolkit": "jira"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /** @description Linked accounts. */
+            connections: {
+              /**
+               * Format: date-time
+               * @description When the account was linked.
+               * @example 2026-07-15T16:00:00Z
+               */
+              createdAt?: string;
+              /**
+               * @description Connection id.
+               * @example ca_8b8dfa9ba7b246ea982c622a914c00e5
+               */
+              id: string;
+              /**
+               * @description ACTIVE shows Connected on the card.
+               * @example ACTIVE
+               */
+              status: string;
+              /**
+               * @description Product id.
+               * @example jira
+               */
+              toolkit: string;
+            }[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
+    };
+  };
+  deleteComposioConnection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Connection id.
+         * @example ca_8b8dfa9ba7b246ea982c622a914c00e5
+         */
+        connectionID: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The Jira connection is removed. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
+    };
+  };
+  listComposioToolkits: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Jira and Asana are available to connect. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "toolkits": [
+           *         {
+           *           "managedAuth": true,
+           *           "name": "Jira",
+           *           "slug": "jira"
+           *         },
+           *         {
+           *           "managedAuth": true,
+           *           "name": "Asana",
+           *           "slug": "asana"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /** @description Products offered here. */
+            toolkits: {
+              /**
+               * @description This product can be connected from More products.
+               * @example true
+               */
+              managedAuth: boolean;
+              /**
+               * @description Name on the card.
+               * @example Jira
+               */
+              name: string;
+              /**
+               * @description Product id.
+               * @example jira
+               */
+              slug: string;
+            }[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
     };
   };
   getConfig: {
@@ -17206,70 +18436,6 @@ export interface operations {
       410: components["responses"]["410"];
       429: components["responses"]["429"];
       500: components["responses"]["500"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
-  startComposioConnection: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** @description The product Connect opens. */
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "toolkit": "jira"
-         *     }
-         */
-        "application/json": {
-          /**
-           * @description Product name.
-           * @example jira
-           */
-          toolkit: string;
-        };
-      };
-    };
-    responses: {
-      /** @description The Jira sign-in page is ready. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "connectionId": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
-           *       "expiresAt": "2026-07-15T16:05:00Z",
-           *       "redirectUrl": "https://connect.composio.dev/link/lk_8b8dfa9b"
-           *     }
-           */
-          "application/json": {
-            /**
-             * @description The account this page will link.
-             * @example ca_8b8dfa9ba7b246ea982c622a914c00e5
-             */
-            connectionId: string;
-            /**
-             * Format: date-time
-             * @description When the sign-in page stops working.
-             * @example 2026-07-15T16:05:00Z
-             */
-            expiresAt?: string;
-            /**
-             * @description Address of the sign-in page.
-             * @example https://connect.composio.dev/link/lk_8b8dfa9b
-             */
-            redirectUrl: string;
-          };
-        };
-      };
-      400: components["responses"]["400"];
-      401: components["responses"]["401"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };
@@ -18147,22 +19313,12 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Preferences Profile loads before a name is saved. */
+      /** @description Current preferences. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "defaultAgentSlug": "",
-           *       "displayName": "",
-           *       "notificationLevel": "off",
-           *       "shareUsageData": false,
-           *       "showModelReasoning": false,
-           *       "theme": "system"
-           *     }
-           */
           "application/json": components["schemas"]["ConsolePreferences"];
         };
       };
@@ -18295,11 +19451,20 @@ export interface operations {
   listConsoleResources: {
     parameters: {
       query: {
-        /** @description Required resource kind. */
+        /**
+         * @description Required resource kind.
+         * @example note_template
+         */
         kind: components["schemas"]["ConsoleResourceKind"];
-        /** @description Page size (default 50, max 100). */
+        /**
+         * @description Page size (default 50, max 100).
+         * @example 100
+         */
         limit?: number;
-        /** @description Page offset (max 10000). */
+        /**
+         * @description Page offset (max 10000).
+         * @example 0
+         */
         offset?: number;
       };
       header?: never;
@@ -18308,12 +19473,20 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Resource page. */
+      /** @description Empty template page. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "hasMore": false,
+           *       "limit": 100,
+           *       "offset": 0,
+           *       "resources": []
+           *     }
+           */
           "application/json": components["schemas"]["ConsoleResourcePage"];
         };
       };
@@ -18780,64 +19953,6 @@ export interface operations {
       500: components["responses"]["500"];
     };
   };
-  listComposioToolkits: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Jira and Asana are available to connect. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "toolkits": [
-           *         {
-           *           "managedAuth": true,
-           *           "name": "Jira",
-           *           "slug": "jira"
-           *         },
-           *         {
-           *           "managedAuth": true,
-           *           "name": "Asana",
-           *           "slug": "asana"
-           *         }
-           *       ]
-           *     }
-           */
-          "application/json": {
-            /** @description Products offered here. */
-            toolkits: {
-              /**
-               * @description This product can be connected from More products.
-               * @example true
-               */
-              managedAuth: boolean;
-              /**
-               * @description Name on the card.
-               * @example Jira
-               */
-              name: string;
-              /**
-               * @description Product id.
-               * @example jira
-               */
-              slug: string;
-            }[];
-          };
-        };
-      };
-      401: components["responses"]["401"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
   resolveEntityByRef: {
     parameters: {
       query: {
@@ -19236,34 +20351,6 @@ export interface operations {
       500: components["responses"]["500"];
     };
   };
-  deleteComposioConnection: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description Connection id.
-         * @example ca_8b8dfa9ba7b246ea982c622a914c00e5
-         */
-        connectionID: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The Jira connection is removed. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      502: components["responses"]["502"];
-      503: components["responses"]["503"];
-    };
-  };
   getGoogleConnectionStatus: {
     parameters: {
       query?: never;
@@ -19356,66 +20443,6 @@ export interface operations {
       409: components["responses"]["409"];
       410: components["responses"]["410"];
       500: components["responses"]["500"];
-      503: components["responses"]["503"];
-    };
-  };
-  listComposioConnections: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Jira is connected. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "connections": [
-           *         {
-           *           "createdAt": "2026-07-15T16:00:00Z",
-           *           "id": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
-           *           "status": "ACTIVE",
-           *           "toolkit": "jira"
-           *         }
-           *       ]
-           *     }
-           */
-          "application/json": {
-            /** @description Linked accounts. */
-            connections: {
-              /**
-               * Format: date-time
-               * @description When the account was linked.
-               * @example 2026-07-15T16:00:00Z
-               */
-              createdAt?: string;
-              /**
-               * @description Connection id.
-               * @example ca_8b8dfa9ba7b246ea982c622a914c00e5
-               */
-              id: string;
-              /**
-               * @description ACTIVE shows Connected on the card.
-               * @example ACTIVE
-               */
-              status: string;
-              /**
-               * @description Product id.
-               * @example jira
-               */
-              toolkit: string;
-            }[];
-          };
-        };
-      };
-      401: components["responses"]["401"];
-      502: components["responses"]["502"];
       503: components["responses"]["503"];
     };
   };
@@ -19719,81 +20746,6 @@ export interface operations {
       500: components["responses"]["500"];
     };
   };
-  getAgent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description Agent id.
-         * @example acme-follow-up
-         */
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The agent is ready to configure. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "enabledTools": [
-           *         "relationship.read"
-           *       ],
-           *       "instructions": "Draft the next follow-up for Acme.",
-           *       "model": "openai/gpt-4.1-mini",
-           *       "name": "Acme follow-up",
-           *       "provider": "openrouter",
-           *       "slug": "acme-follow-up",
-           *       "source": "tenant"
-           *     }
-           */
-          "application/json": {
-            /** @description Tools this agent can use. */
-            enabledTools: string[];
-            /**
-             * @description Purpose shown for this agent.
-             * @example Draft the next follow-up for Acme.
-             */
-            instructions?: string;
-            /**
-             * @description Model this agent uses.
-             * @example openai/gpt-4.1-mini
-             */
-            model?: string;
-            /**
-             * @description Name on the agents page.
-             * @example Acme follow-up
-             */
-            name: string;
-            /**
-             * @description Where that model runs.
-             * @example openrouter
-             */
-            provider?: string;
-            /**
-             * @description Agent id.
-             * @example acme-follow-up
-             */
-            slug: string;
-            /**
-             * @description tenant means this workspace owns the agent.
-             * @example tenant
-             */
-            source: string;
-          };
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-      500: components["responses"]["500"];
-    };
-  };
   createChatCompletion: {
     parameters: {
       query?: never;
@@ -19855,204 +20807,6 @@ export interface operations {
       402: components["responses"]["402"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
-    };
-  };
-  putAgent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description Agent id.
-         * @example acme-follow-up
-         */
-        slug: string;
-      };
-      cookie?: never;
-    };
-    /** @description The agent the editor is showing. */
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "apiVersion": "agent.rowboat.dev/v1",
-         *       "kind": "Agent",
-         *       "metadata": {
-         *         "name": "Acme follow-up",
-         *         "slug": "acme-follow-up"
-         *       },
-         *       "spec": {
-         *         "instructions": "Draft the next follow-up for Acme.",
-         *         "model": "openai/gpt-4.1-mini",
-         *         "provider": "openrouter",
-         *         "tools": [
-         *           "relationship.read"
-         *         ]
-         *       }
-         *     }
-         */
-        "application/json": {
-          /**
-           * @description Document version.
-           * @example agent.rowboat.dev/v1
-           */
-          apiVersion: string;
-          /**
-           * @description Document kind.
-           * @example Agent
-           */
-          kind: string;
-          /** @description Name and id. */
-          metadata: {
-            /**
-             * @description Name on the agents page.
-             * @example Acme follow-up
-             */
-            name: string;
-            /**
-             * @description Agent id.
-             * @example acme-follow-up
-             */
-            slug: string;
-          };
-          /** @description Purpose, model, and tools. */
-          spec: {
-            /**
-             * @description Purpose shown for this agent.
-             * @example Draft the next follow-up for Acme.
-             */
-            instructions: string;
-            /**
-             * @description Model this agent uses.
-             * @example openai/gpt-4.1-mini
-             */
-            model?: string;
-            /**
-             * @description Where that model runs.
-             * @example openrouter
-             */
-            provider?: string;
-            /** @description Tools this agent can use. */
-            tools: string[];
-          };
-        };
-      };
-    };
-    responses: {
-      /** @description The agent is saved. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "enabledTools": [
-           *         "relationship.read"
-           *       ],
-           *       "instructions": "Draft the next follow-up for Acme.",
-           *       "model": "openai/gpt-4.1-mini",
-           *       "name": "Acme follow-up",
-           *       "provider": "openrouter",
-           *       "slug": "acme-follow-up",
-           *       "source": "tenant"
-           *     }
-           */
-          "application/json": {
-            /** @description Tools this agent can use. */
-            enabledTools: string[];
-            /**
-             * @description Purpose shown for this agent.
-             * @example Draft the next follow-up for Acme.
-             */
-            instructions?: string;
-            /**
-             * @description Model this agent uses.
-             * @example openai/gpt-4.1-mini
-             */
-            model?: string;
-            /**
-             * @description Name on the agents page.
-             * @example Acme follow-up
-             */
-            name: string;
-            /**
-             * @description Where that model runs.
-             * @example openrouter
-             */
-            provider?: string;
-            /**
-             * @description Agent id.
-             * @example acme-follow-up
-             */
-            slug: string;
-            /**
-             * @description tenant means this workspace owns the agent.
-             * @example tenant
-             */
-            source: string;
-          };
-        };
-      };
-      /** @description The agent was created. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "enabledTools": [
-           *         "relationship.read"
-           *       ],
-           *       "instructions": "Draft the next follow-up for Acme.",
-           *       "model": "openai/gpt-4.1-mini",
-           *       "name": "Acme follow-up",
-           *       "provider": "openrouter",
-           *       "slug": "acme-follow-up",
-           *       "source": "tenant"
-           *     }
-           */
-          "application/json": {
-            /** @description Tools this agent can use. */
-            enabledTools: string[];
-            /**
-             * @description Purpose shown for this agent.
-             * @example Draft the next follow-up for Acme.
-             */
-            instructions?: string;
-            /**
-             * @description Model this agent uses.
-             * @example openai/gpt-4.1-mini
-             */
-            model?: string;
-            /**
-             * @description Name on the agents page.
-             * @example Acme follow-up
-             */
-            name: string;
-            /**
-             * @description Where that model runs.
-             * @example openrouter
-             */
-            provider?: string;
-            /**
-             * @description Agent id.
-             * @example acme-follow-up
-             */
-            slug: string;
-            /**
-             * @description tenant means this workspace owns the agent.
-             * @example tenant
-             */
-            source: string;
-          };
-        };
-      };
-      400: components["responses"]["400"];
-      401: components["responses"]["401"];
-      409: components["responses"]["409"];
-      500: components["responses"]["500"];
     };
   };
   createCompletion: {
@@ -20223,68 +20977,6 @@ export interface operations {
       };
       401: components["responses"]["401"];
       503: components["responses"]["503"];
-    };
-  };
-  createCheckoutSession: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** @description Pro plan. */
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "plan": "pro"
-         *     }
-         */
-        "application/json": {
-          /**
-           * @description Checkout plan.
-           * @example pro
-           * @enum {string}
-           */
-          plan: "starter" | "pro" | "intelligence";
-        };
-      };
-    };
-    responses: {
-      /** @description Checkout address. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            /** @description Hosted checkout address. */
-            url: string;
-          };
-        };
-      };
-      400: components["responses"]["400"];
-      401: components["responses"]["401"];
-      /** @description Checkout is not configured. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "code": "provider_unconfigured",
-           *       "detail": "Stripe checkout is not configured",
-           *       "requestId": "req-abc123",
-           *       "retryable": true,
-           *       "status": 502,
-           *       "title": "Bad Gateway",
-           *       "type": "https://api.rowboat.dev/problems/provider_unconfigured"
-           *     }
-           */
-          "application/problem+json": components["schemas"]["ErrorEnvelope"];
-        };
-      };
     };
   };
   getMe: {
@@ -20748,7 +21440,7 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description Confirmation of the shared plan. */
+    /** @description External response. */
     requestBody: {
       content: {
         /**
@@ -20766,7 +21458,7 @@ export interface operations {
           comment?: string;
           /**
            * @description Plan item id when applicable.
-           * @example item:ab12
+           * @example item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5
            */
           itemId?: string;
           /**
@@ -20790,30 +21482,14 @@ export interface operations {
       };
     };
     responses: {
-      /** @description The confirmation is recorded. */
+      /** @description Recorded response. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "recorded": true,
-           *       "responseId": "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
-           *     }
-           */
           "application/json": {
-            /**
-             * @description The confirmation is stored for the plan owner.
-             * @example true
-             */
-            recorded: boolean;
-            /**
-             * Format: uuid
-             * @description The response that was recorded.
-             * @example db8dfa9b-a7b2-46ea-982c-622a914c00e5
-             */
-            responseId: string;
+            [key: string]: unknown;
           };
         };
       };
@@ -20824,6 +21500,10 @@ export interface operations {
   listRelationshipAttention: {
     parameters: {
       query?: {
+        /**
+         * @description open is the queue. Attention queue asks for open.
+         * @example open
+         */
         status?:
           | "open"
           | "acknowledged"
@@ -20832,8 +21512,12 @@ export interface operations {
           | "superseded"
           | "resolved"
           | "all";
+        /**
+         * @description Page size (max 100). Attention queue asks for 50.
+         * @example 50
+         */
         limit?: number;
-        /** @description Page offset. */
+        /** @description How many items to skip. Attention queue does not send this on the first page. */
         offset?: number;
       };
       header?: never;
@@ -20842,12 +21526,20 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Attention projection. */
+      /** @description Empty attention queue. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "asOf": "2026-07-31T14:00:00Z",
+           *       "contractVersion": "relationship-attention.v1",
+           *       "hasMore": false,
+           *       "items": []
+           *     }
+           */
           "application/json": {
             /**
              * Format: date-time
@@ -20864,7 +21556,7 @@ export interface operations {
              * @description Another company exists beyond this page of the queue.
              * @example false
              */
-            hasMore?: boolean;
+            hasMore: boolean;
             /** @description Attention items. */
             items: components["schemas"]["RelationshipAttentionItem"][];
           };
@@ -20878,10 +21570,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /**
-         * @description Attention item id.
-         * @example da8dfa9b-a7b2-46ea-982c-622a914c00e5
-         */
+        /** @description Attention item id. */
         attentionId: string;
       };
       cookie?: never;
@@ -20923,44 +21612,12 @@ export interface operations {
       };
     };
     responses: {
-      /** @description This item is reviewed and leaves the open queue. */
+      /** @description Updated attention item. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "acknowledgedAt": "2026-07-31T14:00:00Z",
-           *       "acknowledgedBy": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "createdAt": "2026-07-29T14:00:00Z",
-           *       "detectorVersion": 1,
-           *       "evidenceRefs": [
-           *         "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
-           *       ],
-           *       "explanation": "A confirmed promise is overdue by two days.",
-           *       "id": "da8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "projectorVersion": 1,
-           *       "rankFactors": {
-           *         "confirmed_commitment": 70,
-           *         "overdue_days": 6
-           *       },
-           *       "rankScore": 76,
-           *       "reasonCode": "overdue_commitment",
-           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "relationshipName": "Acme",
-           *       "relationshipStateVersion": 4,
-           *       "sourceRequirements": [
-           *         "google"
-           *       ],
-           *       "stateReason": "Reviewed from the portfolio attention queue.",
-           *       "status": "acknowledged",
-           *       "triggeringObjectRef": "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "updatedAt": "2026-07-31T14:00:00Z",
-           *       "urgencyBand": "high",
-           *       "version": 2
-           *     }
-           */
           "application/json": components["schemas"]["RelationshipAttentionItem"];
         };
       };
@@ -21074,11 +21731,21 @@ export interface operations {
   listRelationshipIdentityCandidates: {
     parameters: {
       query?: {
+        /**
+         * @description pending is the inbox. Review possible duplicates asks for pending.
+         * @example pending
+         */
         status?: "pending" | "deferred" | "resolving" | "resolved" | "undone";
+        /** @description Provider. The inbox does not send this. */
         source?: string;
+        /** @description Restrict to one company. The inbox does not send this. */
         relationshipId?: string;
+        /**
+         * @description Page size (max 100). The inbox asks for 50.
+         * @example 50
+         */
         limit?: number;
-        /** @description Page offset. */
+        /** @description How many duplicates to skip. The inbox does not send this on the first page. */
         offset?: number;
       };
       header?: never;
@@ -21087,12 +21754,18 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Identity inbox. */
+      /** @description Empty pending duplicate page. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "candidates": [],
+           *       "hasMore": false
+           *     }
+           */
           "application/json": {
             /** @description Candidates. */
             candidates: components["schemas"]["RelationshipIdentityCandidate"][];
@@ -21100,7 +21773,7 @@ export interface operations {
              * @description Another duplicate exists beyond this page.
              * @example false
              */
-            hasMore?: boolean;
+            hasMore: boolean;
           };
         };
       };
@@ -21138,10 +21811,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /**
-         * @description Identity candidate id.
-         * @example 6b8dfa9b-a7b2-46ea-982c-622a914c00e5
-         */
+        /** @description Identity candidate id. */
         candidateId: string;
       };
       cookie?: never;
@@ -21184,109 +21854,12 @@ export interface operations {
       };
     };
     responses: {
-      /** @description The duplicate is merged into the existing company. */
+      /** @description Resolved candidate. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "anchorKind": "provider_resource",
-           *       "anchorPreview": "contact …123",
-           *       "anchorProvider": "hubspot",
-           *       "candidateType": "anchor_collision",
-           *       "conflictingAnchors": [],
-           *       "decidedAt": "2026-07-31T14:00:00Z",
-           *       "decision": "merge",
-           *       "decisionActorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "decisionReason": "Reviewed in the identity inbox: merge.",
-           *       "decisions": [
-           *         {
-           *           "actorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "candidateVersion": 2,
-           *           "decidedAt": "2026-07-31T14:00:00Z",
-           *           "decision": "merge",
-           *           "id": "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "reason": "Reviewed in the identity inbox: merge."
-           *         }
-           *       ],
-           *       "evidenceCount": 1,
-           *       "evidenceRefs": [
-           *         "relationship-observation:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
-           *       ],
-           *       "existingRelationship": {
-           *         "accountDomain": "example.com",
-           *         "categories": [],
-           *         "commitmentCount": 0,
-           *         "displayName": "Acme",
-           *         "emailThreadCount": 0,
-           *         "engagement": "steady",
-           *         "health": "needs_attention",
-           *         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *         "kind": "company",
-           *         "lifecycle": "evaluation",
-           *         "milestones": [],
-           *         "peopleCount": 0,
-           *         "projectorVersion": 2,
-           *         "resourceRefs": [],
-           *         "risks": [],
-           *         "sentiment": "mixed",
-           *         "stateVersion": 4,
-           *         "status": "active"
-           *       },
-           *       "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "impact": {
-           *         "evidence": 1
-           *       },
-           *       "lineage": [
-           *         {
-           *           "actorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "afterRelationshipIds": [
-           *             "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
-           *           ],
-           *           "beforeRelationshipIds": [
-           *             "fa8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *             "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
-           *           ],
-           *           "id": "ba8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "identityIds": [],
-           *           "kind": "merged",
-           *           "movedObjectRefs": [],
-           *           "observationIds": [],
-           *           "occurredAt": "2026-07-31T14:00:00Z",
-           *           "reason": "Reviewed in the identity inbox: merge."
-           *         }
-           *       ],
-           *       "matchingAnchors": [
-           *         "hubspot:contact:123"
-           *       ],
-           *       "proposedRelationship": {
-           *         "accountDomain": "example.com",
-           *         "categories": [],
-           *         "commitmentCount": 0,
-           *         "displayName": "Acme Inc.",
-           *         "emailThreadCount": 0,
-           *         "engagement": "steady",
-           *         "health": "needs_attention",
-           *         "id": "fa8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *         "kind": "company",
-           *         "lifecycle": "evaluation",
-           *         "milestones": [],
-           *         "peopleCount": 0,
-           *         "projectorVersion": 2,
-           *         "resourceRefs": [],
-           *         "risks": [],
-           *         "sentiment": "mixed",
-           *         "stateVersion": 4,
-           *         "status": "archived"
-           *       },
-           *       "recommendationConfidence": 0.5,
-           *       "recommendedDecision": "merge",
-           *       "status": "resolved",
-           *       "version": 2
-           *     }
-           */
           "application/json": components["schemas"]["RelationshipIdentityCandidate"];
         };
       };
@@ -21445,12 +22018,12 @@ export interface operations {
             displayName?: string;
             /**
              * @description Normalized event type.
-             * @example commitment_created
+             * @example person_added
              */
             eventType: string;
             /**
              * @description Provider event id.
-             * @example message-123
+             * @example 1a8dfa9b-a7b2-46ea-982c-622a914c00e5
              */
             externalId: string;
             /** @description Provider-neutral facts. */
@@ -21460,7 +22033,7 @@ export interface operations {
             /**
              * Format: date-time
              * @description Occurrence time.
-             * @example 2026-07-18T17:30:00Z
+             * @example 2026-07-31T14:00:00Z
              */
             occurredAt?: string;
             /** @description Observed relationship participants. */
@@ -21473,19 +22046,19 @@ export interface operations {
               direction?: "inbound" | "outbound" | "internal";
               /**
                * @description Participant display name.
-               * @example Avery Chen
+               * @example Jordan Buyer
                */
               displayName: string;
               /**
                * @description Participant email.
-               * @example avery@acme.com
+               * @example buyer@example.com
                */
               email?: string;
               /** @description Provider participant references. */
               externalRefs?: string[];
               /**
                * @description Relationship role.
-               * @example champion
+               * @example contact
                */
               role?: string;
               /**
@@ -21519,7 +22092,7 @@ export interface operations {
             resourceRefs?: string[];
             /**
              * @description Evidence source.
-             * @example gmail
+             * @example user
              */
             source: string;
             /**
@@ -21534,7 +22107,7 @@ export interface operations {
             sourceVersion?: string;
             /**
              * @description Bounded evidence summary.
-             * @example We promised the security packet.
+             * @example Jordan Buyer added by the user
              */
             summary?: string;
           }[];
@@ -21744,6 +22317,209 @@ export interface operations {
       };
       400: components["responses"]["400"];
       401: components["responses"]["401"];
+    };
+  };
+  deleteRelationshipPerson: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Person id. */
+        personId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Person removal. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "reason": "user_action"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Why this person was removed.
+           * @example user_action
+           * @enum {string}
+           */
+          reason: "user_action" | "subject_request";
+        };
+      };
+    };
+    responses: {
+      /** @description Removal receipt. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PersonDeletionReceipt"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
+    };
+  };
+  getRelationshipPersonAttributes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Person id. */
+        personId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The profile details Open person loads. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "attributes": [
+           *         {
+           *           "confidence": 0.5,
+           *           "dimension": "alias",
+           *           "extractor": "display_name_header",
+           *           "id": "b18dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "observedAt": "2026-08-04T12:00:00Z",
+           *           "reason": "Every name we have seen for this person.",
+           *           "source": "hubspot",
+           *           "sourceType": "deterministic",
+           *           "status": "active",
+           *           "validFrom": "2026-08-04T12:00:00Z",
+           *           "value": "Sarah Chen"
+           *         },
+           *         {
+           *           "confidence": 0.8,
+           *           "dimension": "display_name",
+           *           "extractor": "display_name_header",
+           *           "id": "b28dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "observedAt": "2026-08-04T12:00:00Z",
+           *           "reason": "Name as it appeared on the source record.",
+           *           "source": "hubspot",
+           *           "sourceType": "source_fact",
+           *           "status": "active",
+           *           "validFrom": "2026-08-04T12:00:00Z",
+           *           "value": "Sarah Chen"
+           *         },
+           *         {
+           *           "confidence": 0.6,
+           *           "dimension": "org_domain",
+           *           "extractor": "email_header",
+           *           "id": "b38dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "observedAt": "2026-08-04T12:00:00Z",
+           *           "reason": "Derived from the participant's email domain.",
+           *           "source": "hubspot",
+           *           "sourceType": "deterministic",
+           *           "status": "active",
+           *           "validFrom": "2026-08-04T12:00:00Z",
+           *           "value": "acme.example"
+           *         },
+           *         {
+           *           "confidence": 0.65,
+           *           "dimension": "org_name",
+           *           "extractor": "display_name_header",
+           *           "id": "b48dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "observedAt": "2026-08-04T12:00:00Z",
+           *           "reason": "Name of the company that owns this domain.",
+           *           "source": "hubspot",
+           *           "sourceType": "deterministic",
+           *           "status": "active",
+           *           "validFrom": "2026-08-04T12:00:00Z",
+           *           "value": "Acme"
+           *         },
+           *         {
+           *           "confidence": 0.7,
+           *           "dimension": "title",
+           *           "extractor": "crm_field",
+           *           "id": "b58dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "observedAt": "2026-08-04T12:00:00Z",
+           *           "reason": "Title supplied by the source record.",
+           *           "source": "hubspot",
+           *           "sourceType": "source_fact",
+           *           "status": "active",
+           *           "validFrom": "2026-08-04T12:00:00Z",
+           *           "value": "VP Engineering"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /** @description Stored details, newest first. */
+            attributes: {
+              /**
+               * @description How strongly this detail is held.
+               * @example 0.7
+               */
+              confidence: number;
+              /**
+               * @description Which detail this is.
+               * @example title
+               */
+              dimension: string;
+              /**
+               * @description How it was read.
+               * @example crm_field
+               */
+              extractor: string;
+              /**
+               * Format: uuid
+               * @description Detail id.
+               * @example b58dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              id: string;
+              /**
+               * Format: date-time
+               * @description When it was seen.
+               * @example 2026-08-04T12:00:00Z
+               */
+              observedAt: string;
+              /**
+               * @description Why this detail is here.
+               * @example Title supplied by the source record.
+               */
+              reason?: string;
+              /**
+               * @description Where this detail came from.
+               * @example hubspot
+               */
+              source: string;
+              /**
+               * @description How this detail was established.
+               * @example source_fact
+               */
+              sourceType: string;
+              /**
+               * @description Whether this detail is current.
+               * @example active
+               */
+              status: string;
+              /**
+               * Format: date-time
+               * @description When it started counting.
+               * @example 2026-08-04T12:00:00Z
+               */
+              validFrom: string;
+              /**
+               * @description The stored detail.
+               * @example VP Engineering
+               */
+              value: string;
+            }[];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
     };
   };
   approveRelationshipRecommendation: {
@@ -22016,43 +22792,12 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Connected sources. */
+      /** @description Evidence source health. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "sources": [
-           *         {
-           *           "backfillCompleted": 250,
-           *           "backfillPhase": "live",
-           *           "backfillTotal": 1000,
-           *           "completeness": "partial",
-           *           "connectionId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "consentingActorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "expectedCadenceSeconds": 900,
-           *           "grantedScopes": [
-           *             "https://www.googleapis.com/auth/gmail.readonly",
-           *             "https://www.googleapis.com/auth/calendar.events.readonly"
-           *           ],
-           *           "lagSeconds": 42,
-           *           "lastSuccessAt": "2026-07-31T14:00:00Z",
-           *           "lastSyncAt": "2026-07-31T14:00:00Z",
-           *           "missingScopes": [],
-           *           "requiredScopes": [
-           *             "https://www.googleapis.com/auth/gmail.readonly",
-           *             "https://www.googleapis.com/auth/calendar.events.readonly"
-           *           ],
-           *           "retryCount": 0,
-           *           "source": "google",
-           *           "sourceAccountId": "me@company.com",
-           *           "status": "live"
-           *         }
-           *       ]
-           *     }
-           */
           "application/json": {
             /** @description Sources. */
             sources?: components["schemas"]["RelationshipSourceStatus"][];
@@ -22247,15 +22992,15 @@ export interface operations {
   listRelationships: {
     parameters: {
       query?: {
-        /** @description Account, domain, or contact search. */
+        /** @description Account, domain, or contact search. All companies sends none. */
         q?: string;
-        /** @description Lifecycle filter. */
+        /** @description Lifecycle filter. All companies sends none. */
         lifecycle?: string;
-        /** @description Health filter. */
+        /** @description Health filter. All companies sends none. */
         health?: string;
-        /** @description Engagement filter. */
+        /** @description Engagement filter. All companies sends none. */
         engagement?: string;
-        /** @description How many relationships to skip. Each page is 200 rows, newest touch first. */
+        /** @description How many companies to skip. All companies sends none. Each page is 200 rows, newest touch first. */
         offset?: number;
       };
       header?: never;
@@ -22264,20 +23009,52 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Relationships. */
+      /** @description Company directory. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "hasMore": false,
+           *       "relationships": [
+           *         {
+           *           "accountDomain": "acme.com",
+           *           "categories": [],
+           *           "commitmentCount": 0,
+           *           "displayName": "Acme",
+           *           "emailThreadCount": 0,
+           *           "engagement": "declining",
+           *           "health": "needs_attention",
+           *           "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "kind": "company",
+           *           "lastChangedAt": "2026-07-25T16:00:00Z",
+           *           "lastTouchAt": "2026-07-25T15:00:00Z",
+           *           "lifecycle": "evaluation",
+           *           "milestones": [],
+           *           "peopleCount": 1,
+           *           "projectedAt": "2026-07-25T16:00:00Z",
+           *           "projectorVersion": 2,
+           *           "resourceRefs": [],
+           *           "risks": [],
+           *           "sentiment": "unknown",
+           *           "stateHash": "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887",
+           *           "stateReason": "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",
+           *           "stateVersion": 1,
+           *           "status": "active"
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": {
             /**
              * @description Another company exists beyond this page.
              * @example false
              */
-            hasMore?: boolean;
-            /** @description Relationships. */
-            relationships?: components["schemas"]["RevenueRelationship"][];
+            hasMore: boolean;
+            /** @description Companies and people, newest touch first. */
+            relationships: components["schemas"]["RevenueRelationship"][];
           };
         };
       };
@@ -22372,17 +23149,23 @@ export interface operations {
   getRelationshipGraph: {
     parameters: {
       query?: {
-        /** @description Portfolio or one relationship. */
+        /**
+         * @description portfolio is the whole workspace. Company graph asks for the portfolio.
+         * @example portfolio
+         */
         scope?: "portfolio" | "relationship";
-        /** @description Required when scope=relationship. */
+        /** @description One company. Company graph does not send this for the portfolio. */
         relationshipId?: string;
-        /** @description Bounded graph expansion depth. */
+        /**
+         * @description How far the graph expands (1-3). Company graph asks for 2.
+         * @example 2
+         */
         depth?: number;
-        /** @description Historical evidence boundary; must not be in the future. */
+        /** @description An earlier moment. Company graph does not send this on the first load. */
         asOf?: string;
-        /** @description Company offset. The first page is the 200 most recently updated companies. */
+        /** @description How many companies to skip. Company graph does not send this on the first page. */
         offset?: number;
-        /** @description Evidence offset. The first page is the newest conversations on each company. */
+        /** @description How many conversations to skip. Company graph does not send this on the first page. */
         observationOffset?: number;
       };
       header?: never;
@@ -22391,12 +23174,31 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Authorized relationship graph. */
+      /** @description Empty company graph. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "asOf": "2026-08-01T14:00:00Z",
+           *       "contractVersion": "2026-08-01",
+           *       "depth": 2,
+           *       "edges": [],
+           *       "generatedAt": "2026-08-01T14:00:00Z",
+           *       "historical": false,
+           *       "nodes": [],
+           *       "permissions": {
+           *         "canApprove": true,
+           *         "canContribute": true,
+           *         "canExecute": true,
+           *         "canSaveViews": true,
+           *         "canView": true
+           *       },
+           *       "scope": "portfolio"
+           *     }
+           */
           "application/json": components["schemas"]["RelationshipGraph"];
         };
       };
@@ -22650,10 +23452,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /**
-         * @description Company marked reviewed.
-         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
-         */
+        /** @description Relationship id. */
         relationshipId: string;
       };
       cookie?: never;
@@ -22663,14 +23462,14 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "stateHash": "sha256:ab12cd34",
+         *       "stateHash": "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1",
          *       "stateVersion": 4
          *     }
          */
         "application/json": {
           /**
            * @description Reviewed state hash.
-           * @example sha256:ab12cd34
+           * @example sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1
            */
           stateHash: string;
           /**
@@ -22688,14 +23487,6 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "acknowledgedAt": "2026-07-31T14:00:00Z",
-           *       "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "stateHash": "sha256:ab12cd34",
-           *       "stateVersion": 4
-           *     }
-           */
           "application/json": {
             /**
              * Format: date-time
@@ -22711,7 +23502,7 @@ export interface operations {
             id: string;
             /**
              * @description Reviewed hash.
-             * @example sha256:ab12cd34
+             * @example sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1
              */
             stateHash: string;
             /**
@@ -22801,9 +23592,9 @@ export interface operations {
   getRelationshipChanges: {
     parameters: {
       query?: {
-        /** @description Maximum snapshots (default 2, max 50). */
+        /** @description Maximum snapshots. A company asks for the two newest. */
         limit?: number;
-        /** @description Page offset. */
+        /** @description Older snapshots to skip. The first page sends none. */
         offset?: number;
       };
       header?: never;
@@ -22821,10 +23612,45 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "hasMore": false,
+           *       "snapshots": [
+           *         {
+           *           "assertionIds": [
+           *             "d18dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "e18dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "a28dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *           ],
+           *           "changedDimensions": [
+           *             "engagement",
+           *             "health",
+           *             "lifecycle"
+           *           ],
+           *           "createdAt": "2026-07-25T16:00:00Z",
+           *           "evaluatedAt": "2026-07-25T16:00:00Z",
+           *           "id": "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "projectorVersion": 2,
+           *           "state": {
+           *             "engagement": "declining",
+           *             "health": "needs_attention",
+           *             "lifecycle": "evaluation",
+           *             "milestones": null,
+           *             "risks": null,
+           *             "sentiment": "unknown",
+           *             "stateReason": "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",
+           *             "stateVersion": 1
+           *           },
+           *           "stateHash": "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887",
+           *           "version": 1
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": {
             /**
              * @description An older snapshot exists beyond this page.
-             * @example true
+             * @example false
              */
             hasMore: boolean;
             /** @description Snapshots. */
@@ -22878,7 +23704,7 @@ export interface operations {
           /**
            * Format: uuid
            * @description Target commitment id.
-           * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+           * @example 26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51
            */
           toCommitmentId: string;
         };
@@ -22919,13 +23745,99 @@ export interface operations {
     };
     responses: {
       /** @description Recovery evaluations. */
-      200: {
+      201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "evaluations": [
+           *         {
+           *           "classification": "forgotten",
+           *           "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "commitmentVersion": 3,
+           *           "evaluatedAt": "2026-07-31T14:00:00Z",
+           *           "evaluationId": "recovery:7cb1669953b1015129545ab3",
+           *           "evidenceRefs": [],
+           *           "explanation": "This promise is past due and nothing newer has closed it.",
+           *           "proposedActionType": "reminder",
+           *           "reconcilerVersion": "commitment-recovery-v1",
+           *           "recoveryWindow": "2026-07-31",
+           *           "requiresReview": true,
+           *           "staleSources": null
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": {
-            [key: string]: unknown;
+            /** @description One classification per due promise. */
+            evaluations: {
+              /**
+               * @description Stored classification.
+               * @example forgotten
+               * @enum {string}
+               */
+              classification:
+                | "forgotten"
+                | "unknown_stale_sources"
+                | "fulfilled"
+                | "likely_fulfilled"
+                | "superseded"
+                | "renegotiated"
+                | "blocked";
+              /**
+               * Format: uuid
+               * @description Promise id.
+               * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              commitmentId: string;
+              /**
+               * @description Promise version that was checked.
+               * @example 3
+               */
+              commitmentVersion?: number;
+              /**
+               * Format: date-time
+               * @description When the check ran.
+               * @example 2026-07-31T14:00:00Z
+               */
+              evaluatedAt?: string;
+              /**
+               * @description Stable id for this classification.
+               * @example recovery:7cb1669953b1015129545ab3
+               */
+              evaluationId: string;
+              /** @description Fresh evidence considered. */
+              evidenceRefs?: string[];
+              /**
+               * @description Sentence the company sheet shows.
+               * @example This promise is past due and nothing newer has closed it.
+               */
+              explanation: string;
+              /**
+               * @description Follow-up the checker proposes. A forgotten promise proposes a reminder.
+               * @example reminder
+               */
+              proposedActionType?: string;
+              /**
+               * @description Checker version.
+               * @example commitment-recovery-v1
+               */
+              reconcilerVersion?: string;
+              /**
+               * @description Day the check ran.
+               * @example 2026-07-31
+               */
+              recoveryWindow?: string;
+              /**
+               * @description Whether a person must review the result.
+               * @example true
+               */
+              requiresReview?: boolean;
+              /** @description Sources that were too old to trust. Null when every source was fresh. */
+              staleSources?: string[] | null;
+            }[];
           };
         };
       };
@@ -22986,11 +23898,9 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "evidenceRefs": [
-         *         "counterparty:accepted"
-         *       ],
-         *       "idempotencyKey": "ui:accept:ab12",
-         *       "kind": "accepted"
+         *       "idempotencyKey": "commitment-queue:accepted:8b8dfa9b-a7b2-46ea-982c-622a914c00e5:v3",
+         *       "kind": "accepted",
+         *       "reason": "Reviewed from the Commitment Queue (accepted)."
          *     }
          */
         "application/json": {
@@ -23010,11 +23920,11 @@ export interface operations {
            * @example 2026-08-07T17:00:00Z
            */
           dueAt?: string;
-          /** @description Evidence references. */
+          /** @description Evidence references. An omitted list is stored as this transition. */
           evidenceRefs?: string[];
           /**
            * @description Stable source event id.
-           * @example ui:accept:ab12
+           * @example commitment-queue:accepted:8b8dfa9b-a7b2-46ea-982c-622a914c00e5:v3
            */
           idempotencyKey: string;
           /**
@@ -23039,38 +23949,19 @@ export interface operations {
             | "superseded";
           /**
            * @description Optional reason.
-           * @example Counterparty accepted in writing.
+           * @example Reviewed from the Commitment Queue (accepted).
            */
           reason?: string;
         };
       };
     };
     responses: {
-      /** @description The promise is accepted and still open. */
-      201: {
+      /** @description Updated commitment. */
+      200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "acceptance": "accepted",
-           *       "beneficiaryParticipantRef": "customer:acme",
-           *       "confidence": 0.94,
-           *       "counterpartyParticipantRef": "jordan@example.com",
-           *       "currentEventVersion": 4,
-           *       "direction": "promised_by_me",
-           *       "dueAt": "2026-07-22T17:00:00Z",
-           *       "duePhrase": "by Friday",
-           *       "dueTimezone": "America/Los_Angeles",
-           *       "id": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "ownerParticipantRef": "alex@example.com",
-           *       "sourcePhrase": "I will send it by Friday.",
-           *       "status": "open",
-           *       "text": "Send the security packet.",
-           *       "userConfirmed": true
-           *     }
-           */
           "application/json": components["schemas"]["RelationshipCommitment"];
         };
       };
@@ -23083,28 +23974,56 @@ export interface operations {
   getRelationshipCommunicationTimeline: {
     parameters: {
       query?: {
-        /** @description Maximum items (1-100). */
+        /** @description How many records to return. Opening a company asks for 50. */
         limit?: number;
-        /** @description Return items before this RFC3339 timestamp. */
+        /** @description Return records before this time. The first page does not send it. */
         before?: string;
-        /** @description With before, also return items at that time whose id sorts earlier. */
+        /** @description With before, also return records at that time whose id sorts earlier. The first page does not send it. */
         beforeId?: string;
       };
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /** @description Company id. */
         relationshipId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Communication timeline. */
+      /** @description The mail and meetings this company loads. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "hasMore": false,
+           *       "items": [
+           *         {
+           *           "access": {
+           *             "attachments": true,
+           *             "body": true,
+           *             "metadata": true,
+           *             "policyVersion": 1,
+           *             "protected": false,
+           *             "reason": "mailbox_owner",
+           *             "subject": true
+           *           },
+           *           "attachmentCount": 1,
+           *           "bodyLocked": false,
+           *           "direction": "outbound",
+           *           "id": "e18dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "interactionType": "email",
+           *           "occurredAt": "2026-09-17T12:00:00Z",
+           *           "ownerId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "source": "gmail",
+           *           "subject": "Follow up",
+           *           "visibility": "metadata"
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": components["schemas"]["CommunicationTimelinePage"];
         };
       };
@@ -23118,31 +24037,30 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Company this disagreement belongs to. */
+        /** @description Relationship id. */
         relationshipId: string;
-        /** @description Disagreement this button closes. */
+        /** @description Contradiction case id. */
         caseId: string;
       };
       cookie?: never;
     };
-    /** @description Choice. */
+    /** @description Resolution. */
     requestBody: {
       content: {
         /**
          * @example {
-         *       "reason": "You chose the value from Gmail.",
          *       "selectedAssertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
          *     }
          */
         "application/json": {
           /**
-           * @description Why this value is current.
-           * @example You chose the value from Gmail.
+           * @description Optional rationale.
+           * @example CRM was updated after the meeting.
            */
           reason?: string;
           /**
            * Format: uuid
-           * @description Evidence you picked.
+           * @description Selected assertion id.
            * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
            */
           selectedAssertionId: string;
@@ -23150,143 +24068,14 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Company after you pick the current value. */
+      /** @description Updated relationship and intelligence. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "intelligence": {
-           *         "claims": [],
-           *         "contradictionCases": [
-           *           {
-           *             "caseId": "contradiction:d109218617da1fbea89bb5d6",
-           *             "dimension": "health",
-           *             "openedAt": "2026-07-20T16:00:00Z",
-           *             "reason": "You chose the value from Gmail.",
-           *             "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *             "resolutionAssertionId": "7e8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *             "resolvedAt": "2026-07-25T16:00:00Z",
-           *             "sides": [
-           *               {
-           *                 "assertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *                 "evidenceRefs": [
-           *                   "relationship-observation:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
-           *                 ],
-           *                 "identityConfidence": 1,
-           *                 "observedAt": "2026-07-20T16:00:00Z",
-           *                 "source": "gmail",
-           *                 "sourceType": "source_fact",
-           *                 "validFrom": "2026-07-20T16:00:00Z",
-           *                 "value": {
-           *                   "kind": "enum",
-           *                   "value": "needs_attention"
-           *                 }
-           *               },
-           *               {
-           *                 "assertionId": "7d8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *                 "evidenceRefs": [
-           *                   "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
-           *                 ],
-           *                 "identityConfidence": 0.5,
-           *                 "observedAt": "2026-07-10T16:00:00Z",
-           *                 "source": "meeting",
-           *                 "sourceType": "ai_inference",
-           *                 "validFrom": "2026-07-10T16:00:00Z",
-           *                 "value": {
-           *                   "kind": "enum",
-           *                   "value": "healthy"
-           *                 }
-           *               }
-           *             ],
-           *             "status": "user_resolved",
-           *             "subjectRef": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
-           *           }
-           *         ],
-           *         "deletionReceipts": [],
-           *         "delta": {
-           *           "changes": [
-           *             {
-           *               "after": "needs_attention",
-           *               "assertionIds": [
-           *                 "7e8dfa9b-a7b2-46ea-982c-622a914c00e5"
-           *               ],
-           *               "before": "healthy",
-           *               "dimension": "health",
-           *               "reason": "Security review was promised, but no owner or meeting exists."
-           *             }
-           *           ],
-           *           "contradictions": [
-           *             {
-           *               "contradictedAssertionId": "7d8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *               "contradictedValue": "healthy",
-           *               "currentAssertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *               "currentValue": "needs_attention",
-           *               "dimension": "health"
-           *             }
-           *           ],
-           *           "fromVersion": 4,
-           *           "recommendationReason": "Security review was promised, but no owner or meeting exists.",
-           *           "toVersion": 5,
-           *           "uncertainClaimIds": []
-           *         },
-           *         "effectivePolicy": {
-           *           "capture": "require_consent",
-           *           "externalShare": true,
-           *           "legalHold": false,
-           *           "modelRoute": "hosted_allowed",
-           *           "policyVersion": "policy:9373cc30008dcb712c236fc9",
-           *           "publishEvidence": true,
-           *           "redactionClasses": [
-           *             "credentials",
-           *             "financial",
-           *             "health",
-           *             "personal_identifier"
-           *           ],
-           *           "resolvedAt": "2026-07-25T16:00:00Z",
-           *           "retentionDays": 30,
-           *           "sourceLayerIds": [
-           *             "builtin:conversation-policy-v1"
-           *           ]
-           *         },
-           *         "governanceDecisions": [],
-           *         "governanceReceipts": [],
-           *         "liveCues": [],
-           *         "mutualActionPlans": [],
-           *         "recommendationEvaluations": [],
-           *         "recoveryEvaluations": [],
-           *         "reviewItems": []
-           *       },
-           *       "relationship": {
-           *         "categories": [],
-           *         "commitmentCount": 0,
-           *         "displayName": "Acme",
-           *         "emailThreadCount": 0,
-           *         "engagement": "declining",
-           *         "health": "needs_attention",
-           *         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *         "kind": "company",
-           *         "lastChangedAt": "2026-07-25T16:00:00Z",
-           *         "lifecycle": "evaluation",
-           *         "milestones": [],
-           *         "peopleCount": 0,
-           *         "projectedAt": "2026-07-25T16:00:00Z",
-           *         "projectorVersion": 2,
-           *         "resourceRefs": [],
-           *         "risks": [],
-           *         "sentiment": "mixed",
-           *         "stateHash": "sha256:ab12cd34",
-           *         "stateReason": "Security review was promised, but no owner or meeting exists.",
-           *         "stateVersion": 5,
-           *         "status": "active"
-           *       }
-           *     }
-           */
           "application/json": {
-            intelligence: components["schemas"]["RelationshipIntelligence"];
-            relationship: components["schemas"]["RevenueRelationship"];
+            [key: string]: unknown;
           };
         };
       };
@@ -23301,10 +24090,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /**
-         * @description Relationship id.
-         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
-         */
+        /** @description Relationship id. */
         relationshipId: string;
       };
       cookie?: never;
@@ -23315,8 +24101,8 @@ export interface operations {
         /**
          * @example {
          *       "correctedValue": "Avery Chen",
-         *       "reason": "User corrected conversation evidence during focused review.",
-         *       "reviewItemId": "review:da47aac4d2da3c20"
+         *       "reason": "Avery was the speaker.",
+         *       "reviewItemId": "review:9abf3ca4a5e5eff1"
          *     }
          */
         "application/json": {
@@ -23327,12 +24113,12 @@ export interface operations {
           correctedValue: string;
           /**
            * @description Correction reason.
-           * @example User corrected conversation evidence during focused review.
+           * @example Avery was the speaker.
            */
           reason: string;
           /**
            * @description Focused review item id.
-           * @example review:da47aac4d2da3c20
+           * @example review:9abf3ca4a5e5eff1
            */
           reviewItemId: string;
         };
@@ -23345,120 +24131,6 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "intelligence": {
-           *         "claims": [
-           *           {
-           *             "captureCaveats": [
-           *               "Remote channel may contain multiple speakers."
-           *             ],
-           *             "confidence": 0.72,
-           *             "endMs": 16000,
-           *             "exactQuote": "We are concerned security could delay the renewal.",
-           *             "id": "claim:ab12",
-           *             "kind": "risk",
-           *             "material": true,
-           *             "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *             "speakerConfidence": 1,
-           *             "speakerId": "anonymous:remote-channel",
-           *             "speakerLabel": "Avery Chen",
-           *             "startMs": 12000,
-           *             "stateDimension": "risk",
-           *             "value": "Security review may delay renewal."
-           *           }
-           *         ],
-           *         "contradictionCases": [],
-           *         "deletionReceipts": [],
-           *         "delta": {
-           *           "changes": [],
-           *           "contradictions": [],
-           *           "fromVersion": 0,
-           *           "recommendationReason": "Security review was promised, but no owner or meeting exists.",
-           *           "toVersion": 4,
-           *           "uncertainClaimIds": [
-           *             "claim:ab12"
-           *           ]
-           *         },
-           *         "effectivePolicy": {
-           *           "capture": "require_consent",
-           *           "externalShare": true,
-           *           "legalHold": false,
-           *           "modelRoute": "local_only",
-           *           "policyVersion": "policy:ab12",
-           *           "publishEvidence": true,
-           *           "redactionClasses": [
-           *             "personal_identifier"
-           *           ],
-           *           "resolvedAt": "2026-07-31T14:00:00Z",
-           *           "retentionDays": 30,
-           *           "sourceLayerIds": [
-           *             "workspace:default"
-           *           ]
-           *         },
-           *         "governanceDecisions": [],
-           *         "governanceReceipts": [],
-           *         "liveCues": [],
-           *         "mutualActionPlans": [],
-           *         "observationPageHasMore": false,
-           *         "recommendationEvaluations": [],
-           *         "recoveryEvaluations": [],
-           *         "reviewItems": [
-           *           {
-           *             "claimId": "claim:ab12",
-           *             "confidence": 0.72,
-           *             "currentValue": "Security review may delay renewal.",
-           *             "exactQuote": "We are concerned security could delay the renewal.",
-           *             "id": "review:658c70e2b09ed264",
-           *             "kind": "claim",
-           *             "label": "Low-confidence material claim",
-           *             "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *             "stateDimension": "risk"
-           *           }
-           *         ]
-           *       },
-           *       "relationship": {
-           *         "accountDomain": "example.com",
-           *         "categories": [
-           *           "Artificial intelligence"
-           *         ],
-           *         "commitmentCount": 4,
-           *         "companyDescription": "Builds AI infrastructure for customer operations.",
-           *         "companyEnrichedAt": "2026-09-06T08:00:00Z",
-           *         "displayName": "Jordan Buyer",
-           *         "emailThreadCount": 12,
-           *         "engagement": "declining",
-           *         "health": "needs_attention",
-           *         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *         "kind": "person",
-           *         "lastChangedAt": "2026-07-25T16:00:00Z",
-           *         "lastTouchAt": "2026-04-10T15:00:00Z",
-           *         "lifecycle": "evaluation",
-           *         "linkedinUrl": "https://www.linkedin.com/company/acme",
-           *         "milestones": [
-           *           "Proposal shared."
-           *         ],
-           *         "nextAction": "Confirm the security review owner.",
-           *         "nextActionAt": "2026-07-01T00:00:00Z",
-           *         "peopleCount": 3,
-           *         "primaryEmail": "buyer@example.com",
-           *         "projectedAt": "2026-07-25T16:00:00Z",
-           *         "projectorVersion": 2,
-           *         "resourceRefs": [
-           *           "hubspot:company:123"
-           *         ],
-           *         "risks": [
-           *           "Security review has no owner."
-           *         ],
-           *         "sentiment": "mixed",
-           *         "stateHash": "sha256:ab12cd34",
-           *         "stateReason": "Security review was promised, but no owner or meeting exists.",
-           *         "stateVersion": 4,
-           *         "status": "active",
-           *         "summary": "Asked for pricing in April; wants a follow-up in July."
-           *       }
-           *     }
-           */
           "application/json": {
             intelligence: components["schemas"]["RelationshipIntelligence"];
             relationship: components["schemas"]["RevenueRelationship"];
@@ -23475,10 +24147,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /**
-         * @description Relationship id.
-         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
-         */
+        /** @description Relationship id. */
         relationshipId: string;
       };
       cookie?: never;
@@ -23490,7 +24159,7 @@ export interface operations {
          * @example {
          *       "kind": "approve",
          *       "reason": "Customer stated this directly.",
-         *       "reviewItemId": "review:ab12"
+         *       "reviewItemId": "review:9abf3ca4a5e5eff1"
          *     }
          */
         "application/json": {
@@ -23513,116 +24182,24 @@ export interface operations {
           kind: "approve" | "correct" | "reject" | "defer";
           /**
            * @description Decision reason.
-           * @example Customer clarified this in the meeting.
+           * @example User decided a proposed conversation change.
            */
           reason?: string;
           /**
            * @description Review item id.
-           * @example review:ab12
+           * @example review:9abf3ca4a5e5eff1
            */
           reviewItemId: string;
         };
       };
     };
     responses: {
-      /** @description The proposed change is accepted, and the review queue is refreshed. */
+      /** @description Updated relationship and refreshed review queue. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "intelligence": {
-           *         "claims": [
-           *           {
-           *             "captureCaveats": [
-           *               "Remote channel may contain multiple speakers."
-           *             ],
-           *             "confidence": 0.5,
-           *             "endMs": 16000,
-           *             "exactQuote": "We are concerned security could delay the renewal.",
-           *             "id": "claim:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *             "kind": "risk",
-           *             "material": true,
-           *             "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *             "speakerConfidence": 0.5,
-           *             "speakerId": "anonymous:remote-channel",
-           *             "speakerLabel": "Other",
-           *             "startMs": 12000,
-           *             "stateDimension": "risk",
-           *             "value": "Security review may delay renewal."
-           *           }
-           *         ],
-           *         "contradictionCases": [],
-           *         "deletionReceipts": [],
-           *         "delta": {
-           *           "changes": [],
-           *           "contradictions": [],
-           *           "fromVersion": 4,
-           *           "toVersion": 5,
-           *           "uncertainClaimIds": []
-           *         },
-           *         "effectivePolicy": {
-           *           "capture": "require_consent",
-           *           "externalShare": true,
-           *           "legalHold": false,
-           *           "modelRoute": "local_only",
-           *           "policyVersion": "policy:9373cc30008dcb712c236fc9",
-           *           "publishEvidence": true,
-           *           "redactionClasses": [
-           *             "personal_identifier"
-           *           ],
-           *           "resolvedAt": "2026-07-31T14:00:00Z",
-           *           "retentionDays": 30,
-           *           "sourceLayerIds": [
-           *             "workspace:default"
-           *           ]
-           *         },
-           *         "governanceDecisions": [],
-           *         "governanceReceipts": [],
-           *         "liveCues": [],
-           *         "mutualActionPlans": [],
-           *         "recommendationEvaluations": [],
-           *         "recoveryEvaluations": [],
-           *         "reviewItems": []
-           *       },
-           *       "relationship": {
-           *         "accountDomain": "example.com",
-           *         "categories": [
-           *           "Artificial intelligence"
-           *         ],
-           *         "commitmentCount": 4,
-           *         "displayName": "Acme",
-           *         "emailThreadCount": 12,
-           *         "engagement": "steady",
-           *         "health": "needs_attention",
-           *         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *         "kind": "company",
-           *         "lastChangedAt": "2026-07-25T16:00:00Z",
-           *         "lifecycle": "evaluation",
-           *         "milestones": [
-           *           "Proposal shared."
-           *         ],
-           *         "nextAction": "Confirm the security review owner.",
-           *         "peopleCount": 3,
-           *         "projectedAt": "2026-07-25T16:00:00Z",
-           *         "projectorVersion": 2,
-           *         "resourceRefs": [
-           *           "hubspot:company:123"
-           *         ],
-           *         "risks": [
-           *           "Security review has no owner."
-           *         ],
-           *         "sentiment": "mixed",
-           *         "stateHash": "sha256:ab12cd34",
-           *         "stateReason": "The proposed conversation change was accepted.",
-           *         "stateVersion": 5,
-           *         "status": "active",
-           *         "summary": "Asked for pricing in April; wants a follow-up in July."
-           *       }
-           *     }
-           */
           "application/json": {
             intelligence: components["schemas"]["RelationshipIntelligence"];
             relationship: components["schemas"]["RevenueRelationship"];
@@ -23640,10 +24217,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /**
-         * @description Relationship id.
-         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
-         */
+        /** @description Relationship id. */
         relationshipId: string;
       };
       cookie?: never;
@@ -23653,75 +24227,26 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "requestId": "delete:ab12"
+         *       "requestId": "eb8dfa9b-a7b2-46ea-982c-622a914c00e5"
          *     }
          */
         "application/json": {
           /**
+           * Format: uuid
            * @description Idempotency key.
-           * @example delete:ab12
+           * @example eb8dfa9b-a7b2-46ea-982c-622a914c00e5
            */
           requestId: string;
         };
       };
     };
     responses: {
-      /** @description Conversation evidence stored here is deleted. Device and mailbox copies are still waiting. */
+      /** @description Deletion receipt. */
       202: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "legalHold": false,
-           *       "receiptId": "delete:ab12",
-           *       "requestedAt": "2026-07-31T14:00:00Z",
-           *       "scopeRef": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "status": "partial",
-           *       "targets": [
-           *         {
-           *           "attempts": 0,
-           *           "status": "pending",
-           *           "target": "local_recording"
-           *         },
-           *         {
-           *           "attempts": 0,
-           *           "status": "pending",
-           *           "target": "local_note"
-           *         },
-           *         {
-           *           "attempts": 1,
-           *           "status": "not_found",
-           *           "target": "outbox",
-           *           "verificationHash": "sha256:72a0d4998415278ba8231bc4d13ec4fd9de6cb620395d3bf33d1655078836ab6"
-           *         },
-           *         {
-           *           "attempts": 1,
-           *           "status": "deleted",
-           *           "target": "api_evidence",
-           *           "verificationHash": "sha256:78de8eebd548d26e7a0e5d8444016899d995ababc2e0f58d6e38586017df69ae"
-           *         },
-           *         {
-           *           "attempts": 1,
-           *           "status": "not_found",
-           *           "target": "embedding",
-           *           "verificationHash": "sha256:436ec9c35d2e6b7c1663caaf6933892865df01d599138b640447bd5211d3b7ea"
-           *         },
-           *         {
-           *           "attempts": 1,
-           *           "status": "not_found",
-           *           "target": "plan_share",
-           *           "verificationHash": "sha256:d55b014616776abb8ea3e9fc743a4a4b5692507a962914ce476624c7aba2e4de"
-           *         },
-           *         {
-           *           "attempts": 0,
-           *           "status": "pending",
-           *           "target": "provider"
-           *         }
-           *       ]
-           *     }
-           */
           "application/json": components["schemas"]["ConversationDeletionReceipt"];
         };
       };
@@ -23799,33 +24324,68 @@ export interface operations {
   getRelationshipConversationReview: {
     parameters: {
       query?: {
-        /** @description Observation offset. The first page is the newest 200 conversations. */
+        /**
+         * @description How many conversations to skip. Show earlier evidence skips the newest 200.
+         * @example 200
+         */
         offset?: number;
       };
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /** @description Company this review belongs to. */
         relationshipId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Conversation review page. */
+      /** @description Older focused review. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "governanceReceipts": [
+           *         {
+           *           "capturePolicy": "manual_capture",
+           *           "capturedAt": "2026-07-10T16:00:00Z",
+           *           "deletionOutcome": "scheduled_after_transcription",
+           *           "evidenceClip": "not_retained",
+           *           "legalHold": false,
+           *           "participantDisclosure": "not_recorded",
+           *           "receiptId": "governance:ab12",
+           *           "region": "local_device",
+           *           "retention": "untilTranscribed",
+           *           "routing": "local_transcription_to_oppulence"
+           *         }
+           *       ],
+           *       "hasMore": false,
+           *       "reviewItems": [
+           *         {
+           *           "claimId": "claim:ab12",
+           *           "confidence": 0.5,
+           *           "currentValue": "Other",
+           *           "exactQuote": "We are concerned security could delay the renewal.",
+           *           "id": "review:ab12cd34ef567890",
+           *           "kind": "speaker",
+           *           "label": "Resolve the speaker for a material statement",
+           *           "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "stateDimension": "risk"
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": {
-            /** @description Governance receipts from this page of conversations. */
+            /** @description Receipts from this older page. */
             governanceReceipts: components["schemas"]["ConversationGovernanceReceipt"][];
             /**
-             * @description An older conversation exists beyond this page.
+             * @description Another older conversation exists beyond this page.
              * @example false
              */
             hasMore: boolean;
-            /** @description Review items from this page of conversations. */
+            /** @description Review items from this older page. */
             reviewItems: components["schemas"]["ConversationReviewItem"][];
           };
         };
@@ -23840,7 +24400,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Company this detail belongs to. */
+        /** @description Relationship id. */
         relationshipId: string;
       };
       cookie?: never;
@@ -23857,7 +24417,7 @@ export interface operations {
          */
         "application/json": {
           /**
-           * @description The detail this form corrects.
+           * @description Corrected state dimension.
            * @example health
            * @enum {string}
            */
@@ -23871,24 +24431,24 @@ export interface operations {
             | "risk"
             | "milestone";
           /**
-           * @description Why this is wrong.
+           * @description Why the model is wrong.
            * @example The review happened yesterday.
            */
           reason: string;
           /**
            * Format: uuid
-           * @description Earlier evidence on this same detail that this correction replaces.
+           * @description Optional active assertion on the same relationship and dimension that this correction permanently replaces.
            * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
            */
           supersedesAssertionId?: string;
           /**
            * Format: date-time
-           * @description When a temporary correction stops applying.
+           * @description Optional exclusive expiry boundary for a temporary correction.
            * @example 2026-08-31T17:00:00Z
            */
           validTo?: string | null;
           /**
-           * @description The value you chose.
+           * @description Correct value.
            * @example healthy
            */
           value: string;
@@ -23896,37 +24456,12 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Company after the detail is corrected. */
+      /** @description Reprojected relationship. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "categories": [],
-           *       "commitmentCount": 0,
-           *       "displayName": "Acme",
-           *       "emailThreadCount": 0,
-           *       "engagement": "declining",
-           *       "health": "healthy",
-           *       "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "kind": "company",
-           *       "lastChangedAt": "2026-07-26T16:00:00Z",
-           *       "lifecycle": "evaluation",
-           *       "milestones": [],
-           *       "peopleCount": 0,
-           *       "projectedAt": "2026-07-26T16:00:00Z",
-           *       "projectorVersion": 2,
-           *       "resourceRefs": [],
-           *       "risks": [],
-           *       "sentiment": "mixed",
-           *       "stateHash": "sha256:ab12cd34",
-           *       "stateReason": "The review happened yesterday.",
-           *       "stateVersion": 5,
-           *       "status": "active"
-           *     }
-           */
           "application/json": components["schemas"]["RevenueRelationship"];
         };
       };
@@ -24239,164 +24774,13 @@ export interface operations {
     };
     responses: {
       /** @description Approved plan. */
-      201: {
+      200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "counterpartyRef": "jordan@example.com",
-           *       "currentRevision": {
-           *         "createdAt": "2026-07-31T14:00:00Z",
-           *         "createdBy": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *         "items": [
-           *           {
-           *             "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *             "dependencyItemIds": [],
-           *             "dueAt": "2026-09-14T17:00:00Z",
-           *             "evidenceRefs": [
-           *               "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
-           *             ],
-           *             "itemId": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *             "ownerParticipantRef": "alex@example.com",
-           *             "status": "open",
-           *             "title": "Send the security packet."
-           *           }
-           *         ],
-           *         "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *         "revisionHash": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
-           *         "revisionId": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *         "version": 1
-           *       },
-           *       "internalOwnerRef": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "status": "internally_approved",
-           *       "tokenState": "not_issued"
-           *     }
-           */
           "application/json": {
-            /**
-             * @description The other party.
-             * @example jordan@example.com
-             */
-            counterpartyRef: string;
-            /** @description The revision this approval is bound to. */
-            currentRevision: {
-              /**
-               * Format: date-time
-               * @description When this revision was written.
-               * @example 2026-07-31T14:00:00Z
-               */
-              createdAt: string;
-              /**
-               * Format: uuid
-               * @description Who wrote this revision.
-               * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
-               */
-              createdBy: string;
-              /** @description Plan steps. */
-              items: {
-                /**
-                 * Format: uuid
-                 * @description Commitment this step came from.
-                 * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
-                 */
-                commitmentId?: string;
-                /** @description Steps this one waits on. */
-                dependencyItemIds: string[];
-                /**
-                 * Format: date-time
-                 * @description When the step is due.
-                 * @example 2026-09-14T17:00:00Z
-                 */
-                dueAt?: string;
-                /** @description Evidence for the step. */
-                evidenceRefs: string[];
-                /**
-                 * @description Step id.
-                 * @example item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5
-                 */
-                itemId: string;
-                /**
-                 * @description Who owns the step.
-                 * @example alex@example.com
-                 */
-                ownerParticipantRef: string;
-                /**
-                 * @description Step status.
-                 * @example open
-                 */
-                status: string;
-                /**
-                 * @description Step title.
-                 * @example Send the security packet.
-                 */
-                title: string;
-              }[];
-              /**
-               * @description Plan id.
-               * @example plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5
-               */
-              planId: string;
-              /**
-               * @description Hash of the steps.
-               * @example sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966
-               */
-              revisionHash: string;
-              /**
-               * @description Revision id.
-               * @example revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5
-               */
-              revisionId: string;
-              /**
-               * @description Revision number.
-               * @example 1
-               */
-              version: number;
-            };
-            /**
-             * Format: uuid
-             * @description Person who owns the plan inside this workspace.
-             * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
-             */
-            internalOwnerRef: string;
-            /**
-             * @description Plan id.
-             * @example plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5
-             */
-            planId: string;
-            /**
-             * Format: uuid
-             * @description Company id.
-             * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
-             */
-            relationshipId: string;
-            /**
-             * @description Decision recorded when the plan was shared.
-             * @example governance:ab8dfa9ba7b246ea982c622a
-             */
-            sharePolicyDecisionId?: string;
-            /**
-             * @description Plan status.
-             * @example internally_approved
-             * @enum {string}
-             */
-            status:
-              | "draft"
-              | "revised"
-              | "internally_approved"
-              | "shared"
-              | "counterparty_responded"
-              | "completed"
-              | "cancelled";
-            /**
-             * @description Share token state.
-             * @example not_issued
-             * @enum {string}
-             */
-            tokenState: "not_issued" | "active";
+            [key: string]: unknown;
           };
         };
       };
@@ -24607,44 +24991,107 @@ export interface operations {
   getRelationshipTimeline: {
     parameters: {
       query?: {
-        /** @description Maximum observations (1-100). */
+        /** @description How many records to return. Opening a company asks for 50. */
         limit?: number;
-        /** @description Return observations before this RFC3339 timestamp. */
+        /** @description Return records before this time. The first page does not send it. */
         before?: string;
-        /** @description With before, also return observations at that time whose id sorts earlier. */
+        /** @description With before, also return records at that time whose id sorts earlier. The first page does not send it. */
         beforeId?: string;
       };
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /** @description Company id. */
         relationshipId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Evidence timeline. */
+      /** @description The activity this company loads. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "hasMore": false,
+           *       "observations": [
+           *         {
+           *           "contentHash": "dd678926df937610ecb0697421c89440d8fe69aa6769c440d53d538a59d3b864",
+           *           "eventType": "engagement_declined",
+           *           "externalId": "acme-engagement",
+           *           "id": "f18dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "normalizedFacts": {
+           *             "adapter": "slack"
+           *           },
+           *           "occurredAt": "2026-07-25T15:00:00Z",
+           *           "receivedAt": "2026-07-25T16:00:00Z",
+           *           "source": "slack",
+           *           "sourceVersion": "1",
+           *           "summary": "No champion reply after pricing."
+           *         },
+           *         {
+           *           "contentHash": "00c3732fea559aee849682ce662c3066c1bdc3d30d695f6a48d38a4b3401da53",
+           *           "eventType": "meeting_missing",
+           *           "externalId": "acme-security-meeting",
+           *           "id": "f28dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "normalizedFacts": {
+           *             "adapter": "calendar"
+           *           },
+           *           "occurredAt": "2026-07-23T15:00:00Z",
+           *           "receivedAt": "2026-07-25T16:00:00Z",
+           *           "source": "calendar",
+           *           "sourceVersion": "1",
+           *           "summary": "No security-review meeting was scheduled."
+           *         },
+           *         {
+           *           "contentHash": "e57461826e791945b63630c2de4c026adb4459066470014cf50aadde9b6aafca",
+           *           "eventType": "commitment_created",
+           *           "externalId": "acme-security-promise",
+           *           "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "normalizedFacts": {
+           *             "adapter": "gmail"
+           *           },
+           *           "occurredAt": "2026-07-18T15:00:00Z",
+           *           "receivedAt": "2026-07-25T16:00:00Z",
+           *           "source": "gmail",
+           *           "sourceVersion": "1",
+           *           "summary": "We promised the security packet by July 22."
+           *         },
+           *         {
+           *           "contentHash": "481faa42c6d60f434fc57540a21c1bee4a1dd745479fded5f6476080f9ebb3e7",
+           *           "eventType": "deal_stage_changed",
+           *           "externalId": "acme-deal-stage",
+           *           "id": "f48dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "normalizedFacts": {
+           *             "adapter": "hubspot"
+           *           },
+           *           "occurredAt": "2026-07-08T15:00:00Z",
+           *           "receivedAt": "2026-07-25T16:00:00Z",
+           *           "source": "hubspot",
+           *           "sourceVersion": "1",
+           *           "summary": "Acme moved into evaluation."
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": {
             /**
-             * @description An older observation exists beyond this page.
-             * @example true
+             * @description An older record exists beyond this page.
+             * @example false
              */
             hasMore: boolean;
             /**
              * Format: date-time
-             * @description Occurred-at cursor for the next page.
-             * @example 2026-06-01T00:00:00Z
+             * @description Time of the last record on this page. Send it to load older records that share that time.
+             * @example 2026-07-08T15:00:00Z
              */
             nextBefore?: string | null;
             /**
              * Format: uuid
-             * @description Id cursor for the next page. Send it with nextBefore.
-             * @example a1160000-0000-4000-8000-000000000002
+             * @description Id of the last record on this page. Send it with the time so records that share that time stay on the next page.
+             * @example f48dfa9b-a7b2-46ea-982c-622a914c00e5
              */
             nextBeforeId?: string | null;
             /** @description Observations. */
@@ -24657,17 +25104,418 @@ export interface operations {
       404: components["responses"]["404"];
     };
   };
+  enrichCompanies: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Company research batch. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "relationshipIds": [
+         *         "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+         *       ]
+         *     }
+         */
+        "application/json": {
+          /** @description Pending company ids. */
+          relationshipIds: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Company research results. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description One outcome per company. */
+            outcomes: components["schemas"]["CompanyResearchOutcome"][];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      402: components["responses"]["402"];
+      403: components["responses"]["403"];
+      409: components["responses"]["409"];
+      503: components["responses"]["503"];
+    };
+  };
+  getCompanyResearchEstimate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Company research estimate. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "batchSize": 25,
+           *       "companies": 1,
+           *       "credits": 1000,
+           *       "processor": "pro",
+           *       "usd": 0.1
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description Maximum company ids one fill request accepts.
+             * @example 25
+             */
+            batchSize: number;
+            /**
+             * @description Pending companies.
+             * @example 1
+             */
+            companies?: number;
+            /**
+             * @description Credits for the pending companies. pro is 1000 credits each.
+             * @example 1000
+             */
+            credits: number;
+            /**
+             * @description Research processor. Company estimates use pro.
+             * @example pro
+             * @enum {string}
+             */
+            processor: "lite" | "base" | "core" | "pro";
+            /**
+             * @description credits divided by 10000.
+             * @example 0.1
+             */
+            usd: number;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      402: components["responses"]["402"];
+      403: components["responses"]["403"];
+      409: components["responses"]["409"];
+      503: components["responses"]["503"];
+    };
+  };
+  listPendingCompanyEnrichment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Pending company ids. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "relationshipIds": [
+           *         "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /** @description Pending company ids. */
+            relationshipIds: string[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      402: components["responses"]["402"];
+      403: components["responses"]["403"];
+      409: components["responses"]["409"];
+      503: components["responses"]["503"];
+    };
+  };
+  setCloudResearchConsent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Public research consent. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "consented": true
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Whether public research is allowed.
+           * @example true
+           */
+          consented: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description Stored public research consent. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CloudResearchConsentState"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+    };
+  };
+  enrichPersons: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Person research batch. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "personIds": [
+         *         "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+         *       ]
+         *     }
+         */
+        "application/json": {
+          /** @description Pending person ids. */
+          personIds: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Person research results. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description One outcome per person. */
+            outcomes: components["schemas"]["PersonResearchOutcome"][];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      402: components["responses"]["402"];
+      403: components["responses"]["403"];
+      409: components["responses"]["409"];
+      503: components["responses"]["503"];
+    };
+  };
+  getPersonResearchEstimate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description People research estimate. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "batchSize": 25,
+           *       "credits": 1000,
+           *       "people": 1,
+           *       "processor": "pro",
+           *       "usd": 0.1
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description Maximum person ids one fill request accepts.
+             * @example 25
+             */
+            batchSize: number;
+            /**
+             * @description Credits for the pending people. pro is 1000 credits each.
+             * @example 1000
+             */
+            credits: number;
+            /**
+             * @description Pending people.
+             * @example 1
+             */
+            people?: number;
+            /**
+             * @description Research processor. People estimates use pro.
+             * @example pro
+             * @enum {string}
+             */
+            processor: "lite" | "base" | "core" | "pro";
+            /**
+             * @description credits divided by 10000.
+             * @example 0.1
+             */
+            usd: number;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      402: components["responses"]["402"];
+      403: components["responses"]["403"];
+      409: components["responses"]["409"];
+      503: components["responses"]["503"];
+    };
+  };
+  listPendingPersonEnrichment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Pending person ids. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "personIds": [
+           *         "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /** @description Pending person ids. */
+            personIds: string[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      402: components["responses"]["402"];
+      403: components["responses"]["403"];
+      409: components["responses"]["409"];
+      503: components["responses"]["503"];
+    };
+  };
+  getResearchStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Public research status. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "allowed": false,
+           *       "available": true,
+           *       "consent": {
+           *         "consented": false
+           *       },
+           *       "reason": "consent_required",
+           *       "requiredPlan": "intelligence"
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description Whether this workspace may run public research now.
+             * @example false
+             */
+            allowed: boolean;
+            /**
+             * @description Whether a research vendor is configured.
+             * @example true
+             */
+            available: boolean;
+            /** @description Stored public research consent. */
+            consent: {
+              /**
+               * @description Whether this workspace has allowed public research.
+               * @example false
+               */
+              consented: boolean;
+              /**
+               * Format: date-time
+               * @description When consent was allowed. Omitted while consent is off.
+               */
+              consentedAt?: string | null;
+            };
+            /**
+             * @description Why public research is not running. Absent when it is allowed.
+             * @example consent_required
+             * @enum {string}
+             */
+            reason?:
+              | "consent_required"
+              | "plan_required"
+              | "capability_disabled"
+              | "provider_unconfigured"
+              | "unavailable";
+            /**
+             * @description Plan that includes public research.
+             * @example intelligence
+             */
+            requiredPlan: string;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+    };
+  };
   listRevenueActions: {
     parameters: {
       query?: {
-        /** @description Queue status filter, or all. */
+        /**
+         * @description Queue status filter, or all.
+         * @example open
+         */
         queueStatus?: "open" | "snoozed" | "dismissed" | "handled" | "all";
-        /** @description Page size (max 100, default 10). */
+        /**
+         * @description Page size (max 100). Recovery asks for 100.
+         * @example 100
+         */
         limit?: number;
-        /** @description How many actions to skip. Pages stay in priority order. */
+        /** @description How many actions to skip. Recovery does not send this on the first page. */
         offset?: number;
-        /** @description task keeps follow-up tasks. recovery keeps every other action. */
-        surface?: "task" | "recovery";
+        /**
+         * @description recovery keeps every action that is not a follow-up task. task keeps follow-up tasks.
+         * @example recovery
+         */
+        surface?: "recovery" | "task";
       };
       header?: never;
       path?: never;
@@ -24681,6 +25529,12 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actions": [],
+           *       "hasMore": false
+           *     }
+           */
           "application/json": {
             /** @description Actions. */
             actions: components["schemas"]["RevenueAction"][];
@@ -24702,16 +25556,16 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description Task. */
+    /** @description Action. */
     requestBody: {
       content: {
         /**
          * @example {
          *       "actionType": "follow_up_task",
          *       "channel": "task",
-         *       "dueAt": "2026-07-15T17:00:00Z",
-         *       "priorityScore": 30,
-         *       "reason": "Follow up on the proposal",
+         *       "executionMode": "draft",
+         *       "proposedMessage": "Asked for pricing in April; wants a follow-up in July.",
+         *       "reason": "Follow up on company: Jordan Buyer",
          *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
          *     }
          */
@@ -24741,7 +25595,7 @@ export interface operations {
           /**
            * Format: date-time
            * @description Due time.
-           * @example 2026-07-15T17:00:00Z
+           * @example 2026-07-15T00:00:00Z
            */
           dueAt?: string | null;
           /**
@@ -24756,12 +25610,12 @@ export interface operations {
           };
           /**
            * @description Priority (0-100).
-           * @example 30
+           * @example 80
            */
           priorityScore?: number;
           /**
            * @description Proposed body.
-           * @example Hi Jordan — circling back as promised...
+           * @example Asked for pricing in April; wants a follow-up in July.
            */
           proposedMessage?: string;
           /**
@@ -24770,8 +25624,8 @@ export interface operations {
            */
           proposedSubject?: string;
           /**
-           * @description Task title.
-           * @example Follow up on the proposal
+           * @description Evidence-backed reason.
+           * @example Follow up on company: Jordan Buyer
            */
           reason: string;
           /**
@@ -24781,7 +25635,7 @@ export interface operations {
           recipientEmail?: string;
           /**
            * Format: uuid
-           * @description Company the task is for.
+           * @description Owning relationship id.
            * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
            */
           relationshipId: string;
@@ -24794,36 +25648,12 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Created task. */
+      /** @description Created action. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "actionType": "follow_up_task",
-           *       "approvalStatus": "pending",
-           *       "channel": "task",
-           *       "createdAt": "2026-07-15T16:00:00Z",
-           *       "detector": "manual",
-           *       "dueAt": "2026-07-15T17:00:00Z",
-           *       "evidence": [],
-           *       "executionMode": "draft",
-           *       "executionOwner": "rowboat",
-           *       "executionStatus": "pending",
-           *       "id": "3a8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "policyStatus": "pending",
-           *       "priorityScore": 30,
-           *       "queueStatus": "open",
-           *       "reason": "Follow up on the proposal",
-           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "relationshipName": "Acme",
-           *       "revision": 1,
-           *       "revisionHash": "sha256:ab12...",
-           *       "updatedAt": "2026-07-15T16:00:00Z"
-           *     }
-           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
@@ -24837,67 +25667,22 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Action the sheet reloads. */
+        /** @description Action id. */
         actionId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description The action the sheet shows after the check. */
+      /** @description Action. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "actionType": "warm_follow_up",
-           *       "approvalStatus": "pending",
-           *       "channel": "email",
-           *       "createdAt": "2026-07-12T12:00:00Z",
-           *       "detector": "requested_follow_up_due",
-           *       "dueAt": "2026-07-15T00:00:00Z",
-           *       "evidence": [
-           *         {
-           *           "excerpt": "Can you circle back this month?",
-           *           "externalEvidenceRefs": [
-           *             "gmail:message:msg_01"
-           *           ],
-           *           "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "occurredAt": "2026-07-01T14:00:00Z",
-           *           "source": "gmail",
-           *           "sourceRecordId": "gmail:thread:thr_01"
-           *         }
-           *       ],
-           *       "executionMode": "send",
-           *       "executionOwner": "rowboat",
-           *       "executionStatus": "pending",
-           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "policyStatus": "passed",
-           *       "priorityComponents": {
-           *         "commitment_urgency": 40,
-           *         "recency_signal": 12,
-           *         "relationship_value": 30
-           *       },
-           *       "priorityScore": 82,
-           *       "proposedMessage": "Hi Jordan — you asked me to circle back this month...",
-           *       "proposedSubject": "Following up as promised",
-           *       "queueStatus": "open",
-           *       "reason": "They asked for a follow-up in July.",
-           *       "recipientEmail": "buyer@example.com",
-           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "relationshipName": "Acme",
-           *       "revision": 1,
-           *       "revisionHash": "sha256:ab12...",
-           *       "senderAccountRef": "gmail:me@company.com",
-           *       "updatedAt": "2026-07-12T12:00:00Z"
-           *     }
-           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
-      400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
     };
@@ -25123,10 +25908,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /**
-         * @description Action id.
-         * @example 1a8dfa9b-a7b2-46ea-982c-622a914c00e5
-         */
+        /** @description Action id. */
         actionId: string;
       };
       cookie?: never;
@@ -25149,49 +25931,12 @@ export interface operations {
       };
     };
     responses: {
-      /** @description The follow-up is dismissed. */
+      /** @description Dismissed action. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "actionType": "warm_follow_up",
-           *       "approvalStatus": "pending",
-           *       "channel": "email",
-           *       "createdAt": "2026-07-12T12:00:00Z",
-           *       "detector": "waiting_on_me",
-           *       "dismissReason": "not_relevant",
-           *       "evidence": [
-           *         {
-           *           "excerpt": "We are concerned security could delay renewal.",
-           *           "externalEvidenceRefs": [
-           *             "timestamp:12000-16000"
-           *           ],
-           *           "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "occurredAt": "2026-07-31T14:00:00Z",
-           *           "source": "meeting",
-           *           "sourceRecordId": "oppulence:session-42:claim:claim-risk"
-           *         }
-           *       ],
-           *       "executionMode": "draft",
-           *       "executionOwner": "rowboat",
-           *       "executionStatus": "pending",
-           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "policyStatus": "pending",
-           *       "priorityScore": 82,
-           *       "proposedSubject": "Following up as promised",
-           *       "queueStatus": "dismissed",
-           *       "reason": "They asked for a follow-up in July.",
-           *       "recipientEmail": "buyer@example.com",
-           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "relationshipName": "Acme",
-           *       "revision": 1,
-           *       "revisionHash": "sha256:ab12cd34ef567890",
-           *       "updatedAt": "2026-07-15T16:05:00Z"
-           *     }
-           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
@@ -25569,10 +26314,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /**
-         * @description Action id.
-         * @example 1a8dfa9b-a7b2-46ea-982c-622a914c00e5
-         */
+        /** @description Action id. */
         actionId: string;
       };
       cookie?: never;
@@ -25595,48 +26337,12 @@ export interface operations {
       };
     };
     responses: {
-      /** @description The follow-up is rejected and still open. */
+      /** @description Rejected action. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "actionType": "warm_follow_up",
-           *       "approvalStatus": "rejected",
-           *       "channel": "email",
-           *       "createdAt": "2026-07-12T12:00:00Z",
-           *       "detector": "waiting_on_me",
-           *       "evidence": [
-           *         {
-           *           "excerpt": "We are concerned security could delay renewal.",
-           *           "externalEvidenceRefs": [
-           *             "timestamp:12000-16000"
-           *           ],
-           *           "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "occurredAt": "2026-07-31T14:00:00Z",
-           *           "source": "meeting",
-           *           "sourceRecordId": "oppulence:session-42:claim:claim-risk"
-           *         }
-           *       ],
-           *       "executionMode": "draft",
-           *       "executionOwner": "rowboat",
-           *       "executionStatus": "pending",
-           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "policyStatus": "pending",
-           *       "priorityScore": 82,
-           *       "proposedSubject": "Following up as promised",
-           *       "queueStatus": "open",
-           *       "reason": "They asked for a follow-up in July.",
-           *       "recipientEmail": "buyer@example.com",
-           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "relationshipName": "Acme",
-           *       "revision": 1,
-           *       "revisionHash": "sha256:ab12cd34ef567890",
-           *       "updatedAt": "2026-07-15T16:05:00Z"
-           *     }
-           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
@@ -25985,66 +26691,26 @@ export interface operations {
   getOpenPromisesReport: {
     parameters: {
       query?: {
-        /**
-         * @description md for the file Download the report saves.
-         * @example md
-         */
+        /** @description md for Markdown; JSON otherwise. */
         format?: string;
       };
       header?: never;
       path: {
-        /**
-         * @description Scan id.
-         * @example 4d8dfa9b-a7b2-46ea-982c-622a914c00e5
-         */
+        /** @description Scan id. */
         scanId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description The report. */
+      /** @description The open promises report. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "byAccount": {
-           *         "Acme": 1
-           *       },
-           *       "generatedAt": "2026-09-09T12:00:00Z",
-           *       "inboundCount": 0,
-           *       "items": [
-           *         {
-           *           "account": "Acme",
-           *           "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "direction": "promised_by_me",
-           *           "dueAt": "2026-09-14T17:00:00Z",
-           *           "duePhrase": "by the 14th",
-           *           "occurredAt": "2026-09-06T12:00:00Z",
-           *           "owner": "alex@example.com",
-           *           "sourceQuote": "We will have the migration live by the 14th.",
-           *           "sourceUri": "https://mail.google.com/thread-1",
-           *           "state": "at_risk",
-           *           "text": "Migration live by the 14th"
-           *         }
-           *       ],
-           *       "lookbackDays": 180,
-           *       "outboundCount": 1,
-           *       "scanStatus": "completed",
-           *       "threadsSeen": 412,
-           *       "truncated": false
-           *     }
-           */
           "application/json": {
-            /**
-             * @description Open promise count by account.
-             * @example {
-             *       "Acme": 1
-             *     }
-             */
+            /** @description Open promise count by account. */
             byAccount: {
               [key: string]: number;
             };
@@ -26056,7 +26722,7 @@ export interface operations {
             generatedAt: string;
             /**
              * @description Promises made to us.
-             * @example 0
+             * @example 5
              */
             inboundCount: number;
             /** @description Open promises, at risk first. */
@@ -26126,7 +26792,7 @@ export interface operations {
             lookbackDays: number;
             /**
              * @description Promises we made.
-             * @example 1
+             * @example 12
              */
             outboundCount: number;
             /**
@@ -26145,34 +26811,6 @@ export interface operations {
              */
             truncated: boolean;
           };
-          /**
-           * @example # Open promises
-           *
-           *     Promises from the last 180 days with no evidence they were kept.
-           *
-           *     - **1** promises we made
-           *     - **0** promises made to us
-           *     - **412** conversations read
-           *
-           *     | Company | Open promises |
-           *     |---|---|
-           *     | Acme | 1 |
-           *
-           *     ## The promises
-           *
-           *     ### Acme — Migration live by the 14th
-           *
-           *     We owe · state **At risk** · due 2026-09-14 · owner alex@example.com
-           *
-           *     > We will have the migration live by the 14th.
-           *
-           *     Source observed 2026-09-06T12:00:00Z · https://mail.google.com/thread-1
-           *
-           *
-           *     ---
-           *
-           *     Generated 2026-09-09T12:00:00Z. Every promise above includes the source evidence available at scan time.
-           */
           "text/markdown": string;
         };
       };
@@ -26285,20 +26923,12 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Local workspace. */
+      /** @description Current workspace. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "id": "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "mode": "local",
-           *       "preflightAvailable": false,
-           *       "status": "active"
-           *     }
-           */
           "application/json": components["schemas"]["RevenueWorkspace"];
         };
       };
@@ -26452,6 +27082,59 @@ export interface operations {
       404: components["responses"]["404"];
     };
   };
+  listCommunicationPrivacyRules: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Empty address list. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "rules": []
+           *     }
+           */
+          "application/json": {
+            /** @description Addresses this workspace keeps private or leaves out. */
+            rules: Record<string, never>[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+    };
+  };
+  deleteCommunicationPrivacyRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Privacy rule id. */
+        ruleId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Privacy rule removed. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
   getCommunicationAttachmentContent: {
     parameters: {
       query?: never;
@@ -26500,98 +27183,6 @@ export interface operations {
       404: components["responses"]["404"];
     };
   };
-  getCommunicationPolicy: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Mailbox account email. */
-        sourceAccountId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Stored mailbox policy. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "id": "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "metadataVisibility": "workspace",
-           *       "modelContactExtraction": true,
-           *       "retentionDays": 540,
-           *       "shareAttachments": false,
-           *       "shareBody": false,
-           *       "shareSubject": true,
-           *       "signatureEnrichment": true,
-           *       "sourceAccountId": "you@company.com",
-           *       "version": 1
-           *     }
-           */
-          "application/json": {
-            /**
-             * Format: uuid
-             * @description Policy id.
-             * @example db8dfa9b-a7b2-46ea-982c-622a914c00e5
-             */
-            id: string;
-            /**
-             * @description Who can see mailbox metadata.
-             * @example workspace
-             * @enum {string}
-             */
-            metadataVisibility: "private" | "workspace";
-            /**
-             * @description Extract contacts from mail.
-             * @example true
-             */
-            modelContactExtraction: boolean;
-            /**
-             * @description Days mailbox content is kept.
-             * @example 540
-             */
-            retentionDays: number;
-            /**
-             * @description Share attachments by default.
-             * @example false
-             */
-            shareAttachments: boolean;
-            /**
-             * @description Share bodies by default.
-             * @example false
-             */
-            shareBody: boolean;
-            /**
-             * @description Share subject lines by default.
-             * @example true
-             */
-            shareSubject: boolean;
-            /**
-             * @description Read email signatures.
-             * @example true
-             */
-            signatureEnrichment: boolean;
-            /**
-             * @description Mailbox account email.
-             * @example you@company.com
-             */
-            sourceAccountId: string;
-            /**
-             * @description Policy version.
-             * @example 1
-             */
-            version: number;
-          };
-        };
-      };
-      401: components["responses"]["401"];
-      404: components["responses"]["404"];
-    };
-  };
   getCommunicationInteractionBody: {
     parameters: {
       query?: never;
@@ -26632,47 +27223,36 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description Sending workspace id and organization id. */
+    /** @description OutboundConsole identifiers. */
     requestBody: {
       content: {
         /**
          * @example {
-         *       "outboundOrganizationId": "org_1",
-         *       "outboundWorkspaceId": "ws_1"
+         *       "outboundOrganizationId": "org_01ABC",
+         *       "outboundWorkspaceId": "ws_01ABC"
          *     }
          */
         "application/json": {
           /**
-           * @description Organization id.
-           * @example org_1
+           * @description OutboundConsole organization id.
+           * @example org_01ABC
            */
           outboundOrganizationId?: string;
           /**
-           * @description Sending workspace id.
-           * @example ws_1
+           * @description OutboundConsole workspace id.
+           * @example ws_01ABC
            */
           outboundWorkspaceId: string;
         };
       };
     };
     responses: {
-      /** @description The linked workspace Link workspace stores. */
+      /** @description Linked workspace. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "id": "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "lastVerifiedAt": "2026-07-12T12:00:00Z",
-           *       "mode": "linked",
-           *       "outboundOrganizationId": "org_1",
-           *       "outboundWorkspaceId": "ws_1",
-           *       "preflightAvailable": true,
-           *       "status": "active"
-           *     }
-           */
           "application/json": components["schemas"]["RevenueWorkspace"];
         };
       };
@@ -27361,9 +27941,12 @@ export interface operations {
   listWorkspaceNotes: {
     parameters: {
       query?: {
-        /** @description Maximum notes to return (default 50, max 100). */
+        /**
+         * @description Page size (max 100). Notes asks for 50.
+         * @example 50
+         */
         limit?: number;
-        /** @description Number of collapsed notes to skip. */
+        /** @description How many notes to skip. Notes does not send this on the first page. */
         offset?: number;
       };
       header?: never;
@@ -27378,6 +27961,12 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "hasMore": false,
+           *       "notes": []
+           *     }
+           */
           "application/json": {
             /**
              * @description Whether another page of notes exists.

@@ -7,11 +7,6 @@
  */
 
 /**
- * Recorded plan confirmation.
+ * Response receipt.
  */
-export type RespondPublicMutualActionPlan201 = {
-  /** The confirmation is stored for the plan owner. */
-  recorded: boolean;
-  /** The response that was recorded. */
-  responseId: string;
-};
+export type RespondPublicMutualActionPlan201 = { [key: string]: unknown };

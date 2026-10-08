@@ -7,7 +7,6 @@
  */
 import type { CommitmentEventActorType } from "./commitmentEventActorType";
 import type { CommitmentEventKind } from "./commitmentEventKind";
-import type { CommitmentEventReason } from "./commitmentEventReason";
 
 /**
  * One immutable event in a commitment transition stream.
@@ -15,7 +14,7 @@ import type { CommitmentEventReason } from "./commitmentEventReason";
 export interface CommitmentEvent {
   /** Promised action at this event. */
   action?: string;
-  /** Actor reference. */
+  /** User who recorded this change. */
   actorRef?: string;
   /** Transition authority. */
   actorType: CommitmentEventActorType;
@@ -43,8 +42,8 @@ export interface CommitmentEvent {
   occurredAt: string;
   /** Promise owner. */
   ownerParticipantRef?: string;
-  /** Reason code for the ledger entry. */
-  reason?: CommitmentEventReason;
+  /** Transition rationale. */
+  reason?: string;
   /** Idempotent source event id. */
   sourceEventId: string;
   /** Source observation id. */

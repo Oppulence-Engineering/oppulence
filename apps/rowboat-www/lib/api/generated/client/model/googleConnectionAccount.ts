@@ -14,6 +14,6 @@ export interface GoogleConnectionAccount {
   accountId: string;
   /** RFC3339 connection timestamp. */
   connectedAt: string;
-  /** OAuth scopes granted or requested. */
+  /** Granted Google OAuth scopes. */
   scopes: string[];
 }

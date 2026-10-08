@@ -5,12 +5,16 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { ListPendingActionProposals200ProposalsItem } from "./listPendingActionProposals200ProposalsItem";
 
 /**
- * Pending approvals.
+ * Research processor. People estimates use pro.
  */
-export type ListPendingActionProposals200 = {
-  /** Proposals the page shows. */
-  proposals: ListPendingActionProposals200ProposalsItem[];
-};
+export type GetPersonResearchEstimate200Processor =
+  (typeof GetPersonResearchEstimate200Processor)[keyof typeof GetPersonResearchEstimate200Processor];
+
+export const GetPersonResearchEstimate200Processor = {
+  lite: "lite",
+  base: "base",
+  core: "core",
+  pro: "pro",
+} as const;

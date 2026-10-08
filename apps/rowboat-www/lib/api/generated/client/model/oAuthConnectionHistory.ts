@@ -17,16 +17,16 @@ export interface OAuthConnectionHistory {
   external_account_id?: string;
   /** Timestamp when this history record was written. */
   history_time: string;
-  /** Stable UUID primary key. */
+  /** Id of this history row. */
   id: string;
   /** Mutation operation that produced this history row. */
   operation: OAuthConnectionHistoryOperation;
-  /** Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend. */
+  /** Sign-in service recorded for this connection. */
   provider: string;
   /** UUID of the source row represented by a history row. */
   ref?: string;
   refresh_token_present: boolean;
-  /** OAuth scopes granted or requested. */
+  /** Scopes recorded for this connection. */
   scopes?: string[];
   /** Last row update timestamp. */
   updated_at: string;

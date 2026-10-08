@@ -11,7 +11,7 @@ import type { User } from "./user";
 
 export interface AgentTurn {
   completed_at?: string;
-  /** Settled credit cost for the request. */
+  /** Credits used during this turn. */
   cost_units: number;
   /** Row creation timestamp. */
   created_at: string;

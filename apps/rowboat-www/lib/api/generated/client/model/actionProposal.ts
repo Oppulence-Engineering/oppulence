@@ -5,7 +5,6 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { ActionProposalReason } from "./actionProposalReason";
 import type { User } from "./user";
 
 export interface ActionProposal {
@@ -24,8 +23,8 @@ export interface ActionProposal {
   origin_run_id?: string;
   params_json?: string;
   rationale?: string;
-  /** Reason code for the ledger entry. */
-  reason?: ActionProposalReason;
+  /** Reason recorded when this proposal is rejected or fails. */
+  reason?: string;
   resolved_at?: string;
   result_ref?: string;
   return_event_id?: string;

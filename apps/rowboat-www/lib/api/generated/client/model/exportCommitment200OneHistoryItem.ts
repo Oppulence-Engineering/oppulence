@@ -10,7 +10,7 @@
  * Transition.
  */
 export type ExportCommitment200OneHistoryItem = {
-  /** Actor reference. */
+  /** User who recorded this change. */
   actorRef?: string;
   /** Who caused it. */
   actorType: string;

@@ -8,11 +8,19 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { CreateAgent201 } from "../model";
+import type { CreateAgent201, GetAgent200, PutAgent200, PutAgent201 } from "../model";
 
-import { getCreateAgentResponseMock } from "./agents.faker";
+import {
+  getCreateAgentResponseMock,
+  getGetAgentResponseMock,
+  getPutAgentResponseMock,
+} from "./agents.faker";
 
-export { getCreateAgentResponseMock } from "./agents.faker";
+export {
+  getCreateAgentResponseMock,
+  getGetAgentResponseMock,
+  getPutAgentResponseMock,
+} from "./agents.faker";
 
 export const getCreateAgentMockHandler = (
   overrideResponse?:
@@ -37,4 +45,55 @@ export const getCreateAgentMockHandler = (
     options,
   );
 };
-export const getAgentsMock = () => [getCreateAgentMockHandler()];
+
+export const getGetAgentMockHandler = (
+  overrideResponse?:
+    | GetAgent200
+    | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<GetAgent200> | GetAgent200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/agents/:slug",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetAgentResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getPutAgentMockHandler = (
+  overrideResponse?:
+    | PutAgent200
+    | PutAgent201
+    | ((
+        info: Parameters<Parameters<typeof http.put>[1]>[0],
+      ) => Promise<PutAgent200 | PutAgent201> | PutAgent200 | PutAgent201),
+  options?: RequestHandlerOptions,
+) => {
+  return http.put(
+    "*/v1/agents/:slug",
+    async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getPutAgentResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+export const getAgentsMock = () => [
+  getCreateAgentMockHandler(),
+  getGetAgentMockHandler(),
+  getPutAgentMockHandler(),
+];

@@ -7,17 +7,9 @@
  */
 
 /**
- * Reason code for the ledger entry.
+ * Pending people.
  */
-export type RelationshipAssertionReason =
-  (typeof RelationshipAssertionReason)[keyof typeof RelationshipAssertionReason];
-
-export const RelationshipAssertionReason = {
-  llm_call: "llm_call",
-  llm_call_reserve: "llm_call_reserve",
-  llm_settle: "llm_settle",
-  voice_tts: "voice_tts",
-  exa_search: "exa_search",
-  grant: "grant",
-  refund: "refund",
-} as const;
+export type ListPendingPersonEnrichment200 = {
+  /** Pending person ids. */
+  personIds: string[];
+};

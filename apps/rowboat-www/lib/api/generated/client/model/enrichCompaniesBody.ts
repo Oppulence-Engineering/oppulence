@@ -7,12 +7,9 @@
  */
 
 /**
- * Decision that was stored.
+ * Company research batch.
  */
-export type ApproveAgentSession202Decision =
-  (typeof ApproveAgentSession202Decision)[keyof typeof ApproveAgentSession202Decision];
-
-export const ApproveAgentSession202Decision = {
-  granted: "granted",
-  denied: "denied",
-} as const;
+export type EnrichCompaniesBody = {
+  /** Pending company ids. */
+  relationshipIds: string[];
+};

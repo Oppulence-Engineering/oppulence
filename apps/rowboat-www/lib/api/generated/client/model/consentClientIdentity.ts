@@ -12,6 +12,6 @@
 export interface ConsentClientIdentity {
   /** Stable product display name. */
   display_name: string;
-  /** Stable UUID primary key. */
+  /** Hydra client id. */
   id: string;
 }

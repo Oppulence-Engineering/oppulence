@@ -5,6 +5,7 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
+import type { MailBodyCacheProvider } from "./mailBodyCacheProvider";
 import type { User } from "./user";
 
 export interface MailBodyCache {
@@ -15,7 +16,7 @@ export interface MailBodyCache {
   /** Stable UUID primary key. */
   id: string;
   /** Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend. */
-  provider: string;
+  provider: MailBodyCacheProvider;
   provider_message_id: string;
   sealed_body: string;
   /** Last row update timestamp. */

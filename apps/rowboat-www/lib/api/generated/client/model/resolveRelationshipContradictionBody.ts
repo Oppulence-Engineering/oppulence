@@ -7,11 +7,11 @@
  */
 
 /**
- * The value you picked.
+ * Contradiction resolution.
  */
 export type ResolveRelationshipContradictionBody = {
-  /** Why this value is current. */
+  /** Optional rationale. */
   reason?: string;
-  /** Evidence you picked. */
+  /** Selected assertion id. */
   selectedAssertionId: string;
 };

@@ -27,7 +27,6 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 
-
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
@@ -747,7 +746,6 @@ const (
 	attentionQueuePage   = 50
 	attentionQueueScreen = 10
 )
-
 
 // noteTemplatePage is the template list the notes page asks for. The button
 // is "Show the next templates" when another template this person saved sits
@@ -5732,6 +5730,7 @@ func contradictionSentenceOwnsActivity(needle string) bool {
 	}
 	return false
 }
+
 // relationshipSheetContradictionMatch matches the suggestion "Two details disagree"
 // and the sentence under it. A resolved disagreement prints a different sentence,
 // so the open suggestion stays off that company. A closed case prints who chose

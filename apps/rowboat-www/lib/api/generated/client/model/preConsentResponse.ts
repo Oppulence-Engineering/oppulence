@@ -15,12 +15,11 @@ import type { ConsentScopeDefinition } from "./consentScopeDefinition";
  */
 export interface PreConsentResponse {
   client: ConsentClientIdentity;
-  /** Connector slug. */
   connector: ConsentConnectorIdentity;
   entitlement: ConsentEntitlement;
-  /** Idempotency and trace anchor for a metered request. */
+  /** Deterministic context request id bound to the challenge. */
   request_id: string;
-  /** OAuth scopes granted or requested. */
+  /** Exact catalog scope definitions. */
   scopes: ConsentScopeDefinition[];
   /** WorkOS subject bound to the pending flow. */
   subject: string;

@@ -39,7 +39,7 @@ export interface RelationshipGraphNode {
   freshness?: RelationshipGraphNodeFreshness;
   /** Health state. */
   health?: string;
-  /** Stable UUID primary key. */
+  /** Stable node id. */
   id: string;
   /** Node kind. */
   kind: RelationshipGraphNodeKind;

@@ -8,8 +8,8 @@
 import * as zod from "zod";
 
 /**
- * Profile loads the saved display name, the default agent, and whether usage data is shared. Before a name is saved, the name and the agent are empty, usage sharing is off, notifications are off, and the theme follows the system.
- * @summary Profile
+ * Returns defaults before the caller's first write.
+ * @summary Get console preferences
  */
 export const getConsolePreferences200ResponseDefaultAgentSlugMax = 100;
 
@@ -428,7 +428,7 @@ export const ListConsoleResources200Response = zod
                         .nullish()
                         .describe("Optional selected graph node."),
                     })
-                    .describe("Opaque one-time OAuth state\/session ticket."),
+                    .describe("Saved relationship graph controls."),
                 })
                 .describe("Saved graph view payload."),
             ]),
@@ -643,7 +643,7 @@ export const CreateConsoleResourceBody = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state\/session ticket."),
+            .describe("Saved relationship graph controls."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -760,7 +760,7 @@ export const CreateConsoleResource200Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state\/session ticket."),
+            .describe("Saved relationship graph controls."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -877,7 +877,7 @@ export const CreateConsoleResource201Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state\/session ticket."),
+            .describe("Saved relationship graph controls."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -1222,7 +1222,7 @@ export const GetConsoleResource200Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state\/session ticket."),
+            .describe("Saved relationship graph controls."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -1448,7 +1448,7 @@ export const PatchConsoleResourceBody = zod
                   .nullish()
                   .describe("Optional selected graph node."),
               })
-              .describe("Opaque one-time OAuth state\/session ticket."),
+              .describe("Saved relationship graph controls."),
           })
           .describe("Saved graph view payload."),
       ])
@@ -1566,7 +1566,7 @@ export const PatchConsoleResource200Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state\/session ticket."),
+            .describe("Saved relationship graph controls."),
         })
         .describe("Saved graph view payload."),
     ]),

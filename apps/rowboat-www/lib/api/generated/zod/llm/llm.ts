@@ -312,7 +312,7 @@ export const CreateEmbeddingBody = zod
       .nullish()
       .describe("Embedding encoding format forwarded to the upstream."),
     input: zod.unknown().describe("Input string or array of strings."),
-    model: zod.string().describe("Desktop-facing LLM model id."),
+    model: zod.string().describe("Desktop-facing embedding model id."),
   })
   .describe("OpenAI-compatible embeddings request.");
 
@@ -407,7 +407,7 @@ export const ListLLMModels200Response = zod
       .array(
         zod
           .strictObject({
-            id: zod.string().describe("Stable UUID primary key."),
+            id: zod.string().describe("Model id accepted by the model gateway."),
           })
           .describe("Routable model id exposed to the desktop."),
       )

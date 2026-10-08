@@ -76,7 +76,7 @@ export const GetGoogleConnectionStatus200Response = zod
             connectedAt: zod.string().describe("RFC3339 connection timestamp."),
             scopes: zod
               .array(zod.string().describe("Scope."))
-              .describe("OAuth scopes granted or requested."),
+              .describe("Granted Google OAuth scopes."),
           })
           .describe("Safe metadata for a connected Google account."),
       )
@@ -130,7 +130,7 @@ export const ClaimGoogleOAuthBody = zod
 export const ClaimGoogleOAuth200Response = zod
   .strictObject({
     access_token: zod.string().describe("Provider access token."),
-    expires_at: zod.int().describe("Credential or one-time ticket expiry timestamp."),
+    expires_at: zod.int().describe("Unix timestamp in seconds when the access token expires."),
     refresh_token: zod
       .string()
       .nullish()
@@ -275,7 +275,7 @@ export const RefreshGoogleOAuthBody = zod
 export const RefreshGoogleOAuth200Response = zod
   .strictObject({
     access_token: zod.string().describe("Provider access token."),
-    expires_at: zod.int().describe("Credential or one-time ticket expiry timestamp."),
+    expires_at: zod.int().describe("Unix timestamp in seconds when the access token expires."),
     refresh_token: zod
       .string()
       .nullish()

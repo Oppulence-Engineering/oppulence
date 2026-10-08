@@ -17,6 +17,6 @@ export interface VoiceAPIKeyCreateRequest {
   expires_in_days?: number | null;
   /** Display name. */
   name: string;
-  /** OAuth scopes granted or requested. */
+  /** Granted scopes. */
   scopes?: string[];
 }

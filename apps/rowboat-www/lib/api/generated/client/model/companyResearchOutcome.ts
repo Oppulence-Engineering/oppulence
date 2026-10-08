@@ -7,17 +7,15 @@
  */
 
 /**
- * One agent.
+ * Result of filling in one company from public research.
  */
-export type ListAgents200AgentsItem = {
-  /** Tools this agent can use. */
-  enabledTools: string[];
-  /** Purpose stored for this agent. */
-  instructions?: string;
-  /** Display name. */
-  name: string;
-  /** Short name. */
-  slug: string;
-  /** Where this agent comes from. */
-  source: string;
-};
+export interface CompanyResearchOutcome {
+  /** Whether the vendor identified the company. */
+  matched: boolean;
+  /** Company relationship id. */
+  relationshipId: string;
+  /** Whether this company was already filled in at the current version. */
+  replayed: boolean;
+  /** Details saved. */
+  written: number;
+}

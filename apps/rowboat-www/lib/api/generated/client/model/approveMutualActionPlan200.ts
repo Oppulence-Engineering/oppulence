@@ -7,9 +7,6 @@
  */
 
 /**
- * Product to connect.
+ * Mutual action plan.
  */
-export type StartComposioConnectionBody = {
-  /** Product name. */
-  toolkit: string;
-};
+export type ApproveMutualActionPlan200 = { [key: string]: unknown };

@@ -7,17 +7,12 @@
  */
 
 /**
- * Reason code for the ledger entry.
+ * Why this person was removed.
  */
-export type ConnectorAuditEventReason =
-  (typeof ConnectorAuditEventReason)[keyof typeof ConnectorAuditEventReason];
+export type DeleteRelationshipPersonBodyReason =
+  (typeof DeleteRelationshipPersonBodyReason)[keyof typeof DeleteRelationshipPersonBodyReason];
 
-export const ConnectorAuditEventReason = {
-  llm_call: "llm_call",
-  llm_call_reserve: "llm_call_reserve",
-  llm_settle: "llm_settle",
-  voice_tts: "voice_tts",
-  exa_search: "exa_search",
-  grant: "grant",
-  refund: "refund",
+export const DeleteRelationshipPersonBodyReason = {
+  user_action: "user_action",
+  subject_request: "subject_request",
 } as const;

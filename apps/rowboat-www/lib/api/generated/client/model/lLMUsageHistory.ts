@@ -17,7 +17,7 @@ export interface LLMUsageHistory {
   cost_units: number;
   /** Timestamp when this history record was written. */
   history_time: string;
-  /** Stable UUID primary key. */
+  /** Id of this history row. */
   id: string;
   /** Input tokens reported by the upstream or estimated by Solomon AI API. */
   input_tokens: number;

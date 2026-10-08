@@ -77,8 +77,8 @@ export const getGetConsolePreferencesUrl = () => {
 };
 
 /**
- * Profile loads the saved display name, the default agent, and whether usage data is shared. Before a name is saved, the name and the agent are empty, usage sharing is off, notifications are off, and the theme follows the system.
- * @summary Profile
+ * Returns defaults before the caller's first write.
+ * @summary Get console preferences
  */
 export const getConsolePreferences = async (
   options?: RequestInit,

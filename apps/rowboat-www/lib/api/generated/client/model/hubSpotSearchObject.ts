@@ -18,7 +18,7 @@ export interface HubSpotSearchObject {
    * @nullable
    */
   createdAt?: string | null;
-  /** Stable UUID primary key. */
+  /** HubSpot record id. */
   id: string;
   properties: HubSpotSearchObjectProperties;
   /**

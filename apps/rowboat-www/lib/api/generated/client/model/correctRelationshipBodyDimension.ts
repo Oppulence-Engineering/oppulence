@@ -7,7 +7,7 @@
  */
 
 /**
- * The detail this form corrects.
+ * Corrected state dimension.
  */
 export type CorrectRelationshipBodyDimension =
   (typeof CorrectRelationshipBodyDimension)[keyof typeof CorrectRelationshipBodyDimension];

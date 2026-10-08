@@ -20,7 +20,7 @@ export interface RelationshipGraphEdge {
   directed: boolean;
   /** Evidence supporting the connection. */
   evidenceRefs: string[];
-  /** Stable UUID primary key. */
+  /** Stable edge id. */
   id: string;
   /** Edge kind. */
   kind: RelationshipGraphEdgeKind;

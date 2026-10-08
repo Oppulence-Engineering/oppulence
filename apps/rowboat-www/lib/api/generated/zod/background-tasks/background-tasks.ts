@@ -66,7 +66,6 @@ export const ListBackgroundTaskRunsForAccount200Response = zod
               .string()
               .nullish()
               .describe("Previous run id when this run was created by retry."),
-            retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
             progressMessage: zod
               .string()
               .nullish()
@@ -207,14 +206,12 @@ export const ListBackgroundTaskTemplates200Response = zod
                 "Whether the template is installed and maintained automatically by Oppulence.",
               ),
             instructions: zod.string().describe("Default task instructions."),
-            model: zod.string().nullish().describe("Desktop-facing LLM model id."),
+            model: zod.string().nullish().describe("Default model id for runs."),
             name: zod.string().describe("Default task name."),
             provider: zod
               .string()
               .nullish()
-              .describe(
-                "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-              ),
+              .describe("Default provider for tasks created from this template."),
             requiredConnectors: zod
               .array(zod.string().describe("Connector slug."))
               .optional()
@@ -292,14 +289,12 @@ export const GetBackgroundTaskTemplate200Response = zod
       .boolean()
       .describe("Whether the template is installed and maintained automatically by Oppulence."),
     instructions: zod.string().describe("Default task instructions."),
-    model: zod.string().nullish().describe("Desktop-facing LLM model id."),
+    model: zod.string().nullish().describe("Default model id for runs."),
     name: zod.string().describe("Default task name."),
     provider: zod
       .string()
       .nullish()
-      .describe(
-        "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-      ),
+      .describe("Default provider for tasks created from this template."),
     requiredConnectors: zod
       .array(zod.string().describe("Connector slug."))
       .optional()
@@ -379,14 +374,9 @@ export const InstantiateBackgroundTaskTemplateBody = zod
   .strictObject({
     active: zod.boolean().optional().describe("Override active state."),
     executionTarget: zod.enum(["desktop", "api"]).optional().describe("Execution target override."),
-    model: zod.string().nullish().describe("Desktop-facing LLM model id."),
+    model: zod.string().nullish().describe("Model override."),
     name: zod.string().nullish().describe("Task name override."),
-    provider: zod
-      .string()
-      .nullish()
-      .describe(
-        "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-      ),
+    provider: zod.string().nullish().describe("Provider override."),
     slug: zod.string().nullish().describe("Task slug override. Defaults to template.taskSlug."),
     triggers: zod
       .unknown()
@@ -1639,112 +1629,6 @@ export const PutBackgroundTaskArtifact500Response = zod
   );
 
 /**
- * Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger.
- * @summary Next run
- */
-export const GetBackgroundTaskScheduleStateParams = zod.object({
-  slug: zod.string().describe("Workflow to read."),
-});
-
-export const GetBackgroundTaskScheduleState200Response = zod
-  .strictObject({
-    health: zod
-      .enum(["paused", "current", "failed", "unknown", "syncing"])
-      .describe("Whether the next run is ready."),
-    lastEvaluatedAt: zod.iso
-      .datetime({ offset: true })
-      .nullish()
-      .describe("When the schedule was last checked."),
-    lastTriggeredAt: zod.iso.datetime({ offset: true }).nullish().describe("When it last started."),
-    mechanism: zod
-      .enum(["none", "desktop_loop", "rowboat_loop", "temporal_schedule"])
-      .describe("What owns the schedule."),
-    nextDueAt: zod.iso.datetime({ offset: true }).nullish().describe("When it is due next."),
-    scheduleSyncState: zod
-      .enum(["current", "syncing", "failed", "paused"])
-      .optional()
-      .describe("Whether a timed cloud schedule matches the workflow."),
-    sources: zod
-      .record(
-        zod.string(),
-        zod
-          .strictObject({
-            health: zod
-              .enum(["paused", "current", "failed", "unknown", "syncing"])
-              .describe("Whether this trigger is ready."),
-            lastEvaluatedAt: zod.iso
-              .datetime({ offset: true })
-              .nullish()
-              .describe("When this trigger was last checked."),
-            lastTriggeredAt: zod.iso
-              .datetime({ offset: true })
-              .nullish()
-              .describe("When this trigger last started a run."),
-            mechanism: zod
-              .enum(["none", "desktop_loop", "rowboat_loop", "temporal_schedule"])
-              .describe("What owns this trigger."),
-            nextDueAt: zod.iso
-              .datetime({ offset: true })
-              .nullish()
-              .describe("When this trigger is due."),
-          })
-          .describe("One trigger on this workflow."),
-      )
-      .optional()
-      .describe("One entry for each trigger."),
-    target: zod.enum(["api", "desktop"]).describe("Where this workflow runs."),
-    triggerSources: zod
-      .array(zod.enum(["cron", "window", "event"]).describe("Trigger source."))
-      .describe("What can start this workflow."),
-  })
-  .describe("When this workflow runs next.");
-
-export const GetBackgroundTaskScheduleState401Response = zod
-  .strictObject({
-    code: zod.string().describe("Stable machine-readable error code."),
-    detail: zod.string().optional().describe("Human-readable error detail."),
-    instance: zod.string().nullish().describe("Optional occurrence URI."),
-    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
-    status: zod.int().describe("HTTP status code."),
-    title: zod.string().describe("Short HTTP-status summary."),
-    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
-    type: zod.string().describe("Problem type URI."),
-  })
-  .describe(
-    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
-  );
-
-export const GetBackgroundTaskScheduleState404Response = zod
-  .strictObject({
-    code: zod.string().describe("Stable machine-readable error code."),
-    detail: zod.string().optional().describe("Human-readable error detail."),
-    instance: zod.string().nullish().describe("Optional occurrence URI."),
-    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
-    status: zod.int().describe("HTTP status code."),
-    title: zod.string().describe("Short HTTP-status summary."),
-    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
-    type: zod.string().describe("Problem type URI."),
-  })
-  .describe(
-    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
-  );
-
-export const GetBackgroundTaskScheduleState500Response = zod
-  .strictObject({
-    code: zod.string().describe("Stable machine-readable error code."),
-    detail: zod.string().optional().describe("Human-readable error detail."),
-    instance: zod.string().nullish().describe("Optional occurrence URI."),
-    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
-    status: zod.int().describe("HTTP status code."),
-    title: zod.string().describe("Short HTTP-status summary."),
-    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
-    type: zod.string().describe("Problem type URI."),
-  })
-  .describe(
-    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
-  );
-
-/**
  * Lists mirrored runs for a task. Poll with status, executor, limit, and cursor filters to drive desktop queue pickup, dashboards, and API-worker Temporal status views.
  * @summary List task runs
  */
@@ -1810,7 +1694,6 @@ export const ListBackgroundTaskRuns200Response = zod
               .string()
               .nullish()
               .describe("Previous run id when this run was created by retry."),
-            retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
             progressMessage: zod
               .string()
               .nullish()
@@ -2035,7 +1918,6 @@ export const CreateBackgroundTaskRun201Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
-    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -2213,7 +2095,6 @@ export const GetBackgroundTaskRun200Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
-    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -2417,7 +2298,6 @@ export const PatchBackgroundTaskRun200Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
-    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -2599,7 +2479,6 @@ export const CancelBackgroundTaskRun202Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
-    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -3059,7 +2938,6 @@ export const RetryBackgroundTaskRun202Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
-    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -3249,7 +3127,6 @@ export const SignalBackgroundTaskRun202Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
-    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -3475,6 +3352,112 @@ export const GetBackgroundTaskRunStatus500Response = zod
   );
 
 /**
+ * Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger.
+ * @summary Next run
+ */
+export const GetBackgroundTaskScheduleStateParams = zod.object({
+  slug: zod.string().describe("Workflow to read."),
+});
+
+export const GetBackgroundTaskScheduleState200Response = zod
+  .strictObject({
+    health: zod
+      .enum(["paused", "current", "failed", "unknown", "syncing"])
+      .describe("Whether the next run is ready."),
+    lastEvaluatedAt: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe("When the schedule was last checked."),
+    lastTriggeredAt: zod.iso.datetime({ offset: true }).nullish().describe("When it last started."),
+    mechanism: zod
+      .enum(["none", "desktop_loop", "rowboat_loop", "temporal_schedule"])
+      .describe("What owns the schedule."),
+    nextDueAt: zod.iso.datetime({ offset: true }).nullish().describe("When it is due next."),
+    scheduleSyncState: zod
+      .enum(["current", "syncing", "failed", "paused"])
+      .optional()
+      .describe("Whether a timed cloud schedule matches the workflow."),
+    sources: zod
+      .record(
+        zod.string(),
+        zod
+          .strictObject({
+            health: zod
+              .enum(["paused", "current", "failed", "unknown", "syncing"])
+              .describe("Whether this trigger is ready."),
+            lastEvaluatedAt: zod.iso
+              .datetime({ offset: true })
+              .nullish()
+              .describe("When this trigger was last checked."),
+            lastTriggeredAt: zod.iso
+              .datetime({ offset: true })
+              .nullish()
+              .describe("When this trigger last started a run."),
+            mechanism: zod
+              .enum(["none", "desktop_loop", "rowboat_loop", "temporal_schedule"])
+              .describe("What owns this trigger."),
+            nextDueAt: zod.iso
+              .datetime({ offset: true })
+              .nullish()
+              .describe("When this trigger is due."),
+          })
+          .describe("One trigger on this workflow."),
+      )
+      .optional()
+      .describe("One entry for each trigger."),
+    target: zod.enum(["api", "desktop"]).describe("Where this workflow runs."),
+    triggerSources: zod
+      .array(zod.enum(["cron", "window", "event"]).describe("Trigger source."))
+      .describe("What can start this workflow."),
+  })
+  .describe("When this workflow runs next.");
+
+export const GetBackgroundTaskScheduleState401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetBackgroundTaskScheduleState404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetBackgroundTaskScheduleState500Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Run now posts a manual start from the visual workflow editor. The stored cloud run stays queued, keeps the note Started from the visual workflow editor, uses cloud execution, and records revision 2.
  * @summary Run now
  */
@@ -3526,7 +3509,6 @@ export const TriggerBackgroundTask202Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
-    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()

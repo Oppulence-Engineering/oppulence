@@ -14,11 +14,42 @@ import type {
   GetConnectorBrokerJWKS200,
   HubSpotSearchResponse,
   ListCommunicationPrivacyRules200,
+  ListComposioConnections200,
+  ListComposioToolkits200,
   MCPTokenResponse,
-  StartComposioConnection200,
 } from "../model";
 
 export const getGetConnectorBrokerJWKSResponseMock = (): GetConnectorBrokerJWKS200 => ({});
+
+export const getListComposioConnectionsResponseMock = (
+  overrideResponse: Partial<Extract<ListComposioConnections200, object>> = {},
+): ListComposioConnections200 => ({
+  connections: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
+      createdAt: faker.helpers.arrayElement([
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        undefined,
+      ]),
+      id: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      status: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      toolkit: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    }),
+  ),
+  ...overrideResponse,
+});
+
+export const getListComposioToolkitsResponseMock = (
+  overrideResponse: Partial<Extract<ListComposioToolkits200, object>> = {},
+): ListComposioToolkits200 => ({
+  toolkits: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
+      managedAuth: faker.datatype.boolean(),
+      name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      slug: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    }),
+  ),
+  ...overrideResponse,
+});
 
 export const getSetConnectionAPIKeyResponseMock = (
   overrideResponse: Partial<Extract<ConnectionConnectedResponse, object>> = {},
@@ -85,18 +116,6 @@ export const getCreateMCPTokenResponseMock = (
   ),
   token: faker.string.alpha({ length: { min: 10, max: 20 } }),
   token_type: faker.string.alpha({ length: { min: 10, max: 20 } }),
-  ...overrideResponse,
-});
-
-export const getStartComposioConnectionResponseMock = (
-  overrideResponse: Partial<Extract<StartComposioConnection200, object>> = {},
-): StartComposioConnection200 => ({
-  connectionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
-  expiresAt: faker.helpers.arrayElement([
-    faker.date.past().toISOString().slice(0, 19) + "Z",
-    undefined,
-  ]),
-  redirectUrl: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });
 

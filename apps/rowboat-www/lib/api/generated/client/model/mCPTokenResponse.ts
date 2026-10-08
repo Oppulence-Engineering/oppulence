@@ -12,11 +12,11 @@
 export interface MCPTokenResponse {
   /** RS256 broker bearer token. This is never a provider access token or vendor API key. */
   access_token: string;
-  /** OAuth token audience for the connector. */
+  /** Exact product resource-server audience. */
   audience: string;
   /** Connection UUID embedded in the token actor claims. */
   connectionId: string;
-  /** Credential or one-time ticket expiry timestamp. */
+  /** Unix expiry timestamp in seconds. */
   expires_at: number;
   /** Remaining lifetime in seconds. Never exceeds 900. */
   expires_in: number;
@@ -24,7 +24,7 @@ export interface MCPTokenResponse {
   mcpUrl: string;
   /** Space-delimited granted scope subset. */
   scope: string;
-  /** OAuth scopes granted or requested. */
+  /** Validated minted scope subset. */
   scopes: string[];
   /** Alias for access_token used by RFC 012 clients. */
   token: string;

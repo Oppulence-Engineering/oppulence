@@ -10,8 +10,8 @@
  * Link request.
  */
 export type LinkRevenueWorkspaceBody = {
-  /** Organization id. */
+  /** OutboundConsole organization id. */
   outboundOrganizationId?: string;
-  /** Sending workspace id. */
+  /** OutboundConsole workspace id. */
   outboundWorkspaceId: string;
 };

@@ -7,17 +7,9 @@
  */
 
 /**
- * Reason code for the ledger entry.
+ * Pending companies.
  */
-export type CommitmentEventReason =
-  (typeof CommitmentEventReason)[keyof typeof CommitmentEventReason];
-
-export const CommitmentEventReason = {
-  llm_call: "llm_call",
-  llm_call_reserve: "llm_call_reserve",
-  llm_settle: "llm_settle",
-  voice_tts: "voice_tts",
-  exa_search: "exa_search",
-  grant: "grant",
-  refund: "refund",
-} as const;
+export type ListPendingCompanyEnrichment200 = {
+  /** Pending company ids. */
+  relationshipIds: string[];
+};

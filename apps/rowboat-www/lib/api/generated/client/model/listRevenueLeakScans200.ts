@@ -8,11 +8,11 @@
 import type { RevenueLeakScan } from "./revenueLeakScan";
 
 /**
- * Audit history.
+ * Audit history. A full page is the end of the history when hasMore is false.
  */
 export type ListRevenueLeakScans200 = {
-  /** Whether another audit exists past this page. */
-  hasMore: boolean;
+  /** Another audit exists beyond this page. */
+  hasMore?: boolean;
   /** Scans newest first. */
   scans: RevenueLeakScan[];
 };

@@ -11,7 +11,7 @@
  */
 export interface MCPTokenRequest {
   /**
-   * OAuth token audience for the connector.
+   * Must exactly match the connector and stored connection audience.
    * @nullable
    */
   audience?: string | null;

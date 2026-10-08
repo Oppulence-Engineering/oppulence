@@ -16,7 +16,7 @@ export interface BackgroundTaskTemplateInstantiateRequest {
   /** Execution target override. */
   executionTarget?: BackgroundTaskTemplateInstantiateRequestExecutionTarget;
   /**
-   * Desktop-facing LLM model id.
+   * Model override.
    * @nullable
    */
   model?: string | null;
@@ -26,7 +26,7 @@ export interface BackgroundTaskTemplateInstantiateRequest {
    */
   name?: string | null;
   /**
-   * Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+   * Provider override.
    * @nullable
    */
   provider?: string | null;

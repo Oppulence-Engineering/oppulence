@@ -7,12 +7,9 @@
  */
 
 /**
- * Granted or denied.
+ * Person research batch.
  */
-export type ApproveAgentSessionBodyDecision =
-  (typeof ApproveAgentSessionBodyDecision)[keyof typeof ApproveAgentSessionBodyDecision];
-
-export const ApproveAgentSessionBodyDecision = {
-  granted: "granted",
-  denied: "denied",
-} as const;
+export type EnrichPersonsBody = {
+  /** Pending person ids. */
+  personIds: string[];
+};

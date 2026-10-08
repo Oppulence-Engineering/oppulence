@@ -9,9 +9,9 @@ import type {
   AgentSessionEventsResponse,
   AgentSessionListResponse,
   CreateAgentSessionBody,
+  DurableAgentSessionEvent,
   DurableAgentSessionView,
   ListAgentSessionEventsParams,
-  ListAgentSessionsParams,
   MintAgentApprovalToken200,
   N400Response,
   N401Response,
@@ -20,7 +20,12 @@ import type {
   N409Response,
   N500Response,
   N502Response,
+  StreamAgentSessionParams,
 } from "../model";
+
+interface TypedResponse<T> extends Response {
+  json(): Promise<T>;
+}
 
 export type listAgentSessionsResponse200 = {
   data: AgentSessionListResponse;
@@ -49,31 +54,18 @@ export type listAgentSessionsResponseError = (
 export type listAgentSessionsResponse =
   listAgentSessionsResponseSuccess | listAgentSessionsResponseError;
 
-export const getListAgentSessionsUrl = (params?: ListAgentSessionsParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : String(value));
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/v1/agent-sessions?${stringifiedParams}`
-    : `/v1/agent-sessions`;
+export const getListAgentSessionsUrl = () => {
+  return `/v1/agent-sessions`;
 };
 
 /**
- * Show earlier conversations loads the next page of History. It skips the newest 50 conversations. This page has one older conversation, and no conversation after it.
- * @summary Show earlier conversations
+ * Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.
+ * @summary List agent sessions
  */
 export const listAgentSessions = async (
-  params?: ListAgentSessionsParams,
   options?: RequestInit,
 ): Promise<listAgentSessionsResponse> => {
-  const res = await fetch(getListAgentSessionsUrl(params), {
+  const res = await fetch(getListAgentSessionsUrl(), {
     ...options,
     method: "GET",
   });
@@ -139,82 +131,6 @@ export const createAgentSession = async (
 
   const data: createAgentSessionResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as createAgentSessionResponse;
-};
-
-export type listAgentSessionEventsResponse200 = {
-  data: AgentSessionEventsResponse;
-  status: 200;
-};
-
-export type listAgentSessionEventsResponse400 = {
-  data: N400Response;
-  status: 400;
-};
-
-export type listAgentSessionEventsResponse401 = {
-  data: N401Response;
-  status: 401;
-};
-
-export type listAgentSessionEventsResponse404 = {
-  data: N404Response;
-  status: 404;
-};
-
-export type listAgentSessionEventsResponse500 = {
-  data: N500Response;
-  status: 500;
-};
-
-export type listAgentSessionEventsResponseSuccess = listAgentSessionEventsResponse200 & {
-  headers: Headers;
-};
-export type listAgentSessionEventsResponseError = (
-  | listAgentSessionEventsResponse400
-  | listAgentSessionEventsResponse401
-  | listAgentSessionEventsResponse404
-  | listAgentSessionEventsResponse500
-) & {
-  headers: Headers;
-};
-
-export type listAgentSessionEventsResponse =
-  listAgentSessionEventsResponseSuccess | listAgentSessionEventsResponseError;
-
-export const getListAgentSessionEventsUrl = (id: string, params?: ListAgentSessionEventsParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : String(value));
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/v1/agent-sessions/${id}/events?${stringifiedParams}`
-    : `/v1/agent-sessions/${id}/events`;
-};
-
-/**
- * Open conversation reads the history row Review the Acme renewal. The first read asks for 1000 events and sends no cursor. The stored page starts at sequence 0 for Assistant, includes both completed turns, the relationship.read tool call, and three model calls on anthropic/claude-sonnet-4-5, and does not name another page.
- * @summary Open conversation
- */
-export const listAgentSessionEvents = async (
-  id: string,
-  params?: ListAgentSessionEventsParams,
-  options?: RequestInit,
-): Promise<listAgentSessionEventsResponse> => {
-  const res = await fetch(getListAgentSessionEventsUrl(id, params), {
-    ...options,
-    method: "GET",
-  });
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: listAgentSessionEventsResponse["data"] = body ? JSON.parse(body) : {};
-  return { data, status: res.status, headers: res.headers } as listAgentSessionEventsResponse;
 };
 
 export type mintAgentApprovalTokenResponse200 = {
@@ -285,4 +201,145 @@ export const mintAgentApprovalToken = async (
 
   const data: mintAgentApprovalTokenResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as mintAgentApprovalTokenResponse;
+};
+
+export type listAgentSessionEventsResponse200 = {
+  data: AgentSessionEventsResponse;
+  status: 200;
+};
+
+export type listAgentSessionEventsResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type listAgentSessionEventsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listAgentSessionEventsResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type listAgentSessionEventsResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type listAgentSessionEventsResponseSuccess = listAgentSessionEventsResponse200 & {
+  headers: Headers;
+};
+export type listAgentSessionEventsResponseError = (
+  | listAgentSessionEventsResponse400
+  | listAgentSessionEventsResponse401
+  | listAgentSessionEventsResponse404
+  | listAgentSessionEventsResponse500
+) & {
+  headers: Headers;
+};
+
+export type listAgentSessionEventsResponse =
+  listAgentSessionEventsResponseSuccess | listAgentSessionEventsResponseError;
+
+export const getListAgentSessionEventsUrl = (id: string, params?: ListAgentSessionEventsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/agent-sessions/${id}/events?${stringifiedParams}`
+    : `/v1/agent-sessions/${id}/events`;
+};
+
+/**
+ * Returns ordered durable events used to reconstruct a conversation after navigation or reload.
+ * @summary List agent session events
+ */
+export const listAgentSessionEvents = async (
+  id: string,
+  params?: ListAgentSessionEventsParams,
+  options?: RequestInit,
+): Promise<listAgentSessionEventsResponse> => {
+  const res = await fetch(getListAgentSessionEventsUrl(id, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAgentSessionEventsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listAgentSessionEventsResponse;
+};
+
+export type streamAgentSessionResponse200 = {
+  stream: TypedResponse<DurableAgentSessionEvent>;
+  status: 200;
+};
+
+export type streamAgentSessionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type streamAgentSessionResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type streamAgentSessionResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type streamAgentSessionResponseSuccess = streamAgentSessionResponse200 & {
+  headers: Headers;
+};
+export type streamAgentSessionResponseError = (
+  streamAgentSessionResponse401 | streamAgentSessionResponse404 | streamAgentSessionResponse500
+) & {
+  headers: Headers;
+};
+
+export type streamAgentSessionResponse =
+  streamAgentSessionResponseSuccess | streamAgentSessionResponseError;
+
+export const getStreamAgentSessionUrl = (id: string, params?: StreamAgentSessionParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/agent-sessions/${id}/stream?${stringifiedParams}`
+    : `/v1/agent-sessions/${id}/stream`;
+};
+
+/**
+ * Follow the chat reads the open conversation. The first line is sequence 0, the session start for Assistant, with no turn yet.
+ * @summary Follow the chat
+ */
+export const streamAgentSession = async (
+  id: string,
+  params?: StreamAgentSessionParams,
+  options?: RequestInit,
+): Promise<streamAgentSessionResponse> => {
+  const stream = await fetch(getStreamAgentSessionUrl(id, params), {
+    ...options,
+    method: "GET",
+  });
+
+  return { status: stream.status, stream, headers: stream.headers } as streamAgentSessionResponse;
 };

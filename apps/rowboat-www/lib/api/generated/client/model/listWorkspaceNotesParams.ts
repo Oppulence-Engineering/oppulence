@@ -8,13 +8,13 @@
 
 export type ListWorkspaceNotesParams = {
   /**
-   * Maximum notes to return (default 50, max 100).
+   * Page size (max 100). Notes asks for 50.
    * @minimum 1
    * @maximum 100
    */
   limit?: number;
   /**
-   * Number of collapsed notes to skip.
+   * How many notes to skip. Notes does not send this on the first page.
    * @minimum 0
    */
   offset?: number;

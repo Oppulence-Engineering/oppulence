@@ -25,7 +25,7 @@ export interface MCPConnectionHistory {
   expires_at?: string;
   /** Timestamp when this history record was written. */
   history_time: string;
-  /** Stable UUID primary key. */
+  /** Id of this history row. */
   id: string;
   /** Timestamp when the connector credential was last minted or used. */
   last_used_at?: string;
@@ -40,7 +40,7 @@ export interface MCPConnectionHistory {
   revoked_at?: string;
   revoked_by?: string;
   revoked_reason?: string;
-  /** OAuth scopes granted or requested. */
+  /** Scopes recorded for this connector. */
   scopes?: string[];
   /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
   status: string;

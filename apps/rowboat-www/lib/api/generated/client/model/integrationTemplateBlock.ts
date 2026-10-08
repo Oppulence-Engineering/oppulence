@@ -15,7 +15,7 @@ export interface IntegrationTemplateBlock {
   category: string;
   /** Human-readable capability description. */
   description: string;
-  /** Stable UUID primary key. */
+  /** Stable block id within the connector. */
   id: string;
   /** MCP tools backing this capability for an MCP transport connector. */
   mcpTools?: string[];

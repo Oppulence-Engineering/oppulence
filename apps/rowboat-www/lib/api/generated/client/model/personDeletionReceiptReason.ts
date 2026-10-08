@@ -7,18 +7,12 @@
  */
 
 /**
- * Reason code for the ledger entry.
- * @nullable
+ * Why this person was removed.
  */
-export type InternalInvalidateRequestReason =
-  (typeof InternalInvalidateRequestReason)[keyof typeof InternalInvalidateRequestReason] | null;
+export type PersonDeletionReceiptReason =
+  (typeof PersonDeletionReceiptReason)[keyof typeof PersonDeletionReceiptReason];
 
-export const InternalInvalidateRequestReason = {
-  llm_call: "llm_call",
-  llm_call_reserve: "llm_call_reserve",
-  llm_settle: "llm_settle",
-  voice_tts: "voice_tts",
-  exa_search: "exa_search",
-  grant: "grant",
-  refund: "refund",
+export const PersonDeletionReceiptReason = {
+  user_action: "user_action",
+  subject_request: "subject_request",
 } as const;

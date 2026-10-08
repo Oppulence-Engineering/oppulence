@@ -6,11 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  ApproveActionProposal200,
   ApproveRevenueActionBody,
   CreateRevenueActionBody,
   DismissRevenueActionBody,
   EditRevenueActionBody,
   ErrorEnvelope,
+  ExecuteActionProposal200,
+  ExecuteActionProposalBody,
+  GetObjectAudit200,
   GetOpenPromisesReport200One,
   GetOpenPromisesReportParams,
   GetRevenueActionAudit200,
@@ -24,9 +28,14 @@ import type {
   ListRevenueLeakScansParams,
   N400Response,
   N401Response,
+  N403Response,
   N404Response,
   N409Response,
+  N500Response,
+  N503Response,
   RecordRevenueActionOutcomeBody,
+  RejectActionProposal200,
+  RejectActionProposalBody,
   RejectRevenueActionBody,
   RevenueAction,
   RevenueDigest,
@@ -94,6 +103,281 @@ export const listActionProposals = async (
 
   const data: listActionProposalsResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as listActionProposalsResponse;
+};
+
+export type approveActionProposalResponse200 = {
+  data: ApproveActionProposal200;
+  status: 200;
+};
+
+export type approveActionProposalResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type approveActionProposalResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type approveActionProposalResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type approveActionProposalResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type approveActionProposalResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type approveActionProposalResponseSuccess = approveActionProposalResponse200 & {
+  headers: Headers;
+};
+export type approveActionProposalResponseError = (
+  | approveActionProposalResponse400
+  | approveActionProposalResponse401
+  | approveActionProposalResponse403
+  | approveActionProposalResponse404
+  | approveActionProposalResponse409
+) & {
+  headers: Headers;
+};
+
+export type approveActionProposalResponse =
+  approveActionProposalResponseSuccess | approveActionProposalResponseError;
+
+export const getApproveActionProposalUrl = (id: string) => {
+  return `/v1/action-proposals/${id}/approve`;
+};
+
+/**
+ * Approve and run posts no body. The page receives the approved proposal and a one-time value, then runs the action.
+ * @summary Approve and run
+ */
+export const approveActionProposal = async (
+  id: string,
+  options?: RequestInit,
+): Promise<approveActionProposalResponse> => {
+  const res = await fetch(getApproveActionProposalUrl(id), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: approveActionProposalResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as approveActionProposalResponse;
+};
+
+export type executeActionProposalResponse200 = {
+  data: ExecuteActionProposal200;
+  status: 200;
+};
+
+export type executeActionProposalResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type executeActionProposalResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type executeActionProposalResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type executeActionProposalResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type executeActionProposalResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type executeActionProposalResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type executeActionProposalResponseSuccess = executeActionProposalResponse200 & {
+  headers: Headers;
+};
+export type executeActionProposalResponseError = (
+  | executeActionProposalResponse400
+  | executeActionProposalResponse401
+  | executeActionProposalResponse403
+  | executeActionProposalResponse404
+  | executeActionProposalResponse409
+  | executeActionProposalResponse503
+) & {
+  headers: Headers;
+};
+
+export type executeActionProposalResponse =
+  executeActionProposalResponseSuccess | executeActionProposalResponseError;
+
+export const getExecuteActionProposalUrl = (id: string) => {
+  return `/v1/action-proposals/${id}/execute`;
+};
+
+/**
+ * Execute posts the one-time value Approve and run returned. The page shows the result while it waits for the product to confirm the change.
+ * @summary Execute
+ */
+export const executeActionProposal = async (
+  id: string,
+  executeActionProposalBody: ExecuteActionProposalBody,
+  options?: RequestInit,
+): Promise<executeActionProposalResponse> => {
+  const res = await fetch(getExecuteActionProposalUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(executeActionProposalBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: executeActionProposalResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as executeActionProposalResponse;
+};
+
+export type rejectActionProposalResponse200 = {
+  data: RejectActionProposal200;
+  status: 200;
+};
+
+export type rejectActionProposalResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type rejectActionProposalResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type rejectActionProposalResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type rejectActionProposalResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type rejectActionProposalResponseSuccess = rejectActionProposalResponse200 & {
+  headers: Headers;
+};
+export type rejectActionProposalResponseError = (
+  | rejectActionProposalResponse400
+  | rejectActionProposalResponse401
+  | rejectActionProposalResponse404
+  | rejectActionProposalResponse409
+) & {
+  headers: Headers;
+};
+
+export type rejectActionProposalResponse =
+  rejectActionProposalResponseSuccess | rejectActionProposalResponseError;
+
+export const getRejectActionProposalUrl = (id: string) => {
+  return `/v1/action-proposals/${id}/reject`;
+};
+
+/**
+ * Reject posts a short reason. The page discards the action and keeps that reason on the audit trail.
+ * @summary Reject
+ */
+export const rejectActionProposal = async (
+  id: string,
+  rejectActionProposalBody: RejectActionProposalBody,
+  options?: RequestInit,
+): Promise<rejectActionProposalResponse> => {
+  const res = await fetch(getRejectActionProposalUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(rejectActionProposalBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: rejectActionProposalResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as rejectActionProposalResponse;
+};
+
+export type getObjectAuditResponse200 = {
+  data: GetObjectAudit200;
+  status: 200;
+};
+
+export type getObjectAuditResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type getObjectAuditResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getObjectAuditResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getObjectAuditResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type getObjectAuditResponseSuccess = getObjectAuditResponse200 & {
+  headers: Headers;
+};
+export type getObjectAuditResponseError = (
+  | getObjectAuditResponse400
+  | getObjectAuditResponse401
+  | getObjectAuditResponse404
+  | getObjectAuditResponse500
+) & {
+  headers: Headers;
+};
+
+export type getObjectAuditResponse = getObjectAuditResponseSuccess | getObjectAuditResponseError;
+
+export const getGetObjectAuditUrl = (resourceRef: string) => {
+  return `/v1/objects/${resourceRef}/audit`;
+};
+
+/**
+ * Audit trail opens this object's proposal, approval, and execution. The page shows the proposal kind, the approval prefix, and the execution result.
+ * @summary Audit trail
+ */
+export const getObjectAudit = async (
+  resourceRef: string,
+  options?: RequestInit,
+): Promise<getObjectAuditResponse> => {
+  const res = await fetch(getGetObjectAuditUrl(resourceRef), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getObjectAuditResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getObjectAuditResponse;
 };
 
 export type listRevenueActionsResponse200 = {
@@ -188,8 +472,8 @@ export const getCreateRevenueActionUrl = () => {
 };
 
 /**
- * Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.
- * @summary Create task
+ * Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.
+ * @summary Create a manual action
  */
 export const createRevenueAction = async (
   createRevenueActionBody: CreateRevenueActionBody,
@@ -213,11 +497,6 @@ export type getRevenueActionResponse200 = {
   status: 200;
 };
 
-export type getRevenueActionResponse400 = {
-  data: N400Response;
-  status: 400;
-};
-
 export type getRevenueActionResponse401 = {
   data: N401Response;
   status: 401;
@@ -232,7 +511,7 @@ export type getRevenueActionResponseSuccess = getRevenueActionResponse200 & {
   headers: Headers;
 };
 export type getRevenueActionResponseError = (
-  getRevenueActionResponse400 | getRevenueActionResponse401 | getRevenueActionResponse404
+  getRevenueActionResponse401 | getRevenueActionResponse404
 ) & {
   headers: Headers;
 };
@@ -245,8 +524,8 @@ export const getGetRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.
- * @summary Reload the checked action
+ * Returns one action with relationship context.
+ * @summary Get an action
  */
 export const getRevenueAction = async (
   actionId: string,
@@ -411,8 +690,8 @@ export const getDismissRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Dismiss removes this follow-up from the queue and stores the reason.
- * @summary Dismiss
+ * Dismisses the action with a reason label and records the dismissed outcome.
+ * @summary Dismiss an action
  */
 export const dismissRevenueAction = async (
   actionId: string,
@@ -715,8 +994,8 @@ export const getRejectRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Reject declines this follow-up. The decision is stored and the follow-up stays open.
- * @summary Reject
+ * Rejects the current revision with a reason.
+ * @summary Reject an action
  */
 export const rejectRevenueAction = async (
   actionId: string,
@@ -972,8 +1251,8 @@ export const getListRevenueLeakScansUrl = (params?: ListRevenueLeakScansParams) 
 };
 
 /**
- * Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty.
- * @summary Audits
+ * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.
+ * @summary List revenue leak scans
  */
 export const listRevenueLeakScans = async (
   params?: ListRevenueLeakScansParams,
@@ -1146,8 +1425,8 @@ export const getGetOpenPromisesReportUrl = (
 };
 
 /**
- * Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.
- * @summary Download the report
+ * Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
+ * @summary Get the open promises report
  */
 export const getOpenPromisesReport = async (
   scanId: string,
@@ -1257,8 +1536,8 @@ export const getGetRevenueWorkspaceUrl = () => {
 };
 
 /**
- * Connected sources loads this workspace. The request sends no filter. This workspace is local, active, and the sending check is off, so the organization and sending workspace are omitted.
- * @summary Workspace
+ * Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.
+ * @summary Get current revenue workspace
  */
 export const getRevenueWorkspace = async (
   options?: RequestInit,
@@ -1313,8 +1592,8 @@ export const getLinkRevenueWorkspaceUrl = () => {
 };
 
 /**
- * Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.
- * @summary Link workspace
+ * Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.
+ * @summary Link the OutboundConsole workspace
  */
 export const linkRevenueWorkspace = async (
   linkRevenueWorkspaceBody: LinkRevenueWorkspaceBody,

@@ -14,23 +14,29 @@ import type { RelationshipAttentionItemUrgencyBand } from "./relationshipAttenti
  */
 export interface RelationshipAttentionItem {
   /**
-   * Acknowledged time.
+   * When this item was acknowledged. Empty until then.
    * @nullable
    */
   acknowledgedAt?: string | null;
-  /** Acknowledging actor. */
-  acknowledgedBy?: string;
+  /**
+   * User who acknowledged this item. Empty until it is acknowledged.
+   * @nullable
+   */
+  acknowledgedBy?: string | null;
   /** Created time. */
   createdAt: string;
   /** Detector version. */
   detectorVersion: number;
   /**
-   * Dismissed time.
+   * When this item was dismissed. Empty until then.
    * @nullable
    */
   dismissedAt?: string | null;
-  /** Dismissing actor. */
-  dismissedBy?: string;
+  /**
+   * User who dismissed this item. Empty until it is dismissed.
+   * @nullable
+   */
+  dismissedBy?: string | null;
   /** Evidence refs. */
   evidenceRefs: string[];
   /**
@@ -42,7 +48,7 @@ export interface RelationshipAttentionItem {
   explanation: string;
   /** Stable UUID primary key. */
   id: string;
-  /** Owner id. */
+  /** Assigned user id. */
   ownerId?: string;
   /** Projector version. */
   projectorVersion: number;
@@ -69,7 +75,7 @@ export interface RelationshipAttentionItem {
   snoozedUntil?: string | null;
   /** Fresh sources required. */
   sourceRequirements: string[];
-  /** Triage reason. */
+  /** Why this item was acknowledged, snoozed, or dismissed. Empty while it is still open. */
   stateReason?: string;
   /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
   status: RelationshipAttentionItemStatus;

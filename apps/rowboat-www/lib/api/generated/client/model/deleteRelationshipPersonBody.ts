@@ -5,13 +5,12 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
+import type { DeleteRelationshipPersonBodyReason } from "./deleteRelationshipPersonBodyReason";
 
 /**
- * Accepted stop.
+ * Person removal request.
  */
-export type CancelAgentSession202 = {
-  /** Session that is stopping. */
-  sessionId: string;
-  /** Stop acknowledgement. */
-  status: string;
+export type DeleteRelationshipPersonBody = {
+  /** Why this person was removed. */
+  reason: DeleteRelationshipPersonBodyReason;
 };

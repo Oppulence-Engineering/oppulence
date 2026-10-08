@@ -116,3 +116,189 @@ export const CreateAgent500Response = zod
   .describe(
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
+
+/**
+ * Configure loads this agent's name, purpose, model, and tools.
+ * @summary Configure
+ */
+export const GetAgentParams = zod.object({
+  slug: zod.string().describe("Agent id."),
+});
+
+export const GetAgent200Response = zod
+  .strictObject({
+    enabledTools: zod
+      .array(zod.string().describe("Tool id."))
+      .describe("Tools this agent can use."),
+    instructions: zod.string().optional().describe("Purpose shown for this agent."),
+    model: zod.string().optional().describe("Model this agent uses."),
+    name: zod.string().describe("Name on the agents page."),
+    provider: zod.string().optional().describe("Where that model runs."),
+    slug: zod.string().describe("Agent id."),
+    source: zod.string().describe("tenant means this workspace owns the agent."),
+  })
+  .describe("One agent the workspace can configure.");
+
+export const GetAgent401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetAgent404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetAgent500Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Save changes stores this agent's name, purpose, model, and tools.
+ * @summary Save changes
+ */
+export const PutAgentParams = zod.object({
+  slug: zod.string().describe("Agent id."),
+});
+
+export const PutAgentBody = zod
+  .strictObject({
+    apiVersion: zod.string().describe("Document version."),
+    kind: zod.string().describe("Document kind."),
+    metadata: zod
+      .strictObject({
+        name: zod.string().describe("Name on the agents page."),
+        slug: zod.string().describe("Agent id."),
+      })
+      .describe("Name and id."),
+    spec: zod
+      .strictObject({
+        instructions: zod.string().describe("Purpose shown for this agent."),
+        model: zod.string().optional().describe("Model this agent uses."),
+        provider: zod.string().optional().describe("Where that model runs."),
+        tools: zod.array(zod.string().describe("Tool id.")).describe("Tools this agent can use."),
+      })
+      .describe("Purpose, model, and tools."),
+  })
+  .describe("Agent document from the editor.");
+
+export const PutAgent200Response = zod
+  .strictObject({
+    enabledTools: zod
+      .array(zod.string().describe("Tool id."))
+      .describe("Tools this agent can use."),
+    instructions: zod.string().optional().describe("Purpose shown for this agent."),
+    model: zod.string().optional().describe("Model this agent uses."),
+    name: zod.string().describe("Name on the agents page."),
+    provider: zod.string().optional().describe("Where that model runs."),
+    slug: zod.string().describe("Agent id."),
+    source: zod.string().describe("tenant means this workspace owns the agent."),
+  })
+  .describe("The stored agent.");
+
+export const PutAgent201Response = zod
+  .strictObject({
+    enabledTools: zod
+      .array(zod.string().describe("Tool id."))
+      .describe("Tools this agent can use."),
+    instructions: zod.string().optional().describe("Purpose shown for this agent."),
+    model: zod.string().optional().describe("Model this agent uses."),
+    name: zod.string().describe("Name on the agents page."),
+    provider: zod.string().optional().describe("Where that model runs."),
+    slug: zod.string().describe("Agent id."),
+    source: zod.string().describe("tenant means this workspace owns the agent."),
+  })
+  .describe("The stored agent.");
+
+export const PutAgent400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const PutAgent401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const PutAgent409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+export const PutAgent500Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );

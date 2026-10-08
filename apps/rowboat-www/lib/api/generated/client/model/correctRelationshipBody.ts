@@ -8,20 +8,20 @@
 import type { CorrectRelationshipBodyDimension } from "./correctRelationshipBodyDimension";
 
 /**
- * Company detail correction.
+ * Relationship correction.
  */
 export type CorrectRelationshipBody = {
-  /** The detail this form corrects. */
+  /** Corrected state dimension. */
   dimension: CorrectRelationshipBodyDimension;
-  /** Why this is wrong. */
+  /** Why the model is wrong. */
   reason: string;
-  /** Earlier evidence on this same detail that this correction replaces. */
+  /** Optional active assertion on the same relationship and dimension that this correction permanently replaces. */
   supersedesAssertionId?: string;
   /**
-   * When a temporary correction stops applying.
+   * Optional exclusive expiry boundary for a temporary correction.
    * @nullable
    */
   validTo?: string | null;
-  /** The value you chose. */
+  /** Correct value. */
   value: string;
 };

@@ -19,7 +19,7 @@ export interface ConversationClaim {
   endMs: number;
   /** Exact supporting transcript words. */
   exactQuote: string;
-  /** Stable UUID primary key. */
+  /** Stable claim id. */
   id: string;
   /** Claim kind. */
   kind: ConversationClaimKind;

@@ -17,7 +17,7 @@ export interface UserHistory {
   email?: string;
   /** Timestamp when this history record was written. */
   history_time: string;
-  /** Stable UUID primary key. */
+  /** Id of this history row. */
   id: string;
   /** Mutation operation that produced this history row. */
   operation: UserHistoryOperation;

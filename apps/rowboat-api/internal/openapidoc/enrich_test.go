@@ -8242,7 +8242,6 @@ func researchRequestExample(t *testing.T, spec obj, path string) obj {
 	return example
 }
 
-
 func TestWorkflowRunsSamplesTheRunsPage(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)

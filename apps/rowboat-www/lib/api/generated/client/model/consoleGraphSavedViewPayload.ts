@@ -11,6 +11,5 @@ import type { ConsoleGraphSavedViewState } from "./consoleGraphSavedViewState";
  * Saved graph view payload.
  */
 export interface ConsoleGraphSavedViewPayload {
-  /** Opaque one-time OAuth state/session ticket. */
   state: ConsoleGraphSavedViewState;
 }

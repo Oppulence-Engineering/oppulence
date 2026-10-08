@@ -12,7 +12,7 @@
 export interface OAuthTokenBundle {
   /** Provider access token. */
   access_token: string;
-  /** Credential or one-time ticket expiry timestamp. */
+  /** Unix timestamp in seconds when the access token expires. */
   expires_at: number;
   /**
    * Provider refresh token, present on claim when the provider issues one.

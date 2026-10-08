@@ -57,11 +57,6 @@ export interface BackgroundTaskRun {
    */
   previousRunId?: string | null;
   /**
-   * Run id this attempt retries.
-   * @nullable
-   */
-  retryOfRunId?: string | null;
-  /**
    * Human-readable progress message for polling clients.
    * @nullable
    */

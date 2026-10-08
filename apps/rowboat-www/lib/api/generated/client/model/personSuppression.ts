@@ -16,7 +16,7 @@ export interface PersonSuppression {
   id: string;
   kind: string;
   note?: string;
-  /** Reason code for the ledger entry. */
+  /** Why this person was removed. subject_request means they asked. user_action means the account holder removed them. */
   reason: PersonSuppressionReason;
   suppressed_at: string;
   /** Last row update timestamp. */

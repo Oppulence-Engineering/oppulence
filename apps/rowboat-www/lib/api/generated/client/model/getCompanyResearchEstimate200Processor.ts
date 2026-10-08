@@ -7,17 +7,14 @@
  */
 
 /**
- * Reason code for the ledger entry.
+ * Research processor. Company estimates use pro.
  */
-export type RelationshipIdentityLineageReason =
-  (typeof RelationshipIdentityLineageReason)[keyof typeof RelationshipIdentityLineageReason];
+export type GetCompanyResearchEstimate200Processor =
+  (typeof GetCompanyResearchEstimate200Processor)[keyof typeof GetCompanyResearchEstimate200Processor];
 
-export const RelationshipIdentityLineageReason = {
-  llm_call: "llm_call",
-  llm_call_reserve: "llm_call_reserve",
-  llm_settle: "llm_settle",
-  voice_tts: "voice_tts",
-  exa_search: "exa_search",
-  grant: "grant",
-  refund: "refund",
+export const GetCompanyResearchEstimate200Processor = {
+  lite: "lite",
+  base: "base",
+  core: "core",
+  pro: "pro",
 } as const;

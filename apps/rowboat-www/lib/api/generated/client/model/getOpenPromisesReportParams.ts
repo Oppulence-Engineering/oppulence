@@ -8,7 +8,7 @@
 
 export type GetOpenPromisesReportParams = {
   /**
-   * Export format.
+   * md for Markdown; JSON otherwise.
    */
   format?: string;
 };

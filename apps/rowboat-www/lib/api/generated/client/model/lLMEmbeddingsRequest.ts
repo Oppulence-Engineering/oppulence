@@ -19,7 +19,7 @@ export interface LLMEmbeddingsRequest {
   encoding_format?: string | null;
   /** Input string or array of strings. */
   input: unknown;
-  /** Desktop-facing LLM model id. */
+  /** Desktop-facing embedding model id. */
   model: string;
   [key: string]: unknown;
 }

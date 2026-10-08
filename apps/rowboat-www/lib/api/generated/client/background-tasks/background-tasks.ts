@@ -813,68 +813,6 @@ export const putBackgroundTaskArtifact = async (
   return { data, status: res.status, headers: res.headers } as putBackgroundTaskArtifactResponse;
 };
 
-export type getBackgroundTaskScheduleStateResponse200 = {
-  data: GetBackgroundTaskScheduleState200;
-  status: 200;
-};
-
-export type getBackgroundTaskScheduleStateResponse401 = {
-  data: N401Response;
-  status: 401;
-};
-
-export type getBackgroundTaskScheduleStateResponse404 = {
-  data: N404Response;
-  status: 404;
-};
-
-export type getBackgroundTaskScheduleStateResponse500 = {
-  data: N500Response;
-  status: 500;
-};
-
-export type getBackgroundTaskScheduleStateResponseSuccess =
-  getBackgroundTaskScheduleStateResponse200 & {
-    headers: Headers;
-  };
-export type getBackgroundTaskScheduleStateResponseError = (
-  | getBackgroundTaskScheduleStateResponse401
-  | getBackgroundTaskScheduleStateResponse404
-  | getBackgroundTaskScheduleStateResponse500
-) & {
-  headers: Headers;
-};
-
-export type getBackgroundTaskScheduleStateResponse =
-  getBackgroundTaskScheduleStateResponseSuccess | getBackgroundTaskScheduleStateResponseError;
-
-export const getGetBackgroundTaskScheduleStateUrl = (slug: string) => {
-  return `/v1/background-tasks/${slug}/schedule-state`;
-};
-
-/**
- * Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger.
- * @summary Next run
- */
-export const getBackgroundTaskScheduleState = async (
-  slug: string,
-  options?: RequestInit,
-): Promise<getBackgroundTaskScheduleStateResponse> => {
-  const res = await fetch(getGetBackgroundTaskScheduleStateUrl(slug), {
-    ...options,
-    method: "GET",
-  });
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: getBackgroundTaskScheduleStateResponse["data"] = body ? JSON.parse(body) : {};
-  return {
-    data,
-    status: res.status,
-    headers: res.headers,
-  } as getBackgroundTaskScheduleStateResponse;
-};
-
 export type listBackgroundTaskRunsResponse200 = {
   data: BackgroundTaskRunsResponse;
   status: 200;
@@ -1662,6 +1600,68 @@ export const getBackgroundTaskRunStatus = async (
 
   const data: getBackgroundTaskRunStatusResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getBackgroundTaskRunStatusResponse;
+};
+
+export type getBackgroundTaskScheduleStateResponse200 = {
+  data: GetBackgroundTaskScheduleState200;
+  status: 200;
+};
+
+export type getBackgroundTaskScheduleStateResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getBackgroundTaskScheduleStateResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getBackgroundTaskScheduleStateResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type getBackgroundTaskScheduleStateResponseSuccess =
+  getBackgroundTaskScheduleStateResponse200 & {
+    headers: Headers;
+  };
+export type getBackgroundTaskScheduleStateResponseError = (
+  | getBackgroundTaskScheduleStateResponse401
+  | getBackgroundTaskScheduleStateResponse404
+  | getBackgroundTaskScheduleStateResponse500
+) & {
+  headers: Headers;
+};
+
+export type getBackgroundTaskScheduleStateResponse =
+  getBackgroundTaskScheduleStateResponseSuccess | getBackgroundTaskScheduleStateResponseError;
+
+export const getGetBackgroundTaskScheduleStateUrl = (slug: string) => {
+  return `/v1/background-tasks/${slug}/schedule-state`;
+};
+
+/**
+ * Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger.
+ * @summary Next run
+ */
+export const getBackgroundTaskScheduleState = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<getBackgroundTaskScheduleStateResponse> => {
+  const res = await fetch(getGetBackgroundTaskScheduleStateUrl(slug), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getBackgroundTaskScheduleStateResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getBackgroundTaskScheduleStateResponse;
 };
 
 export type triggerBackgroundTaskResponse202 = {

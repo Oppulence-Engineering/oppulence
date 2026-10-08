@@ -12,7 +12,7 @@
 export interface SlackWorkspace {
   /** Connection creation time. */
   connectedAt?: string;
-  /** OAuth scopes granted or requested. */
+  /** Granted bot scopes. */
   scopes?: string[];
   /** Slack workspace (team) id — the key Events API deliveries resolve against. */
   teamId: string;

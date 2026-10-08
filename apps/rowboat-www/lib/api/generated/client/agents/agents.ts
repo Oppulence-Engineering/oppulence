@@ -9,9 +9,15 @@ import type {
   CreateAgent201,
   CreateAgentBody,
   ErrorEnvelope,
+  GetAgent200,
   N400Response,
   N401Response,
+  N404Response,
+  N409Response,
   N500Response,
+  PutAgent200,
+  PutAgent201,
+  PutAgentBody,
 } from "../model";
 
 export type createAgentResponse201 = {
@@ -73,4 +79,122 @@ export const createAgent = async (
 
   const data: createAgentResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as createAgentResponse;
+};
+
+export type getAgentResponse200 = {
+  data: GetAgent200;
+  status: 200;
+};
+
+export type getAgentResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getAgentResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getAgentResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type getAgentResponseSuccess = getAgentResponse200 & {
+  headers: Headers;
+};
+export type getAgentResponseError = (
+  getAgentResponse401 | getAgentResponse404 | getAgentResponse500
+) & {
+  headers: Headers;
+};
+
+export type getAgentResponse = getAgentResponseSuccess | getAgentResponseError;
+
+export const getGetAgentUrl = (slug: string) => {
+  return `/v1/agents/${slug}`;
+};
+
+/**
+ * Configure loads this agent's name, purpose, model, and tools.
+ * @summary Configure
+ */
+export const getAgent = async (slug: string, options?: RequestInit): Promise<getAgentResponse> => {
+  const res = await fetch(getGetAgentUrl(slug), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAgentResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getAgentResponse;
+};
+
+export type putAgentResponse200 = {
+  data: PutAgent200;
+  status: 200;
+};
+
+export type putAgentResponse201 = {
+  data: PutAgent201;
+  status: 201;
+};
+
+export type putAgentResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type putAgentResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type putAgentResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type putAgentResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type putAgentResponseSuccess = (putAgentResponse200 | putAgentResponse201) & {
+  headers: Headers;
+};
+export type putAgentResponseError = (
+  putAgentResponse400 | putAgentResponse401 | putAgentResponse409 | putAgentResponse500
+) & {
+  headers: Headers;
+};
+
+export type putAgentResponse = putAgentResponseSuccess | putAgentResponseError;
+
+export const getPutAgentUrl = (slug: string) => {
+  return `/v1/agents/${slug}`;
+};
+
+/**
+ * Save changes stores this agent's name, purpose, model, and tools.
+ * @summary Save changes
+ */
+export const putAgent = async (
+  slug: string,
+  putAgentBody: PutAgentBody,
+  options?: RequestInit,
+): Promise<putAgentResponse> => {
+  const res = await fetch(getPutAgentUrl(slug), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(putAgentBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putAgentResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as putAgentResponse;
 };

@@ -6,9 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListPendingActionProposalsParams = {
-  /**
-   * Waiting proposals.
-   */
-  status?: string;
+/**
+ * Public research consent.
+ */
+export type SetCloudResearchConsentBody = {
+  /** Whether public research is allowed. */
+  consented: boolean;
 };

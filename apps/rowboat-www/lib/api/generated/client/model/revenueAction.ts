@@ -79,7 +79,7 @@ export interface RevenueAction {
   providerThreadId?: string;
   /** Operator triage state. */
   queueStatus: RevenueActionQueueStatus;
-  /** Why this action was proposed. */
+  /** Human-readable evidence-backed reason. */
   reason: string;
   /** Recipient email address. */
   recipientEmail?: string;

@@ -7,7 +7,7 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { CreateAgent201 } from "../model";
+import type { CreateAgent201, GetAgent200, PutAgent200, PutAgent201 } from "../model";
 
 export const getCreateAgentResponseMock = (
   overrideResponse: Partial<Extract<CreateAgent201, object>> = {},
@@ -42,3 +42,77 @@ export const getCreateAgentResponseMock = (
   ]),
   ...overrideResponse,
 });
+
+export const getGetAgentResponseMock = (
+  overrideResponse: Partial<Extract<GetAgent200, object>> = {},
+): GetAgent200 => ({
+  enabledTools: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ),
+  instructions: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  model: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  provider: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  slug: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  source: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
+
+export const getPutAgentResponseMock = (
+  overrideResponse: Partial<Extract<PutAgent200 | PutAgent201, object>> = {},
+): PutAgent200 | PutAgent201 =>
+  faker.helpers.arrayElement([
+    {
+      enabledTools: Array.from(
+        { length: faker.number.int({ min: 1, max: 10 }) },
+        (_, i) => i + 1,
+      ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+      instructions: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      model: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      provider: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      slug: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      source: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      ...overrideResponse,
+    },
+    {
+      enabledTools: Array.from(
+        { length: faker.number.int({ min: 1, max: 10 }) },
+        (_, i) => i + 1,
+      ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+      instructions: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      model: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      provider: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      slug: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      source: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      ...overrideResponse,
+    },
+  ]);

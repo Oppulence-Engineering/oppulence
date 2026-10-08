@@ -9,10 +9,11 @@ import type {
   AcknowledgeMissionControl201,
   AcknowledgeMissionControlBody,
   AppendCommitmentTransitionBody,
-  ApproveMutualActionPlan201,
+  ApproveMutualActionPlan200,
   ApproveMutualActionPlanBody,
   ApproveRelationshipRecommendationBody,
   BetaDiagnostics,
+  CloudResearchConsentState,
   CommitmentDependency,
   CommunicationTimelinePage,
   ConversationDeletionReceipt,
@@ -27,13 +28,19 @@ import type {
   DecideConversationChangeBody,
   DecideRelationshipAttentionBody,
   DecideRelationshipIdentityCandidateBody,
+  DeleteRelationshipPersonBody,
+  EnrichCompanies200,
+  EnrichCompaniesBody,
+  EnrichPersons200,
+  EnrichPersonsBody,
   ExportCommitment200One,
   ExportCommitmentParams,
   GetCommitmentEvents200,
   GetCommunicationAttachmentContent200,
   GetCommunicationInteractionBody200,
-  GetCommunicationPolicy200,
+  GetCompanyResearchEstimate200,
   GetConversationPolicy200,
+  GetPersonResearchEstimate200,
   GetPublicMutualActionPlan200,
   GetRelationship200,
   GetRelationshipChanges200,
@@ -43,14 +50,18 @@ import type {
   GetRelationshipConversationReviewParams,
   GetRelationshipEvidence200,
   GetRelationshipGraphParams,
+  GetRelationshipPersonAttributes200,
   GetRelationshipSourceInventory200,
   GetRelationshipSourceStatuses200,
   GetRelationshipTimeline200,
   GetRelationshipTimelineParams,
+  GetResearchStatus200,
   IngestRelationshipObservations201,
   IngestRelationshipObservationsBody,
   ListCommitments200,
   ListCommitmentsParams,
+  ListPendingCompanyEnrichment200,
+  ListPendingPersonEnrichment200,
   ListRelationshipAttention200,
   ListRelationshipAttentionParams,
   ListRelationshipIdentityCandidates200,
@@ -63,9 +74,12 @@ import type {
   ListWorkspaceNotesParams,
   N400Response,
   N401Response,
+  N402Response,
   N403Response,
   N404Response,
   N409Response,
+  N503Response,
+  PersonDeletionReceipt,
   PutCommunicationPolicy200,
   PutCommunicationPolicyBody,
   PutConversationPolicy201,
@@ -90,6 +104,7 @@ import type {
   ReviseMutualActionPlanBody,
   RunCommitmentRecovery201,
   RunCommitmentRecoveryBody,
+  SetCloudResearchConsentBody,
   ShareMutualActionPlan201,
   ShareMutualActionPlanBody,
 } from "../model";
@@ -303,8 +318,8 @@ export const getRespondPublicMutualActionPlanUrl = () => {
 };
 
 /**
- * Confirm plan records that the other person confirmed the shared plan. The owner's records stay unchanged.
- * @summary Confirm plan
+ * Appends an idempotent external response for internal review; it never directly changes canonical commitments.
+ * @summary Respond to a scoped plan
  */
 export const respondPublicMutualActionPlan = async (
   respondPublicMutualActionPlanBody: RespondPublicMutualActionPlanBody,
@@ -427,8 +442,8 @@ export const getDecideRelationshipAttentionUrl = (attentionId: string) => {
 };
 
 /**
- * Review records that this attention item was reviewed. It leaves the open queue.
- * @summary Review
+ * Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.
+ * @summary Decide attention item
  */
 export const decideRelationshipAttention = async (
   attentionId: string,
@@ -674,8 +689,8 @@ export const getDecideRelationshipIdentityCandidateUrl = (candidateId: string) =
 };
 
 /**
- * Merge combines this possible duplicate into the company that already exists. The extra company is archived.
- * @summary Merge
+ * Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.
+ * @summary Decide identity candidate
  */
 export const decideRelationshipIdentityCandidate = async (
   candidateId: string,
@@ -739,8 +754,8 @@ export const getIngestRelationshipObservationsUrl = () => {
 };
 
 /**
- * Save a note posts the note the editor stores. The summary is Renewal context. The stored facts keep note id note-1, that title, the body Use the updated terms., one editor paragraph, and meeting link false. Each save uses a new external id and source version 1. The stored observation copies those fields and its content hash. The projection completed, and this save was not a duplicate.
- * @summary Save a note
+ * Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.
+ * @summary Ingest relationship observations
  */
 export const ingestRelationshipObservations = async (
   ingestRelationshipObservationsBody: IngestRelationshipObservationsBody,
@@ -823,6 +838,134 @@ export const listRelationshipPersons = async (
 
   const data: listRelationshipPersonsResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as listRelationshipPersonsResponse;
+};
+
+export type deleteRelationshipPersonResponse200 = {
+  data: PersonDeletionReceipt;
+  status: 200;
+};
+
+export type deleteRelationshipPersonResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type deleteRelationshipPersonResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type deleteRelationshipPersonResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type deleteRelationshipPersonResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type deleteRelationshipPersonResponseSuccess = deleteRelationshipPersonResponse200 & {
+  headers: Headers;
+};
+export type deleteRelationshipPersonResponseError = (
+  | deleteRelationshipPersonResponse400
+  | deleteRelationshipPersonResponse401
+  | deleteRelationshipPersonResponse403
+  | deleteRelationshipPersonResponse404
+) & {
+  headers: Headers;
+};
+
+export type deleteRelationshipPersonResponse =
+  deleteRelationshipPersonResponseSuccess | deleteRelationshipPersonResponseError;
+
+export const getDeleteRelationshipPersonUrl = (personId: string) => {
+  return `/v1/relationship-persons/${personId}`;
+};
+
+/**
+ * Confirm remove sends reason user_action. The server stores that reason, deletes the person and every derived row, and writes suppression anchors so the next sync cannot recreate them.
+ * @summary Remove a person
+ */
+export const deleteRelationshipPerson = async (
+  personId: string,
+  deleteRelationshipPersonBody: DeleteRelationshipPersonBody,
+  options?: RequestInit,
+): Promise<deleteRelationshipPersonResponse> => {
+  const res = await fetch(getDeleteRelationshipPersonUrl(personId), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(deleteRelationshipPersonBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteRelationshipPersonResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as deleteRelationshipPersonResponse;
+};
+
+export type getRelationshipPersonAttributesResponse200 = {
+  data: GetRelationshipPersonAttributes200;
+  status: 200;
+};
+
+export type getRelationshipPersonAttributesResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type getRelationshipPersonAttributesResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getRelationshipPersonAttributesResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getRelationshipPersonAttributesResponseSuccess =
+  getRelationshipPersonAttributesResponse200 & {
+    headers: Headers;
+  };
+export type getRelationshipPersonAttributesResponseError = (
+  | getRelationshipPersonAttributesResponse400
+  | getRelationshipPersonAttributesResponse401
+  | getRelationshipPersonAttributesResponse404
+) & {
+  headers: Headers;
+};
+
+export type getRelationshipPersonAttributesResponse =
+  getRelationshipPersonAttributesResponseSuccess | getRelationshipPersonAttributesResponseError;
+
+export const getGetRelationshipPersonAttributesUrl = (personId: string) => {
+  return `/v1/relationship-persons/${personId}/attributes`;
+};
+
+/**
+ * Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there.
+ * @summary Open person
+ */
+export const getRelationshipPersonAttributes = async (
+  personId: string,
+  options?: RequestInit,
+): Promise<getRelationshipPersonAttributesResponse> => {
+  const res = await fetch(getGetRelationshipPersonAttributesUrl(personId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRelationshipPersonAttributesResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getRelationshipPersonAttributesResponse;
 };
 
 export type approveRelationshipRecommendationResponse200 = {
@@ -1023,8 +1166,8 @@ export const getGetRelationshipSourceStatusesUrl = () => {
 };
 
 /**
- * Connected sources lists each account connected to this workspace. The page shows the account and whether its history is still syncing.
- * @summary Connected sources
+ * Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.
+ * @summary Get source health
  */
 export const getRelationshipSourceStatuses = async (
   options?: RequestInit,
@@ -1504,7 +1647,7 @@ export const getAcknowledgeMissionControlUrl = (relationshipId: string) => {
 };
 
 /**
- * Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.
+ * Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.
  * @summary Acknowledge Mission Control state
  */
 export const acknowledgeMissionControl = async (
@@ -1836,9 +1979,9 @@ export const getCommitmentEvents = async (
   return { data, status: res.status, headers: res.headers } as getCommitmentEventsResponse;
 };
 
-export type appendCommitmentTransitionResponse201 = {
+export type appendCommitmentTransitionResponse200 = {
   data: RelationshipCommitment;
-  status: 201;
+  status: 200;
 };
 
 export type appendCommitmentTransitionResponse400 = {
@@ -1861,7 +2004,7 @@ export type appendCommitmentTransitionResponse409 = {
   status: 409;
 };
 
-export type appendCommitmentTransitionResponseSuccess = appendCommitmentTransitionResponse201 & {
+export type appendCommitmentTransitionResponseSuccess = appendCommitmentTransitionResponse200 & {
   headers: Headers;
 };
 export type appendCommitmentTransitionResponseError = (
@@ -2028,8 +2171,8 @@ export const getResolveRelationshipContradictionUrl = (relationshipId: string, c
 };
 
 /**
- * Use this value closes a disagreement on this company. It sends the evidence you picked and why, and the company comes back with that value current.
- * @summary Use this value
+ * Records the user's selected evidence side as a top-authority correction without rewriting either source.
+ * @summary Resolve a typed contradiction
  */
 export const resolveRelationshipContradiction = async (
   relationshipId: string,
@@ -2093,7 +2236,7 @@ export const getCorrectConversationEvidenceUrl = (relationshipId: string) => {
 };
 
 /**
- * Correct sends the company id, the review item id, and the edited value. It always sends the focused-review reason.
+ * Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.
  * @summary Correct reviewed conversation evidence
  */
 export const correctConversationEvidence = async (
@@ -2159,8 +2302,8 @@ export const getDecideConversationChangeUrl = (relationshipId: string) => {
 };
 
 /**
- * Approve accepts this proposed conversation change. The company and its review queue refresh.
- * @summary Approve
+ * Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.
+ * @summary Decide a proposed conversation change
  */
 export const decideConversationChange = async (
   relationshipId: string,
@@ -2225,8 +2368,8 @@ export const getRequestConversationDeletionUrl = (relationshipId: string) => {
 };
 
 /**
- * Confirm delete removes this company's conversation evidence from Oppulence. Copies on this device and at the mailbox stay until they are checked.
- * @summary Confirm delete
+ * Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.
+ * @summary Request conversation deletion
  */
 export const requestConversationDeletion = async (
   relationshipId: string,
@@ -2471,8 +2614,8 @@ export const getCorrectRelationshipUrl = (relationshipId: string) => {
 };
 
 /**
- * Correct a detail replaces one field on this company. It sends the field, the new value, and why, and the company comes back with that value.
- * @summary Correct a detail
+ * Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.
+ * @summary Correct relationship state
  */
 export const correctRelationship = async (
   relationshipId: string,
@@ -2676,9 +2819,9 @@ export const reviseMutualActionPlan = async (
   return { data, status: res.status, headers: res.headers } as reviseMutualActionPlanResponse;
 };
 
-export type approveMutualActionPlanResponse201 = {
-  data: ApproveMutualActionPlan201;
-  status: 201;
+export type approveMutualActionPlanResponse200 = {
+  data: ApproveMutualActionPlan200;
+  status: 200;
 };
 
 export type approveMutualActionPlanResponse401 = {
@@ -2696,7 +2839,7 @@ export type approveMutualActionPlanResponse409 = {
   status: 409;
 };
 
-export type approveMutualActionPlanResponseSuccess = approveMutualActionPlanResponse201 & {
+export type approveMutualActionPlanResponseSuccess = approveMutualActionPlanResponse200 & {
   headers: Headers;
 };
 export type approveMutualActionPlanResponseError = (
@@ -2715,8 +2858,8 @@ export const getApproveMutualActionPlanUrl = (relationshipId: string, planId: st
 };
 
 /**
- * Approve this plan posts an empty body. The stored plan status is internally_approved, which the company sheet reads as Approved in this workspace.
- * @summary Approve this plan
+ * Binds internal approval to the exact current revision hash.
+ * @summary Approve a plan revision
  */
 export const approveMutualActionPlan = async (
   relationshipId: string,
@@ -2871,6 +3014,539 @@ export const getRelationshipTimeline = async (
   return { data, status: res.status, headers: res.headers } as getRelationshipTimelineResponse;
 };
 
+export type enrichCompaniesResponse200 = {
+  data: EnrichCompanies200;
+  status: 200;
+};
+
+export type enrichCompaniesResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type enrichCompaniesResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type enrichCompaniesResponse402 = {
+  data: N402Response;
+  status: 402;
+};
+
+export type enrichCompaniesResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type enrichCompaniesResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type enrichCompaniesResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type enrichCompaniesResponseSuccess = enrichCompaniesResponse200 & {
+  headers: Headers;
+};
+export type enrichCompaniesResponseError = (
+  | enrichCompaniesResponse400
+  | enrichCompaniesResponse401
+  | enrichCompaniesResponse402
+  | enrichCompaniesResponse403
+  | enrichCompaniesResponse409
+  | enrichCompaniesResponse503
+) & {
+  headers: Headers;
+};
+
+export type enrichCompaniesResponse = enrichCompaniesResponseSuccess | enrichCompaniesResponseError;
+
+export const getEnrichCompaniesUrl = () => {
+  return `/v1/research/companies`;
+};
+
+/**
+ * Fill in companies and people posts the pending company ids first. Each request stays within the estimate batch size.
+ * @summary Fill in companies
+ */
+export const enrichCompanies = async (
+  enrichCompaniesBody: EnrichCompaniesBody,
+  options?: RequestInit,
+): Promise<enrichCompaniesResponse> => {
+  const res = await fetch(getEnrichCompaniesUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(enrichCompaniesBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: enrichCompaniesResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as enrichCompaniesResponse;
+};
+
+export type getCompanyResearchEstimateResponse200 = {
+  data: GetCompanyResearchEstimate200;
+  status: 200;
+};
+
+export type getCompanyResearchEstimateResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getCompanyResearchEstimateResponse402 = {
+  data: N402Response;
+  status: 402;
+};
+
+export type getCompanyResearchEstimateResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type getCompanyResearchEstimateResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type getCompanyResearchEstimateResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type getCompanyResearchEstimateResponseSuccess = getCompanyResearchEstimateResponse200 & {
+  headers: Headers;
+};
+export type getCompanyResearchEstimateResponseError = (
+  | getCompanyResearchEstimateResponse401
+  | getCompanyResearchEstimateResponse402
+  | getCompanyResearchEstimateResponse403
+  | getCompanyResearchEstimateResponse409
+  | getCompanyResearchEstimateResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCompanyResearchEstimateResponse =
+  getCompanyResearchEstimateResponseSuccess | getCompanyResearchEstimateResponseError;
+
+export const getGetCompanyResearchEstimateUrl = () => {
+  return `/v1/research/companies/estimate`;
+};
+
+/**
+ * When public research is allowed, the companies page loads this estimate and prints the company count. One pending company uses the pro processor: 1000 credits, which is usd 0.1. batchSize 25 is the maximum ids one fill request accepts. The page adds this usd to the people estimate.
+ * @summary Estimate companies
+ */
+export const getCompanyResearchEstimate = async (
+  options?: RequestInit,
+): Promise<getCompanyResearchEstimateResponse> => {
+  const res = await fetch(getGetCompanyResearchEstimateUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCompanyResearchEstimateResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getCompanyResearchEstimateResponse;
+};
+
+export type listPendingCompanyEnrichmentResponse200 = {
+  data: ListPendingCompanyEnrichment200;
+  status: 200;
+};
+
+export type listPendingCompanyEnrichmentResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listPendingCompanyEnrichmentResponse402 = {
+  data: N402Response;
+  status: 402;
+};
+
+export type listPendingCompanyEnrichmentResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type listPendingCompanyEnrichmentResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type listPendingCompanyEnrichmentResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type listPendingCompanyEnrichmentResponseSuccess =
+  listPendingCompanyEnrichmentResponse200 & {
+    headers: Headers;
+  };
+export type listPendingCompanyEnrichmentResponseError = (
+  | listPendingCompanyEnrichmentResponse401
+  | listPendingCompanyEnrichmentResponse402
+  | listPendingCompanyEnrichmentResponse403
+  | listPendingCompanyEnrichmentResponse409
+  | listPendingCompanyEnrichmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type listPendingCompanyEnrichmentResponse =
+  listPendingCompanyEnrichmentResponseSuccess | listPendingCompanyEnrichmentResponseError;
+
+export const getListPendingCompanyEnrichmentUrl = () => {
+  return `/v1/research/companies/pending`;
+};
+
+/**
+ * Fill in companies and people reads this list first, then posts these relationship ids. The pending company is 9c8dfa9b-a7b2-46ea-982c-622a914c00e5.
+ * @summary Pending companies
+ */
+export const listPendingCompanyEnrichment = async (
+  options?: RequestInit,
+): Promise<listPendingCompanyEnrichmentResponse> => {
+  const res = await fetch(getListPendingCompanyEnrichmentUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listPendingCompanyEnrichmentResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listPendingCompanyEnrichmentResponse;
+};
+
+export type setCloudResearchConsentResponse200 = {
+  data: CloudResearchConsentState;
+  status: 200;
+};
+
+export type setCloudResearchConsentResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type setCloudResearchConsentResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type setCloudResearchConsentResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type setCloudResearchConsentResponseSuccess = setCloudResearchConsentResponse200 & {
+  headers: Headers;
+};
+export type setCloudResearchConsentResponseError = (
+  | setCloudResearchConsentResponse400
+  | setCloudResearchConsentResponse401
+  | setCloudResearchConsentResponse403
+) & {
+  headers: Headers;
+};
+
+export type setCloudResearchConsentResponse =
+  setCloudResearchConsentResponseSuccess | setCloudResearchConsentResponseError;
+
+export const getSetCloudResearchConsentUrl = () => {
+  return `/v1/research/consent`;
+};
+
+/**
+ * Allow public research sends consented true. Turn off sends consented false. The server stores that choice for the workspace and records consentedAt only while consent is on.
+ * @summary Allow public research
+ */
+export const setCloudResearchConsent = async (
+  setCloudResearchConsentBody: SetCloudResearchConsentBody,
+  options?: RequestInit,
+): Promise<setCloudResearchConsentResponse> => {
+  const res = await fetch(getSetCloudResearchConsentUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(setCloudResearchConsentBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: setCloudResearchConsentResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as setCloudResearchConsentResponse;
+};
+
+export type enrichPersonsResponse200 = {
+  data: EnrichPersons200;
+  status: 200;
+};
+
+export type enrichPersonsResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type enrichPersonsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type enrichPersonsResponse402 = {
+  data: N402Response;
+  status: 402;
+};
+
+export type enrichPersonsResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type enrichPersonsResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type enrichPersonsResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type enrichPersonsResponseSuccess = enrichPersonsResponse200 & {
+  headers: Headers;
+};
+export type enrichPersonsResponseError = (
+  | enrichPersonsResponse400
+  | enrichPersonsResponse401
+  | enrichPersonsResponse402
+  | enrichPersonsResponse403
+  | enrichPersonsResponse409
+  | enrichPersonsResponse503
+) & {
+  headers: Headers;
+};
+
+export type enrichPersonsResponse = enrichPersonsResponseSuccess | enrichPersonsResponseError;
+
+export const getEnrichPersonsUrl = () => {
+  return `/v1/research/people`;
+};
+
+/**
+ * Fill in companies and people posts the pending person ids after the companies. Each request stays within the estimate batch size.
+ * @summary Fill in people
+ */
+export const enrichPersons = async (
+  enrichPersonsBody: EnrichPersonsBody,
+  options?: RequestInit,
+): Promise<enrichPersonsResponse> => {
+  const res = await fetch(getEnrichPersonsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(enrichPersonsBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: enrichPersonsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as enrichPersonsResponse;
+};
+
+export type getPersonResearchEstimateResponse200 = {
+  data: GetPersonResearchEstimate200;
+  status: 200;
+};
+
+export type getPersonResearchEstimateResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getPersonResearchEstimateResponse402 = {
+  data: N402Response;
+  status: 402;
+};
+
+export type getPersonResearchEstimateResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type getPersonResearchEstimateResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type getPersonResearchEstimateResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type getPersonResearchEstimateResponseSuccess = getPersonResearchEstimateResponse200 & {
+  headers: Headers;
+};
+export type getPersonResearchEstimateResponseError = (
+  | getPersonResearchEstimateResponse401
+  | getPersonResearchEstimateResponse402
+  | getPersonResearchEstimateResponse403
+  | getPersonResearchEstimateResponse409
+  | getPersonResearchEstimateResponse503
+) & {
+  headers: Headers;
+};
+
+export type getPersonResearchEstimateResponse =
+  getPersonResearchEstimateResponseSuccess | getPersonResearchEstimateResponseError;
+
+export const getGetPersonResearchEstimateUrl = () => {
+  return `/v1/research/people/estimate`;
+};
+
+/**
+ * When public research is allowed, the companies page loads this estimate and prints the people count. One pending person uses the pro processor: 1000 credits, which is usd 0.1. batchSize 25 is the maximum ids one fill request accepts. The page adds this usd to the company estimate.
+ * @summary Estimate people
+ */
+export const getPersonResearchEstimate = async (
+  options?: RequestInit,
+): Promise<getPersonResearchEstimateResponse> => {
+  const res = await fetch(getGetPersonResearchEstimateUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getPersonResearchEstimateResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getPersonResearchEstimateResponse;
+};
+
+export type listPendingPersonEnrichmentResponse200 = {
+  data: ListPendingPersonEnrichment200;
+  status: 200;
+};
+
+export type listPendingPersonEnrichmentResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listPendingPersonEnrichmentResponse402 = {
+  data: N402Response;
+  status: 402;
+};
+
+export type listPendingPersonEnrichmentResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type listPendingPersonEnrichmentResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type listPendingPersonEnrichmentResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type listPendingPersonEnrichmentResponseSuccess = listPendingPersonEnrichmentResponse200 & {
+  headers: Headers;
+};
+export type listPendingPersonEnrichmentResponseError = (
+  | listPendingPersonEnrichmentResponse401
+  | listPendingPersonEnrichmentResponse402
+  | listPendingPersonEnrichmentResponse403
+  | listPendingPersonEnrichmentResponse409
+  | listPendingPersonEnrichmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type listPendingPersonEnrichmentResponse =
+  listPendingPersonEnrichmentResponseSuccess | listPendingPersonEnrichmentResponseError;
+
+export const getListPendingPersonEnrichmentUrl = () => {
+  return `/v1/research/people/pending`;
+};
+
+/**
+ * Fill in companies and people reads this list after the companies, then posts these person ids. The pending person is 1b8dfa9b-a7b2-46ea-982c-622a914c00e5.
+ * @summary Pending people
+ */
+export const listPendingPersonEnrichment = async (
+  options?: RequestInit,
+): Promise<listPendingPersonEnrichmentResponse> => {
+  const res = await fetch(getListPendingPersonEnrichmentUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listPendingPersonEnrichmentResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listPendingPersonEnrichmentResponse;
+};
+
+export type getResearchStatusResponse200 = {
+  data: GetResearchStatus200;
+  status: 200;
+};
+
+export type getResearchStatusResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getResearchStatusResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type getResearchStatusResponseSuccess = getResearchStatusResponse200 & {
+  headers: Headers;
+};
+export type getResearchStatusResponseError = (
+  getResearchStatusResponse401 | getResearchStatusResponse403
+) & {
+  headers: Headers;
+};
+
+export type getResearchStatusResponse =
+  getResearchStatusResponseSuccess | getResearchStatusResponseError;
+
+export const getGetResearchStatusUrl = () => {
+  return `/v1/research/status`;
+};
+
+/**
+ * The companies page checks public research before it shows Allow public research. When research is configured, the required plan is intelligence, and consent is still off, the response is available true, allowed false, and reason consent_required.
+ * @summary Check public research
+ */
+export const getResearchStatus = async (
+  options?: RequestInit,
+): Promise<getResearchStatusResponse> => {
+  const res = await fetch(getGetResearchStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getResearchStatusResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getResearchStatusResponse;
+};
+
 export type putCommunicationPolicyResponse200 = {
   data: PutCommunicationPolicy200;
   status: 200;
@@ -2937,6 +3613,68 @@ export const putCommunicationPolicy = async (
   return { data, status: res.status, headers: res.headers } as putCommunicationPolicyResponse;
 };
 
+export type deleteCommunicationPrivacyRuleResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type deleteCommunicationPrivacyRuleResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type deleteCommunicationPrivacyRuleResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type deleteCommunicationPrivacyRuleResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type deleteCommunicationPrivacyRuleResponseSuccess =
+  deleteCommunicationPrivacyRuleResponse204 & {
+    headers: Headers;
+  };
+export type deleteCommunicationPrivacyRuleResponseError = (
+  | deleteCommunicationPrivacyRuleResponse400
+  | deleteCommunicationPrivacyRuleResponse401
+  | deleteCommunicationPrivacyRuleResponse404
+) & {
+  headers: Headers;
+};
+
+export type deleteCommunicationPrivacyRuleResponse =
+  deleteCommunicationPrivacyRuleResponseSuccess | deleteCommunicationPrivacyRuleResponseError;
+
+export const getDeleteCommunicationPrivacyRuleUrl = (ruleId: string) => {
+  return `/v1/revenue-workspaces/current/communication-privacy-rules/${ruleId}`;
+};
+
+/**
+ * Remove deletes one protected or blocked address and returns no response body.
+ * @summary Remove
+ */
+export const deleteCommunicationPrivacyRule = async (
+  ruleId: string,
+  options?: RequestInit,
+): Promise<deleteCommunicationPrivacyRuleResponse> => {
+  const res = await fetch(getDeleteCommunicationPrivacyRuleUrl(ruleId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteCommunicationPrivacyRuleResponse["data"] = body ? JSON.parse(body) : undefined;
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteCommunicationPrivacyRuleResponse;
+};
+
 export type getCommunicationAttachmentContentResponse200 = {
   data: GetCommunicationAttachmentContent200;
   status: 200;
@@ -2997,56 +3735,6 @@ export const getCommunicationAttachmentContent = async (
     status: res.status,
     headers: res.headers,
   } as getCommunicationAttachmentContentResponse;
-};
-
-export type getCommunicationPolicyResponse200 = {
-  data: GetCommunicationPolicy200;
-  status: 200;
-};
-
-export type getCommunicationPolicyResponse401 = {
-  data: N401Response;
-  status: 401;
-};
-
-export type getCommunicationPolicyResponse404 = {
-  data: N404Response;
-  status: 404;
-};
-
-export type getCommunicationPolicyResponseSuccess = getCommunicationPolicyResponse200 & {
-  headers: Headers;
-};
-export type getCommunicationPolicyResponseError = (
-  getCommunicationPolicyResponse401 | getCommunicationPolicyResponse404
-) & {
-  headers: Headers;
-};
-
-export type getCommunicationPolicyResponse =
-  getCommunicationPolicyResponseSuccess | getCommunicationPolicyResponseError;
-
-export const getGetCommunicationPolicyUrl = (sourceAccountId: string) => {
-  return `/v1/revenue-workspaces/current/communication-policy/${sourceAccountId}`;
-};
-
-/**
- * Email & Calendar privacy loads this mailbox policy after the mailbox account is entered. Metadata stays workspace-visible, subject lines are shared, and bodies and attachments stay private.
- * @summary Mailbox policy
- */
-export const getCommunicationPolicy = async (
-  sourceAccountId: string,
-  options?: RequestInit,
-): Promise<getCommunicationPolicyResponse> => {
-  const res = await fetch(getGetCommunicationPolicyUrl(sourceAccountId), {
-    ...options,
-    method: "GET",
-  });
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: getCommunicationPolicyResponse["data"] = body ? JSON.parse(body) : {};
-  return { data, status: res.status, headers: res.headers } as getCommunicationPolicyResponse;
 };
 
 export type getCommunicationInteractionBodyResponse200 = {
@@ -3155,8 +3843,8 @@ export const getListWorkspaceNotesUrl = (params?: ListWorkspaceNotesParams) => {
 };
 
 /**
- * Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.
- * @summary List workspace notes
+ * Notes loads the newest page. The request asks for 50 notes and does not ask for an older page. This workspace has no company note, so the page is empty.
+ * @summary Notes
  */
 export const listWorkspaceNotes = async (
   params?: ListWorkspaceNotesParams,

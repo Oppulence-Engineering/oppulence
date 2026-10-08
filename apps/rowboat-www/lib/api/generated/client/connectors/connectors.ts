@@ -18,6 +18,8 @@ import type {
   HubSpotSearchRequest,
   HubSpotSearchResponse,
   ListCommunicationPrivacyRules200,
+  ListComposioConnections200,
+  ListComposioToolkits200,
   MCPTokenRequest,
   MCPTokenResponse,
   N400Response,
@@ -30,8 +32,6 @@ import type {
   N500Response,
   N502Response,
   N503Response,
-  StartComposioConnection200,
-  StartComposioConnectionBody,
 } from "../model";
 
 export type getConnectorBrokerJWKSResponse200 = {
@@ -74,6 +74,181 @@ export const getConnectorBrokerJWKS = async (
 
   const data: getConnectorBrokerJWKSResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getConnectorBrokerJWKSResponse;
+};
+
+export type listComposioConnectionsResponse200 = {
+  data: ListComposioConnections200;
+  status: 200;
+};
+
+export type listComposioConnectionsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listComposioConnectionsResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type listComposioConnectionsResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type listComposioConnectionsResponseSuccess = listComposioConnectionsResponse200 & {
+  headers: Headers;
+};
+export type listComposioConnectionsResponseError = (
+  | listComposioConnectionsResponse401
+  | listComposioConnectionsResponse502
+  | listComposioConnectionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listComposioConnectionsResponse =
+  listComposioConnectionsResponseSuccess | listComposioConnectionsResponseError;
+
+export const getListComposioConnectionsUrl = () => {
+  return `/v1/composio/connections`;
+};
+
+/**
+ * Connected lists the Jira account linked from More products.
+ * @summary Connected
+ */
+export const listComposioConnections = async (
+  options?: RequestInit,
+): Promise<listComposioConnectionsResponse> => {
+  const res = await fetch(getListComposioConnectionsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listComposioConnectionsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listComposioConnectionsResponse;
+};
+
+export type deleteComposioConnectionResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type deleteComposioConnectionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type deleteComposioConnectionResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type deleteComposioConnectionResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type deleteComposioConnectionResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type deleteComposioConnectionResponseSuccess = deleteComposioConnectionResponse204 & {
+  headers: Headers;
+};
+export type deleteComposioConnectionResponseError = (
+  | deleteComposioConnectionResponse401
+  | deleteComposioConnectionResponse404
+  | deleteComposioConnectionResponse502
+  | deleteComposioConnectionResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteComposioConnectionResponse =
+  deleteComposioConnectionResponseSuccess | deleteComposioConnectionResponseError;
+
+export const getDeleteComposioConnectionUrl = (connectionID: string) => {
+  return `/v1/composio/connections/${connectionID}`;
+};
+
+/**
+ * Disconnect Jira removes that connection. The request sends no body.
+ * @summary Disconnect Jira
+ */
+export const deleteComposioConnection = async (
+  connectionID: string,
+  options?: RequestInit,
+): Promise<deleteComposioConnectionResponse> => {
+  const res = await fetch(getDeleteComposioConnectionUrl(connectionID), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteComposioConnectionResponse["data"] = body ? JSON.parse(body) : undefined;
+  return { data, status: res.status, headers: res.headers } as deleteComposioConnectionResponse;
+};
+
+export type listComposioToolkitsResponse200 = {
+  data: ListComposioToolkits200;
+  status: 200;
+};
+
+export type listComposioToolkitsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listComposioToolkitsResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type listComposioToolkitsResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type listComposioToolkitsResponseSuccess = listComposioToolkitsResponse200 & {
+  headers: Headers;
+};
+export type listComposioToolkitsResponseError = (
+  | listComposioToolkitsResponse401
+  | listComposioToolkitsResponse502
+  | listComposioToolkitsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listComposioToolkitsResponse =
+  listComposioToolkitsResponseSuccess | listComposioToolkitsResponseError;
+
+export const getListComposioToolkitsUrl = () => {
+  return `/v1/composio/toolkits`;
+};
+
+/**
+ * More products lists Jira and Asana. Gmail, Google Calendar, and HubSpot stay on their own cards.
+ * @summary More products
+ */
+export const listComposioToolkits = async (
+  options?: RequestInit,
+): Promise<listComposioToolkitsResponse> => {
+  const res = await fetch(getListComposioToolkitsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listComposioToolkitsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listComposioToolkitsResponse;
 };
 
 export type deleteConnectionResponse204 = {
@@ -499,71 +674,6 @@ export const createMCPToken = async (
 
   const data: createMCPTokenResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as createMCPTokenResponse;
-};
-
-export type startComposioConnectionResponse200 = {
-  data: StartComposioConnection200;
-  status: 200;
-};
-
-export type startComposioConnectionResponse400 = {
-  data: N400Response;
-  status: 400;
-};
-
-export type startComposioConnectionResponse401 = {
-  data: N401Response;
-  status: 401;
-};
-
-export type startComposioConnectionResponse502 = {
-  data: N502Response;
-  status: 502;
-};
-
-export type startComposioConnectionResponse503 = {
-  data: N503Response;
-  status: 503;
-};
-
-export type startComposioConnectionResponseSuccess = startComposioConnectionResponse200 & {
-  headers: Headers;
-};
-export type startComposioConnectionResponseError = (
-  | startComposioConnectionResponse400
-  | startComposioConnectionResponse401
-  | startComposioConnectionResponse502
-  | startComposioConnectionResponse503
-) & {
-  headers: Headers;
-};
-
-export type startComposioConnectionResponse =
-  startComposioConnectionResponseSuccess | startComposioConnectionResponseError;
-
-export const getStartComposioConnectionUrl = () => {
-  return `/v1/composio/connections`;
-};
-
-/**
- * Connect opens the Jira sign-in page. The account is linked only after that page is finished.
- * @summary Connect
- */
-export const startComposioConnection = async (
-  startComposioConnectionBody: StartComposioConnectionBody,
-  options?: RequestInit,
-): Promise<startComposioConnectionResponse> => {
-  const res = await fetch(getStartComposioConnectionUrl(), {
-    ...options,
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(startComposioConnectionBody),
-  });
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: startComposioConnectionResponse["data"] = body ? JSON.parse(body) : {};
-  return { data, status: res.status, headers: res.headers } as startComposioConnectionResponse;
 };
 
 export type startConnectionResponse200 = {
@@ -1044,69 +1154,6 @@ export const startConnector = async (
 
   const data: startConnectorResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as startConnectorResponse;
-};
-
-export type deleteComposioConnectionResponse204 = {
-  data: void;
-  status: 204;
-};
-
-export type deleteComposioConnectionResponse401 = {
-  data: N401Response;
-  status: 401;
-};
-
-export type deleteComposioConnectionResponse404 = {
-  data: N404Response;
-  status: 404;
-};
-
-export type deleteComposioConnectionResponse502 = {
-  data: N502Response;
-  status: 502;
-};
-
-export type deleteComposioConnectionResponse503 = {
-  data: N503Response;
-  status: 503;
-};
-
-export type deleteComposioConnectionResponseSuccess = deleteComposioConnectionResponse204 & {
-  headers: Headers;
-};
-export type deleteComposioConnectionResponseError = (
-  | deleteComposioConnectionResponse401
-  | deleteComposioConnectionResponse404
-  | deleteComposioConnectionResponse502
-  | deleteComposioConnectionResponse503
-) & {
-  headers: Headers;
-};
-
-export type deleteComposioConnectionResponse =
-  deleteComposioConnectionResponseSuccess | deleteComposioConnectionResponseError;
-
-export const getDeleteComposioConnectionUrl = (connectionID: string) => {
-  return `/v1/composio/connections/${connectionID}`;
-};
-
-/**
- * Disconnect Jira removes that connection. The request sends no body.
- * @summary Disconnect Jira
- */
-export const deleteComposioConnection = async (
-  connectionID: string,
-  options?: RequestInit,
-): Promise<deleteComposioConnectionResponse> => {
-  const res = await fetch(getDeleteComposioConnectionUrl(connectionID), {
-    ...options,
-    method: "DELETE",
-  });
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: deleteComposioConnectionResponse["data"] = body ? JSON.parse(body) : undefined;
-  return { data, status: res.status, headers: res.headers } as deleteComposioConnectionResponse;
 };
 
 export type searchHubSpotResponse200 = {

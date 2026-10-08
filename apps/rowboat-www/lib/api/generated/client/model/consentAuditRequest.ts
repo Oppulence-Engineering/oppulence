@@ -12,7 +12,7 @@ import type { ConsentAuditRequestResult } from "./consentAuditRequestResult";
  * Append-only, replay-safe oauth-consent audit event. event_id is globally unique and conflicting replays are rejected.
  */
 export interface ConsentAuditRequest {
-  /** OAuth token audience for the connector. */
+  /** Bound connector audience. */
   audience: string;
   /** Bound Hydra client id. */
   client_id: string;
@@ -30,7 +30,7 @@ export interface ConsentAuditRequest {
   occurred_at: string;
   /** Bounded JSON result object or string. It must not contain credentials. */
   result?: ConsentAuditRequestResult;
-  /** OAuth scopes granted or requested. */
+  /** Shown or granted scope set. */
   scopes: string[];
   /** Hook contract version. Only version 1 is accepted. */
   version: number;

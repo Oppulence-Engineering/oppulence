@@ -13,7 +13,7 @@ import * as zod from "zod";
  */
 export const AppendConnectorConsentAuditBody = zod
   .strictObject({
-    audience: zod.string().describe("OAuth token audience for the connector."),
+    audience: zod.string().describe("Bound connector audience."),
     client_id: zod.string().describe("Bound Hydra client id."),
     connector_id: zod.string().describe("Bound connector slug."),
     consent_session_id: zod.string().describe("Consent UI session id."),
@@ -29,7 +29,7 @@ export const AppendConnectorConsentAuditBody = zod
       .describe("Bounded JSON result object or string. It must not contain credentials."),
     scopes: zod
       .array(zod.string().describe("Connector scope."))
-      .describe("OAuth scopes granted or requested."),
+      .describe("Shown or granted scope set."),
     version: zod.int().describe("Hook contract version. Only version 1 is accepted."),
     workos_user_id: zod
       .string()
@@ -241,39 +241,28 @@ export const PreConsent200Response = zod
     client: zod
       .strictObject({
         display_name: zod.string().describe("Stable product display name."),
-        id: zod.string().describe("Stable UUID primary key."),
+        id: zod.string().describe("Hydra client id."),
       })
       .describe("Bound OAuth client identity shown to the user."),
     connector: zod
       .strictObject({
-        audience: zod.string().describe("OAuth token audience for the connector."),
+        audience: zod.string().describe("Audience bound to any resulting resource token."),
         display_name: zod.string().describe("Connector display name."),
-        id: zod.string().describe("Stable UUID primary key."),
+        id: zod.string().describe("Connector slug."),
       })
-      .describe("Connector slug."),
+      .describe("Connector identity shown to the user."),
     entitlement: zod
       .strictObject({
         allowed: zod
           .boolean()
           .describe("Whether the current plan permits this connector and scope set."),
         message: zod.string().nullish().describe("Human-readable entitlement explanation."),
-        reason: zod
-          .enum([
-            "llm_call",
-            "llm_call_reserve",
-            "llm_settle",
-            "voice_tts",
-            "exa_search",
-            "grant",
-            "refund",
-          ])
-          .nullish()
-          .describe("Reason code for the ledger entry."),
+        reason: zod.string().nullish().describe("Machine-readable denial reason."),
         required_plan: zod.string().nullish().describe("Minimum plan required after denial."),
         upgrade_url: zod.string().nullish().describe("Desktop upgrade deep link."),
       })
       .describe("Current entitlement decision, distinct from OAuth approval or denial."),
-    request_id: zod.string().describe("Idempotency and trace anchor for a metered request."),
+    request_id: zod.string().describe("Deterministic context request id bound to the challenge."),
     scopes: zod
       .array(
         zod
@@ -287,7 +276,7 @@ export const PreConsent200Response = zod
           })
           .describe("Catalog-owned scope definition rendered by oauth-consent."),
       )
-      .describe("OAuth scopes granted or requested."),
+      .describe("Exact catalog scope definitions."),
     subject: zod.string().describe("WorkOS subject bound to the pending flow."),
   })
   .describe(

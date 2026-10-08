@@ -7,16 +7,14 @@
  */
 
 /**
- * Reason code for the ledger entry.
+ * Whether this workspace allows public research to send a counterparty name and domain to the research vendor.
  */
-export type ActionProposalReason = (typeof ActionProposalReason)[keyof typeof ActionProposalReason];
-
-export const ActionProposalReason = {
-  llm_call: "llm_call",
-  llm_call_reserve: "llm_call_reserve",
-  llm_settle: "llm_settle",
-  voice_tts: "voice_tts",
-  exa_search: "exa_search",
-  grant: "grant",
-  refund: "refund",
-} as const;
+export interface CloudResearchConsentState {
+  /** Whether public research is allowed. */
+  consented: boolean;
+  /**
+   * When public research was allowed. Absent after Turn off.
+   * @nullable
+   */
+  consentedAt?: string | null;
+}

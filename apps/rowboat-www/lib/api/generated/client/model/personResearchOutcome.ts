@@ -6,10 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListAgentSessionsParams = {
-  /**
-   * How many conversations to skip. Show earlier conversations skips the newest 50.
-   * @minimum 0
-   */
-  offset?: number;
-};
+/**
+ * Result of filling in one person from public research.
+ */
+export interface PersonResearchOutcome {
+  /** Whether the vendor identified the person. */
+  matched: boolean;
+  /** Person id. */
+  personId: string;
+  /** Whether this person was already filled in at the current version. */
+  replayed: boolean;
+  /** Details saved. */
+  written: number;
+}

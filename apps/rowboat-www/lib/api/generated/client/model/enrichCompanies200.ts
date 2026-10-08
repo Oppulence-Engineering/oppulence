@@ -5,14 +5,12 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
+import type { CompanyResearchOutcome } from "./companyResearchOutcome";
 
 /**
- * Who can see mailbox metadata.
+ * Company research results.
  */
-export type GetCommunicationPolicy200MetadataVisibility =
-  (typeof GetCommunicationPolicy200MetadataVisibility)[keyof typeof GetCommunicationPolicy200MetadataVisibility];
-
-export const GetCommunicationPolicy200MetadataVisibility = {
-  private: "private",
-  workspace: "workspace",
-} as const;
+export type EnrichCompanies200 = {
+  /** One outcome per company. */
+  outcomes: CompanyResearchOutcome[];
+};

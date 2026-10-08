@@ -7,17 +7,11 @@
  */
 
 /**
- * Reason code for the ledger entry.
+ * Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
  */
-export type PersonAttributeReason =
-  (typeof PersonAttributeReason)[keyof typeof PersonAttributeReason];
+export type MailBodyCacheProvider =
+  (typeof MailBodyCacheProvider)[keyof typeof MailBodyCacheProvider];
 
-export const PersonAttributeReason = {
-  llm_call: "llm_call",
-  llm_call_reserve: "llm_call_reserve",
-  llm_settle: "llm_settle",
-  voice_tts: "voice_tts",
-  exa_search: "exa_search",
-  grant: "grant",
-  refund: "refund",
+export const MailBodyCacheProvider = {
+  gmail: "gmail",
 } as const;

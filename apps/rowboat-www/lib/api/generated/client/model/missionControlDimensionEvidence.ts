@@ -47,7 +47,7 @@ export interface MissionControlDimensionEvidence {
    * @nullable
    */
   reviewedAt?: string | null;
-  /** Explicit reviewer when present. */
+  /** User who reviewed this value. */
   reviewerId?: string;
   /** Assertion lifecycle state. */
   status?: MissionControlDimensionEvidenceStatus;

@@ -8,12 +8,16 @@
 import { faker } from "@faker-js/faker";
 
 import type {
+  ApproveActionProposal200,
+  ExecuteActionProposal200,
+  GetObjectAudit200,
   GetOpenPromisesReport200One,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
   ListActionProposals200,
   ListRevenueActions200,
   ListRevenueLeakScans200,
+  RejectActionProposal200,
   RevenueAction,
   RevenueDigest,
   RevenueImpact,
@@ -32,6 +36,80 @@ export const getListActionProposalsResponseMock = (
   ),
   ...overrideResponse,
 });
+
+export const getApproveActionProposalResponseMock = (
+  overrideResponse: Partial<Extract<ApproveActionProposal200, object>> = {},
+): ApproveActionProposal200 => ({
+  expiresAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+  proposal: {
+    approvedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+    createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+    financial: faker.datatype.boolean(),
+    id: faker.string.uuid(),
+    kind: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    paramsJson: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    rationale: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    status: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    target: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  },
+  token: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
+
+export const getExecuteActionProposalResponseMock = (
+  overrideResponse: Partial<Extract<ExecuteActionProposal200, object>> = {},
+): ExecuteActionProposal200 => ({
+  approvedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+  createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+  executedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+  financial: faker.datatype.boolean(),
+  id: faker.string.uuid(),
+  kind: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  paramsJson: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  rationale: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  resultRef: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  status: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  target: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
+
+export const getRejectActionProposalResponseMock = (
+  overrideResponse: Partial<Extract<RejectActionProposal200, object>> = {},
+): RejectActionProposal200 => ({
+  createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+  financial: faker.datatype.boolean(),
+  id: faker.string.uuid(),
+  kind: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  paramsJson: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  rationale: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  status: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  target: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
+
+export const getGetObjectAuditResponseMock = (): GetObjectAudit200 => ({});
 
 export const getListRevenueActionsResponseMock = (
   overrideResponse: Partial<Extract<ListRevenueActions200, object>> = {},
@@ -1895,7 +1973,7 @@ export const getGetRevenueImpactResponseMock = (
 export const getListRevenueLeakScansResponseMock = (
   overrideResponse: Partial<Extract<ListRevenueLeakScans200, object>> = {},
 ): ListRevenueLeakScans200 => ({
-  hasMore: faker.datatype.boolean(),
+  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
   scans: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
     actionsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
     candidatesSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),

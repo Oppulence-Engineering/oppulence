@@ -38,18 +38,7 @@ export const getPreConsentResponseMock = (
       undefined,
     ]),
     reason: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([
-        faker.helpers.arrayElement([
-          "llm_call",
-          "llm_call_reserve",
-          "llm_settle",
-          "voice_tts",
-          "exa_search",
-          "grant",
-          "refund",
-        ] as const),
-        null,
-      ]),
+      faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
       undefined,
     ]),
     required_plan: faker.helpers.arrayElement([

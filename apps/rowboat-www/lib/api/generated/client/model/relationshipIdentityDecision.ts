@@ -5,13 +5,12 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { RelationshipIdentityDecisionReason } from "./relationshipIdentityDecisionReason";
 
 /**
  * Immutable actor-bound identity decision.
  */
 export interface RelationshipIdentityDecision {
-  /** Decision actor. */
+  /** User who made this decision. */
   actorId: string;
   /** Candidate version decided. */
   candidateVersion: number;
@@ -23,6 +22,6 @@ export interface RelationshipIdentityDecision {
   decision: string;
   /** Stable UUID primary key. */
   id: string;
-  /** Reason code for the ledger entry. */
-  reason?: RelationshipIdentityDecisionReason;
+  /** Decision reason. */
+  reason?: string;
 }

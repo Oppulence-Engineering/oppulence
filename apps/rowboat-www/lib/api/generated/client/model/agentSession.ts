@@ -20,7 +20,7 @@ export interface AgentSession {
   channel: string;
   channel_key?: string;
   completed_at?: string;
-  /** Settled credit cost for the request. */
+  /** Credits used across this session. */
   cost_units: number;
   /** Row creation timestamp. */
   created_at: string;

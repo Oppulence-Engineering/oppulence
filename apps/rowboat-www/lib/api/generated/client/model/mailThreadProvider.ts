@@ -7,11 +7,10 @@
  */
 
 /**
- * Accepted turn.
+ * Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
  */
-export type SubmitAgentSessionTurn202 = {
-  /** The turn was queued. */
-  accepted: boolean;
-  /** Sequence of the accepted turn. */
-  turnSeq: number;
-};
+export type MailThreadProvider = (typeof MailThreadProvider)[keyof typeof MailThreadProvider];
+
+export const MailThreadProvider = {
+  gmail: "gmail",
+} as const;

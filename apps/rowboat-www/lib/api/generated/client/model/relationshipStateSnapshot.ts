@@ -23,7 +23,7 @@ export interface RelationshipStateSnapshot {
   id: string;
   /** Projector version used for this snapshot. */
   projectorVersion: number;
-  /** Opaque one-time OAuth state/session ticket. */
+  /** Projected state at this version. */
   state: RelationshipStateSnapshotState;
   /** Stable hash of canonical state and winning assertions. */
   stateHash: string;

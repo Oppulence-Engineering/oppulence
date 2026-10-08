@@ -21,7 +21,7 @@ export interface CommunicationTimelineItem {
   bodyLocked: boolean;
   /** Direction. */
   direction?: string;
-  /** Interaction id. */
+  /** Stable UUID primary key. */
   id: string;
   /** Interaction kind. */
   interactionType: CommunicationTimelineItemInteractionType;

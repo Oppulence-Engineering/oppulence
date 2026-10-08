@@ -12,33 +12,43 @@ import type {
   AcknowledgeMissionControl201,
   ApproveMutualActionPlan200,
   BetaDiagnostics,
+  CloudResearchConsentState,
   CommitmentDependency,
   CommunicationTimelinePage,
   ConversationDeletionReceipt,
   CorrectConversationEvidence201,
   CreateMutualActionPlan201,
   DecideConversationChange201,
+  EnrichCompanies200,
+  EnrichPersons200,
   ExportCommitment200One,
   GetCommitmentEvents200,
   GetCommunicationAttachmentContent200,
   GetCommunicationInteractionBody200,
-  GetCommunicationPolicy200,
+  GetCompanyResearchEstimate200,
   GetConversationPolicy200,
+  GetPersonResearchEstimate200,
   GetPublicMutualActionPlan200,
   GetRelationship200,
   GetRelationshipChanges200,
   GetRelationshipConversationReview200,
   GetRelationshipEvidence200,
+  GetRelationshipPersonAttributes200,
   GetRelationshipSourceInventory200,
   GetRelationshipSourceStatuses200,
   GetRelationshipTimeline200,
+  GetResearchStatus200,
   IngestRelationshipObservations201,
   ListCommitments200,
+  ListPendingCompanyEnrichment200,
+  ListPendingPersonEnrichment200,
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
   ListRelationshipPersons200,
   ListRelationships200,
   ListWorkspaceNotes200,
+  PersonDeletionReceipt,
+  PutCommunicationPolicy200,
   PutConversationPolicy201,
   RelationshipAttentionItem,
   RelationshipCommitment,
@@ -51,7 +61,7 @@ import type {
   RevenueRelationship,
   ReviseMutualActionPlan200,
   RunCommitmentRecovery201,
-  ShareMutualActionPlan200,
+  ShareMutualActionPlan201,
 } from "../model";
 
 import {
@@ -67,13 +77,17 @@ import {
   getDecideConversationChangeResponseMock,
   getDecideRelationshipAttentionResponseMock,
   getDecideRelationshipIdentityCandidateResponseMock,
+  getDeleteRelationshipPersonResponseMock,
   getDisconnectRelationshipSourceResponseMock,
+  getEnrichCompaniesResponseMock,
+  getEnrichPersonsResponseMock,
   getExportCommitmentResponseMock,
   getGetCommitmentEventsResponseMock,
   getGetCommunicationAttachmentContentResponseMock,
   getGetCommunicationInteractionBodyResponseMock,
-  getGetCommunicationPolicyResponseMock,
+  getGetCompanyResearchEstimateResponseMock,
   getGetConversationPolicyResponseMock,
+  getGetPersonResearchEstimateResponseMock,
   getGetPublicMutualActionPlanResponseMock,
   getGetRelationshipBetaDiagnosticsResponseMock,
   getGetRelationshipChangesResponseMock,
@@ -82,17 +96,22 @@ import {
   getGetRelationshipEvidenceResponseMock,
   getGetRelationshipGraphResponseMock,
   getGetRelationshipIdentityCandidateResponseMock,
+  getGetRelationshipPersonAttributesResponseMock,
   getGetRelationshipResponseMock,
   getGetRelationshipSourceInventoryResponseMock,
   getGetRelationshipSourceStatusesResponseMock,
   getGetRelationshipTimelineResponseMock,
+  getGetResearchStatusResponseMock,
   getIngestRelationshipObservationsResponseMock,
   getListCommitmentsResponseMock,
+  getListPendingCompanyEnrichmentResponseMock,
+  getListPendingPersonEnrichmentResponseMock,
   getListRelationshipAttentionResponseMock,
   getListRelationshipIdentityCandidatesResponseMock,
   getListRelationshipPersonsResponseMock,
   getListRelationshipsResponseMock,
   getListWorkspaceNotesResponseMock,
+  getPutCommunicationPolicyResponseMock,
   getPutConversationPolicyResponseMock,
   getRejectRelationshipRecommendationResponseMock,
   getReportRelationshipSourceAuthorizationResponseMock,
@@ -103,6 +122,7 @@ import {
   getRetractRelationshipAssertionResponseMock,
   getReviseMutualActionPlanResponseMock,
   getRunCommitmentRecoveryResponseMock,
+  getSetCloudResearchConsentResponseMock,
   getShareMutualActionPlanResponseMock,
 } from "./relationship-intelligence.faker";
 
@@ -119,6 +139,8 @@ export {
   getDecideRelationshipIdentityCandidateResponseMock,
   getIngestRelationshipObservationsResponseMock,
   getListRelationshipPersonsResponseMock,
+  getDeleteRelationshipPersonResponseMock,
+  getGetRelationshipPersonAttributesResponseMock,
   getApproveRelationshipRecommendationResponseMock,
   getRejectRelationshipRecommendationResponseMock,
   getGetRelationshipSourceInventoryResponseMock,
@@ -152,8 +174,16 @@ export {
   getApproveMutualActionPlanResponseMock,
   getShareMutualActionPlanResponseMock,
   getGetRelationshipTimelineResponseMock,
+  getEnrichCompaniesResponseMock,
+  getGetCompanyResearchEstimateResponseMock,
+  getListPendingCompanyEnrichmentResponseMock,
+  getSetCloudResearchConsentResponseMock,
+  getEnrichPersonsResponseMock,
+  getGetPersonResearchEstimateResponseMock,
+  getListPendingPersonEnrichmentResponseMock,
+  getGetResearchStatusResponseMock,
+  getPutCommunicationPolicyResponseMock,
   getGetCommunicationAttachmentContentResponseMock,
-  getGetCommunicationPolicyResponseMock,
   getGetCommunicationInteractionBodyResponseMock,
   getListWorkspaceNotesResponseMock,
 } from "./relationship-intelligence.faker";
@@ -444,6 +474,54 @@ export const getListRelationshipPersonsMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getListRelationshipPersonsResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getDeleteRelationshipPersonMockHandler = (
+  overrideResponse?:
+    | PersonDeletionReceipt
+    | ((
+        info: Parameters<Parameters<typeof http.delete>[1]>[0],
+      ) => Promise<PersonDeletionReceipt> | PersonDeletionReceipt),
+  options?: RequestHandlerOptions,
+) => {
+  return http.delete(
+    "*/v1/relationship-persons/:personId",
+    async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getDeleteRelationshipPersonResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getGetRelationshipPersonAttributesMockHandler = (
+  overrideResponse?:
+    | GetRelationshipPersonAttributes200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetRelationshipPersonAttributes200> | GetRelationshipPersonAttributes200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/relationship-persons/:personId/attributes",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetRelationshipPersonAttributesResponseMock(),
         { status: 200 },
       );
     },
@@ -876,7 +954,7 @@ export const getAppendCommitmentTransitionMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getAppendCommitmentTransitionResponseMock(),
-        { status: 201 },
+        { status: 200 },
       );
     },
     options,
@@ -1197,10 +1275,10 @@ export const getApproveMutualActionPlanMockHandler = (
 
 export const getShareMutualActionPlanMockHandler = (
   overrideResponse?:
-    | ShareMutualActionPlan200
+    | ShareMutualActionPlan201
     | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Promise<ShareMutualActionPlan200> | ShareMutualActionPlan200),
+      ) => Promise<ShareMutualActionPlan201> | ShareMutualActionPlan201),
   options?: RequestHandlerOptions,
 ) => {
   return http.post(
@@ -1212,7 +1290,7 @@ export const getShareMutualActionPlanMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getShareMutualActionPlanResponseMock(),
-        { status: 200 },
+        { status: 201 },
       );
     },
     options,
@@ -1243,6 +1321,240 @@ export const getGetRelationshipTimelineMockHandler = (
   );
 };
 
+export const getEnrichCompaniesMockHandler = (
+  overrideResponse?:
+    | EnrichCompanies200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<EnrichCompanies200> | EnrichCompanies200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/research/companies",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getEnrichCompaniesResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getGetCompanyResearchEstimateMockHandler = (
+  overrideResponse?:
+    | GetCompanyResearchEstimate200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetCompanyResearchEstimate200> | GetCompanyResearchEstimate200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/research/companies/estimate",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetCompanyResearchEstimateResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getListPendingCompanyEnrichmentMockHandler = (
+  overrideResponse?:
+    | ListPendingCompanyEnrichment200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListPendingCompanyEnrichment200> | ListPendingCompanyEnrichment200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/research/companies/pending",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListPendingCompanyEnrichmentResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getSetCloudResearchConsentMockHandler = (
+  overrideResponse?:
+    | CloudResearchConsentState
+    | ((
+        info: Parameters<Parameters<typeof http.put>[1]>[0],
+      ) => Promise<CloudResearchConsentState> | CloudResearchConsentState),
+  options?: RequestHandlerOptions,
+) => {
+  return http.put(
+    "*/v1/research/consent",
+    async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getSetCloudResearchConsentResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getEnrichPersonsMockHandler = (
+  overrideResponse?:
+    | EnrichPersons200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<EnrichPersons200> | EnrichPersons200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/research/people",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getEnrichPersonsResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getGetPersonResearchEstimateMockHandler = (
+  overrideResponse?:
+    | GetPersonResearchEstimate200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetPersonResearchEstimate200> | GetPersonResearchEstimate200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/research/people/estimate",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetPersonResearchEstimateResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getListPendingPersonEnrichmentMockHandler = (
+  overrideResponse?:
+    | ListPendingPersonEnrichment200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListPendingPersonEnrichment200> | ListPendingPersonEnrichment200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/research/people/pending",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListPendingPersonEnrichmentResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getGetResearchStatusMockHandler = (
+  overrideResponse?:
+    | GetResearchStatus200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetResearchStatus200> | GetResearchStatus200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/research/status",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetResearchStatusResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getPutCommunicationPolicyMockHandler = (
+  overrideResponse?:
+    | PutCommunicationPolicy200
+    | ((
+        info: Parameters<Parameters<typeof http.put>[1]>[0],
+      ) => Promise<PutCommunicationPolicy200> | PutCommunicationPolicy200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.put(
+    "*/v1/revenue-workspaces/current/communication-policy/:sourceAccountId",
+    async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getPutCommunicationPolicyResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getDeleteCommunicationPrivacyRuleMockHandler = (
+  overrideResponse?:
+    void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void),
+  options?: RequestHandlerOptions,
+) => {
+  return http.delete(
+    "*/v1/revenue-workspaces/current/communication-privacy-rules/:ruleId",
+    async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+      if (typeof overrideResponse === "function") {
+        await overrideResponse(info);
+      }
+
+      return new HttpResponse(null, { status: 204 });
+    },
+    options,
+  );
+};
+
 export const getGetCommunicationAttachmentContentMockHandler = (
   overrideResponse?:
     | GetCommunicationAttachmentContent200
@@ -1260,30 +1572,6 @@ export const getGetCommunicationAttachmentContentMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getGetCommunicationAttachmentContentResponseMock(),
-        { status: 200 },
-      );
-    },
-    options,
-  );
-};
-
-export const getGetCommunicationPolicyMockHandler = (
-  overrideResponse?:
-    | GetCommunicationPolicy200
-    | ((
-        info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Promise<GetCommunicationPolicy200> | GetCommunicationPolicy200),
-  options?: RequestHandlerOptions,
-) => {
-  return http.get(
-    "*/v1/revenue-workspaces/current/communication-policy/:sourceAccountId",
-    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
-      return HttpResponse.json(
-        overrideResponse !== undefined
-          ? typeof overrideResponse === "function"
-            ? await overrideResponse(info)
-            : overrideResponse
-          : getGetCommunicationPolicyResponseMock(),
         { status: 200 },
       );
     },
@@ -1351,6 +1639,8 @@ export const getRelationshipIntelligenceMock = () => [
   getDecideRelationshipIdentityCandidateMockHandler(),
   getIngestRelationshipObservationsMockHandler(),
   getListRelationshipPersonsMockHandler(),
+  getDeleteRelationshipPersonMockHandler(),
+  getGetRelationshipPersonAttributesMockHandler(),
   getApproveRelationshipRecommendationMockHandler(),
   getRejectRelationshipRecommendationMockHandler(),
   getGetRelationshipSourceInventoryMockHandler(),
@@ -1384,8 +1674,17 @@ export const getRelationshipIntelligenceMock = () => [
   getApproveMutualActionPlanMockHandler(),
   getShareMutualActionPlanMockHandler(),
   getGetRelationshipTimelineMockHandler(),
+  getEnrichCompaniesMockHandler(),
+  getGetCompanyResearchEstimateMockHandler(),
+  getListPendingCompanyEnrichmentMockHandler(),
+  getSetCloudResearchConsentMockHandler(),
+  getEnrichPersonsMockHandler(),
+  getGetPersonResearchEstimateMockHandler(),
+  getListPendingPersonEnrichmentMockHandler(),
+  getGetResearchStatusMockHandler(),
+  getPutCommunicationPolicyMockHandler(),
+  getDeleteCommunicationPrivacyRuleMockHandler(),
   getGetCommunicationAttachmentContentMockHandler(),
-  getGetCommunicationPolicyMockHandler(),
   getGetCommunicationInteractionBodyMockHandler(),
   getListWorkspaceNotesMockHandler(),
 ];

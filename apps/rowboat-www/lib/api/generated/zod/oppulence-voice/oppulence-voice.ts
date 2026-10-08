@@ -38,10 +38,7 @@ export const CreateVoiceAPIKeyBody = zod
   .strictObject({
     expires_in_days: zod.int().nullish().describe("Optional lifetime in days (1-3650)."),
     name: zod.string().describe("Display name."),
-    scopes: zod
-      .array(zod.string().describe("Scope."))
-      .optional()
-      .describe("OAuth scopes granted or requested."),
+    scopes: zod.array(zod.string().describe("Scope.")).optional().describe("Granted scopes."),
   })
   .describe("Oppulence Voice API-key request.");
 

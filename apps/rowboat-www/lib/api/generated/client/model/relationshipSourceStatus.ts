@@ -39,7 +39,7 @@ export interface RelationshipSourceStatus {
   completeness: RelationshipSourceStatusCompleteness;
   /** Stable source connection id. */
   connectionId: string;
-  /** Actor who initiated consent. */
+  /** User who connected this source. */
   consentingActorId?: string;
   /**
    * User disconnect time.
@@ -101,7 +101,7 @@ export interface RelationshipSourceStatus {
   source: RelationshipSourceStatusSource;
   /** Provider account or workspace id. */
   sourceAccountId: string;
-  /** Connection lifecycle. */
+  /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
   status: RelationshipSourceStatusStatus;
   /**
    * Backfill start.
