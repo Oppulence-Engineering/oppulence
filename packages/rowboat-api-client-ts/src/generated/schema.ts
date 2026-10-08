@@ -1624,6 +1624,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/agents/{slug}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Save changes
+     * @description Save changes stores this agent's name, purpose, model, and tools.
+     */
+    put: operations["putAgent"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/llm/completions": {
     parameters: {
       query?: never;
@@ -19798,6 +19818,204 @@ export interface operations {
       402: components["responses"]["402"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
+    };
+  };
+  putAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Agent id.
+         * @example acme-follow-up
+         */
+        slug: string;
+      };
+      cookie?: never;
+    };
+    /** @description The agent the editor is showing. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "apiVersion": "agent.rowboat.dev/v1",
+         *       "kind": "Agent",
+         *       "metadata": {
+         *         "name": "Acme follow-up",
+         *         "slug": "acme-follow-up"
+         *       },
+         *       "spec": {
+         *         "instructions": "Draft the next follow-up for Acme.",
+         *         "model": "openai/gpt-4.1-mini",
+         *         "provider": "openrouter",
+         *         "tools": [
+         *           "relationship.read"
+         *         ]
+         *       }
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Document version.
+           * @example agent.rowboat.dev/v1
+           */
+          apiVersion: string;
+          /**
+           * @description Document kind.
+           * @example Agent
+           */
+          kind: string;
+          /** @description Name and id. */
+          metadata: {
+            /**
+             * @description Name on the agents page.
+             * @example Acme follow-up
+             */
+            name: string;
+            /**
+             * @description Agent id.
+             * @example acme-follow-up
+             */
+            slug: string;
+          };
+          /** @description Purpose, model, and tools. */
+          spec: {
+            /**
+             * @description Purpose shown for this agent.
+             * @example Draft the next follow-up for Acme.
+             */
+            instructions: string;
+            /**
+             * @description Model this agent uses.
+             * @example openai/gpt-4.1-mini
+             */
+            model?: string;
+            /**
+             * @description Where that model runs.
+             * @example openrouter
+             */
+            provider?: string;
+            /** @description Tools this agent can use. */
+            tools: string[];
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description The agent is saved. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "enabledTools": [
+           *         "relationship.read"
+           *       ],
+           *       "instructions": "Draft the next follow-up for Acme.",
+           *       "model": "openai/gpt-4.1-mini",
+           *       "name": "Acme follow-up",
+           *       "provider": "openrouter",
+           *       "slug": "acme-follow-up",
+           *       "source": "tenant"
+           *     }
+           */
+          "application/json": {
+            /** @description Tools this agent can use. */
+            enabledTools: string[];
+            /**
+             * @description Purpose shown for this agent.
+             * @example Draft the next follow-up for Acme.
+             */
+            instructions?: string;
+            /**
+             * @description Model this agent uses.
+             * @example openai/gpt-4.1-mini
+             */
+            model?: string;
+            /**
+             * @description Name on the agents page.
+             * @example Acme follow-up
+             */
+            name: string;
+            /**
+             * @description Where that model runs.
+             * @example openrouter
+             */
+            provider?: string;
+            /**
+             * @description Agent id.
+             * @example acme-follow-up
+             */
+            slug: string;
+            /**
+             * @description tenant means this workspace owns the agent.
+             * @example tenant
+             */
+            source: string;
+          };
+        };
+      };
+      /** @description The agent was created. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "enabledTools": [
+           *         "relationship.read"
+           *       ],
+           *       "instructions": "Draft the next follow-up for Acme.",
+           *       "model": "openai/gpt-4.1-mini",
+           *       "name": "Acme follow-up",
+           *       "provider": "openrouter",
+           *       "slug": "acme-follow-up",
+           *       "source": "tenant"
+           *     }
+           */
+          "application/json": {
+            /** @description Tools this agent can use. */
+            enabledTools: string[];
+            /**
+             * @description Purpose shown for this agent.
+             * @example Draft the next follow-up for Acme.
+             */
+            instructions?: string;
+            /**
+             * @description Model this agent uses.
+             * @example openai/gpt-4.1-mini
+             */
+            model?: string;
+            /**
+             * @description Name on the agents page.
+             * @example Acme follow-up
+             */
+            name: string;
+            /**
+             * @description Where that model runs.
+             * @example openrouter
+             */
+            provider?: string;
+            /**
+             * @description Agent id.
+             * @example acme-follow-up
+             */
+            slug: string;
+            /**
+             * @description tenant means this workspace owns the agent.
+             * @example tenant
+             */
+            source: string;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      409: components["responses"]["409"];
+      500: components["responses"]["500"];
     };
   };
   createCompletion: {

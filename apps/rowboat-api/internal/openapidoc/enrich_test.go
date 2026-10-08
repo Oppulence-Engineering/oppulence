@@ -80,6 +80,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/llm/embeddings",
 		"/v1/voice/text-to-speech/{voiceId}",
 		"/v1/search/exa",
+		"/v1/agents/{slug}",
 		"/v1/google-oauth/start",
 		"/oauth/google/callback",
 		"/v1/google-oauth/claim",
@@ -491,6 +492,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if paths["/credit-ledgers"] != nil {
 		t.Fatal("checked-in openapi json still contains unmounted ent CRUD paths")
 	}
+	assertSaveAgent(t, spec)
 	schemas := asObj(asObj(spec["components"])["schemas"])
 	assertBillingTrialStatus(t, paths, schemas)
 	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil || schemas["EntityProjection"] == nil || schemas["EntitySpine"] == nil {
@@ -8179,5 +8181,59 @@ func assertConfigureAgent(t *testing.T, spec obj) {
 	}
 	if strings.Contains(string(raw), "acta_") || strings.Contains(string(raw), `"token"`) {
 		t.Fatalf("example leaks a token: %s", raw)
+	}
+}
+
+func TestSaveAgentStoresTheWorkspaceAgent(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSaveAgent(t, spec)
+}
+
+func assertSaveAgent(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/agents/{slug}"])["put"])
+	if operation["summary"] != "Save changes" || operation["operationId"] != "putAgent" || operation["description"] != saveAgentDescription {
+		t.Fatalf("save copy: %#v", obj{"summary": operation["summary"], "operationId": operation["operationId"], "description": operation["description"]})
+	}
+	params, _ := operation["parameters"].([]any)
+	if len(params) != 1 || asObj(params[0])["example"] != saveAgentID {
+		t.Fatalf("agent id: %#v", operation["parameters"])
+	}
+	request := asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"])
+	example := asObj(request["example"])
+	if example["apiVersion"] != saveAgentVersion || example["kind"] != "Agent" {
+		t.Fatalf("request: %#v", example)
+	}
+	metadata := asObj(example["metadata"])
+	if metadata["slug"] != saveAgentID || metadata["name"] != saveAgentName {
+		t.Fatalf("metadata: %#v", metadata)
+	}
+	body := asObj(example["spec"])
+	tools, _ := body["tools"].([]any)
+	if body["instructions"] != saveAgentPurpose || body["model"] != saveAgentModel || body["provider"] != saveAgentProvider || len(tools) != 1 || tools[0] != saveAgentTool {
+		t.Fatalf("spec: %#v", body)
+	}
+	for _, status := range []string{"200", "201"} {
+		response := asObj(asObj(operation["responses"])[status])
+		want := saveAgentSaved
+		if status == "201" {
+			want = saveAgentCreated
+		}
+		if response["description"] != want {
+			t.Fatalf("%s description: %#v", status, response["description"])
+		}
+		saved := asObj(asObj(asObj(response["content"])["application/json"])["example"])
+		enabled, _ := saved["enabledTools"].([]any)
+		if saved["slug"] != saveAgentID || saved["name"] != saveAgentName || saved["source"] != "tenant" || saved["instructions"] != saveAgentPurpose || len(enabled) != 1 || enabled[0] != saveAgentTool {
+			t.Fatalf("%s example: %#v", status, saved)
+		}
+	}
+	raw, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), "acta_") || strings.Contains(string(raw), `"token"`) {
+		t.Fatalf("request leaks a token: %s", raw)
 	}
 }

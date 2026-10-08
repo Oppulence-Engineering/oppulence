@@ -8,6 +8,45 @@ import {
 } from "@/lib/api/api-reference-document";
 
 describe("API reference document", () => {
+  it("samples the agent Save changes stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const agent = presented.paths["/v1/agents/{slug}"].put;
+    expect(agent.summary).toBe("Save changes");
+    expect(agent.operationId).toBe("putAgent");
+    expect(agent.description).toBe(
+      "Save changes stores this agent's name, purpose, model, and tools.",
+    );
+    expect(agent.parameters[0]).toMatchObject({
+      name: "slug",
+      example: "acme-follow-up",
+    });
+    expect(agent.requestBody.content["application/json"].example).toEqual({
+      apiVersion: "agent.rowboat.dev/v1",
+      kind: "Agent",
+      metadata: { slug: "acme-follow-up", name: "Acme follow-up" },
+      spec: {
+        instructions: "Draft the next follow-up for Acme.",
+        model: "openai/gpt-4.1-mini",
+        provider: "openrouter",
+        tools: ["relationship.read"],
+      },
+    });
+    expect(agent.responses["200"].description).toBe("The agent is saved.");
+    expect(agent.responses["201"].description).toBe("The agent was created.");
+    expect(agent.responses["200"].content["application/json"].example).toEqual({
+      slug: "acme-follow-up",
+      name: "Acme follow-up",
+      source: "tenant",
+      instructions: "Draft the next follow-up for Acme.",
+      model: "openai/gpt-4.1-mini",
+      provider: "openrouter",
+      enabledTools: ["relationship.read"],
+    });
+    const saved = JSON.stringify(agent.responses["200"]);
+    expect(saved).not.toContain("acta_");
+    expect(saved).not.toContain('"token"');
+  });
+
   it("replaces the Solomon heading and names schema text for the product", () => {
     const presented = presentApiReferenceDocument({
       openapi: "3.0.3",

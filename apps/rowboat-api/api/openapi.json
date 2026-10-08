@@ -24156,6 +24156,287 @@
         "tags": ["LLM"]
       }
     },
+    "/v1/agents/{slug}": {
+      "put": {
+        "description": "Save changes stores this agent's name, purpose, model, and tools.",
+        "operationId": "putAgent",
+        "parameters": [
+          {
+            "description": "Agent id.",
+            "example": "acme-follow-up",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "description": "Agent id.",
+              "example": "acme-follow-up",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "apiVersion": "agent.rowboat.dev/v1",
+                "kind": "Agent",
+                "metadata": {
+                  "name": "Acme follow-up",
+                  "slug": "acme-follow-up"
+                },
+                "spec": {
+                  "instructions": "Draft the next follow-up for Acme.",
+                  "model": "openai/gpt-4.1-mini",
+                  "provider": "openrouter",
+                  "tools": [
+                    "relationship.read"
+                  ]
+                }
+              },
+              "schema": {
+                "description": "Agent document from the editor.",
+                "properties": {
+                  "apiVersion": {
+                    "description": "Document version.",
+                    "example": "agent.rowboat.dev/v1",
+                    "type": "string"
+                  },
+                  "kind": {
+                    "description": "Document kind.",
+                    "example": "Agent",
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "description": "Name and id.",
+                    "properties": {
+                      "name": {
+                        "description": "Name on the agents page.",
+                        "example": "Acme follow-up",
+                        "type": "string"
+                      },
+                      "slug": {
+                        "description": "Agent id.",
+                        "example": "acme-follow-up",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "slug",
+                      "name"
+                    ],
+                    "type": "object"
+                  },
+                  "spec": {
+                    "description": "Purpose, model, and tools.",
+                    "properties": {
+                      "instructions": {
+                        "description": "Purpose shown for this agent.",
+                        "example": "Draft the next follow-up for Acme.",
+                        "type": "string"
+                      },
+                      "model": {
+                        "description": "Model this agent uses.",
+                        "example": "openai/gpt-4.1-mini",
+                        "type": "string"
+                      },
+                      "provider": {
+                        "description": "Where that model runs.",
+                        "example": "openrouter",
+                        "type": "string"
+                      },
+                      "tools": {
+                        "description": "Tools this agent can use.",
+                        "items": {
+                          "description": "Tool id.",
+                          "example": "relationship.read",
+                          "type": "string"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "instructions",
+                      "tools"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "apiVersion",
+                  "kind",
+                  "metadata",
+                  "spec"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "The agent the editor is showing.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "enabledTools": [
+                    "relationship.read"
+                  ],
+                  "instructions": "Draft the next follow-up for Acme.",
+                  "model": "openai/gpt-4.1-mini",
+                  "name": "Acme follow-up",
+                  "provider": "openrouter",
+                  "slug": "acme-follow-up",
+                  "source": "tenant"
+                },
+                "schema": {
+                  "description": "The stored agent.",
+                  "properties": {
+                    "enabledTools": {
+                      "description": "Tools this agent can use.",
+                      "items": {
+                        "description": "Tool id.",
+                        "example": "relationship.read",
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "instructions": {
+                      "description": "Purpose shown for this agent.",
+                      "example": "Draft the next follow-up for Acme.",
+                      "type": "string"
+                    },
+                    "model": {
+                      "description": "Model this agent uses.",
+                      "example": "openai/gpt-4.1-mini",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Name on the agents page.",
+                      "example": "Acme follow-up",
+                      "type": "string"
+                    },
+                    "provider": {
+                      "description": "Where that model runs.",
+                      "example": "openrouter",
+                      "type": "string"
+                    },
+                    "slug": {
+                      "description": "Agent id.",
+                      "example": "acme-follow-up",
+                      "type": "string"
+                    },
+                    "source": {
+                      "description": "tenant means this workspace owns the agent.",
+                      "example": "tenant",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "name",
+                    "source",
+                    "enabledTools"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The agent is saved."
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "enabledTools": [
+                    "relationship.read"
+                  ],
+                  "instructions": "Draft the next follow-up for Acme.",
+                  "model": "openai/gpt-4.1-mini",
+                  "name": "Acme follow-up",
+                  "provider": "openrouter",
+                  "slug": "acme-follow-up",
+                  "source": "tenant"
+                },
+                "schema": {
+                  "description": "The stored agent.",
+                  "properties": {
+                    "enabledTools": {
+                      "description": "Tools this agent can use.",
+                      "items": {
+                        "description": "Tool id.",
+                        "example": "relationship.read",
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "instructions": {
+                      "description": "Purpose shown for this agent.",
+                      "example": "Draft the next follow-up for Acme.",
+                      "type": "string"
+                    },
+                    "model": {
+                      "description": "Model this agent uses.",
+                      "example": "openai/gpt-4.1-mini",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Name on the agents page.",
+                      "example": "Acme follow-up",
+                      "type": "string"
+                    },
+                    "provider": {
+                      "description": "Where that model runs.",
+                      "example": "openrouter",
+                      "type": "string"
+                    },
+                    "slug": {
+                      "description": "Agent id.",
+                      "example": "acme-follow-up",
+                      "type": "string"
+                    },
+                    "source": {
+                      "description": "tenant means this workspace owns the agent.",
+                      "example": "tenant",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "name",
+                    "source",
+                    "enabledTools"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The agent was created."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Save changes",
+        "tags": [
+          "Agents"
+        ]
+      }
+    },
     "/v1/llm/completions": {
       "post": {
         "description": "Credit-gated legacy completions endpoint. Request and response shape follows OpenAI-compatible /completions semantics.",
