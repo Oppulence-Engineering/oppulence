@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,46 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertDisconnect(t, spec)
+}
+
+func TestDisconnectSamplesTheHubSpotConnection(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertDisconnect(t, spec)
+}
+
+func assertDisconnect(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	del := asObj(asObj(paths["/v1/connections/{name}"])["delete"])
+	if del["summary"] != "Disconnect" || del["operationId"] != "deleteConnection" || del["description"] != disconnectDescription {
+		t.Fatalf("disconnect operation: summary=%#v description=%#v id=%#v", del["summary"], del["description"], del["operationId"])
+	}
+	if del["requestBody"] != nil {
+		t.Fatalf("disconnect request: %#v", del["requestBody"])
+	}
+	params, _ := del["parameters"].([]any)
+	if len(params) != 1 {
+		t.Fatalf("disconnect parameters: %#v", del["parameters"])
+	}
+	name := asObj(params[0])
+	if name["name"] != "name" || name["example"] != disconnectConnectorName || asObj(name["schema"])["example"] != disconnectConnectorName {
+		t.Fatalf("disconnect name: %#v", name)
+	}
+	responses := asObj(del["responses"])
+	removed := asObj(responses["204"])
+	if removed["description"] != disconnectRemoved || removed["content"] != nil {
+		t.Fatalf("disconnect response: %#v", removed)
+	}
+	raw, err := json.Marshal(del)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "canvas") || strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "tombstone") {
+		t.Fatalf("disconnect looks like the old connector sample: %s", encoded)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

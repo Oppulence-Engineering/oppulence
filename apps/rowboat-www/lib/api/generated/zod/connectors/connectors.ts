@@ -31,11 +31,11 @@ export const GetConnectorBrokerJWKS503Response = zod
   );
 
 /**
- * Idempotently revokes upstream where possible, clears local credentials, and retains a revoked audit tombstone.
- * @summary Disconnect connector
+ * Disconnect removes the HubSpot connection. Confirm sends no body.
+ * @summary Disconnect
  */
 export const DeleteConnectionParams = zod.object({
-  name: zod.string().describe("Connector slug, for example canvas, corinthian, or wispr."),
+  name: zod.string().describe("Connection name."),
 });
 
 export const DeleteConnection204Response = zod.void();

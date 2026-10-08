@@ -118,8 +118,8 @@ export const getDeleteConnectionUrl = (name: string) => {
 };
 
 /**
- * Idempotently revokes upstream where possible, clears local credentials, and retains a revoked audit tombstone.
- * @summary Disconnect connector
+ * Disconnect removes the HubSpot connection. Confirm sends no body.
+ * @summary Disconnect
  */
 export const deleteConnection = async (
   name: string,
