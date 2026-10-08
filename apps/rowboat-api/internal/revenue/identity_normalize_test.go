@@ -4585,6 +4585,101 @@ func TestRelationshipSearchFindsThePlanHeading(t *testing.T) {
 	assertCompanyQuery("which companies show draft · version 1", "Plan Draft")
 }
 
+func TestRelationshipSearchFindsPromiseLinks(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	savePromise := func(rel *ent.Relationship, text string) *ent.Commitment {
+		t.Helper()
+		row, err := f.client.Commitment.Create().
+			SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+			SetDirection("promised_by_them").SetText(text).
+			SetStatus("open").SetConfidence(1).SetAcceptance("accepted").
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	link := func(rel *ent.Relationship, from, to *ent.Commitment, kind string) {
+		t.Helper()
+		if _, err := f.svc.CreateCommitmentDependency(f.ctx, f.user, rel.ID, CommitmentDependencyInput{
+			FromCommitmentID: from.ID, ToCommitmentID: to.ID, Kind: kind,
+			EvidenceRefs: []string{"relationship-observation:" + kind},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quiet := makeCompany("Link Quiet")
+	_ = quiet
+	cedar := makeCompany("Link Cedar")
+	cedarFrom := savePromise(cedar, "Send the cedar notes")
+	cedarTo := savePromise(cedar, "Return the packet")
+	link(cedar, cedarFrom, cedarTo, "blocks")
+	harbor := makeCompany("Link Harbor")
+	harborFrom := savePromise(harbor, "Send the harbor notes")
+	harborMid := savePromise(harbor, "Return the ledger")
+	harborTo := savePromise(harbor, "File the excerpt")
+	link(harbor, harborFrom, harborMid, "blocks")
+	link(harbor, harborFrom, harborTo, "requires")
+	blank := makeCompany("Link Blank")
+	blankFrom := savePromise(blank, "   ")
+	blankTo := savePromise(blank, "Return the blank packet")
+	link(blank, blankFrom, blankTo, "blocks")
+	named := makeCompany("Link Named")
+	namedFrom := savePromise(named, "Unknown promise")
+	namedTo := savePromise(named, "Return the named packet")
+	link(named, namedFrom, namedTo, "requires")
+	replace := makeCompany("Link Replace")
+	replaceFrom := savePromise(replace, "Send the replace notes")
+	replaceTo := savePromise(replace, "Return the old packet")
+	link(replace, replaceFrom, replaceTo, "supersedes")
+	solo := makeCompany("Link Solo")
+	_ = savePromise(solo, "   ")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Promise links (1)", "Link Cedar", "Link Blank", "Link Named", "Link Replace")
+	assertCompanyQuery("Promise links (2)", "Link Harbor")
+	assertCompanyQuery("Promise links (0)")
+	assertCompanyQuery("which companies show promise links (2)", "Link Harbor")
+	assertCompanyQuery("Promise links", "Link Cedar", "Link Harbor", "Link Blank", "Link Named", "Link Replace")
+	assertCompanyQuery("Unknown promise", "Link Blank", "Link Named")
+	assertCompanyQuery("which companies show unknown promise", "Link Blank", "Link Named")
+	assertCompanyQuery("Blocks", "Link Cedar", "Link Harbor", "Link Blank")
+	assertCompanyQuery("Requires", "Link Harbor", "Link Named")
+	assertCompanyQuery("Replaces", "Link Replace")
+	assertCompanyQuery("links")
+	assertCompanyQuery("promise", "Link Named")
+	assertCompanyQuery("Blocks the packet")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {

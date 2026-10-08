@@ -17,6 +17,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
@@ -966,6 +967,9 @@ func (s *Service) ListRelationshipsFiltered(
 		}
 		if accepted := relationshipSheetAcceptedPromiseMatch(needle); accepted != nil {
 			parts = append(parts, accepted)
+		}
+		if links := relationshipSheetPromiseLinkMatch(needle); links != nil {
+			parts = append(parts, links)
 		}
 		if contradiction := relationshipSheetContradictionMatch(needle); contradiction != nil {
 			parts = append(parts, contradiction)
@@ -2688,6 +2692,134 @@ func relationshipSheetAcceptedPromiseMatch(needle string) predicate.Relationship
 		)
 	}
 	return relationship.HasCommitmentsWith(text)
+}
+
+// relationshipSheetPromiseLinkMatch matches the promise-link section. The
+// heading is "Promise links (N)" and is omitted when nothing is linked. A
+// blank endpoint prints "Unknown promise". The kind badge is Blocks, Requires,
+// or Replaces, and only the exact badge is that kind.
+func relationshipSheetPromiseLinkMatch(needle string) predicate.Relationship {
+	needle = normalizePersonSearch(needle)
+	if needle == "" {
+		return nil
+	}
+	var preds []predicate.Relationship
+	if strings.Contains(needle, "promise links (") {
+		if n, ok := promiseLinkHeadingCount(needle); ok {
+			preds = append(preds, relationshipCommitmentDependencyCount("=", n))
+		}
+	} else if labelPhraseMatches("promise links", needle) {
+		preds = append(preds, relationshipCommitmentDependencyCount(">=", 1))
+	}
+	if labelPhraseMatches("unknown promise", needle) {
+		preds = append(preds, relationshipHasUnknownPromiseEnd())
+	}
+	switch needle {
+	case "blocks":
+		preds = append(preds, relationship.HasCommitmentDependenciesWith(commitmentdependency.KindEQ("blocks")))
+	case "requires":
+		preds = append(preds, relationship.HasCommitmentDependenciesWith(commitmentdependency.KindEQ("requires")))
+	case "replaces":
+		preds = append(preds, relationship.HasCommitmentDependenciesWith(commitmentdependency.KindEQ("supersedes")))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func promiseLinkHeadingCount(needle string) (int, bool) {
+	const marker = "promise links ("
+	found := -1
+	search := needle
+	for {
+		index := strings.Index(search, marker)
+		if index < 0 {
+			break
+		}
+		tail := search[index+len(marker):]
+		end := strings.IndexByte(tail, ')')
+		if end <= 0 {
+			search = search[index+1:]
+			continue
+		}
+		body := tail[:end]
+		parsed, err := strconv.Atoi(body)
+		if err != nil || parsed < 1 || strconv.Itoa(parsed) != body {
+			search = search[index+1:]
+			continue
+		}
+		phrase := fmt.Sprintf("promise links (%d)", parsed)
+		if !labelPhraseMatches(phrase, needle) {
+			search = search[index+1:]
+			continue
+		}
+		if found >= 0 && found != parsed {
+			return 0, false
+		}
+		found = parsed
+		search = tail[end+1:]
+	}
+	if found < 1 {
+		return 0, false
+	}
+	return found, true
+}
+
+func relationshipCommitmentDependencyCount(compare string, n int) predicate.Relationship {
+	if compare != "=" && compare != ">=" {
+		compare = "="
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(commitmentdependency.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(commitmentdependency.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(") ")
+			b.WriteString(compare)
+			b.WriteString(" ")
+			b.Arg(n)
+		}))
+	})
+}
+
+func relationshipHasUnknownPromiseEnd() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(commitmentdependency.Table)
+			b.WriteString(" AS dep WHERE dep.")
+			b.WriteString(commitmentdependency.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND (")
+			writeUnknownPromiseEnd(b, "dep."+commitmentdependency.FromCommitmentColumn)
+			b.WriteString(" OR ")
+			writeUnknownPromiseEnd(b, "dep."+commitmentdependency.ToCommitmentColumn)
+			b.WriteString("))")
+		}))
+	})
+}
+
+func writeUnknownPromiseEnd(b *sql.Builder, idExpr string) {
+	b.WriteString("EXISTS (SELECT 1 FROM ")
+	b.WriteString(commitment.Table)
+	b.WriteString(" AS promise WHERE promise.")
+	b.WriteString(commitment.FieldID)
+	b.WriteString(" = ")
+	b.WriteString(idExpr)
+	b.WriteString(" AND (length(trim(promise.")
+	b.WriteString(commitment.FieldText)
+	b.WriteString(")) = 0 OR lower(trim(promise.")
+	b.WriteString(commitment.FieldText)
+	b.WriteString(")) = 'unknown promise'))")
 }
 
 func acceptedPromiseQuery(needle string) (string, bool) {
