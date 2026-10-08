@@ -4339,6 +4339,13 @@ export function RelationshipSheet({
                 <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {[
                     [
+                      "Lifecycle",
+                      supportedRecordValue(
+                        data.relationship.lifecycle,
+                        data.missionControl.evidence.lifecycle,
+                      ),
+                    ],
+                    [
                       "Health",
                       supportedRecordValue(
                         data.relationship.health,
