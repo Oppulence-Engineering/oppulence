@@ -760,6 +760,51 @@ func assertGovernanceReceipt(t *testing.T, schemas obj) {
 	if asObj(receipt["receiptId"])["example"] != want || asObj(receipt["receiptId"])["description"] != "Receipt id." {
 		t.Fatalf("receipt id: %#v", receipt["receiptId"])
 	}
+
+	assertDocumentedStateHash(t, spec)
+}
+
+func TestRelationshipStateHashMatchesTheProjector(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertDocumentedStateHash(t, spec)
+}
+
+func assertDocumentedStateHash(t *testing.T, spec obj) {
+	t.Helper()
+	const want = documentedRelationshipStateHash
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	relationship := asObj(asObj(schemas["RevenueRelationship"])["properties"])
+	if asObj(relationship["stateHash"])["example"] != want {
+		t.Fatalf("relationship state hash: %#v", relationship["stateHash"])
+	}
+	snapshot := asObj(asObj(schemas["RelationshipStateSnapshot"])["properties"])
+	if asObj(snapshot["stateHash"])["example"] != want {
+		t.Fatalf("snapshot state hash: %#v", snapshot["stateHash"])
+	}
+	readModel := asObj(asObj(schemas["MissionControlReadModel"])["properties"])
+	if asObj(readModel["stateHash"])["example"] != want {
+		t.Fatalf("mission control state hash: %#v", readModel["stateHash"])
+	}
+	if asObj(readModel["aggregateHash"])["example"] != "sha256:cd34" {
+		t.Fatalf("aggregate hash changed: %#v", readModel["aggregateHash"])
+	}
+	evidence := asObj(asObj(schemas["MissionControlEvidenceReference"])["properties"])
+	if asObj(evidence["contentHash"])["example"] != "sha256:ab12" {
+		t.Fatalf("content hash changed: %#v", evidence["contentHash"])
+	}
+	post := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/acknowledgements"])["post"])
+	body := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if asObj(body["example"])["stateHash"] != want {
+		t.Fatalf("acknowledgement request: %#v", body["example"])
+	}
+	if asObj(asObj(asObj(body["schema"])["properties"])["stateHash"])["example"] != want {
+		t.Fatalf("acknowledgement property: %#v", body["schema"])
+	}
+	response := asObj(asObj(asObj(asObj(asObj(post["responses"])["201"])["content"])["application/json"])["schema"])
+	if asObj(asObj(response["properties"])["stateHash"])["example"] != want {
+		t.Fatalf("acknowledgement response: %#v", response)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
