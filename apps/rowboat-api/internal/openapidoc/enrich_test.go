@@ -1387,6 +1387,32 @@ func researchNumber(got any, want float64) bool {
 	}
 }
 
+func TestFillReadsPendingResearchIds(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertResearchPending(t, spec)
+}
+
+func assertResearchPending(t *testing.T, spec obj) {
+	t.Helper()
+	const companyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	const personID = "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	paths := asObj(spec["paths"])
+	companies := asObj(asObj(paths["/v1/research/companies/pending"])["get"])
+	people := asObj(asObj(paths["/v1/research/people/pending"])["get"])
+	if companies["summary"] != "Pending companies" || people["summary"] != "Pending people" {
+		t.Fatalf("summaries: %#v %#v", companies["summary"], people["summary"])
+	}
+	companyExample := asObj(asObj(asObj(asObj(asObj(companies["responses"])["200"])["content"])["application/json"])["example"])
+	peopleExample := asObj(asObj(asObj(asObj(asObj(people["responses"])["200"])["content"])["application/json"])["example"])
+	if !reflect.DeepEqual(companyExample["relationshipIds"], []any{companyID}) || companyExample["personIds"] != nil {
+		t.Fatalf("pending companies: %#v", companyExample)
+	}
+	if !reflect.DeepEqual(peopleExample["personIds"], []any{personID}) || peopleExample["relationshipIds"] != nil {
+		t.Fatalf("pending people: %#v", peopleExample)
+	}
+}
+
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
