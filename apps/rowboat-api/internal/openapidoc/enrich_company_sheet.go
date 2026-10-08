@@ -18,9 +18,11 @@ const (
 	openedCompanyDescription = "Builds AI infrastructure for customer operations."
 	// The sheet Email row prints this address. With it missing the row says Not filled in.
 	openedCompanyEmail = "avery@acme.com"
+	// The sheet Risks list prints this sentence. An empty list says None recorded.
+	openedCompanyRisk = "Security review has no owner."
 )
 
-const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com."
+const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner."
 
 func openedCompanyParams() []any {
 	return []any{obj{
@@ -57,11 +59,11 @@ func openedCompanySheetExample() obj {
 			"projectorVersion":   2,
 			"projectedAt":        openedCompanyProjectedAt,
 			"lastChangedAt":      openedCompanyProjectedAt,
-			"risks":              empty,
+			"risks":              []any{openedCompanyRisk},
 			"milestones":         empty,
 			"resourceRefs":       empty,
 			"categories":         empty,
-			"primaryEmail":     openedCompanyEmail,
+			"primaryEmail":       openedCompanyEmail,
 		},
 		"actions":         empty,
 		"recommendations": empty,

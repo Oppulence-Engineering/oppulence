@@ -4147,6 +4147,10 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if !ok || peopleErr != nil || string(peopleRaw) != "1" {
 		t.Fatalf("people count: %#v", relationship["peopleCount"])
 	}
+	risks, ok := relationship["risks"].([]any)
+	if !ok || len(risks) != 1 || risks[0] != openedCompanyRisk {
+		t.Fatalf("risks: %#v", relationship["risks"])
+	}
 	threads, ok := example["emailThreads"].([]any)
 	if !ok || len(threads) != 0 {
 		t.Fatalf("email threads: %#v", example["emailThreads"])
