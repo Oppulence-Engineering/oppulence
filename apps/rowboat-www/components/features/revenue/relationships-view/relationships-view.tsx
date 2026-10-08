@@ -4177,7 +4177,7 @@ export function RelationshipSheet({
                   <dt className="text-primary/40">Company</dt>
                   {/* The name is whatever was saved. capitalize turned "acme harbor" into "Acme Harbor". */}
                   <dd className="text-primary/75">{companyName(data.relationship)}</dd>
-                  <dt className="text-primary/40">Category</dt>
+                  <dt className="text-primary/40">Categories</dt>
                   <dd className="text-primary/75">
                     {companyCategoriesLabel(data.relationship.categories)}
                   </dd>

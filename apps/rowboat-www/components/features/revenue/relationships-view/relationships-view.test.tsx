@@ -157,6 +157,9 @@ describe("RelationshipsView", () => {
     expect(companyCategoriesLabel(["  ", ""])).toBe("Not filled in");
     expect(source).toContain("companyCategoriesLabel(relationship.categories)");
     expect(source).toContain("companyCategoriesLabel(data.relationship.categories)");
+    expect(source).toContain('>Categories</dt>');
+    expect(source).toContain(">Categories</TableHead>");
+    expect(source).not.toContain('>Category</dt>');
     expect(source).not.toContain('data.relationship.categories?.join(", ")');
     expect(source).not.toContain("relationship.categories?.[0]");
     expect(personSheetProfile({ title: "  ", fallbackTitle: "CFO", location: "  " })).toEqual([
