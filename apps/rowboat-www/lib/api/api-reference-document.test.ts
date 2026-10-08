@@ -1351,6 +1351,26 @@ describe("API reference document", () => {
     expect(presented.components.schemas.RevenueLeakScan.properties.lookbackDays.example).toBe(180);
   });
 
+  it("samples the reply Log outcome records from the history sheet", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-actions/{actionId}/outcomes"].post;
+    const eventID = "manual:replied:1783864800000";
+    expect(operation.summary).toBe("Log outcome");
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      kind: "replied",
+      source: "user",
+      sourceEventId: eventID,
+    });
+    expect(operation.responses["201"].content["application/json"].example).toMatchObject({
+      kind: "replied",
+      source: "user",
+      sourceEventId: eventID,
+      occurredAt: "2026-07-12T14:00:00Z",
+    });
+    expect(presented.components.schemas.RevenueOutcome.properties.source.example).toBe("user");
+    expect(presented.components.schemas.RevenueOutcome.properties.sourceEventId.example).toBe(eventID);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

@@ -2566,8 +2566,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Record an outcome
-     * @description Appends an observed outcome idempotently on (action, source, sourceEventId); the duplicate returns the stored row.
+     * Log outcome
+     * @description Log outcome records They replied from the history sheet. The button sends source user and sourceEventId manual:replied plus the current time. Sending the same id again returns the stored row.
      */
     post: operations["recordRevenueActionOutcome"];
     delete?: never;
@@ -11660,13 +11660,13 @@ export interface components {
       occurredAt: string;
       /**
        * @description Observing source.
-       * @example gmail
+       * @example user
        * @enum {string}
        */
       source: "gmail" | "calendar" | "crm" | "user" | "outbound" | "slack" | "meeting" | "task";
       /**
-       * @description Source event id used for deduplication.
-       * @example msg_01
+       * @description Source event id used for deduplication. Log outcome sends manual, the kind, and the current time.
+       * @example manual:replied:1783864800000
        */
       sourceEventId: string;
     };
@@ -20664,8 +20664,8 @@ export interface operations {
         /**
          * @example {
          *       "kind": "replied",
-         *       "source": "gmail",
-         *       "sourceEventId": "msg_01"
+         *       "source": "user",
+         *       "sourceEventId": "manual:replied:1783864800000"
          *     }
          */
         "application/json": {
@@ -20690,19 +20690,19 @@ export interface operations {
           };
           /**
            * Format: date-time
-           * @description When the outcome occurred.
+           * @description When the outcome occurred. Log outcome leaves this empty and the server records the current time.
            * @example 2026-07-12T14:00:00Z
            */
           occurredAt?: string | null;
           /**
-           * @description Observing source.
-           * @example gmail
+           * @description Observing source. Log outcome sends user.
+           * @example user
            * @enum {string}
            */
           source: "gmail" | "calendar" | "crm" | "user" | "outbound";
           /**
-           * @description Source event id for deduplication.
-           * @example msg_01
+           * @description Source event id. Log outcome sends manual, the kind, and the current time.
+           * @example manual:replied:1783864800000
            */
           sourceEventId: string;
         };
@@ -20715,6 +20715,15 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "id": "3c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "kind": "replied",
+           *       "occurredAt": "2026-07-12T14:00:00Z",
+           *       "source": "user",
+           *       "sourceEventId": "manual:replied:1783864800000"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueOutcome"];
         };
       };

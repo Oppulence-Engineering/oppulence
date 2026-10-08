@@ -786,8 +786,8 @@ func addRevenueSchemas(schemas obj) {
 	schemas["RevenueOutcome"] = objectSchema("One observed action outcome, append-only and idempotent on (action, source, sourceEventId).", obj{
 		"id":            uuidSchema("Outcome id.", "3c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"kind":          stringEnum("Outcome kind.", "replied", "sent", "delivered", "bounced", "replied", "meeting_booked", "won", "lost", "dismissed", "bad_recommendation", "deal_advanced", "onboarding_progressed", "renewed", "escalated", "churned", "corrected"),
-		"source":        stringEnum("Observing source.", "gmail", "gmail", "calendar", "crm", "user", "outbound", "slack", "meeting", "task"),
-		"sourceEventId": stringSchema("Source event id used for deduplication.", "msg_01"),
+		"source":        stringEnum("Observing source.", "user", "gmail", "calendar", "crm", "user", "outbound", "slack", "meeting", "task"),
+		"sourceEventId": stringSchema("Source event id used for deduplication. Log outcome sends manual, the kind, and the current time.", "manual:replied:1783864800000"),
 		"occurredAt":    stringSchema("When the outcome occurred.", "2026-07-12T14:00:00Z", obj{"format": "date-time"}),
 	}, "id", "kind", "source", "sourceEventId", "occurredAt")
 
@@ -1689,14 +1689,20 @@ func addRevenuePaths(paths obj) {
 		}), nil),
 		"401": responseRef("401"), "403": responseRef("403"), "404": responseRef("404"),
 	})}
-	paths["/v1/revenue-actions/{actionId}/outcomes"] = obj{"post": operation("Revenue", "Record an outcome", "Appends an observed outcome idempotently on (action, source, sourceEventId); the duplicate returns the stored row.", "recordRevenueActionOutcome", bearer(), actionParam, jsonRequest("Outcome.", objectSchema("Outcome request.", obj{
+	paths["/v1/revenue-actions/{actionId}/outcomes"] = obj{"post": operation("Revenue", "Log outcome", "Log outcome records They replied from the history sheet. The button sends source user and sourceEventId manual:replied plus the current time. Sending the same id again returns the stored row.", "recordRevenueActionOutcome", bearer(), actionParam, jsonRequest("Outcome.", objectSchema("Outcome request.", obj{
 		"kind":          stringEnum("Outcome kind.", "replied", "sent", "delivered", "bounced", "replied", "meeting_booked", "won", "lost", "dismissed", "bad_recommendation"),
-		"source":        stringEnum("Observing source.", "gmail", "gmail", "calendar", "crm", "user", "outbound"),
-		"sourceEventId": stringSchema("Source event id for deduplication.", "msg_01"),
-		"occurredAt":    stringSchema("When the outcome occurred.", "2026-07-12T14:00:00Z", obj{"format": "date-time"}, nullable()),
+		"source":        stringEnum("Observing source. Log outcome sends user.", "user", "gmail", "calendar", "crm", "user", "outbound"),
+		"sourceEventId": stringSchema("Source event id. Log outcome sends manual, the kind, and the current time.", "manual:replied:1783864800000"),
+		"occurredAt":    stringSchema("When the outcome occurred. Log outcome leaves this empty and the server records the current time.", "2026-07-12T14:00:00Z", obj{"format": "date-time"}, nullable()),
 		"metadata":      freeFormSchema("Bounded metadata."),
-	}, "kind", "source", "sourceEventId"), obj{"kind": "replied", "source": "gmail", "sourceEventId": "msg_01"}), obj{
-		"201": jsonResponse("Recorded outcome.", ref("RevenueOutcome"), nil),
+	}, "kind", "source", "sourceEventId"), obj{"kind": "replied", "source": "user", "sourceEventId": "manual:replied:1783864800000"}), obj{
+		"201": jsonResponse("Recorded outcome.", ref("RevenueOutcome"), obj{
+			"id":            "3c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+			"kind":          "replied",
+			"source":        "user",
+			"sourceEventId": "manual:replied:1783864800000",
+			"occurredAt":    "2026-07-12T14:00:00Z",
+		}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),

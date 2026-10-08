@@ -18,12 +18,12 @@ export type RecordRevenueActionOutcomeBody = {
   /** Bounded metadata. */
   metadata?: RecordRevenueActionOutcomeBodyMetadata;
   /**
-   * When the outcome occurred.
+   * When the outcome occurred. Log outcome leaves this empty and the server records the current time.
    * @nullable
    */
   occurredAt?: string | null;
-  /** Observing source. */
+  /** Observing source. Log outcome sends user. */
   source: RecordRevenueActionOutcomeBodySource;
-  /** Source event id for deduplication. */
+  /** Source event id. Log outcome sends manual, the kind, and the current time. */
   sourceEventId: string;
 };
