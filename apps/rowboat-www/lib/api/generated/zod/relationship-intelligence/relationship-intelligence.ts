@@ -3552,11 +3552,11 @@ export const GetRelationshipGraph404Response = zod
   );
 
 /**
- * Returns living relationship state, governed recommendations, participants, and commitments.
- * @summary Get relationship mission control
+ * The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+ * @summary Open a company
  */
 export const GetRelationshipParams = zod.object({
-  relationshipId: zod.uuid().describe("Relationship id."),
+  relationshipId: zod.uuid().describe("Company the sheet opens."),
 });
 
 export const getRelationship200ResponseMissionControlEvidenceConfidenceMin = 0;
@@ -3697,7 +3697,7 @@ export const GetRelationship200Response = zod
           ),
       )
       .optional()
-      .describe("Actions for this relationship."),
+      .describe("Actions for this company."),
     commitmentDependencies: zod
       .array(
         zod
@@ -3750,7 +3750,31 @@ export const GetRelationship200Response = zod
           .describe("An open or completed promise attached to the relationship."),
       )
       .optional()
-      .describe("Open and completed commitments."),
+      .describe("Promises on this company."),
+    emailThreads: zod
+      .array(
+        zod
+          .strictObject({
+            counterpartyEmail: zod.string().optional().describe("Other person on the thread."),
+            id: zod.string().describe("Thread id."),
+            lastActivityAt: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe("Latest message time."),
+            lastDirection: zod
+              .enum(["inbound", "outbound"])
+              .optional()
+              .describe("Who sent the latest message."),
+            messageCount: zod.int().describe("Messages on the thread."),
+            replyState: zod
+              .enum(["needs_reply", "awaiting_reply", "quiet"])
+              .describe("Whether a reply is owed."),
+            subject: zod.string().optional().describe("Subject."),
+          })
+          .describe("Email thread the company sheet lists."),
+      )
+      .optional()
+      .describe("Email threads the company sheet counts."),
     intelligence: zod
       .strictObject({
         claims: zod
@@ -4151,7 +4175,7 @@ export const GetRelationship200Response = zod
           ),
       )
       .optional()
-      .describe("Relationship participants."),
+      .describe("People on this company."),
     recommendations: zod
       .array(
         zod
@@ -4386,7 +4410,7 @@ export const GetRelationship200Response = zod
         "Canonical, living relationship state projected from append-only evidence. CRM and communication systems remain evidence sources; this object is the shared model rendered by web and desktop.",
       ),
   })
-  .describe("Relationship detail.");
+  .describe("Company the sheet opened.");
 
 export const GetRelationship401Response = zod
   .strictObject({

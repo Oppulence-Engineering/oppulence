@@ -3039,6 +3039,30 @@ export const getGetRelationshipResponseMock = (
     })),
     undefined,
   ]),
+  emailThreads: faker.helpers.arrayElement([
+    Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+      counterpartyEmail: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      id: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      lastActivityAt: faker.helpers.arrayElement([
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        undefined,
+      ]),
+      lastDirection: faker.helpers.arrayElement([
+        faker.helpers.arrayElement(["inbound", "outbound"] as const),
+        undefined,
+      ]),
+      messageCount: faker.number.int(),
+      replyState: faker.helpers.arrayElement(["needs_reply", "awaiting_reply", "quiet"] as const),
+      subject: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+    })),
+    undefined,
+  ]),
   intelligence: faker.helpers.arrayElement([
     {
       claims: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(

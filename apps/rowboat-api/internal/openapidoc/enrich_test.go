@@ -4291,6 +4291,72 @@ func exampleIsOne(value any) bool {
 	return err == nil && string(raw) == "1"
 }
 
+func TestOpenedCompanySheet(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertOpenedCompany(t, spec)
+}
+
+func assertOpenedCompany(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}"])["get"])
+	if operation["summary"] != "Open a company" {
+		t.Fatalf("summary: %#v", operation["summary"])
+	}
+	if operation["description"] != "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises." {
+		t.Fatalf("description: %#v", operation["description"])
+	}
+	params, ok := operation["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("params: %#v", operation["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "relationshipId" || param["example"] != openedCompanyID || asObj(param["schema"])["example"] != openedCompanyID {
+		t.Fatalf("param: %#v", param)
+	}
+	media := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])
+	example := asObj(media["example"])
+	relationship := asObj(example["relationship"])
+	if relationship["displayName"] != "Acme" || relationship["accountDomain"] != "acme.com" || relationship["id"] != openedCompanyID || relationship["health"] != "needs_attention" || relationship["lifecycle"] != "evaluation" || relationship["stateHash"] != openedCompanyHash {
+		t.Fatalf("relationship: %#v", relationship)
+	}
+	version, err := json.Marshal(relationship["stateVersion"])
+	if err != nil || string(version) != "1" {
+		t.Fatalf("state version: %s %v", version, err)
+	}
+	people, ok := relationship["peopleCount"]
+	peopleRaw, peopleErr := json.Marshal(people)
+	if !ok || peopleErr != nil || string(peopleRaw) != "1" {
+		t.Fatalf("people count: %#v", relationship["peopleCount"])
+	}
+	threads, ok := example["emailThreads"].([]any)
+	if !ok || len(threads) != 0 {
+		t.Fatalf("email threads: %#v", example["emailThreads"])
+	}
+	participants, ok := example["participants"].([]any)
+	if !ok || len(participants) != 1 || asObj(participants[0])["email"] != "avery@acme.com" || asObj(participants[0])["role"] != "champion" {
+		t.Fatalf("participants: %#v", example["participants"])
+	}
+	mission := asObj(example["missionControl"])
+	if mission["stateHash"] != openedCompanyHash {
+		t.Fatalf("mission hash: %#v", mission["stateHash"])
+	}
+	if asObj(asObj(mission["evidence"])["lifecycle"])["supported"] != true {
+		t.Fatalf("lifecycle evidence: %#v", asObj(mission["evidence"])["lifecycle"])
+	}
+	if asObj(asObj(media["schema"])["properties"])["emailThreads"] == nil {
+		t.Fatal("opened company schema omits email threads")
+	}
+	listMedia := asObj(asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationships"])["get"])["responses"])["200"])["content"])["application/json"])
+	if listMedia["example"] != nil {
+		t.Fatalf("company directory sample changed: %#v", listMedia["example"])
+	}
+	acknowledgements := asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/acknowledgements"])
+	if asObj(acknowledgements["post"])["summary"] != "Acknowledge Mission Control state" {
+		t.Fatalf("acknowledgement changed: %#v", acknowledgements["post"])
+	}
+}
+
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)

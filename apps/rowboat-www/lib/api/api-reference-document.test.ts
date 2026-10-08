@@ -3136,6 +3136,41 @@ describe("API reference document", () => {
     expect(item.get.responses["200"].content["application/json"].example.slug).toBe("daily-summary");
   });
 
+  it("samples the company the sheet opens", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationships/{relationshipId}"].get;
+    const companyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    expect(operation.summary).toBe("Open a company");
+    expect(operation.description).toBe(
+      "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.",
+    );
+    expect(operation.parameters).toEqual([
+      expect.objectContaining({
+        name: "relationshipId",
+        example: companyID,
+        schema: expect.objectContaining({ example: companyID }),
+      }),
+    ]);
+    const example = operation.responses["200"].content["application/json"].example;
+    expect(example.relationship).toMatchObject({
+      id: companyID,
+      displayName: "Acme",
+      accountDomain: "acme.com",
+      health: "needs_attention",
+      lifecycle: "evaluation",
+      peopleCount: 1,
+      emailThreadCount: 0,
+      commitmentCount: 0,
+    });
+    expect(example.emailThreads).toEqual([]);
+    expect(example.participants).toEqual([
+      expect.objectContaining({ email: "avery@acme.com", role: "champion", displayName: "Avery Chen" }),
+    ]);
+    expect(example.missionControl.stateVersion).toBe(1);
+    expect(example.missionControl.evidence.lifecycle.supported).toBe(true);
+    expect(example.missionControl.evidence.lifecycle.value).toBe("evaluation");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

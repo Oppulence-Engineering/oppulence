@@ -2060,8 +2060,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get relationship mission control
-     * @description Returns living relationship state, governed recommendations, participants, and commitments.
+     * Open a company
+     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
      */
     get: operations["getRelationship"];
     put?: never;
@@ -21244,29 +21244,230 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /**
+         * @description Company the sheet opens.
+         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         relationshipId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Relationship detail. */
+      /** @description Opened company. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actions": [],
+           *       "commitmentDependencies": [],
+           *       "commitments": [],
+           *       "emailThreads": [],
+           *       "intelligence": {
+           *         "claims": [],
+           *         "contradictionCases": [],
+           *         "deletionReceipts": [],
+           *         "delta": {
+           *           "changes": [],
+           *           "contradictions": [],
+           *           "fromVersion": 0,
+           *           "toVersion": 1,
+           *           "uncertainClaimIds": []
+           *         },
+           *         "effectivePolicy": {
+           *           "capture": "require_consent",
+           *           "externalShare": true,
+           *           "legalHold": false,
+           *           "modelRoute": "local_only",
+           *           "policyVersion": "policy:ab12",
+           *           "publishEvidence": true,
+           *           "redactionClasses": [
+           *             "personal_identifier"
+           *           ],
+           *           "resolvedAt": "2026-07-25T16:00:00Z",
+           *           "retentionDays": 30,
+           *           "sourceLayerIds": [
+           *             "workspace:default"
+           *           ]
+           *         },
+           *         "governanceDecisions": [],
+           *         "governanceReceipts": [],
+           *         "liveCues": [],
+           *         "mutualActionPlans": [],
+           *         "observationPageHasMore": false,
+           *         "recommendationEvaluations": [],
+           *         "recoveryEvaluations": [],
+           *         "reviewItems": []
+           *       },
+           *       "missionControl": {
+           *         "aggregateHash": "sha256:cd34",
+           *         "asOf": "2026-07-25T16:00:00Z",
+           *         "capabilities": {},
+           *         "changedSinceReview": false,
+           *         "changes": [],
+           *         "completeness": {
+           *           "explanation": "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",
+           *           "externalActionSafe": false,
+           *           "missingMaterialDimensions": [],
+           *           "sources": [],
+           *           "status": "partial",
+           *           "unresolvedIdentityCount": 0
+           *         },
+           *         "contractVersion": "tfa-r1.1-2026-08-26",
+           *         "detectorVersion": 1,
+           *         "evidence": {
+           *           "engagement": {
+           *             "dimension": "engagement",
+           *             "evidence": [
+           *               {
+           *                 "contentHash": "sha256:ab12",
+           *                 "evidencePath": "/v1/relationships/9c8dfa9b-a7b2-46ea-982c-622a914c00e5/evidence/6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *                 "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *                 "observedAt": "2026-07-25T15:00:00Z",
+           *                 "source": "hubspot"
+           *               }
+           *             ],
+           *             "fresh": true,
+           *             "supported": true,
+           *             "value": "declining"
+           *           },
+           *           "health": {
+           *             "dimension": "health",
+           *             "evidence": [
+           *               {
+           *                 "contentHash": "sha256:ab12",
+           *                 "evidencePath": "/v1/relationships/9c8dfa9b-a7b2-46ea-982c-622a914c00e5/evidence/6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *                 "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *                 "observedAt": "2026-07-25T15:00:00Z",
+           *                 "source": "hubspot"
+           *               }
+           *             ],
+           *             "fresh": true,
+           *             "supported": true,
+           *             "value": "needs_attention"
+           *           },
+           *           "lifecycle": {
+           *             "dimension": "lifecycle",
+           *             "evidence": [
+           *               {
+           *                 "contentHash": "sha256:ab12",
+           *                 "evidencePath": "/v1/relationships/9c8dfa9b-a7b2-46ea-982c-622a914c00e5/evidence/6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *                 "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *                 "observedAt": "2026-07-25T15:00:00Z",
+           *                 "source": "hubspot"
+           *               }
+           *             ],
+           *             "fresh": true,
+           *             "supported": true,
+           *             "value": "evaluation"
+           *           },
+           *           "sentiment": {
+           *             "dimension": "sentiment",
+           *             "evidence": [
+           *               {
+           *                 "contentHash": "sha256:ab12",
+           *                 "evidencePath": "/v1/relationships/9c8dfa9b-a7b2-46ea-982c-622a914c00e5/evidence/6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *                 "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *                 "observedAt": "2026-07-25T15:00:00Z",
+           *                 "source": "hubspot"
+           *               }
+           *             ],
+           *             "fresh": true,
+           *             "supported": true,
+           *             "value": "unknown"
+           *           }
+           *         },
+           *         "pending": {
+           *           "approval": 0,
+           *           "corrections": 0,
+           *           "execution": 0,
+           *           "identityReview": 0,
+           *           "reconciliation": 0
+           *         },
+           *         "previousReviewedStateVersion": 0,
+           *         "projectorVersion": 2,
+           *         "stateHash": "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887",
+           *         "stateVersion": 1
+           *       },
+           *       "participants": [
+           *         {
+           *           "active": true,
+           *           "displayName": "Avery Chen",
+           *           "email": "avery@acme.com",
+           *           "externalRefs": [],
+           *           "id": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "role": "champion"
+           *         }
+           *       ],
+           *       "recommendations": [],
+           *       "relationship": {
+           *         "accountDomain": "acme.com",
+           *         "categories": [],
+           *         "commitmentCount": 0,
+           *         "displayName": "Acme",
+           *         "emailThreadCount": 0,
+           *         "engagement": "declining",
+           *         "health": "needs_attention",
+           *         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "kind": "company",
+           *         "lastChangedAt": "2026-07-25T16:00:00Z",
+           *         "lastTouchAt": "2026-07-25T15:00:00Z",
+           *         "lifecycle": "evaluation",
+           *         "milestones": [],
+           *         "peopleCount": 1,
+           *         "projectedAt": "2026-07-25T16:00:00Z",
+           *         "projectorVersion": 2,
+           *         "resourceRefs": [],
+           *         "risks": [],
+           *         "sentiment": "unknown",
+           *         "stateHash": "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887",
+           *         "stateReason": "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",
+           *         "stateVersion": 1,
+           *         "status": "active"
+           *       }
+           *     }
+           */
           "application/json": {
-            /** @description Actions for this relationship. */
+            /** @description Actions for this company. */
             actions?: components["schemas"]["RevenueAction"][];
             /** @description Evidence-backed commitment graph edges. */
             commitmentDependencies?: components["schemas"]["CommitmentDependency"][];
-            /** @description Open and completed commitments. */
+            /** @description Promises on this company. */
             commitments?: components["schemas"]["RelationshipCommitment"][];
+            /** @description Email threads the company sheet counts. */
+            emailThreads?: {
+              /** @description Other person on the thread. */
+              counterpartyEmail?: string;
+              /** @description Thread id. */
+              id: string;
+              /**
+               * Format: date-time
+               * @description Latest message time.
+               */
+              lastActivityAt?: string;
+              /**
+               * @description Who sent the latest message.
+               * @example inbound
+               * @enum {string}
+               */
+              lastDirection?: "inbound" | "outbound";
+              /** @description Messages on the thread. */
+              messageCount: number;
+              /**
+               * @description Whether a reply is owed.
+               * @example quiet
+               * @enum {string}
+               */
+              replyState: "needs_reply" | "awaiting_reply" | "quiet";
+              /** @description Subject. */
+              subject?: string;
+            }[];
             intelligence?: components["schemas"]["RelationshipIntelligence"];
             missionControl?: components["schemas"]["MissionControlReadModel"];
-            /** @description Relationship participants. */
+            /** @description People on this company. */
             participants?: components["schemas"]["RelationshipParticipant"][];
             /** @description Governed recommendations. */
             recommendations?: components["schemas"]["RevenueAction"][];

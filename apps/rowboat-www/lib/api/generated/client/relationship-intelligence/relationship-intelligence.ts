@@ -1441,8 +1441,8 @@ export const getGetRelationshipUrl = (relationshipId: string) => {
 };
 
 /**
- * Returns living relationship state, governed recommendations, participants, and commitments.
- * @summary Get relationship mission control
+ * The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+ * @summary Open a company
  */
 export const getRelationship = async (
   relationshipId: string,
