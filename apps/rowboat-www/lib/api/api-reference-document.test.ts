@@ -37,6 +37,18 @@ describe("API reference document", () => {
     expect(presented.components.schemas.ErrorEnvelope.description).not.toMatch(/Solomon/);
   });
 
+  it("samples the execution a company graph marks needs reconcile", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const status = presented.components.schemas.RelationshipGraphNode.properties.executionStatus;
+    expect(status).toMatchObject({
+      description: "Needs reconcile when this execution is ambiguous.",
+      example: "ambiguous",
+    });
+    expect(presented.components.schemas.RevenueAction.properties.executionStatus.example).toBe(
+      "pending",
+    );
+  });
+
   it("renders a page titled for Oppulence and escapes embedded markup", () => {
     const page = renderApiReferencePage({
       info: { title: "Oppulence API" },

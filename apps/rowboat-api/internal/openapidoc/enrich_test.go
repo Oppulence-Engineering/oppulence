@@ -338,6 +338,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertGraphExecutionNeedsReconcile(t, schemas)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -398,5 +399,23 @@ func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) 
 		if asObj(token["responses"])[status] == nil {
 			t.Fatalf("MCP token missing %s", status)
 		}
+	}
+}
+
+func TestGraphExecutionNeedsReconcile(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertGraphExecutionNeedsReconcile(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertGraphExecutionNeedsReconcile(t *testing.T, schemas obj) {
+	t.Helper()
+	status := asObj(asObj(asObj(schemas["RelationshipGraphNode"])["properties"])["executionStatus"])
+	if status["example"] != graphExecutionStatusExample || status["description"] != graphExecutionStatusDescription {
+		t.Fatalf("graph execution: %#v", status)
+	}
+	action := asObj(asObj(asObj(schemas["RevenueAction"])["properties"])["executionStatus"])
+	if action["example"] != "pending" {
+		t.Fatalf("revenue action execution example changed: %#v", action)
 	}
 }
