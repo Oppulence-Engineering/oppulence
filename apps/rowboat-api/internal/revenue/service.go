@@ -8142,6 +8142,11 @@ func relationshipSheetEmptyCopyMatch(needle string) predicate.Relationship {
 			relationship.Not(relationship.HasCommitments()),
 		))
 	}
+	// The change list shows two snapshots, then "Show earlier changes".
+	// Two snapshots fill that page. A third is the button.
+	if labelPhraseMatches("show earlier changes", needle) {
+		preds = append(preds, relationshipHasEarlierChanges())
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -8181,6 +8186,23 @@ func sheetEmptySentenceOwnsActivity(needle string) bool {
 		}
 	}
 	return false
+}
+
+// relationshipHasEarlierChanges is the "Show earlier changes" button. The
+// company sheet loads two snapshots at a time, so the button appears once a
+// third snapshot exists.
+func relationshipHasEarlierChanges() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT count(*) FROM ")
+			b.WriteString(relationshipstatesnapshot.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipstatesnapshot.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(") > 2")
+		}))
+	})
 }
 
 func relationshipHasMeetingObservation() predicate.Relationship {
