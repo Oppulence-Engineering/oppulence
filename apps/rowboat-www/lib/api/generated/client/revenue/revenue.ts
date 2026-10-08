@@ -910,8 +910,8 @@ export const getListRevenueLeakScansUrl = (params?: ListRevenueLeakScansParams) 
 };
 
 /**
- * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.
- * @summary List revenue leak scans
+ * Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty.
+ * @summary Audits
  */
 export const listRevenueLeakScans = async (
   params?: ListRevenueLeakScansParams,

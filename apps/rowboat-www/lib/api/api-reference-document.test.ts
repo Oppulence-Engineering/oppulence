@@ -2633,6 +2633,28 @@ describe("API reference document", () => {
     expect(JSON.stringify(page)).not.toContain("Renewal context");
   });
 
+  it("samples the page Audits loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-leak-scans"].get;
+    expect(operation.summary).toBe("Audits");
+    expect(operation.description).toBe(
+      "Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty.",
+    );
+    expect(presented.paths["/v1/revenue-leak-scans"].post.operationId).toBe("startRevenueLeakScan");
+    const examples = Object.fromEntries(
+      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown } }) => [
+        parameter.name,
+        parameter.schema?.example,
+      ]),
+    );
+    expect(examples).toMatchObject({ limit: 10 });
+    expect(examples.offset).toBeUndefined();
+    const page = operation.responses["200"].content["application/json"].example;
+    expect(page).toEqual({ hasMore: false, scans: [] });
+    expect(JSON.stringify(page)).not.toContain("123e4567-e89b-12d3-a456-426614174000");
+    expect(JSON.stringify(page)).not.toContain("threadsSeen");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

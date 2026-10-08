@@ -8,13 +8,13 @@
 
 export type ListRevenueLeakScansParams = {
   /**
-   * Maximum scans to return (default 10, max 100).
+   * Page size (max 100). Audits asks for 10.
    * @minimum 1
    * @maximum 100
    */
   limit?: number;
   /**
-   * Page offset.
+   * How many audits to skip. Audits does not send this on the first page.
    * @minimum 0
    */
   offset?: number;

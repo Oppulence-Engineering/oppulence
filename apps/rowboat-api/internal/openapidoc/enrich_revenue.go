@@ -2790,3 +2790,12 @@ func notesPage() obj {
 		"notes":   []any{},
 	}
 }
+
+const auditsPageDescription = "Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty."
+
+func auditsPage() obj {
+	return obj{
+		"hasMore": false,
+		"scans":   []any{},
+	}
+}
