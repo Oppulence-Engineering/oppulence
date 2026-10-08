@@ -215,6 +215,9 @@ func addRevenueSchemas(schemas obj) {
 	}, "id", "decision", "candidateVersion", "actorId", "decidedAt")
 	movedObservations := arraySchema("Moved observation ids.", stringSchema("Observation id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"))
 	movedObservations["example"] = []any{"6b8dfa9b-a7b2-46ea-982c-622a914c00e5"}
+
+	movedObjects := arraySchema("All moved graph objects.", stringSchema("Object ref.", "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"))
+	movedObjects["example"] = []any{"relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"}
 	schemas["RelationshipIdentityLineage"] = objectSchema("Immutable graph lineage produced by an identity decision.", obj{
 		"id": uuidSchema("Lineage event id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "kind": stringSchema("Lineage kind.", "merged"),
 		"actorId": uuidSchema("User who recorded this change.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"), "reason": stringSchema("Reason.", "Confirmed duplicate."),

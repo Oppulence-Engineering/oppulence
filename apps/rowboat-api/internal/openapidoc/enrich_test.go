@@ -1329,6 +1329,38 @@ func assertMovedObservationID(t *testing.T, schemas obj) {
 	if asObj(evidence["observationId"])["example"] != observationID {
 		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
 	}
+
+	assertMovedObjectRef(t, schemas)
+}
+
+func TestLineageNamesTheMovedObject(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertMovedObjectRef(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertMovedObjectRef(t *testing.T, schemas obj) {
+	t.Helper()
+	lineage := asObj(schemas["RelationshipIdentityLineage"])
+	if lineage == nil {
+		return
+	}
+	props := asObj(lineage["properties"])
+	const objectRef = "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	refs := asObj(props["movedObjectRefs"])
+	if !reflect.DeepEqual(refs["example"], []any{objectRef}) {
+		t.Fatalf("moved object refs: %#v", refs["example"])
+	}
+	if asObj(refs["items"])["example"] != objectRef {
+		t.Fatalf("object ref item: %#v", refs["items"])
+	}
+	if refs["description"] != "All moved graph objects." {
+		t.Fatalf("object ref description changed: %#v", refs["description"])
+	}
+	evidence := asObj(asObj(schemas["MissionControlEvidenceReference"])["properties"])
+	if asObj(evidence["observationId"])["example"] != "6b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {
