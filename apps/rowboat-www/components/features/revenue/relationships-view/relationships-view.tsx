@@ -699,6 +699,39 @@ export function companyListEmptyCopy(input: {
   return "Connect Gmail to discover companies from real conversations, or add one by hand.";
 }
 
+/**
+ * A missed sync is still a connected mailbox. Stale, rebuilding, and degraded
+ * used to look disconnected, so an empty company list told someone who had
+ * already authorized Gmail to connect it again.
+ */
+const COMPANY_DIRECTORY_CONNECTED_SOURCE_STATES = new Set([
+  "connected",
+  "backfilling",
+  "live",
+  "stale",
+  "rebuilding",
+  "degraded",
+]);
+
+export function companySourceCountsAsConnected(status: string): boolean {
+  return COMPANY_DIRECTORY_CONNECTED_SOURCE_STATES.has(status);
+}
+
+/**
+ * The company list reads both the filtered status rows and the source cards.
+ * A stale Gmail account can be dropped from the status list when it has no
+ * scopes, while the card still shows it. The empty list has to follow the card.
+ */
+export function companyDirectoryHasConnectedSource(
+  statuses: readonly { status: string }[],
+  inventory: readonly { accounts: readonly { status: string }[] }[],
+): boolean {
+  if (statuses.some((source) => companySourceCountsAsConnected(source.status))) return true;
+  return inventory.some((item) =>
+    item.accounts.some((account) => companySourceCountsAsConnected(account.status)),
+  );
+}
+
 /** A failed directory request is not an empty workspace. */
 export function companyListFailureCopy(): string {
   return "Companies could not load. Try again.";
@@ -872,9 +905,7 @@ export function RelationshipsView({
     pendingQuery.isPending ||
     deferredQuery.isPending ||
     attentionQuery.isPending;
-  const hasConnectedSource = sources.some((source) =>
-    ["connected", "backfilling", "live"].includes(source.status),
-  );
+  const hasConnectedSource = companyDirectoryHasConnectedSource(sources, sourceInventory);
   const companies = rows.filter((relationship) => relationship.kind !== "person");
   const directoryTitle = companyDirectoryTitle({ query, health, lifecycle });
   const directoryFilterSettled =
@@ -1651,7 +1682,7 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
       ))}
       {needsRepair > 0 ? (
         <Badge className="gap-1 font-normal text-amber-600 dark:text-amber-400" variant="outline">
-          <Warning /> {needsRepair} need attention
+          <Warning /> {sourcesAttentionLabel(needsRepair)}
         </Badge>
       ) : null}
     </div>
@@ -1671,6 +1702,11 @@ export function sourcesNeedingRepair(statuses: readonly { status: string }[]): n
   return statuses.filter(
     (source) => !["connected", "backfilling", "live"].includes(source.status),
   ).length;
+}
+
+export function sourcesAttentionLabel(count: number): string {
+  const total = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
+  return total === 1 ? "1 needs attention" : `${total} need attention`;
 }
 
 export function sourceListedOnConnectionsPage(source: string): boolean {

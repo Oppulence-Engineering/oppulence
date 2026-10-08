@@ -57,6 +57,25 @@ describe("loadRelationshipSourceStatuses", () => {
     expect(sources).toEqual([]);
   });
 
+  it("keeps a stale Gmail account that already tried to sync", async () => {
+    const stale = {
+      ...userSource,
+      connectionId: "1f14b6f5-0c3b-4cf8-84ef-56feb54616b7",
+      source: "google",
+      status: "stale",
+      completeness: "stale",
+      errorCode: "provider_outage",
+      retryCount: 1,
+      lastFailedSyncAt: "2026-10-04T06:53:27.979761Z",
+      lastError: "Provider is temporarily unavailable.",
+    };
+    const sources = await loadRelationshipSourceStatuses(
+      requestReturning({ sources: [userSource, stale] }),
+    );
+    expect(sources.map((source) => source.source)).toEqual(["google"]);
+    expect(sources[0]?.status).toBe("stale");
+  });
+
   it("keeps Google once consent or a history sync exists", async () => {
     const consented = {
       ...userSource,

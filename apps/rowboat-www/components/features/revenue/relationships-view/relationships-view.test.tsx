@@ -25,6 +25,9 @@ import {
   companyRecordLabel,
   companyListEmptyCopy,
   companyListFailureCopy,
+  companyDirectoryHasConnectedSource,
+  companySourceCountsAsConnected,
+  sourcesAttentionLabel,
   companyStageFilterName,
   companySheetPositionLabel,
   companyReviewCopy,
@@ -203,6 +206,31 @@ describe("RelationshipsView", () => {
         lookbackLabel: "6 months",
       }),
     ).toBe("Connect Gmail to discover companies from real conversations, or add one by hand.");
+    expect(
+      companyListEmptyCopy({
+        filtered: false,
+        hasConnectedSource: true,
+        lookbackLabel: "6 months",
+      }),
+    ).toBe(
+      "Gmail is connected. Run the 6 months audit from Commitments to discover companies and the people behind each conversation.",
+    );
+    for (const status of ["connected", "backfilling", "live", "stale", "rebuilding", "degraded"]) {
+      expect(companySourceCountsAsConnected(status)).toBe(true);
+    }
+    for (const status of ["not_connected", "authorizing", "reconnect_required", "disconnected"]) {
+      expect(companySourceCountsAsConnected(status)).toBe(false);
+    }
+    expect(companyDirectoryHasConnectedSource([], [{ accounts: [{ status: "stale" }] }])).toBe(true);
+    expect(companyDirectoryHasConnectedSource([], [{ accounts: [{ status: "not_connected" }] }])).toBe(
+      false,
+    );
+    expect(companyDirectoryHasConnectedSource([], [])).toBe(false);
+    expect(companyDirectoryHasConnectedSource([{ status: "live" }], [])).toBe(true);
+    expect(source).toContain("companyDirectoryHasConnectedSource(sources, sourceInventory)");
+    expect(sourcesAttentionLabel(1)).toBe("1 needs attention");
+    expect(sourcesAttentionLabel(2)).toBe("2 need attention");
+    expect(source).toContain("sourcesAttentionLabel(needsRepair)");
     expect(source).toContain("companyListEmptyCopy({");
     expect(companyListFailureCopy()).toBe("Companies could not load. Try again.");
     expect(source).toContain(
