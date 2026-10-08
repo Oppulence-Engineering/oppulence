@@ -32,6 +32,7 @@ import type {
   GetCommitmentEvents200,
   GetCommunicationAttachmentContent200,
   GetCommunicationInteractionBody200,
+  GetCommunicationPolicy200,
   GetConversationPolicy200,
   GetPublicMutualActionPlan200,
   GetRelationship200,
@@ -2864,6 +2865,56 @@ export const getCommunicationAttachmentContent = async (
     status: res.status,
     headers: res.headers,
   } as getCommunicationAttachmentContentResponse;
+};
+
+export type getCommunicationPolicyResponse200 = {
+  data: GetCommunicationPolicy200;
+  status: 200;
+};
+
+export type getCommunicationPolicyResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getCommunicationPolicyResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getCommunicationPolicyResponseSuccess = getCommunicationPolicyResponse200 & {
+  headers: Headers;
+};
+export type getCommunicationPolicyResponseError = (
+  getCommunicationPolicyResponse401 | getCommunicationPolicyResponse404
+) & {
+  headers: Headers;
+};
+
+export type getCommunicationPolicyResponse =
+  getCommunicationPolicyResponseSuccess | getCommunicationPolicyResponseError;
+
+export const getGetCommunicationPolicyUrl = (sourceAccountId: string) => {
+  return `/v1/revenue-workspaces/current/communication-policy/${sourceAccountId}`;
+};
+
+/**
+ * Email & Calendar privacy loads this mailbox policy after the mailbox account is entered. Metadata stays workspace-visible, subject lines are shared, and bodies and attachments stay private.
+ * @summary Mailbox policy
+ */
+export const getCommunicationPolicy = async (
+  sourceAccountId: string,
+  options?: RequestInit,
+): Promise<getCommunicationPolicyResponse> => {
+  const res = await fetch(getGetCommunicationPolicyUrl(sourceAccountId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCommunicationPolicyResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getCommunicationPolicyResponse;
 };
 
 export type getCommunicationInteractionBodyResponse200 = {

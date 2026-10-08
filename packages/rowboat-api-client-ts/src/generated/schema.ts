@@ -2800,6 +2800,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mailbox policy
+     * @description Email & Calendar privacy loads this mailbox policy after the mailbox account is entered. Metadata stays workspace-visible, subject lines are shared, and bodies and attachments stay private.
+     */
+    get: operations["getCommunicationPolicy"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/revenue-workspaces/current/communications/{interactionId}/body": {
     parameters: {
       query?: never;
@@ -21596,6 +21616,98 @@ export interface operations {
       };
       401: components["responses"]["401"];
       403: components["responses"]["403"];
+      404: components["responses"]["404"];
+    };
+  };
+  getCommunicationPolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Mailbox account email. */
+        sourceAccountId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Stored mailbox policy. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "id": "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "metadataVisibility": "workspace",
+           *       "modelContactExtraction": true,
+           *       "retentionDays": 540,
+           *       "shareAttachments": false,
+           *       "shareBody": false,
+           *       "shareSubject": true,
+           *       "signatureEnrichment": true,
+           *       "sourceAccountId": "you@company.com",
+           *       "version": 1
+           *     }
+           */
+          "application/json": {
+            /**
+             * Format: uuid
+             * @description Policy id.
+             * @example db8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            id: string;
+            /**
+             * @description Who can see mailbox metadata.
+             * @example workspace
+             * @enum {string}
+             */
+            metadataVisibility: "private" | "workspace";
+            /**
+             * @description Extract contacts from mail.
+             * @example true
+             */
+            modelContactExtraction: boolean;
+            /**
+             * @description Days mailbox content is kept.
+             * @example 540
+             */
+            retentionDays: number;
+            /**
+             * @description Share attachments by default.
+             * @example false
+             */
+            shareAttachments: boolean;
+            /**
+             * @description Share bodies by default.
+             * @example false
+             */
+            shareBody: boolean;
+            /**
+             * @description Share subject lines by default.
+             * @example true
+             */
+            shareSubject: boolean;
+            /**
+             * @description Read email signatures.
+             * @example true
+             */
+            signatureEnrichment: boolean;
+            /**
+             * @description Mailbox account email.
+             * @example you@company.com
+             */
+            sourceAccountId: string;
+            /**
+             * @description Policy version.
+             * @example 1
+             */
+            version: number;
+          };
+        };
+      };
+      401: components["responses"]["401"];
       404: components["responses"]["404"];
     };
   };

@@ -270,6 +270,8 @@ export * from "./getCaptureArtifactStatus200";
 export * from "./getCommitmentEvents200";
 export * from "./getCommunicationAttachmentContent200";
 export * from "./getCommunicationInteractionBody200";
+export * from "./getCommunicationPolicy200";
+export * from "./getCommunicationPolicy200MetadataVisibility";
 export * from "./getConnectorBrokerJWKS200";
 export * from "./getConversationPolicy200";
 export * from "./getOpenAPI200";

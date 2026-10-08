@@ -1399,6 +1399,28 @@ describe("API reference document", () => {
     expect(share.requestBody.content["application/json"].example).toEqual({});
   });
 
+  it("samples the mailbox policy Email and Calendar privacy loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const policy =
+      presented.paths["/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}"].get;
+    expect(policy.summary).toBe("Mailbox policy");
+    expect(policy.parameters[0].schema.example).toBe("you@company.com");
+    const stored = policy.responses["200"].content["application/json"].example;
+    expect(stored).toMatchObject({
+      id: "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      sourceAccountId: "you@company.com",
+      metadataVisibility: "workspace",
+      shareSubject: true,
+      shareBody: false,
+      shareAttachments: false,
+      signatureEnrichment: true,
+      modelContactExtraction: true,
+      retentionDays: 540,
+      version: 1,
+    });
+    expect(policy.responses["404"]).toBeTruthy();
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

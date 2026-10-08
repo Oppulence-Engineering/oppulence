@@ -1542,6 +1542,8 @@ func assertLogOutcome(t *testing.T, spec obj) {
 	}
 
 	assertApprovePlan(t, spec)
+
+	assertMailboxPolicy(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -2545,6 +2547,52 @@ func mediaExample(t *testing.T, body any) obj {
 		t.Fatalf("missing example: %#v", body)
 	}
 	return example
+}
+
+func TestMailboxPolicyLoadsStoredDefaults(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertMailboxPolicy(t, spec)
+}
+
+func assertMailboxPolicy(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}"])["get"])
+	if operation["summary"] != "Mailbox policy" || operation["operationId"] != "getCommunicationPolicy" {
+		t.Fatalf("mailbox policy operation: %#v", operation["summary"])
+	}
+	if operation["requestBody"] != nil {
+		t.Fatal("mailbox policy load sends no body")
+	}
+	params, _ := operation["parameters"].([]any)
+	if len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != "you@company.com" {
+		t.Fatalf("mailbox account param: %#v", operation["parameters"])
+	}
+	responses := asObj(operation["responses"])
+	if responses["200"] == nil || responses["404"] == nil {
+		t.Fatalf("mailbox policy statuses: %#v", responses)
+	}
+	policy := asObj(asObj(asObj(asObj(responses["200"])["content"])["application/json"])["example"])
+	retention, retentionOK := jsonInt(policy["retentionDays"])
+	version, versionOK := jsonInt(policy["version"])
+	if policy["id"] != documentedMailboxPolicyID || policy["sourceAccountId"] != "you@company.com" ||
+		policy["metadataVisibility"] != "workspace" || policy["shareSubject"] != true ||
+		policy["shareBody"] != false || policy["shareAttachments"] != false ||
+		policy["signatureEnrichment"] != true || policy["modelContactExtraction"] != true ||
+		!retentionOK || retention != 540 || !versionOK || version != 1 {
+		t.Fatalf("mailbox policy: %#v", policy)
+	}
+}
+
+func jsonInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, true
+	case float64:
+		return int(n), true
+	default:
+		return 0, false
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {

@@ -21,6 +21,7 @@ import type {
   GetCommitmentEvents200,
   GetCommunicationAttachmentContent200,
   GetCommunicationInteractionBody200,
+  GetCommunicationPolicy200,
   GetConversationPolicy200,
   GetPublicMutualActionPlan200,
   GetRelationship200,
@@ -5000,6 +5001,22 @@ export const getGetCommunicationAttachmentContentResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
+  ...overrideResponse,
+});
+
+export const getGetCommunicationPolicyResponseMock = (
+  overrideResponse: Partial<Extract<GetCommunicationPolicy200, object>> = {},
+): GetCommunicationPolicy200 => ({
+  id: faker.string.uuid(),
+  metadataVisibility: faker.helpers.arrayElement(["private", "workspace"] as const),
+  modelContactExtraction: faker.datatype.boolean(),
+  retentionDays: faker.number.int(),
+  shareAttachments: faker.datatype.boolean(),
+  shareBody: faker.datatype.boolean(),
+  shareSubject: faker.datatype.boolean(),
+  signatureEnrichment: faker.datatype.boolean(),
+  sourceAccountId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  version: faker.number.int(),
   ...overrideResponse,
 });
 
