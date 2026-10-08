@@ -2148,6 +2148,56 @@ func assertRetriedRun(t *testing.T, spec obj) {
 	if cancelExample["status"] != "queued" || cancelExample["executor"] != "desktop" {
 		t.Fatalf("cancel example changed: %s", mustJSON(cancelExample))
 	}
+
+	assertSavedWorkflow(t, spec)
+}
+
+func TestSaveStoresTheWorkflow(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSavedWorkflow(t, spec)
+}
+
+func assertSavedWorkflow(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	item := asObj(paths["/v1/background-tasks/{slug}"])
+	patch := asObj(item["patch"])
+	if patch["summary"] != "Save" {
+		t.Fatalf("summary: %#v", patch["summary"])
+	}
+	const description = "Save posts the name, instructions, and triggers at revision 1. The stored workflow keeps the name Follow up when a promise slips, those instructions and triggers, cloud execution, and revision 2."
+	if patch["description"] != description {
+		t.Fatalf("description: %#v", patch["description"])
+	}
+	request := asObj(asObj(asObj(patch["requestBody"])["content"])["application/json"])
+	if mustJSON(request["example"]) != mustJSON(documentedSavedWorkflowRequest()) {
+		t.Fatalf("request example: %s", mustJSON(request["example"]))
+	}
+	response := asObj(asObj(patch["responses"])["200"])
+	if response["description"] != "Stored workflow." {
+		t.Fatalf("response description: %#v", response["description"])
+	}
+	body := asObj(asObj(response["content"])["application/json"])
+	if mustJSON(body["example"]) != mustJSON(documentedSavedWorkflow()) {
+		t.Fatalf("response example: %s", mustJSON(body["example"]))
+	}
+	params, ok := patch["parameters"].([]any)
+	if !ok || len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != "follow-up-when-a-promise-slips" {
+		t.Fatalf("path workflow: %#v", patch["parameters"])
+	}
+	got := asObj(asObj(item["get"])["responses"])
+	listed := asObj(asObj(asObj(got["200"])["content"])["application/json"])
+	if asObj(listed["example"])["slug"] != "daily-summary" || asObj(listed["example"])["executionTarget"] != "desktop" {
+		t.Fatalf("get example changed: %s", mustJSON(listed["example"]))
+	}
+	if asObj(item["delete"])["summary"] != "Delete background task mirror" {
+		t.Fatalf("delete changed: %#v", asObj(item["delete"])["summary"])
+	}
+	create := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["post"])["requestBody"])["content"])["application/json"])
+	if asObj(create["example"])["slug"] != "daily-summary" {
+		t.Fatalf("create example changed: %s", mustJSON(create["example"]))
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

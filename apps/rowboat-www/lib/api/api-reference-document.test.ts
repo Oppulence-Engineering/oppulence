@@ -1905,6 +1905,41 @@ describe("API reference document", () => {
     ).toBe("queued");
   });
 
+  it("samples the workflow Save stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const patch = presented.paths["/v1/background-tasks/{slug}"].patch;
+    expect(patch.summary).toBe("Save");
+    expect(patch.description).toBe(
+      "Save posts the name, instructions, and triggers at revision 1. The stored workflow keeps the name Follow up when a promise slips, those instructions and triggers, cloud execution, and revision 2.",
+    );
+    expect(patch.requestBody.content["application/json"].example).toMatchObject({
+      revision: 1,
+      name: "Follow up when a promise slips",
+      triggers: {
+        eventMatchCriteria:
+          "A Gmail, Calendar, or HubSpot event materially changes a customer relationship, commitment, objection, decision, or next step.",
+        workflow: { trigger: { kind: "communication" } },
+      },
+    });
+    expect(patch.requestBody.content["application/json"].example.instructions).toContain("scope: matching-record");
+    expect(patch.requestBody.content["application/json"].example.lastRunSummary).toBeUndefined();
+    expect(patch.responses["200"].description).toBe("Stored workflow.");
+    expect(patch.responses["200"].content["application/json"].example).toMatchObject({
+      slug: "follow-up-when-a-promise-slips",
+      name: "Follow up when a promise slips",
+      active: false,
+      executionTarget: "api",
+      scheduleSyncState: "paused",
+      revision: 2,
+    });
+    expect(presented.paths["/v1/background-tasks/{slug}"].get.responses["200"].content["application/json"].example.slug).toBe(
+      "daily-summary",
+    );
+    expect(presented.paths["/v1/background-tasks"].post.requestBody.content["application/json"].example.slug).toBe(
+      "daily-summary",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

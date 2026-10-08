@@ -1252,11 +1252,11 @@ export const GetBackgroundTask500Response = zod
   );
 
 /**
- * Applies a partial task update using optimistic locking. The desktop should send the current revision from its last read; stale writes return currentRevision for merge/retry.
- * @summary Patch background task mirror
+ * Save posts the name, instructions, and triggers at revision 1. The stored workflow keeps the name Follow up when a promise slips, those instructions and triggers, cloud execution, and revision 2.
+ * @summary Save
  */
 export const PatchBackgroundTaskParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Workflow to save."),
 });
 
 export const PatchBackgroundTaskBody = zod
