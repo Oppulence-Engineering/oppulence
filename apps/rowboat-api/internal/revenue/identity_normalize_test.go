@@ -2031,6 +2031,67 @@ func TestRelationshipSearchFindsPromiseOverflow(t *testing.T) {
 	assertCompanyQuery("show the other")
 }
 
+func TestRelationshipSearchFindsTheEmptyActivity(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("desktop_note").SetExternalID(name).SetEventType("note").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Bare Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Bare Empty", "{}")
+	saveNote("Bare Hidden", `{"meetingLinked":false,"user_confirmed":true,"noteId":"n-1"}`)
+	saveNote("Bare Title", `{"title":"Harbor title"}`)
+	saveNote("Bare Linked", `{"meetingLinked":true}`)
+	saveNote("Bare Note", `{"content":"Hello from the note"}`)
+	saveNote("Bare Direction", `{"commitment_direction":"promised_by_me"}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Nothing else was saved with this activity.", "Bare Empty", "Bare Hidden")
+	assertCompanyQuery(
+		"which activity says nothing else was saved with this activity",
+		"Bare Empty", "Bare Hidden",
+	)
+	assertCompanyQuery("saved")
+	assertCompanyQuery("activity")
+}
+
 func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
