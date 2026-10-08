@@ -77,6 +77,14 @@ describe("workflow product copy", () => {
         "oppulence-connector-health-repair",
         "Monitor source freshness, scopes, retries, and backfill progress with actionable repair guidance.",
       ),
-    ).toBe("Watch whether each connected source is current, and repair the ones that stop updating.");
+    ).toBe(
+      "After a source is connected, watch whether it is current and repair it when it stops updating.",
+    );
+    expect(
+      workflowProductDescription(
+        "oppulence-connector-health-repair",
+        "Monitor source freshness, scopes, retries, and backfill progress with actionable repair guidance.",
+      ),
+    ).not.toContain("each connected source");
   });
 });

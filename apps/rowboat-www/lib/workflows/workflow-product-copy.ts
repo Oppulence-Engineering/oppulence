@@ -32,7 +32,7 @@ const RECOMMENDATION_REVIEW = {
 const SOURCE_HEALTH = {
   name: "Source health",
   description:
-    "Watch whether each connected source is current, and repair the ones that stop updating.",
+    "After a source is connected, watch whether it is current and repair it when it stops updating.",
 };
 
 // Starter templates are not first-party jobs, but their stored descriptions
