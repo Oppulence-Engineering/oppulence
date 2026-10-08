@@ -17,6 +17,8 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -9580,6 +9582,157 @@ func TestRelationshipSearchFindsHiddenReceipts(t *testing.T) {
 	assertCompanyQuery("show the other")
 	assertCompanyQuery("receipt")
 	assertCompanyQuery("receipts")
+}
+
+func TestRelationshipSearchFindsMailBodyBadges(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	teammate := newUser(t, f.client, "teammate@x.co", "user_mail_badge")
+	if _, err := f.svc.UpsertWorkspaceMember(f.ctx, f.user, teammate.ID, "member"); err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(context.Background())
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveMail := func(rel *ent.Relationship, owner *ent.User, objectID, account string, ago time.Duration, removed bool) *ent.CommunicationInteraction {
+		t.Helper()
+		now := time.Now().UTC()
+		row, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(owner).SetRelationship(rel).
+			SetSource("gmail").SetSourceAccountID(account).SetProviderObjectID(objectID).
+			SetInteractionType("email").SetDirection("inbound").SetSubject("Hello").
+			SetOccurredAt(now.Add(-ago)).SetReceivedAt(now).SetVisibility("metadata").
+			SetContentHash("sha256:" + objectID).SetMetadataJSON(`{"threadId":"thread-` + objectID + `"}`).
+			SetDeleted(removed).Save(internal)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.CommunicationParticipant.Create().
+			SetWorkspace(ws).SetInteraction(row).SetEmail("buyer@example.com").
+			SetRole("from").SetExternal(true).Save(internal); err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	quill := makeCompany("Quill North")
+	cedar := makeCompany("Cedar Slide")
+	aspen := makeCompany("Aspen Ledger")
+	birch := makeCompany("Birch Quiet")
+	maple := makeCompany("Maple Kept")
+	lumen := makeCompany("Lumen Fold")
+	pine := makeCompany("Pine Rest")
+	makeCompany("Harbor Quiet")
+	saveMail(quill, f.user, "quill-mail", "owner@x.co", time.Second, false)
+	saveMail(cedar, teammate, "cedar-mail", "cedar@x.co", time.Second, false)
+	saveMail(aspen, teammate, "aspen-mail", "teammate@x.co", time.Second, false)
+	birchMail := saveMail(birch, teammate, "birch-mail", "teammate@x.co", time.Second, false)
+	saveMail(maple, teammate, "maple-mail", "cedar@x.co", time.Second, true)
+	lumenMail := saveMail(lumen, teammate, "lumen-mail", "cedar@x.co", time.Second, false)
+	for i := 1; i <= communicationTimelinePage; i++ {
+		saveMail(pine, f.user, fmt.Sprintf("pine-mail-%02d", i), "owner@x.co", time.Duration(i)*time.Second, false)
+	}
+	saveMail(pine, teammate, "pine-old", "cedar@x.co", time.Hour, false)
+	if _, err := f.client.CommunicationParticipant.Update().
+		Where(communicationparticipant.HasInteractionWith(communicationinteraction.IDEQ(birchMail.ID))).
+		SetEmail("buyer@private.example").Save(internal); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.CommunicationPrivacyPolicy.Create().
+		SetWorkspace(ws).SetOwner(teammate).SetSourceAccountID("teammate@x.co").
+		SetMetadataVisibility("workspace").SetShareBody(true).Save(internal); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.CommunicationPrivacyRule.Create().
+		SetWorkspace(ws).SetOwner(teammate).SetKind("protected_domain").SetValue("private.example").
+		SetValueHash(privacyValueHash("private.example")).SetActive(true).Save(internal); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.CommunicationShareGrant.Create().
+		SetWorkspace(ws).SetOwner(teammate).SetGrantee(f.user).
+		SetScope("body").SetResourceType("message").SetResourceID(lumenMail.ProviderObjectID).
+		Save(internal); err != nil {
+		t.Fatal(err)
+	}
+
+	locked := func(rel *ent.Relationship) bool {
+		t.Helper()
+		page, err := f.svc.RelationshipCommunicationTimeline(f.ctx, f.user, rel.ID, nil, nil, communicationTimelinePage)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, item := range page.Items {
+			if item.BodyLocked {
+				return true
+			}
+		}
+		return false
+	}
+	shared := func(rel *ent.Relationship) bool {
+		t.Helper()
+		page, err := f.svc.RelationshipCommunicationTimeline(f.ctx, f.user, rel.ID, nil, nil, communicationTimelinePage)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, item := range page.Items {
+			if !item.BodyLocked {
+				return true
+			}
+		}
+		return false
+	}
+	if !shared(quill) || locked(quill) {
+		t.Fatal("owner mail should be shared")
+	}
+	if !locked(cedar) || shared(cedar) {
+		t.Fatal("teammate mail should be locked")
+	}
+	if !shared(aspen) || locked(aspen) {
+		t.Fatal("a shared body should be shared")
+	}
+	if !locked(birch) || shared(birch) {
+		t.Fatal("a protected recipient should be locked")
+	}
+	if locked(maple) || shared(maple) {
+		t.Fatal("deleted mail should not show a badge")
+	}
+	if !shared(lumen) || locked(lumen) {
+		t.Fatal("an explicit body grant should be shared")
+	}
+	if !shared(pine) || locked(pine) {
+		t.Fatal("mail past the first page should not show its badge")
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Shared", "Quill North", "Aspen Ledger", "Lumen Fold", "Pine Rest")
+	assertCompanyQuery("Locked", "Cedar Slide", "Birch Quiet")
+	assertCompanyQuery("lock")
+	assertCompanyQuery("share")
 }
 
 func hasName(names []string, want string) bool {
