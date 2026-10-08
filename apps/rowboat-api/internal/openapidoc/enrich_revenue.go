@@ -1401,8 +1401,8 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
-	paths["/v1/revenue-digest"] = obj{"get": operation("Revenue", "Preview the proactive digest", "Returns the digest content the scheduled email is built from: the top open loops and running impact counts.", "getRevenueDigest", bearer(), nil, nil, obj{
-		"200": jsonResponse("Digest content.", ref("RevenueDigest"), nil),
+	paths["/v1/revenue-digest"] = obj{"get": operation("Revenue", "Weekly digest", weeklyDigestDescription, "getRevenueDigest", bearer(), nil, nil, obj{
+		"200": jsonResponse("Empty weekly digest.", ref("RevenueDigest"), weeklyDigest()),
 		"401": responseRef("401"),
 	})}
 
@@ -2829,5 +2829,18 @@ func attentionQueuePage() obj {
 		"contractVersion": "relationship-attention.v1",
 		"hasMore":         false,
 		"items":           []any{},
+	}
+}
+
+const weeklyDigestDescription = "Impact loads the weekly digest. The request sends no filter. This workspace has no open loop, so the highlight list is empty and every count is zero."
+
+func weeklyDigest() obj {
+	return obj{
+		"generatedAt":    "2026-07-23T09:00:00Z",
+		"handled":        0,
+		"meetingsBooked": 0,
+		"openCount":      0,
+		"replied":        0,
+		"top":            []any{},
 	}
 }

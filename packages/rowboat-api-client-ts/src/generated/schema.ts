@@ -2728,8 +2728,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Preview the proactive digest
-     * @description Returns the digest content the scheduled email is built from: the top open loops and running impact counts.
+     * Weekly digest
+     * @description Impact loads the weekly digest. The request sends no filter. This workspace has no open loop, so the highlight list is empty and every count is zero.
      */
     get: operations["getRevenueDigest"];
     put?: never;
@@ -22587,12 +22587,22 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Digest content. */
+      /** @description Empty weekly digest. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "generatedAt": "2026-07-23T09:00:00Z",
+           *       "handled": 0,
+           *       "meetingsBooked": 0,
+           *       "openCount": 0,
+           *       "replied": 0,
+           *       "top": []
+           *     }
+           */
           "application/json": components["schemas"]["RevenueDigest"];
         };
       };
