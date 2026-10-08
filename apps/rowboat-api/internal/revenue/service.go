@@ -8019,6 +8019,10 @@ func relationshipSheetMailMatch(needle string) predicate.Relationship {
 		}
 		preds = append(preds, relationship.HasMailThreadsWith(line))
 	}
+
+	if needleHasAddressPartyLine(needle) {
+		preds = append(preds, relationship.HasMailThreadsWith(mailThreadAddressPartyLine(needle)))
+	}
 	if sheetPhraseMatches("unknown date", needle) {
 		preds = append(preds, relationship.HasMailThreadsWith(mailthread.LastActivityAtIsNil()))
 	}
@@ -9920,6 +9924,77 @@ func mailThreadSubjectBlank() predicate.MailThread {
 
 func mailThreadCounterpartyBlank() predicate.MailThread {
 	return mailThreadTextBlank(mailthread.FieldCounterpartyEmail)
+}
+
+// mailThreadAddressPartyLine matches the second line of an email that names
+// an address. The sheet prints "ada@birch.example · 1 message". A missing
+// address prints "Gmail" instead, so that row stays out of this line.
+func mailThreadAddressPartyLine(needle string) predicate.MailThread {
+	text := normalizePersonSearch(needle)
+	return predicate.MailThread(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			email := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(mailthread.FieldCounterpartyEmail))
+			count := s.C(mailthread.FieldMessageCount)
+			label := fmt.Sprintf(
+				"CASE WHEN %s = 1 THEN '1 message' ELSE CAST(%s AS TEXT) || ' messages' END",
+				count, count,
+			)
+			party := fmt.Sprintf("replace(replace(replace(lower(%s), '-', ' '), '_', ' '), '.', ' ')", email)
+			phrase := party + " || ' · ' || " + label
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("strpos(lower(")
+				b.WriteString(email)
+				b.WriteString("), '@') > 0 AND strpos(")
+				b.Arg(text)
+				b.WriteString(", ")
+				b.WriteString(phrase)
+				b.WriteString(") > 0")
+				return
+			}
+			b.WriteString("instr(lower(")
+			b.WriteString(email)
+			b.WriteString("), '@') > 0 AND instr(")
+			b.Arg(text)
+			b.WriteString(", ")
+			b.WriteString(phrase)
+			b.WriteString(") > 0")
+		}))
+	})
+}
+
+func needleHasAddressPartyLine(needle string) bool {
+	text := normalizePersonSearch(needle)
+	const marker = " · "
+	for {
+		index := strings.Index(text, marker)
+		if index < 0 {
+			return false
+		}
+		if messageCountSuffix(text[index+len(marker):]) {
+			return true
+		}
+		text = text[index+len(marker):]
+	}
+}
+
+func messageCountSuffix(body string) bool {
+	i := 0
+	for i < len(body) && body[i] >= '0' && body[i] <= '9' {
+		i++
+	}
+	if i == 0 || i >= len(body) || body[i] != ' ' {
+		return false
+	}
+	n, err := strconv.Atoi(body[:i])
+	if err != nil || n < 0 || strconv.Itoa(n) != body[:i] {
+		return false
+	}
+	word := "messages"
+	if n == 1 {
+		word = "message"
+	}
+	unit := body[i+1:]
+	return unit == word || strings.HasPrefix(unit, word+" ")
 }
 
 // mailThreadTextBlank matches a thread field the sheet prints as a fallback.
