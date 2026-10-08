@@ -19959,17 +19959,17 @@
     },
     "/v1/connections/{name}/api-key": {
       "post": {
-        "description": "Stores a vendor-issued API key for an api_key connector. The key remains sealed and server-side; product calls receive only short-lived broker tokens.",
+        "description": "Connect on HubSpot posts the private app token from the token field. The server checks that token, stores it sealed, and answers only that the connection is on.",
         "operationId": "setConnectionAPIKey",
         "parameters": [
           {
-            "description": "Connector slug, for example canvas, corinthian, or wispr.",
+            "description": "HubSpot connector name.",
             "in": "path",
             "name": "name",
             "required": true,
             "schema": {
-              "description": "Connector slug.",
-              "example": "canvas",
+              "description": "Connector name.",
+              "example": "hubspot",
               "type": "string"
             }
           }
@@ -19978,14 +19978,14 @@
           "content": {
             "application/json": {
               "example": {
-                "apiKey": "example-vendor-key"
+                "apiKey": "pat-test"
               },
               "schema": {
                 "$ref": "#/components/schemas/ConnectionAPIKeyRequest"
               }
             }
           },
-          "description": "Connector API key.",
+          "description": "HubSpot private app token.",
           "required": true
         },
         "responses": {
@@ -20000,7 +20000,7 @@
                 }
               }
             },
-            "description": "Connector connected."
+            "description": "HubSpot is connected."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -20032,8 +20032,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Connect API-key connector",
-        "tags": ["Connectors"]
+        "summary": "Connect HubSpot",
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connections/{name}/callback": {

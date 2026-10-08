@@ -946,8 +946,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Connect API-key connector
-     * @description Stores a vendor-issued API key for an api_key connector. The key remains sealed and server-side; product calls receive only short-lived broker tokens.
+     * Connect HubSpot
+     * @description Connect on HubSpot posts the private app token from the token field. The server checks that token, stores it sealed, and answers only that the connection is on.
      */
     post: operations["setConnectionAPIKey"];
     delete?: never;
@@ -16352,24 +16352,24 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Connector slug, for example canvas, corinthian, or wispr. */
+        /** @description HubSpot connector name. */
         name: string;
       };
       cookie?: never;
     };
-    /** @description Connector API key. */
+    /** @description HubSpot private app token. */
     requestBody: {
       content: {
         /**
          * @example {
-         *       "apiKey": "example-vendor-key"
+         *       "apiKey": "pat-test"
          *     }
          */
         "application/json": components["schemas"]["ConnectionAPIKeyRequest"];
       };
     };
     responses: {
-      /** @description Connector connected. */
+      /** @description HubSpot is connected. */
       200: {
         headers: {
           [name: string]: unknown;

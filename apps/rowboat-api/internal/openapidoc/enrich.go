@@ -1911,8 +1911,8 @@ func addConnectorPaths(paths obj) {
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/connections/{name}/api-key"] = obj{"post": operation("Connectors", "Connect API-key connector", "Stores a vendor-issued API key for an api_key connector. The key remains sealed and server-side; product calls receive only short-lived broker tokens.", "setConnectionAPIKey", bearer(), connectorNameParam(), jsonRequest("Connector API key.", ref("ConnectionAPIKeyRequest"), obj{"apiKey": "example-vendor-key"}), obj{
-		"200": jsonResponse("Connector connected.", ref("ConnectionConnectedResponse"), obj{"connected": true}),
+	paths["/v1/connections/{name}/api-key"] = obj{"post": operation("Connectors", "Connect HubSpot", "Connect on HubSpot posts the private app token from the token field. The server checks that token, stores it sealed, and answers only that the connection is on.", "setConnectionAPIKey", bearer(), []any{pathParam("name", "HubSpot connector name.", stringSchema("Connector name.", "hubspot"))}, jsonRequest("HubSpot private app token.", ref("ConnectionAPIKeyRequest"), obj{"apiKey": "pat-test"}), obj{
+		"200": jsonResponse("HubSpot is connected.", ref("ConnectionConnectedResponse"), obj{"connected": true}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"403": responseRef("403"),
