@@ -29,6 +29,14 @@ const documentedDeletionVerificationHash = "sha256:5c15791fbeefd579cf530b240c1a3
 // follow-up draft, assigned to the documented signed-in user.
 const documentedActionRevisionHash = "sha256:746c1d9cd3925b8e632fc1b4bd539758514cb1aefdf31948fe8d1b45ce74c29d"
 
+// The commitment register records an acceptance with this key. An omitted
+// evidence list is stored as user-transition plus that key.
+const (
+	documentedQueueAcceptKey      = "commitment-queue:accepted:8b8dfa9b-a7b2-46ea-982c-622a914c00e5:v3"
+	documentedQueueAcceptReason   = "Reviewed from the Commitment Queue (accepted)."
+	documentedQueueAcceptEvidence = "user-transition:" + documentedQueueAcceptKey
+)
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -1099,13 +1107,13 @@ func addRevenuePaths(paths obj) {
 	})}
 	paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"] = obj{"post": operation("Relationship Intelligence", "Append a commitment transition", "Validates the state machine and appends one idempotent event before atomically updating the materialized projection.", "appendCommitmentTransition", bearer(), commitmentParam, jsonRequest("Transition.", objectSchema("Commitment transition.", obj{
 		"kind":           stringEnum("Event kind.", "accepted", "internally_confirmed", "offered", "accepted", "disputed", "blocked", "unblocked", "corrected", "due_date_changed", "renegotiated", "fulfilled", "missed", "waived", "cancelled", "superseded"),
-		"idempotencyKey": stringSchema("Stable source event id.", "ui:accept:ab12"),
-		"reason":         stringSchema("Optional reason.", "Counterparty accepted in writing."),
+		"idempotencyKey": stringSchema("Stable source event id.", documentedQueueAcceptKey),
+		"reason":         stringSchema("Optional reason.", documentedQueueAcceptReason),
 		"dueAt":          stringSchema("Replacement due date.", "2026-08-07T17:00:00Z", obj{"format": "date-time"}),
 		"action":         stringSchema("Replacement action for renegotiation.", "Send revised packet."),
 		"blocker":        stringSchema("Blocker detail.", "Waiting on legal."),
-		"evidenceRefs":   arraySchema("Evidence references.", stringSchema("Reference.", "relationship-observation:ab12")),
-	}, "kind", "idempotencyKey"), obj{"kind": "accepted", "idempotencyKey": "ui:accept:ab12", "evidenceRefs": []any{"counterparty:accepted"}}), obj{
+		"evidenceRefs":   arraySchema("Evidence references. An omitted list is stored as this transition.", stringSchema("Reference.", documentedQueueAcceptEvidence)),
+	}, "kind", "idempotencyKey"), obj{"kind": "accepted", "idempotencyKey": documentedQueueAcceptKey, "reason": documentedQueueAcceptReason}), obj{
 		"200": jsonResponse("Updated commitment.", ref("RelationshipCommitment"), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
