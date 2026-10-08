@@ -2245,6 +2245,30 @@ func enrichEntitySchemas(schemas obj) {
 		cost["example"] = 8
 	}
 
+	// A history row has its own id. ref keeps the source row's id, so the two
+	// samples must not be the same value.
+	for _, schemaName := range []string{
+		"AgentDefinitionHistory",
+		"LLMUsageHistory",
+		"MCPConnectionHistory",
+		"OAuthConnectionHistory",
+		"SubscriptionHistory",
+		"UserHistory",
+	} {
+		s := asObj(schemas[schemaName])
+		if s == nil {
+			continue
+		}
+		props := asObj(s["properties"])
+		if props == nil {
+			continue
+		}
+		if id := asObj(props["id"]); id != nil {
+			id["description"] = "Id of this history row."
+			id["example"] = "223e4567-e89b-12d3-a456-426614174000"
+		}
+	}
+
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
 		"name":                 {"description": "Human-readable background task name.", "example": "Daily Account Summary"},

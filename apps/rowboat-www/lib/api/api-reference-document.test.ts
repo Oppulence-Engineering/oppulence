@@ -650,6 +650,22 @@ describe("API reference document", () => {
     expect(schemas.RelationshipAttentionItem.properties.relationshipId.example).toBe(relationshipId);
   });
 
+  it("does not sample the source row as the history row", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const history = presented.components.schemas.UserHistory.properties;
+    expect(history.id).toMatchObject({
+      description: "Id of this history row.",
+      example: "223e4567-e89b-12d3-a456-426614174000",
+    });
+    expect(history.ref).toMatchObject({
+      description: "UUID of the source row represented by a history row.",
+      example: "123e4567-e89b-12d3-a456-426614174000",
+    });
+    expect(presented.components.schemas.User.properties.id.example).toBe(
+      "123e4567-e89b-12d3-a456-426614174000",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
