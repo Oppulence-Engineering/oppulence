@@ -886,6 +886,31 @@ describe("API reference document", () => {
     );
   });
 
+  it("names the builtin conversation policy version", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const layer = {
+      layerId: "builtin:conversation-policy-v1",
+      scope: "organization",
+      enforced: true,
+      capture: "require_consent",
+      modelRoute: "hosted_allowed",
+      publishEvidence: true,
+      externalShare: true,
+      retentionDays: 30,
+      redactionClasses: ["credentials", "financial", "health", "personal_identifier"],
+      legalHold: false,
+    };
+    const version = `policy:${createHash("sha256").update(JSON.stringify([layer])).digest("hex").slice(0, 24)}`;
+    const policy = presented.components.schemas.ResolvedConversationPolicy.properties;
+    expect(policy.policyVersion).toMatchObject({
+      description: "Hash-bound effective policy version.",
+      example: version,
+    });
+    expect(policy.modelRoute.example).toBe("hosted_allowed");
+    expect(policy.sourceLayerIds.items.example).toBe("builtin:conversation-policy-v1");
+    expect(presented.components.schemas.CommunicationAccess.properties.policyVersion.example).toBe(1);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

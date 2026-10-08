@@ -702,6 +702,40 @@ func assertSelectedAssertion(t *testing.T, spec obj) {
 	if asObj(evidence["assertionId"])["example"] != assertionID {
 		t.Fatalf("winning assertion changed: %#v", evidence["assertionId"])
 	}
+
+	assertConversationPolicyVersion(t, schemas)
+}
+
+func TestConversationPolicyNamesTheBuiltinVersion(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConversationPolicyVersion(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertConversationPolicyVersion(t *testing.T, schemas obj) {
+	t.Helper()
+	version := builtinConversationPolicyVersion()
+	if version != "policy:9373cc30008dcb712c236fc9" {
+		t.Fatalf("builtin policy version drifted: %s", version)
+	}
+	policy := asObj(asObj(schemas["ResolvedConversationPolicy"])["properties"])
+	if policy == nil {
+		return
+	}
+	if asObj(policy["policyVersion"])["example"] != version || asObj(policy["policyVersion"])["description"] != "Hash-bound effective policy version." {
+		t.Fatalf("policy version: %#v", policy["policyVersion"])
+	}
+	if asObj(policy["modelRoute"])["example"] != "hosted_allowed" {
+		t.Fatalf("model route: %#v", policy["modelRoute"])
+	}
+	layers := asObj(policy["sourceLayerIds"])
+	if asObj(layers["items"])["example"] != "builtin:conversation-policy-v1" {
+		t.Fatalf("source layer: %#v", layers)
+	}
+	access := asObj(asObj(schemas["CommunicationAccess"])["properties"])
+	if access != nil && asObj(access["policyVersion"])["example"] != float64(1) && asObj(access["policyVersion"])["example"] != 1 {
+		t.Fatalf("communication policy version changed: %#v", access["policyVersion"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
