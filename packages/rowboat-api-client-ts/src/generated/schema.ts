@@ -2377,7 +2377,7 @@ export interface paths {
     };
     /**
      * Open a company
-     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. Avery Chen's title is VP Operations.
      */
     get: operations["getRelationship"];
     put?: never;
@@ -24068,7 +24068,8 @@ export interface operations {
            *           "email": "avery@acme.com",
            *           "externalRefs": [],
            *           "id": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "role": "champion"
+           *           "role": "champion",
+           *           "title": "VP Operations"
            *         }
            *       ],
            *       "recommendations": [],

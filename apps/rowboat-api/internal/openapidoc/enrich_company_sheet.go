@@ -13,6 +13,7 @@ const (
 	openedCompanyReason        = "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation."
 	openedCompanyTouchedAt     = "2026-07-25T15:00:00Z"
 	openedCompanyProjectedAt   = "2026-07-25T16:00:00Z"
+	openedCompanyTitle         = "VP Operations"
 )
 
 func openedCompanyParams() []any {
@@ -61,6 +62,7 @@ func openedCompanySheetExample() obj {
 			"displayName":  "Avery Chen",
 			"email":        "avery@acme.com",
 			"role":         "champion",
+			"title":        openedCompanyTitle,
 			"active":       true,
 			"externalRefs": empty,
 		}},

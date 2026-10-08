@@ -816,6 +816,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertLineageIdentity(t, schemas)
 	assertAttentionEvidence(t, schemas)
 	assertReviewEvidence(t, schemas)
+	assertOpenedCompany(t, spec)
 }
 
 func TestConversationReviewNamesTheItem(t *testing.T) {
@@ -4108,7 +4109,7 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if operation["summary"] != "Open a company" {
 		t.Fatalf("summary: %#v", operation["summary"])
 	}
-	if operation["description"] != "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises." {
+	if operation["description"] != "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. Avery Chen's title is VP Operations." {
 		t.Fatalf("description: %#v", operation["description"])
 	}
 	params, ok := operation["parameters"].([]any)
@@ -4139,7 +4140,7 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 		t.Fatalf("email threads: %#v", example["emailThreads"])
 	}
 	participants, ok := example["participants"].([]any)
-	if !ok || len(participants) != 1 || asObj(participants[0])["email"] != "avery@acme.com" || asObj(participants[0])["role"] != "champion" {
+	if !ok || len(participants) != 1 || asObj(participants[0])["email"] != "avery@acme.com" || asObj(participants[0])["role"] != "champion" || asObj(participants[0])["title"] != openedCompanyTitle {
 		t.Fatalf("participants: %#v", example["participants"])
 	}
 	mission := asObj(example["missionControl"])
