@@ -4784,6 +4784,47 @@ func assertSourceStatus(t *testing.T, spec obj) {
 	if !strings.Contains(encoded, `"source":"google"`) || !strings.Contains(encoded, sourceStatusAccount) || !strings.Contains(encoded, `"completeness":"partial"`) || !strings.Contains(encoded, sourceStatusConnectionID) {
 		t.Fatalf("connected sources example is missing the page: %s", encoded)
 	}
+
+	assertSourceInventory(t, spec)
+}
+
+func TestSourceInventory(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSourceInventory(t, spec)
+}
+
+func assertSourceInventory(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationship-sources"])["get"])
+	if operation["summary"] != "Sources to connect" || operation["operationId"] != "getRelationshipSourceInventory" {
+		t.Fatalf("source inventory operation: summary=%#v id=%#v", operation["summary"], operation["operationId"])
+	}
+	if operation["description"] != "Sources to connect lists Google, Slack, and HubSpot. The page names each source and offers Connect for Google and HubSpot when no account is connected." {
+		t.Fatalf("description: %#v", operation["description"])
+	}
+	if operation["requestBody"] != nil || operation["parameters"] != nil {
+		t.Fatalf("sources to connect sends no parameters: body=%#v params=%#v", operation["requestBody"], operation["parameters"])
+	}
+	example := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(sourceInventoryExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("source inventory example:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got)
+	if !strings.Contains(encoded, "Google Gmail") || !strings.Contains(encoded, `"source":"slack"`) || !strings.Contains(encoded, `"displayName":"HubSpot"`) || !strings.Contains(encoded, `"accounts":[]`) {
+		t.Fatalf("sources to connect example is missing the page: %s", encoded)
+	}
+	if strings.Contains(encoded, "/status") {
+		t.Fatalf("inventory example included source status: %s", encoded)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

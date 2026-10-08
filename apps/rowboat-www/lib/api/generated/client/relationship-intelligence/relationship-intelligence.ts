@@ -975,8 +975,8 @@ export const getGetRelationshipSourceInventoryUrl = () => {
 };
 
 /**
- * Returns Google, Slack, and HubSpot capability/scopes plus durable account lifecycle state. No token, secret, or raw cursor is exposed.
- * @summary List guided source connections
+ * Sources to connect lists Google, Slack, and HubSpot. The page names each source and offers Connect for Google and HubSpot when no account is connected.
+ * @summary Sources to connect
  */
 export const getRelationshipSourceInventory = async (
   options?: RequestInit,

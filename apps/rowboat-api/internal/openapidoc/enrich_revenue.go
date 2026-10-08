@@ -1987,10 +1987,7 @@ func addRevenuePaths(paths obj) {
 	}, "responseId", "kind"), obj{"responseId": documentedPlanResponseID, "kind": "confirm", "comment": ""}), obj{
 		"201": jsonResponse("Recorded response.", freeFormSchema("Response receipt."), nil), "400": responseRef("400"), "404": responseRef("404"),
 	})}
-	paths["/v1/relationship-sources"] = obj{"get": operation("Relationship Intelligence", "List guided source connections", "Returns Google, Slack, and HubSpot capability/scopes plus durable account lifecycle state. No token, secret, or raw cursor is exposed.", "getRelationshipSourceInventory", bearer(), nil, nil, obj{
-		"200": jsonResponse("Guided source inventory.", objectSchema("Source inventory.", obj{"sources": arraySchema("Source cards.", ref("RelationshipSourceInventoryItem"))}, "sources"), nil),
-		"401": responseRef("401"),
-	})}
+	paths["/v1/relationship-sources"] = obj{"get": sourceInventoryOperation()}
 	paths["/v1/relationship-sources/status"] = obj{"get": operation("Relationship Intelligence", "Get source health", "Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.", "getRelationshipSourceStatuses", bearer(), nil, nil, obj{
 		"200": jsonResponse("Evidence source health.", objectSchema("Source status list.", obj{"sources": arraySchema("Sources.", ref("RelationshipSourceStatus"))}), nil),
 		"401": responseRef("401"),

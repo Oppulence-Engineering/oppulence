@@ -3439,6 +3439,31 @@ describe("API reference document", () => {
     });
   });
 
+  it("samples the sources Sources to connect lists", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationship-sources"].get;
+    expect(operation.summary).toBe("Sources to connect");
+    expect(operation.operationId).toBe("getRelationshipSourceInventory");
+    expect(operation.description).toBe(
+      "Sources to connect lists Google, Slack, and HubSpot. The page names each source and offers Connect for Google and HubSpot when no account is connected.",
+    );
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.parameters).toBeUndefined();
+    const example = operation.responses["200"].content["application/json"].example;
+    expect(example).toMatchObject({
+      sources: [
+        {
+          source: "google",
+          displayName: "Google Gmail & Calendar",
+          connectPath: "/v1/google-oauth/start",
+          accounts: [],
+        },
+        { source: "slack", displayName: "Slack", accounts: [] },
+        { source: "hubspot", displayName: "HubSpot", accounts: [] },
+      ],
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
