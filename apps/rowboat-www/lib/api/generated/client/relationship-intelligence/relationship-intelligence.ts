@@ -2225,8 +2225,8 @@ export const getRequestConversationDeletionUrl = (relationshipId: string) => {
 };
 
 /**
- * Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.
- * @summary Request conversation deletion
+ * Confirm delete removes this company's conversation evidence from Oppulence. Copies on this device and at the mailbox stay until they are checked.
+ * @summary Confirm delete
  */
 export const requestConversationDeletion = async (
   relationshipId: string,

@@ -658,6 +658,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertTheyAccepted(t, paths)
 
 	assertApproveChange(t, paths)
+
+	assertConfirmDelete(t, paths)
 }
 
 func TestConversationReviewNamesTheItem(t *testing.T) {
@@ -5924,6 +5926,61 @@ func assertApproveChange(t *testing.T, paths obj) {
 }
 
 func normalizedApproveChange(t *testing.T, value any) any {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func TestConfirmDeleteSamplesTheReceipt(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConfirmDelete(t, asObj(spec["paths"]))
+}
+
+func assertConfirmDelete(t *testing.T, paths obj) {
+	t.Helper()
+	post := asObj(asObj(paths["/v1/relationships/{relationshipId}/conversation-deletion"])["post"])
+	if post["summary"] != "Confirm delete" || post["operationId"] != "requestConversationDeletion" || post["description"] != confirmDeleteDescription {
+		t.Fatalf("confirm delete operation: summary=%#v description=%#v id=%#v", post["summary"], post["description"], post["operationId"])
+	}
+	params, _ := post["parameters"].([]any)
+	if len(params) != 1 {
+		t.Fatalf("confirm delete parameters: %#v", post["parameters"])
+	}
+	relationship := asObj(params[0])
+	if relationship["name"] != "relationshipId" || relationship["example"] != confirmDeleteRelationshipID || asObj(relationship["schema"])["example"] != confirmDeleteRelationshipID {
+		t.Fatalf("confirm delete relationship: %#v", relationship)
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if asObj(request["example"])["requestId"] == "" {
+		t.Fatalf("confirm delete request: %#v", request["example"])
+	}
+	responses := asObj(post["responses"])
+	if asObj(responses["202"])["description"] != "Conversation evidence stored here is deleted. Device and mailbox copies are still waiting." {
+		t.Fatalf("confirm delete response: %#v", responses["202"])
+	}
+	accepted := asObj(asObj(asObj(responses["202"])["content"])["application/json"])
+	if !reflect.DeepEqual(normalizedConfirmDelete(t, accepted["example"]), normalizedConfirmDelete(t, confirmDeleteReceipt())) {
+		t.Fatalf("confirm delete example: %#v", accepted["example"])
+	}
+	raw, err := json.Marshal(post)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
+		t.Fatalf("confirm delete looks live: %s", encoded)
+	}
+}
+
+func normalizedConfirmDelete(t *testing.T, value any) any {
 	t.Helper()
 	raw, err := json.Marshal(value)
 	if err != nil {

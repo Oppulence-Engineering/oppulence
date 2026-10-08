@@ -2322,8 +2322,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Request conversation deletion
-     * @description Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.
+     * Confirm delete
+     * @description Confirm delete removes this company's conversation evidence from Oppulence. Copies on this device and at the mailbox stay until they are checked.
      */
     post: operations["requestConversationDeletion"];
     delete?: never;
@@ -22835,7 +22835,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /**
+         * @description Relationship id.
+         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         relationshipId: string;
       };
       cookie?: never;
@@ -22858,12 +22861,62 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Deletion receipt. */
+      /** @description Conversation evidence stored here is deleted. Device and mailbox copies are still waiting. */
       202: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "legalHold": false,
+           *       "receiptId": "delete:ab12",
+           *       "requestedAt": "2026-07-31T14:00:00Z",
+           *       "scopeRef": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "status": "partial",
+           *       "targets": [
+           *         {
+           *           "attempts": 0,
+           *           "status": "pending",
+           *           "target": "local_recording"
+           *         },
+           *         {
+           *           "attempts": 0,
+           *           "status": "pending",
+           *           "target": "local_note"
+           *         },
+           *         {
+           *           "attempts": 1,
+           *           "status": "not_found",
+           *           "target": "outbox",
+           *           "verificationHash": "sha256:72a0d4998415278ba8231bc4d13ec4fd9de6cb620395d3bf33d1655078836ab6"
+           *         },
+           *         {
+           *           "attempts": 1,
+           *           "status": "deleted",
+           *           "target": "api_evidence",
+           *           "verificationHash": "sha256:78de8eebd548d26e7a0e5d8444016899d995ababc2e0f58d6e38586017df69ae"
+           *         },
+           *         {
+           *           "attempts": 1,
+           *           "status": "not_found",
+           *           "target": "embedding",
+           *           "verificationHash": "sha256:436ec9c35d2e6b7c1663caaf6933892865df01d599138b640447bd5211d3b7ea"
+           *         },
+           *         {
+           *           "attempts": 1,
+           *           "status": "not_found",
+           *           "target": "plan_share",
+           *           "verificationHash": "sha256:d55b014616776abb8ea3e9fc743a4a4b5692507a962914ce476624c7aba2e4de"
+           *         },
+           *         {
+           *           "attempts": 0,
+           *           "status": "pending",
+           *           "target": "provider"
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": components["schemas"]["ConversationDeletionReceipt"];
         };
       };
