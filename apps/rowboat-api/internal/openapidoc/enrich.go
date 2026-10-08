@@ -1890,7 +1890,6 @@ func enrichEntitySchemas(schemas obj) {
 		"stripe_customer_id":      {"description": "Stripe customer id when billing is backed by Stripe.", "example": "cus_123"},
 		"stripe_subscription_id":  {"description": "Stripe subscription id when billing is backed by Stripe.", "example": "sub_123"},
 		"delta":                   {"description": "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.", "example": -42},
-		"reason":                  {"description": "Reason code for the ledger entry.", "enum": []any{"llm_call", "llm_call_reserve", "llm_settle", "voice_tts", "exa_search", "grant", "refund"}, "example": "llm_settle"},
 		"request_id":              {"description": "Idempotency and trace anchor for a metered request.", "example": "9e2fb15a-936d-4f39-9372-73cfe0476ca8"},
 		"ts":                      {"description": "Usage or ledger event timestamp.", "example": "2026-06-04T20:38:00Z"},
 		"model":                   {"description": "Desktop-facing LLM model id.", "example": "openai/gpt-4.1-mini"},
@@ -1938,6 +1937,17 @@ func enrichEntitySchemas(schemas obj) {
 				for k, v := range doc {
 					p[k] = v
 				}
+			}
+		}
+	}
+	// reason is a credit-ledger code only on CreditLedger. Promise transitions,
+	// person removals, and share grants reuse the name with different values.
+	if ledger := asObj(schemas["CreditLedger"]); ledger != nil {
+		if props := asObj(ledger["properties"]); props != nil {
+			if reason := asObj(props["reason"]); reason != nil {
+				reason["description"] = "Reason code for the ledger entry."
+				reason["enum"] = []any{"llm_call", "llm_call_reserve", "llm_settle", "voice_tts", "exa_search", "grant", "refund"}
+				reason["example"] = "llm_settle"
 			}
 		}
 	}

@@ -463,17 +463,8 @@
             "type": "string"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Reason recorded when this proposal is rejected or fails.",
+            "example": "The invoice was already paid.",
             "type": "string"
           },
           "resolved_at": {
@@ -3716,17 +3707,8 @@
             "type": "string"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Transition rationale.",
+            "example": "Counterparty accepted in writing.",
             "type": "string"
           },
           "sourceEventId": {
@@ -3832,17 +3814,8 @@
             "type": "boolean"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Decision reason.",
+            "example": "owner_default",
             "type": "string"
           },
           "subject": {
@@ -4244,17 +4217,8 @@
             "$ref": "#/components/schemas/User"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Why this content was shared.",
+            "example": "The account owner asked for the thread.",
             "type": "string"
           },
           "resource_id": {
@@ -4835,17 +4799,8 @@
             "type": "string"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Why this connector decision was recorded.",
+            "example": "subscription_ended",
             "type": "string"
           },
           "requested_scopes": {
@@ -5134,17 +5089,8 @@
             "type": "string"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Machine-readable denial reason.",
+            "example": "scope_not_in_plan",
             "nullable": true,
             "type": "string"
           },
@@ -7262,17 +7208,8 @@
             "type": "string"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Semantic revocation reason.",
+            "example": "subscription_ended",
             "nullable": true,
             "type": "string"
           },
@@ -9095,17 +9032,8 @@
             "$ref": "#/components/schemas/Person"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Why this detail was recorded.",
+            "example": "The title was in the email signature.",
             "type": "string"
           },
           "retracted_at": {
@@ -9473,17 +9401,12 @@
             "type": "string"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
+            "description": "Why this person was removed. subject_request means they asked. user_action means the account holder removed them.",
             "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
+              "user_action",
+              "subject_request"
             ],
-            "example": "llm_settle",
+            "example": "user_action",
             "type": "string"
           },
           "suppressed_at": {
@@ -10086,17 +10009,8 @@
             "type": "integer"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Evidence-backed explanation.",
+            "example": "CRM deal stage changed to closed won.",
             "type": "string"
           },
           "relationship": {
@@ -11114,17 +11028,8 @@
             "type": "string"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Decision reason.",
+            "example": "Confirmed the provider records are the same account.",
             "type": "string"
           }
         },
@@ -11203,17 +11108,8 @@
             "type": "string"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Reason.",
+            "example": "Confirmed duplicate.",
             "type": "string"
           }
         },
@@ -11405,17 +11301,8 @@
             "type": "string"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Why this identity change was recorded.",
+            "example": "Confirmed the provider records are the same account.",
             "type": "string"
           },
           "updated_at": {
