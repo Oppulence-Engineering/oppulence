@@ -362,7 +362,7 @@ const API_REFERENCE_FIELD_NOTES: ReadonlyArray<readonly [string, string]> = [
     "AES-GCM sealed OAuth handoff payload. Internal storage field.",
     "Stored sign-in handoff. This field is internal.",
   ],
-  ["Hash of summary, facts, and sealed payload.", "Hash of the summary and the stored facts."],
+  ["Hash of summary, facts, and sealed payload.", "Hash of the summary, the stored facts, and the saved payload."],
   [
     "Preflight state. Facade unavailability keeps pending (fail closed).",
     "Sending check. If the check is unavailable, the action stays pending.",

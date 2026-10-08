@@ -6,6 +6,11 @@ import (
 	"encoding/json"
 )
 
+// documentedObservationContentHash is observationContentHash for the Gmail
+// observation sample: the published summary, facts {"adapter":"gmail"}, and a
+// sealed payload of JSON null. Mission Control copies this value as stored.
+const documentedObservationContentHash = "c649f448e463924ae2a0923fcc6d409bc5a808004027b16bfbea961336650984"
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -199,8 +204,8 @@ func addRevenueSchemas(schemas obj) {
 		"occurredAt":      stringSchema("Provider occurrence time.", "2026-07-18T17:30:00Z", obj{"format": "date-time"}),
 		"receivedAt":      stringSchema("Ingestion time.", "2026-07-18T17:31:00Z", obj{"format": "date-time"}),
 		"summary":         stringSchema("Bounded evidence summary.", "We promised to send the security packet."),
-		"normalizedFacts": freeFormSchema("Provider-neutral normalized facts."),
-		"contentHash":     stringSchema("Hash of summary, facts, and sealed payload.", "ab12cd34"),
+		"normalizedFacts": obj{"type": "object", "description": "Provider-neutral normalized facts.", "additionalProperties": true, "example": obj{"adapter": "gmail"}},
+		"contentHash":     stringSchema("Hash of summary, facts, and sealed payload.", documentedObservationContentHash),
 	}, "id", "source", "externalId", "sourceVersion", "eventType", "occurredAt", "receivedAt", "normalizedFacts", "contentHash")
 
 	assertionIDs := arraySchema("Assertions selected by deterministic precedence.", stringSchema("Assertion id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"))
@@ -326,7 +331,7 @@ func addRevenueSchemas(schemas obj) {
 		"source":        stringSchema("Canonical source.", "hubspot"),
 		"observedAt":    stringSchema("Source occurrence time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 		"evidencePath":  stringSchema("Authorized evidence inspection path.", "/v1/relationships/9c8dfa9b-a7b2-46ea-982c-622a914c00e5/evidence/6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"contentHash":   stringSchema("Immutable observation content hash.", "sha256:ab12"),
+		"contentHash":   stringSchema("Immutable observation content hash.", documentedObservationContentHash),
 	}, "observationId", "source", "observedAt", "evidencePath", "contentHash")
 
 	schemas["MissionControlDimensionEvidence"] = objectSchema("Winning typed assertion, authority decision, validity, and evidence for one projected dimension.", obj{

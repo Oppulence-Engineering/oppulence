@@ -834,6 +834,30 @@ func exampleEquals(value any, want int) bool {
 	default:
 		return false
 	}
+
+	assertObservationContentHash(t, schemas)
+}
+
+func TestObservationContentHashMatchesTheGmailSample(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertObservationContentHash(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertObservationContentHash(t *testing.T, schemas obj) {
+	t.Helper()
+	const want = documentedObservationContentHash
+	observation := asObj(asObj(schemas["RelationshipObservation"])["properties"])
+	if asObj(observation["contentHash"])["example"] != want {
+		t.Fatalf("observation content hash: %#v", observation["contentHash"])
+	}
+	if !reflect.DeepEqual(asObj(observation["normalizedFacts"])["example"], map[string]any{"adapter": "gmail"}) {
+		t.Fatalf("observation facts: %#v", observation["normalizedFacts"])
+	}
+	evidence := asObj(asObj(schemas["MissionControlEvidenceReference"])["properties"])
+	if asObj(evidence["contentHash"])["example"] != want {
+		t.Fatalf("mission control content hash: %#v", evidence["contentHash"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
