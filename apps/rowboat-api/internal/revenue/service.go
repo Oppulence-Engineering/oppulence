@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -1587,6 +1588,10 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	if fields := relationshipSheetProfileFieldMatch(needle); fields != nil {
 		preds = append(preds, fields)
 	}
+
+	if research, ok := publicResearchDetailCount(needle); ok {
+		preds = append(preds, relationshipHasPublicResearchDetailCount(research))
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -1605,6 +1610,57 @@ func relationshipParticipantRoleMatch(needle string) predicate.Relationship {
 	return relationship.HasParticipantsWith(predicate.RelationshipParticipant(func(s *sql.Selector) {
 		s.Where(normalizedSearchLike(s, relationshipparticipant.FieldRole, like))
 	}))
+}
+
+// publicResearchDetailCount reads "Public research · 1 detail" and
+// "Public research · N details". The people card prints that summary for
+// every non-retracted public-research attribute. One detail stays singular.
+func publicResearchDetailCount(needle string) (int, bool) {
+	text := normalizePersonSearch(needle)
+	const prefix = "public research · "
+	index := strings.Index(text, prefix)
+	if index < 0 {
+		return 0, false
+	}
+	rest := strings.TrimSpace(text[index+len(prefix):])
+	parts := strings.Fields(rest)
+	if len(parts) < 2 {
+		return 0, false
+	}
+	n, err := strconv.Atoi(parts[0])
+	if err != nil || n < 1 || n > 500 {
+		return 0, false
+	}
+	word := strings.TrimRight(parts[1], ".,;:?")
+	if n == 1 && word == "detail" {
+		return 1, true
+	}
+	if n > 1 && word == "details" {
+		return n, true
+	}
+	return 0, false
+}
+
+func relationshipHasPublicResearchDetailCount(n int) predicate.Relationship {
+	return relationship.HasParticipantsWith(
+		relationshipparticipant.HasPersonWith(personPublicResearchCount(n)),
+	)
+}
+
+func personPublicResearchCount(n int) predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf(
+				"(SELECT count(*) FROM %s WHERE %s = %s AND %s = 'external_research' AND %s <> 'retracted') = ",
+				personattribute.Table,
+				personattribute.PersonColumn,
+				s.C(person.FieldID),
+				personattribute.FieldSourceType,
+				personattribute.FieldStatus,
+			))
+			b.Arg(n)
+		}))
+	})
 }
 
 func relationshipShowsEmptyPersonProfile() predicate.Relationship {
