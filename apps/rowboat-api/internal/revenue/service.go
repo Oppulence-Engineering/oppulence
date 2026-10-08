@@ -884,6 +884,12 @@ func (s *Service) ListRelationshipsFiltered(
 		if review := relationshipSheetReviewMatch(u.ID, needle); review != nil {
 			parts = append(parts, review)
 		}
+		// "Supporting evidence changed." is the What changed answer when the
+		// only movement since this person's review is the evidence token.
+		// "supporting" and "evidence" stay on the sentences that already use them.
+		if evidence := relationshipSheetEvidenceChangeMatch(u.ID, needle); evidence != nil {
+			parts = append(parts, evidence)
+		}
 		searchedAt := time.Now()
 		if sheetPhraseMatches("no supported answer yet", needle) {
 			// An open confirmed promise is the answer on the sheet. A company
@@ -8264,6 +8270,87 @@ func relationshipSheetReviewMatch(userID uuid.UUID, needle string) predicate.Rel
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipSheetEvidenceChangeMatch matches "Supporting evidence changed."
+// The sheet prints that sentence when this person has not caught up to the
+// current version and every change since their review trims to evidence.
+// A health correction prints "Health". An acknowledged company prints
+// "Nothing changed since your last review." Neither is this sentence.
+func relationshipSheetEvidenceChangeMatch(userID uuid.UUID, needle string) predicate.Relationship {
+	if !labelPhraseMatches("supporting evidence changed.", needle) {
+		return nil
+	}
+	return relationshipEvidenceOnlySinceReview(userID)
+}
+
+func relationshipEvidenceOnlySinceReview(userID uuid.UUID) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(s.C(relationship.FieldStateVersion))
+			b.WriteString(" > ")
+			writeReviewedStateVersion(b, s, userID)
+			b.WriteString(" AND (SELECT COUNT(DISTINCT ")
+			writeChangedDimensionValue(b, s)
+			b.WriteString(") FROM ")
+			writeChangedDimensionsSinceReview(b, s, userID)
+			b.WriteString(") = 1 AND (SELECT MIN(")
+			writeChangedDimensionValue(b, s)
+			b.WriteString(") FROM ")
+			writeChangedDimensionsSinceReview(b, s, userID)
+			b.WriteString(") IN ('evidence', 'evidences')")
+		}))
+	})
+}
+
+func writeReviewedStateVersion(b *sql.Builder, s *sql.Selector, userID uuid.UUID) {
+	b.WriteString(fmt.Sprintf(
+		"COALESCE((SELECT MAX(%s) FROM %s WHERE %s = %s AND %s = ",
+		relationshipreviewacknowledgement.FieldStateVersion,
+		relationshipreviewacknowledgement.Table,
+		relationshipreviewacknowledgement.RelationshipColumn,
+		s.C(relationship.FieldID),
+		relationshipreviewacknowledgement.UserColumn,
+	))
+	b.Arg(userID.String())
+	b.WriteString("), 0)")
+}
+
+func writeChangedDimensionValue(b *sql.Builder, s *sql.Selector) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("dim")
+		return
+	}
+	b.WriteString("dim.value")
+}
+
+func writeChangedDimensionsSinceReview(b *sql.Builder, s *sql.Selector, userID uuid.UUID) {
+	column := "snap." + relationshipstatesnapshot.FieldChangedDimensions
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(fmt.Sprintf(
+			"%s AS snap, jsonb_array_elements_text(CASE WHEN jsonb_typeof(%s) = 'array' THEN %s ELSE '[]'::jsonb END) AS dim",
+			relationshipstatesnapshot.Table,
+			column,
+			column,
+		))
+	} else {
+		b.WriteString(fmt.Sprintf(
+			"%s AS snap, json_each(CASE WHEN json_type(%s) = 'array' THEN %s ELSE '[]' END) AS dim",
+			relationshipstatesnapshot.Table,
+			column,
+			column,
+		))
+	}
+	b.WriteString(fmt.Sprintf(
+		" WHERE snap.%s = %s AND snap.%s > ",
+		relationshipstatesnapshot.RelationshipColumn,
+		s.C(relationship.FieldID),
+		relationshipstatesnapshot.FieldVersion,
+	))
+	writeReviewedStateVersion(b, s, userID)
+	b.WriteString(" AND ")
+	writeChangedDimensionValue(b, s)
+	b.WriteString(" <> ''")
 }
 
 func relationshipNotReviewedYet(userID uuid.UUID) predicate.Relationship {
