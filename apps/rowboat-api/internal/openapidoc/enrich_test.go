@@ -1562,6 +1562,14 @@ func TestRemoveRuleReturnsNoBody(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
 	assertRemoveRule(t, spec)
+
+	assertSnoozeAction(t, spec)
+}
+
+func TestSnoozeActionStoresSevenDays(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSnoozeAction(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -2759,6 +2767,34 @@ func assertRemoveRule(t *testing.T, spec obj) {
 	params, _ := op["parameters"].([]any)
 	if len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != "3b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
 		t.Fatalf("remove rule id: %#v", op["parameters"])
+	}
+}
+
+func assertSnoozeAction(t *testing.T, spec obj) {
+	t.Helper()
+	const wake = "2026-08-07T14:00:00Z"
+	op := asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions/{actionId}/snooze"])["post"])
+	if op["summary"] != "Snooze" || op["operationId"] != "snoozeRevenueAction" {
+		t.Fatalf("snooze operation: summary=%#v id=%#v", op["summary"], op["operationId"])
+	}
+	description, _ := op["description"].(string)
+	if !strings.Contains(description, "seven days") {
+		t.Fatalf("snooze description: %q", description)
+	}
+	request := asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])
+	if asObj(request["example"])["until"] != wake {
+		t.Fatalf("snooze request: %#v", request["example"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	if example["queueStatus"] != "snoozed" || example["snoozedUntil"] != wake || example["id"] != "1a8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("snoozed action: %#v", example)
+	}
+	if _, ok := example["dismissReason"]; ok {
+		t.Fatalf("snooze stores no dismiss reason: %#v", example["dismissReason"])
+	}
+	queue := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])["queueStatus"])
+	if queue["example"] != "open" {
+		t.Fatalf("queue status example changed: %#v", queue)
 	}
 }
 

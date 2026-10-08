@@ -2606,8 +2606,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Snooze an action
-     * @description Parks the action until a bounded future timestamp (at most 90 days).
+     * Snooze
+     * @description Snooze posts a wake time seven days out. The stored action is snoozed until that time. The wake time has to be in the future and within 90 days.
      */
     post: operations["snoozeRevenueAction"];
     delete?: never;
@@ -21295,14 +21295,14 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "until": "2026-07-20T09:00:00Z"
+         *       "until": "2026-08-07T14:00:00Z"
          *     }
          */
         "application/json": {
           /**
            * Format: date-time
-           * @description Wake time.
-           * @example 2026-07-20T09:00:00Z
+           * @description Wake time seven days out.
+           * @example 2026-08-07T14:00:00Z
            */
           until: string;
         };
@@ -21315,6 +21315,31 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "warm_follow_up",
+           *       "approvalStatus": "pending",
+           *       "channel": "email",
+           *       "createdAt": "2026-07-12T12:00:00Z",
+           *       "detector": "requested_follow_up_due",
+           *       "evidence": [],
+           *       "executionMode": "draft",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "pending",
+           *       "priorityScore": 82,
+           *       "queueStatus": "snoozed",
+           *       "reason": "They asked for a follow-up in July.",
+           *       "recipientEmail": "buyer@example.com",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12...",
+           *       "snoozedUntil": "2026-08-07T14:00:00Z",
+           *       "updatedAt": "2026-07-31T14:00:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
