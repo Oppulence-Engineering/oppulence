@@ -871,6 +871,12 @@ func (s *Service) ListRelationshipsFiltered(
 			mailthread.SubjectContainsFold(value),
 			mailthread.CounterpartyEmailContainsFold(value),
 		)))
+		// The email and meeting timeline prints this subject. A blank subject
+		// is "No message preview" above. A deleted row stays hidden.
+		parts = append(parts, relationship.HasCommunicationInteractionsWith(
+			communicationinteraction.DeletedEQ(false),
+			communicationinteraction.SubjectContainsFold(value),
+		))
 		if review := relationshipSheetReviewMatch(u.ID, needle); review != nil {
 			parts = append(parts, review)
 		}
