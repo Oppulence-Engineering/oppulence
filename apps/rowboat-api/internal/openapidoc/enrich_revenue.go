@@ -4,6 +4,24 @@ package openapidoc
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
 
+const priorityBreakdownDescription = "Per-component priority breakdown; every component is stored and shown."
+
+func priorityBreakdownExample() obj {
+	return obj{
+		"commitment_urgency":  25,
+		"evidence_quality":    10,
+		"recency_signal":      12,
+		"relationship_value":  20,
+		"uncertainty_penalty": -5,
+	}
+}
+
+func priorityBreakdownSchema() obj {
+	schema := freeFormSchema(priorityBreakdownDescription)
+	schema["example"] = priorityBreakdownExample()
+	return schema
+}
+
 func addRevenueSchemas(schemas obj) {
 	schemas["RevenueWorkspace"] = objectSchema("Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.", obj{
 		"id":                     uuidSchema("Workspace id.", "0b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -477,7 +495,7 @@ func addRevenueSchemas(schemas obj) {
 		"proposedMessage":         stringSchema("Proposed message body.", "Hi Jordan — you asked me to circle back this month..."),
 		"senderAccountRef":        stringSchema("Sender account reference.", "gmail:me@company.com"),
 		"priorityScore":           intSchema("Explainable priority score (0-100).", 82),
-		"priorityComponents":      freeFormSchema("Per-component priority breakdown; every component is stored and shown."),
+		"priorityComponents":      priorityBreakdownSchema(),
 		"queueStatus":             stringEnum("Operator triage state.", "open", "open", "snoozed", "dismissed", "handled"),
 		"policyStatus":            stringEnum("Preflight state. Facade unavailability keeps pending (fail closed).", "pending", "pending", "passed", "review_required", "blocked", "stale"),
 		"approvalStatus":          stringEnum("Approval state, bound to the exact revision and decision.", "pending", "pending", "approved", "rejected"),
