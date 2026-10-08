@@ -61,6 +61,8 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/agents/{slug}",
 
 		"/v1/agent-sessions",
+
+		"/v1/agent-sessions/{id}/cancel",
 		"/v1/llm/models",
 		"/v1/llm/chat/completions",
 		"/v1/llm/completions",
@@ -2332,6 +2334,36 @@ func assertStartedChat(t *testing.T, spec obj) {
 	first := asObj(sessions[0])
 	if first["sessionId"] != "session_abc123" || first["title"] != "Review the Acme renewal" {
 		t.Fatalf("session history example changed: %s", mustJSON(first))
+	}
+
+	assertStoppedChat(t, spec)
+}
+
+func TestStopResponseEndsTheChat(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertStoppedChat(t, spec)
+}
+
+func assertStoppedChat(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/agent-sessions/{id}/cancel"])["post"])
+	if post["summary"] != "Stop response" || post["operationId"] != "cancelAgentSession" {
+		t.Fatalf("stop operation = %#v", post["summary"])
+	}
+	if post["requestBody"] != nil {
+		t.Fatal("stop request should have no body")
+	}
+	params, _ := post["parameters"].([]any)
+	if len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != "session_abc123" {
+		t.Fatalf("stop session id = %#v", params)
+	}
+	accepted := asObj(asObj(asObj(asObj(asObj(post["responses"])["202"])["content"])["application/json"])["example"])
+	if mustJSON(accepted) != mustJSON(documentedStoppedChat()) {
+		t.Fatalf("stop response = %s", mustJSON(accepted))
+	}
+	if accepted["status"] != "canceling" {
+		t.Fatalf("stop status = %#v", accepted["status"])
 	}
 }
 

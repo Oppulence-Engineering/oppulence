@@ -2028,6 +2028,21 @@ describe("API reference document", () => {
     expect(listed.turns).toBe(2);
   });
 
+  it("samples the chat Stop response ends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const stop = presented.paths["/v1/agent-sessions/{id}/cancel"].post;
+    expect(stop.summary).toBe("Stop response");
+    expect(stop.description).toContain("no body");
+    expect(stop.description).toContain("canceling");
+    expect(stop.requestBody).toBeUndefined();
+    expect(stop.parameters[0].schema.example).toBe("session_abc123");
+    expect(stop.responses["202"].description).toBe("Stop accepted.");
+    expect(stop.responses["202"].content["application/json"].example).toEqual({
+      sessionId: "session_abc123",
+      status: "canceling",
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

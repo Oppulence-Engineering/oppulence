@@ -1104,6 +1104,13 @@ func documentedStartedChatRequestSchema() obj {
 	}, "agent")
 }
 
+func documentedStoppedChat() obj {
+	return obj{
+		"sessionId": "session_abc123",
+		"status":    "canceling",
+	}
+}
+
 func addAgentSessionPaths(paths obj) {
 	paths["/v1/agent-sessions"] = obj{
 		"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", "listAgentSessions", bearer(), nil, nil, obj{

@@ -16260,6 +16260,76 @@
         ]
       }
     },
+    "/v1/agent-sessions/{id}/cancel": {
+      "post": {
+        "description": "Stop response ends the open chat. The request has no body. The response names that session and reports status canceling.",
+        "operationId": "cancelAgentSession",
+        "parameters": [
+          {
+            "description": "Stable session id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session id.",
+              "example": "session_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "sessionId": "session_abc123",
+                  "status": "canceling"
+                },
+                "schema": {
+                  "description": "Accepted stop.",
+                  "properties": {
+                    "sessionId": {
+                      "description": "Session that is stopping.",
+                      "example": "session_abc123",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "Stop acknowledgement.",
+                      "example": "canceling",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "sessionId",
+                    "status"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Stop accepted."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Stop response",
+        "tags": [
+          "Agent Sessions"
+        ]
+      }
+    },
     "/v1/agent-sessions/{id}/events": {
       "get": {
         "description": "Returns ordered durable events used to reconstruct a conversation after navigation or reload.",
