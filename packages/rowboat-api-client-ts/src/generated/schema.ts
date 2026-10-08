@@ -2688,8 +2688,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get the original email body
-     * @description Returns the plain-text body of the original email behind this action (RFC 031 Layer 3), served from the sealed short-TTL cache or fetched from Gmail on demand. 404 when no source message is linked or the body is unavailable.
+     * View original email
+     * @description View original email loads the Gmail message behind this action. The request sends only the action id. The answer is that message as plain text in body, separate from the draft on the action.
      */
     get: operations["getRevenueActionSourceBody"];
     put?: never;
@@ -22361,16 +22361,21 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Original email body. */
+      /** @description The original email View original email shows. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "body": "Could you circle back this month? July works for us."
+           *     }
+           */
           "application/json": {
             /**
-             * @description Plain-text body.
-             * @example Hi — following up on the proposal...
+             * @description Plain-text Gmail message.
+             * @example Could you circle back this month? July works for us.
              */
             body?: string;
           };

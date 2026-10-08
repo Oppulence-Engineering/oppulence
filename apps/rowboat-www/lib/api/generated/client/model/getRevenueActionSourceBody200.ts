@@ -10,6 +10,6 @@
  * Body.
  */
 export type GetRevenueActionSourceBody200 = {
-  /** Plain-text body. */
+  /** Plain-text Gmail message. */
   body?: string;
 };

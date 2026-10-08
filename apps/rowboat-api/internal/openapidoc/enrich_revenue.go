@@ -2139,8 +2139,13 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 		"409": problemResponse("Invariant violation: not approved, blocked, expired decision, or workspace not linked for sends.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "action is not approved for its current revision", "not_approved")),
 	})}
-	paths["/v1/revenue-actions/{actionId}/source-body"] = obj{"get": operation("Revenue", "Get the original email body", "Returns the plain-text body of the original email behind this action (RFC 031 Layer 3), served from the sealed short-TTL cache or fetched from Gmail on demand. 404 when no source message is linked or the body is unavailable.", "getRevenueActionSourceBody", bearer(), actionParam, nil, obj{
-		"200": jsonResponse("Original email body.", objectSchema("Body.", obj{"body": stringSchema("Plain-text body.", "Hi — following up on the proposal...")}), nil),
+	paths["/v1/revenue-actions/{actionId}/source-body"] = obj{"get": operation("Revenue", "View original email", "View original email loads the Gmail message behind this action. The request sends only the action id. The answer is that message as plain text in body, separate from the draft on the action.", "getRevenueActionSourceBody", bearer(), []any{obj{
+		"name": "actionId", "in": "path", "required": true, "description": "Action id.",
+		"schema": uuidSchema("Action id.", "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+	}}, nil, obj{
+		"200": jsonResponse("The original email View original email shows.", objectSchema("Body.", obj{
+			"body": stringSchema("Plain-text Gmail message.", originalEmailBody),
+		}), obj{"body": originalEmailBody}),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
@@ -2331,3 +2336,8 @@ func documentedPolicyRecheck() obj {
 }
 
 const exportedCommitmentMarkdown = "# Commitment record\n\n**We promised:** Migration live by the 14th\n\n| Field | Value |\n|---|---|\n| Company | Acme |\n| State | At risk |\n| Due | 2026-09-14 |\n| Owner | alex@example.com |\n| Counterparty | jordan@example.com |\n| Record generated | 2026-09-09T12:00:00Z |\n\n## Evidence\n\n> We will have the migration live by the 14th.\n\n— Gmail, 2026-09-06T12:00:00Z · https://mail.google.com/thread-1\n\nContent hash `sha256:abc123`\n\n## History\n\n2. **Confirmed in this workspace** — 2026-09-07T09:00:00Z (Someone in this workspace, alex@example.com)\n"
+
+// originalEmailBody is the plain-text Gmail message View original email shows
+// for the documented follow-up. It is the July ask the draft answers, not the
+// draft "Hi Jordan — you asked me to circle back this month...".
+const originalEmailBody = "Could you circle back this month? July works for us."

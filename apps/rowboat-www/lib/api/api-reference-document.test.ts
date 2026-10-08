@@ -2267,6 +2267,19 @@ describe("API reference document", () => {
     expect(markdown).not.toContain("internally_confirmed");
   });
 
+  it("shows the Gmail message View original email loads", () => {
+    const actionId = "1a8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-actions/{actionId}/source-body"].get;
+    expect(operation.summary).toBe("View original email");
+    expect(operation.description).toContain("only the action id");
+    expect(operation.parameters.find((param) => param.name === "actionId")?.schema.example).toBe(actionId);
+    const example = operation.responses["200"].content["application/json"].example;
+    expect(example).toEqual({ body: "Could you circle back this month? July works for us." });
+    expect(JSON.stringify(example)).not.toContain("following up on the proposal");
+    expect(JSON.stringify(example)).not.toContain("Hi Jordan");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
