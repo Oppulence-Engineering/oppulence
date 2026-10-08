@@ -204,6 +204,24 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the model a transcript call names", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const event = presented.components.schemas.BackgroundTaskRunEvent.properties;
+    expect(event.type).toMatchObject({
+      description: "Heading for this transcript row. A model call is runtime.llm_call_started.",
+      example: "runtime.llm_call_started",
+    });
+    expect(event.event).toMatchObject({
+      description: "Payload the transcript reads. A model call names the model.",
+      example: { model: "openai/gpt-4.1", type: "runtime.llm_call_started" },
+    });
+    expect(JSON.stringify(event.event.example)).not.toContain("acta_");
+    expect(JSON.stringify(event.event.example)).not.toContain('"token"');
+    expect(
+      presented.components.schemas.BackgroundTaskRunEventInput.properties.type.example,
+    ).toBe("temporal.completed");
+  });
+
   it("drops the local cluster link and names common fields", () => {
     const presented = presentApiReferenceDocument({
       externalDocs: {

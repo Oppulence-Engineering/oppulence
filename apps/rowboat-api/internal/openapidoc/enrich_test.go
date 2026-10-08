@@ -320,6 +320,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatal("checked-in openapi json still contains unmounted ent CRUD paths")
 	}
 	schemas := asObj(asObj(spec["components"])["schemas"])
+	assertTranscriptModelCall(t, schemas)
 	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil || schemas["EntityProjection"] == nil || schemas["EntitySpine"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
 	}
@@ -398,5 +399,32 @@ func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) 
 		if asObj(token["responses"])[status] == nil {
 			t.Fatalf("MCP token missing %s", status)
 		}
+	}
+}
+
+func TestTranscriptModelCallIsDocumented(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertTranscriptModelCall(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertTranscriptModelCall(t *testing.T, schemas obj) {
+	t.Helper()
+	props := asObj(asObj(schemas["BackgroundTaskRunEvent"])["properties"])
+	eventType := asObj(props["type"])
+	if eventType["example"] != transcriptModelCallType || eventType["description"] != transcriptModelCallTypeDescription {
+		t.Fatalf("transcript event type: %#v", eventType)
+	}
+	event := asObj(props["event"])
+	if event["description"] != transcriptModelCallDescription {
+		t.Fatalf("transcript event payload: %#v", event)
+	}
+	example := asObj(event["example"])
+	if example["model"] != transcriptModelCallModel || example["type"] != transcriptModelCallType {
+		t.Fatalf("transcript model call: %#v", example)
+	}
+	inputType := asObj(asObj(asObj(schemas["BackgroundTaskRunEventInput"])["properties"])["type"])
+	if inputType["example"] != "temporal.completed" {
+		t.Fatalf("append event type changed: %#v", inputType)
 	}
 }

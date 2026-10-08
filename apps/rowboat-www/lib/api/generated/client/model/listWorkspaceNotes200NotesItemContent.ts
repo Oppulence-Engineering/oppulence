@@ -7,6 +7,6 @@
  */
 
 /**
- * Payload the transcript reads. A model call names the model.
+ * Editor document, when one was saved.
  */
-export type BackgroundTaskRunEventEvent = { [key: string]: unknown };
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };
