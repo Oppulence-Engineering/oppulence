@@ -934,6 +934,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if promise := relationshipSheetActivityPromiseMatch(needle); promise != nil {
 			parts = append(parts, promise)
 		}
+
+		if note := relationshipSheetActivityNoteMatch(needle); note != nil {
+			parts = append(parts, note)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -2450,6 +2454,129 @@ func writePromiseIsStoredToken(b *sql.Builder, s *sql.Selector, facts string) {
 		return
 	}
 	writePromiseFactTrim(b, s, facts)
+	b.WriteString(" GLOB '[a-z0-9_]*_[a-z0-9_]*'")
+}
+
+// relationshipSheetActivityNoteMatch is "Note: …" on an opened activity.
+// A saved note stores the words in body, or in content when body is empty.
+// The sheet skips a body that is only a participant token, and it does not
+// print the note again when the row summary is already that sentence.
+func relationshipSheetActivityNoteMatch(needle string) predicate.Relationship {
+	const marker = "note: "
+	index := strings.Index(needle, marker)
+	if index < 0 {
+		return nil
+	}
+	text := strings.TrimSpace(needle[index+len(marker):])
+	if text == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationFactNote(text))
+}
+
+func observationFactNote(text string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			payload := s.C(relationshipobservation.FieldPayloadCiphertext)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			b.WriteString(payload)
+			b.WriteString(" IS NULL OR length(")
+			b.WriteString(payload)
+			b.WriteString(") = 0) AND (SELECT ")
+			writeNormalizedAlias(b, s, "note.printed")
+			b.WriteString(" = ")
+			b.Arg(text)
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(note.printed, '')) <> '' AND (")
+			} else {
+				b.WriteString("trim(coalesce(note.printed, '')) <> '' AND (")
+			}
+			writeNoteToken(b, s, "note.printed")
+			b.WriteString(" OR note.printed <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) FROM (SELECT ")
+			writeActivityNoteText(b, s, facts)
+			b.WriteString(" AS printed) AS note)")
+		}))
+	})
+}
+
+func writeActivityNoteText(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("CASE WHEN jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'body') = 'string' AND btrim(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'body') NOT IN ('', 'local-user', 'meeting-counterparty') THEN btrim(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'body') WHEN jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'content') = 'string' AND btrim(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'content') <> '' THEN btrim(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'content') ELSE coalesce((SELECT string_agg(btrim(txt #>> '{}'), ' ' ORDER BY ord) FROM jsonb_path_query(CASE WHEN jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb) = 'object' THEN ")
+		b.WriteString(facts)
+		b.WriteString("::jsonb ELSE '{}'::jsonb END, '$.content[*].children[*].text') WITH ORDINALITY AS slate(txt, ord) WHERE btrim(txt #>> '{}') <> ''), (SELECT string_agg(btrim(txt #>> '{}'), ' ' ORDER BY ord) FROM jsonb_path_query(CASE WHEN jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb) = 'object' THEN ")
+		b.WriteString(facts)
+		b.WriteString("::jsonb ELSE '{}'::jsonb END, '$.content[*].text') WITH ORDINALITY AS slate(txt, ord) WHERE btrim(txt #>> '{}') <> '')) END")
+		return
+	}
+	b.WriteString("CASE WHEN json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.body') = 'text' AND trim(coalesce(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.body'), '')) NOT IN ('', 'local-user', 'meeting-counterparty') THEN trim(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.body')) WHEN json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.content') = 'text' AND trim(coalesce(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.content'), '')) <> '' THEN trim(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.content')) ELSE (SELECT group_concat(atom, ' ') FROM (SELECT atom FROM json_tree(")
+	b.WriteString(facts)
+	b.WriteString(", '$.content') WHERE key = 'text' AND type = 'text' AND trim(coalesce(atom, '')) <> '' ORDER BY id)) END")
+}
+
+func writeNormalizedAlias(b *sql.Builder, s *sql.Selector, alias string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(coalesce(")
+		b.WriteString(alias)
+		b.WriteString(", '')), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(coalesce(")
+	b.WriteString(alias)
+	b.WriteString(", '')), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
+}
+
+func writeNoteToken(b *sql.Builder, s *sql.Selector, alias string) {
+	b.WriteString(alias)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(" ~ '^[a-z0-9_]*_[a-z0-9_]*$'")
+		return
+	}
 	b.WriteString(" GLOB '[a-z0-9_]*_[a-z0-9_]*'")
 }
 
