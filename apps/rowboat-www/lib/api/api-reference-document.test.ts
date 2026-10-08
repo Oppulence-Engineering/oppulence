@@ -1776,6 +1776,40 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the workflow Use Inbox Digest stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post = presented.paths["/v1/background-task-templates/{templateSlug}/instantiate"].post;
+    expect(post.summary).toBe("Use Inbox Digest");
+    expect(post.description).toBe(
+      "Use Inbox Digest posts an empty body. The stored workflow is named Inbox Digest, stays active, and runs in the cloud. It starts at 8:00 on weekdays in America/New_York, keeps the template instructions, model, and provider, and records revision 1 with schedule sync paused.",
+    );
+    expect(post.requestBody.content["application/json"].example).toEqual({});
+    expect(post.parameters[0].schema.example).toBe("inbox-digest");
+    expect(post.responses["201"].description).toBe("Stored workflow.");
+    expect(post.responses["201"].content["application/json"].example).toMatchObject({
+      id: "d8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+      slug: "inbox-digest",
+      name: "Inbox Digest",
+      active: true,
+      executionTarget: "api",
+      model: "anthropic/claude-sonnet-4-5",
+      provider: "openrouter",
+      systemManaged: false,
+      scheduleSyncState: "paused",
+      revision: 1,
+      triggers: { cronExpr: "0 8 * * 1-5", timezone: "America/New_York" },
+    });
+    expect(post.responses["201"].content["application/json"].example.instructions).toContain(
+      "deadlines and blockers",
+    );
+    expect(presented.components.schemas.BackgroundTaskTemplate.properties.instructions.example).toBe(
+      "Review recent important Gmail messages and produce a markdown digest.",
+    );
+    expect(presented.paths["/v1/background-tasks"].post.requestBody.content["application/json"].example.slug).toBe(
+      "daily-summary",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

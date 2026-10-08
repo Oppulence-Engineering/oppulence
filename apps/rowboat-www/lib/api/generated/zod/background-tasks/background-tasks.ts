@@ -369,8 +369,8 @@ export const GetBackgroundTaskTemplate500Response = zod
   );
 
 /**
- * Creates a normal background task from a built-in template. The resulting task is owned by the authenticated user and then follows the same trigger, admission, and Temporal execution path as tasks created directly.
- * @summary Instantiate background task template
+ * Use Inbox Digest posts an empty body. The stored workflow is named Inbox Digest, stays active, and runs in the cloud. It starts at 8:00 on weekdays in America/New_York, keeps the template instructions, model, and provider, and records revision 1 with schedule sync paused.
+ * @summary Use Inbox Digest
  */
 export const InstantiateBackgroundTaskTemplateParams = zod.object({
   templateSlug: zod.string().describe("Background task template slug."),

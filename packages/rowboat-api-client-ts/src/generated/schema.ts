@@ -454,8 +454,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Instantiate background task template
-     * @description Creates a normal background task from a built-in template. The resulting task is owned by the authenticated user and then follows the same trigger, admission, and Temporal execution path as tasks created directly.
+     * Use Inbox Digest
+     * @description Use Inbox Digest posts an empty body. The stored workflow is named Inbox Digest, stays active, and runs in the cloud. It starts at 8:00 on weekdays in America/New_York, keeps the template instructions, model, and provider, and records revision 1 with schedule sync paused.
      */
     post: operations["instantiateBackgroundTaskTemplate"];
     delete?: never;
@@ -14035,17 +14035,12 @@ export interface operations {
     /** @description Optional template overrides. */
     requestBody?: {
       content: {
-        /**
-         * @example {
-         *       "name": "Executive Inbox Digest",
-         *       "slug": "exec-inbox"
-         *     }
-         */
+        /** @example {} */
         "application/json": components["schemas"]["BackgroundTaskTemplateInstantiateRequest"];
       };
     };
     responses: {
-      /** @description Created task. */
+      /** @description Stored workflow. */
       201: {
         headers: {
           [name: string]: unknown;
@@ -14055,30 +14050,21 @@ export interface operations {
            * @example {
            *       "active": true,
            *       "createdAt": "2026-06-04T20:38:00Z",
-           *       "executionTarget": "desktop",
-           *       "id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
-           *       "instructions": "Summarize important account changes and draft follow-up notes.",
-           *       "lastAttemptAt": "2026-06-04T21:00:00Z",
-           *       "lastRunAt": "2026-06-04T21:02:00Z",
-           *       "lastRunError": "",
-           *       "lastRunId": "run-20260604-210000",
-           *       "lastRunSummary": "No high-priority account changes.",
-           *       "model": "openai/gpt-4.1-mini",
-           *       "name": "Daily Account Summary",
-           *       "provider": "openai",
-           *       "revision": 2,
-           *       "scheduleSyncError": "",
-           *       "scheduleSyncState": "current",
-           *       "scheduleSyncedAt": "2026-06-04T20:39:00Z",
-           *       "slug": "daily-summary",
+           *       "executionTarget": "api",
+           *       "id": "d8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+           *       "instructions": "Review recent important Gmail messages, group them by account or topic, call out deadlines and blockers, and produce a markdown digest with concrete next actions.",
+           *       "model": "anthropic/claude-sonnet-4-5",
+           *       "name": "Inbox Digest",
+           *       "provider": "openrouter",
+           *       "revision": 1,
+           *       "scheduleSyncState": "paused",
+           *       "slug": "inbox-digest",
            *       "systemManaged": false,
-           *       "templateSlug": "",
-           *       "templateVersion": 0,
            *       "triggers": {
-           *         "cronExpr": "0 9 * * *",
+           *         "cronExpr": "0 8 * * 1-5",
            *         "timezone": "America/New_York"
            *       },
-           *       "updatedAt": "2026-06-04T20:39:00Z"
+           *       "updatedAt": "2026-06-04T20:38:00Z"
            *     }
            */
           "application/json": components["schemas"]["BackgroundTask"];
