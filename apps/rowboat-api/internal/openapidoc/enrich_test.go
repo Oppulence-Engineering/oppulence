@@ -4108,7 +4108,7 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if operation["summary"] != "Open a company" {
 		t.Fatalf("summary: %#v", operation["summary"])
 	}
-	if operation["description"] != "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises." {
+	if operation["description"] != "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. Each detail came from a connected source." {
 		t.Fatalf("description: %#v", operation["description"])
 	}
 	params, ok := operation["parameters"].([]any)
@@ -4148,6 +4148,11 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	}
 	if asObj(asObj(mission["evidence"])["lifecycle"])["supported"] != true {
 		t.Fatalf("lifecycle evidence: %#v", asObj(mission["evidence"])["lifecycle"])
+	}
+	for _, key := range []string{"lifecycle", "health", "engagement", "sentiment"} {
+		if asObj(asObj(mission["evidence"])[key])["authority"] != "source_fact" {
+			t.Fatalf("%s authority: %#v", key, asObj(asObj(mission["evidence"])[key])["authority"])
+		}
 	}
 	if asObj(asObj(media["schema"])["properties"])["emailThreads"] == nil {
 		t.Fatal("opened company schema omits email threads")

@@ -28442,7 +28442,7 @@
     },
     "/v1/relationships/{relationshipId}": {
       "get": {
-        "description": "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.",
+        "description": "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. Each detail came from a connected source.",
         "operationId": "getRelationship",
         "parameters": [
           {
@@ -28517,6 +28517,7 @@
                     "detectorVersion": 1,
                     "evidence": {
                       "engagement": {
+                        "authority": "source_fact",
                         "dimension": "engagement",
                         "evidence": [
                           {
@@ -28532,6 +28533,7 @@
                         "value": "declining"
                       },
                       "health": {
+                        "authority": "source_fact",
                         "dimension": "health",
                         "evidence": [
                           {
@@ -28547,6 +28549,7 @@
                         "value": "needs_attention"
                       },
                       "lifecycle": {
+                        "authority": "source_fact",
                         "dimension": "lifecycle",
                         "evidence": [
                           {
@@ -28562,6 +28565,7 @@
                         "value": "evaluation"
                       },
                       "sentiment": {
+                        "authority": "source_fact",
                         "dimension": "sentiment",
                         "evidence": [
                           {

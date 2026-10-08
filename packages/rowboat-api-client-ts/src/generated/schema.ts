@@ -2377,7 +2377,7 @@ export interface paths {
     };
     /**
      * Open a company
-     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. Each detail came from a connected source.
      */
     get: operations["getRelationship"];
     put?: never;
@@ -23989,6 +23989,7 @@ export interface operations {
            *         "detectorVersion": 1,
            *         "evidence": {
            *           "engagement": {
+           *             "authority": "source_fact",
            *             "dimension": "engagement",
            *             "evidence": [
            *               {
@@ -24004,6 +24005,7 @@ export interface operations {
            *             "value": "declining"
            *           },
            *           "health": {
+           *             "authority": "source_fact",
            *             "dimension": "health",
            *             "evidence": [
            *               {
@@ -24019,6 +24021,7 @@ export interface operations {
            *             "value": "needs_attention"
            *           },
            *           "lifecycle": {
+           *             "authority": "source_fact",
            *             "dimension": "lifecycle",
            *             "evidence": [
            *               {
@@ -24034,6 +24037,7 @@ export interface operations {
            *             "value": "evaluation"
            *           },
            *           "sentiment": {
+           *             "authority": "source_fact",
            *             "dimension": "sentiment",
            *             "evidence": [
            *               {

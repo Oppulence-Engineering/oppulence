@@ -150,6 +150,8 @@ func openedCompanyDimension(dimension, value string) obj {
 		"value":     value,
 		"supported": true,
 		"fresh":     true,
+		// The sheet badge says "From a connected source". A supported detail with no authority says "Not filled in yet".
+		"authority": "source_fact",
 		"evidence": []any{obj{
 			"observationId": openedCompanyObservationID,
 			"source":        "hubspot",
