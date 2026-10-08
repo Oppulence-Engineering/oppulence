@@ -13,6 +13,8 @@ const (
 	openedCompanyReason        = "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation."
 	openedCompanyTouchedAt     = "2026-07-25T15:00:00Z"
 	openedCompanyProjectedAt   = "2026-07-25T16:00:00Z"
+	// The sheet Category row prints this name. An empty list says Not filled in.
+	openedCompanyCategory = "Artificial intelligence"
 )
 
 func openedCompanyParams() []any {
@@ -52,7 +54,7 @@ func openedCompanySheetExample() obj {
 			"risks":            empty,
 			"milestones":       empty,
 			"resourceRefs":     empty,
-			"categories":       empty,
+			"categories":       []any{openedCompanyCategory},
 		},
 		"actions":         empty,
 		"recommendations": empty,

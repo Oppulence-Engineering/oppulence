@@ -3340,7 +3340,7 @@ describe("API reference document", () => {
     const companyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
     expect(operation.summary).toBe("Open a company");
     expect(operation.description).toBe(
-      "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.",
+      "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The category is Artificial intelligence.",
     );
     expect(operation.parameters).toEqual([
       expect.objectContaining({
@@ -3359,6 +3359,7 @@ describe("API reference document", () => {
       peopleCount: 1,
       emailThreadCount: 0,
       commitmentCount: 0,
+      categories: ["Artificial intelligence"],
     });
     expect(example.emailThreads).toEqual([]);
     expect(example.participants).toEqual([

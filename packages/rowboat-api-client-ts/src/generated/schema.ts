@@ -2377,7 +2377,7 @@ export interface paths {
     };
     /**
      * Open a company
-     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The category is Artificial intelligence.
      */
     get: operations["getRelationship"];
     put?: never;
@@ -24074,7 +24074,9 @@ export interface operations {
            *       "recommendations": [],
            *       "relationship": {
            *         "accountDomain": "acme.com",
-           *         "categories": [],
+           *         "categories": [
+           *           "Artificial intelligence"
+           *         ],
            *         "commitmentCount": 0,
            *         "displayName": "Acme",
            *         "emailThreadCount": 0,

@@ -4108,7 +4108,7 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if operation["summary"] != "Open a company" {
 		t.Fatalf("summary: %#v", operation["summary"])
 	}
-	if operation["description"] != "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises." {
+	if operation["description"] != "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The category is Artificial intelligence." {
 		t.Fatalf("description: %#v", operation["description"])
 	}
 	params, ok := operation["parameters"].([]any)
@@ -4133,6 +4133,10 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	peopleRaw, peopleErr := json.Marshal(people)
 	if !ok || peopleErr != nil || string(peopleRaw) != "1" {
 		t.Fatalf("people count: %#v", relationship["peopleCount"])
+	}
+	categories, ok := relationship["categories"].([]any)
+	if !ok || len(categories) != 1 || categories[0] != openedCompanyCategory {
+		t.Fatalf("categories: %#v", relationship["categories"])
 	}
 	threads, ok := example["emailThreads"].([]any)
 	if !ok || len(threads) != 0 {
