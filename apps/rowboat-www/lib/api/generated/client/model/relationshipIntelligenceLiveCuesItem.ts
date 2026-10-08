@@ -7,6 +7,6 @@
  */
 
 /**
- * Cue card.
+ * One suggestion.
  */
 export type RelationshipIntelligenceLiveCuesItem = { [key: string]: unknown };

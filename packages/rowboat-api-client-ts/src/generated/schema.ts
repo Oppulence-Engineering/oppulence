@@ -11026,7 +11026,18 @@ export interface components {
       }[];
       /** @description Transcript governance receipts. */
       governanceReceipts: components["schemas"]["ConversationGovernanceReceipt"][];
-      /** @description Account-history cue cards for the next/live meeting. */
+      /**
+       * @description Suggestions the company sheet lists.
+       * @example [
+       *       {
+       *         "detail": "Agree on an owner and a dated next step before the meeting ends.",
+       *         "id": "missing-next:9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+       *         "kind": "missing_next_step",
+       *         "severity": "attention",
+       *         "title": "No next step"
+       *       }
+       *     ]
+       */
       liveCues: {
         [key: string]: unknown;
       }[];
@@ -23272,7 +23283,15 @@ export interface operations {
            *         },
            *         "governanceDecisions": [],
            *         "governanceReceipts": [],
-           *         "liveCues": [],
+           *         "liveCues": [
+           *           {
+           *             "detail": "Agree on an owner and a dated next step before the meeting ends.",
+           *             "id": "missing-next:9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "kind": "missing_next_step",
+           *             "severity": "attention",
+           *             "title": "No next step"
+           *           }
+           *         ],
            *         "mutualActionPlans": [],
            *         "observationPageHasMore": false,
            *         "recommendationEvaluations": [],

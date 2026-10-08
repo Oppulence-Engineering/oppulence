@@ -35,7 +35,7 @@ export interface RelationshipIntelligence {
   governanceDecisions: RelationshipIntelligenceGovernanceDecisionsItem[];
   /** Transcript governance receipts. */
   governanceReceipts: ConversationGovernanceReceipt[];
-  /** Account-history cue cards for the next/live meeting. */
+  /** Suggestions the company sheet lists. */
   liveCues: RelationshipIntelligenceLiveCuesItem[];
   /** Revision-bound bilateral plans. */
   mutualActionPlans: RelationshipIntelligenceMutualActionPlansItem[];

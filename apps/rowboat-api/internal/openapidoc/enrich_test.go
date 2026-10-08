@@ -6725,6 +6725,91 @@ func assertCompanyProfileFacts(t *testing.T, schemas obj) {
 	}
 }
 
+func TestSuggestionCueIsDocumented(t *testing.T) {
+	raw, err := os.ReadFile("../../api/openapi.json")
+	if err != nil {
+		t.Fatalf("read checked-in openapi json: %v", err)
+	}
+	var checked obj
+	if err := json.Unmarshal(raw, &checked); err != nil {
+		t.Fatalf("parse checked-in openapi json: %v", err)
+	}
+	assertSuggestionCue(t, asObj(asObj(checked["components"])["schemas"]))
+	fresh := obj{"components": obj{"schemas": obj{}}}
+	Enrich(fresh)
+	assertSuggestionCue(t, asObj(asObj(fresh["components"])["schemas"]))
+}
+
+func assertSuggestionCue(t *testing.T, schemas obj) {
+	t.Helper()
+	cues := asObj(asObj(asObj(schemas["RelationshipIntelligence"])["properties"])["liveCues"])
+	if cues["description"] != suggestionCueDescription {
+		t.Fatalf("suggestion cue description: %#v", cues["description"])
+	}
+	got, err := json.Marshal(cues["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal([]any{suggestionCueExample()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("suggestion cue example: %s", got)
+	}
+	item := asObj(cues["items"])
+	if item["description"] != "One suggestion." {
+		t.Fatalf("suggestion item description: %#v", item["description"])
+	}
+	gotItem, err := json.Marshal(item["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantItem, err := json.Marshal(suggestionCueExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotItem) != string(wantItem) {
+		t.Fatalf("suggestion item example: %s", gotItem)
+	}
+}
+
+func TestOpenedCompanyListsTheSuggestion(t *testing.T) {
+	raw, err := os.ReadFile("../../api/openapi.json")
+	if err != nil {
+		t.Fatalf("read checked-in openapi json: %v", err)
+	}
+	var checked obj
+	if err := json.Unmarshal(raw, &checked); err != nil {
+		t.Fatalf("parse checked-in openapi json: %v", err)
+	}
+	assertOpenedCompanySuggestion(t, checked)
+	fresh := obj{"components": obj{"schemas": obj{}}}
+	Enrich(fresh)
+	assertOpenedCompanySuggestion(t, fresh)
+}
+
+func assertOpenedCompanySuggestion(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}"])["get"])
+	media := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])
+	cues, ok := asObj(asObj(media["example"])["intelligence"])["liveCues"].([]any)
+	if !ok || len(cues) != 1 {
+		t.Fatalf("opened company suggestions: %#v", asObj(media["example"])["intelligence"])
+	}
+	got, err := json.Marshal(cues[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(suggestionCueExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("opened company suggestion: %s", got)
+	}
+}
+
 func assertEventObservation(t *testing.T, schemas obj) {
 	t.Helper()
 	event := asObj(schemas["CommitmentEvent"])

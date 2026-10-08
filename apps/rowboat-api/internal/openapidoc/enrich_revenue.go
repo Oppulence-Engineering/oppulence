@@ -109,6 +109,26 @@ func companyProfileFactsSchema() obj {
 	return schema
 }
 
+const suggestionCueDescription = "Suggestions the company sheet lists."
+
+func suggestionCueExample() obj {
+	return obj{
+		"detail":   "Agree on an owner and a dated next step before the meeting ends.",
+		"id":       "missing-next:9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"kind":     "missing_next_step",
+		"severity": "attention",
+		"title":    "No next step",
+	}
+}
+
+func suggestionCueSchema() obj {
+	item := freeFormSchema("One suggestion.")
+	item["example"] = suggestionCueExample()
+	schema := arraySchema(suggestionCueDescription, item)
+	schema["example"] = []any{suggestionCueExample()}
+	return schema
+}
+
 const (
 	graphExecutionStatusDescription = "Needs reconcile when this execution is ambiguous."
 	graphExecutionStatusExample     = "ambiguous"
@@ -617,7 +637,7 @@ func addRevenueSchemas(schemas obj) {
 		"reviewItems":               arraySchema("Only low-confidence review items.", ref("ConversationReviewItem")),
 		"governanceReceipts":        arraySchema("Transcript governance receipts.", ref("ConversationGovernanceReceipt")),
 		"delta":                     freeFormSchema("Exact before/after values, uncertain claim ids, contradictions, and recommendation reason."),
-		"liveCues":                  arraySchema("Account-history cue cards for the next/live meeting.", freeFormSchema("Cue card.")),
+		"liveCues":                  suggestionCueSchema(),
 		"contradictionCases":        arraySchema("Typed durable conflicts.", freeFormSchema("Contradiction case.")),
 		"recoveryEvaluations":       arraySchema("Bounded commitment recovery evaluations.", freeFormSchema("Recovery evaluation.")),
 		"recommendationEvaluations": arraySchema("Immutable contextual ranking factors.", freeFormSchema("Recommendation evaluation.")),

@@ -422,6 +422,43 @@ describe("API reference document", () => {
     });
   });
 
+  it("samples the suggestion a company sheet lists", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const cues = presented.components.schemas.RelationshipIntelligence.properties.liveCues;
+    expect(cues).toMatchObject({
+      description: "Suggestions the company sheet lists.",
+      example: [
+        {
+          detail: "Agree on an owner and a dated next step before the meeting ends.",
+          id: "missing-next:9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+          kind: "missing_next_step",
+          severity: "attention",
+          title: "No next step",
+        },
+      ],
+    });
+    expect(cues.items).toMatchObject({
+      description: "One suggestion.",
+      example: {
+        title: "No next step",
+        kind: "missing_next_step",
+      },
+    });
+    const opened =
+      presented.paths["/v1/relationships/{relationshipId}"]?.get?.responses?.["200"]?.content?.[
+        "application/json"
+      ]?.example;
+    expect(opened.intelligence.liveCues).toEqual([
+      {
+        detail: "Agree on an owner and a dated next step before the meeting ends.",
+        id: "missing-next:9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+        kind: "missing_next_step",
+        severity: "attention",
+        title: "No next step",
+      },
+    ]);
+  });
+
   it("samples the run Retry starts", () => {
     const presented = presentApiReferenceDocument(spec);
     const retry =
