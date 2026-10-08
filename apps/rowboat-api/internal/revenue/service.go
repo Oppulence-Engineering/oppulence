@@ -910,6 +910,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if duplicate := relationshipSheetDuplicateLineMatch(needle); duplicate != nil {
 			parts = append(parts, duplicate)
 		}
+
+		if inbox := relationshipSheetDuplicateInboxMatch(needle); inbox != nil {
+			parts = append(parts, inbox)
+		}
 		if sheetPhraseMatches("no next step", needle) ||
 			sheetPhraseMatches("add an owner and a date for what happens next.", needle) {
 			parts = append(parts, relationshipShowsMissingNextStep())
@@ -5037,6 +5041,202 @@ func identityPreviewEquals(preview string) predicate.RelationshipIdentityCandida
 			b.Arg(preview)
 		}))
 	})
+}
+
+// relationshipSheetDuplicateInboxMatch matches the duplicate inbox on the
+// company sheet. The heading is "Review possible duplicates". The line under
+// it is "1 possible duplicate cannot receive actions until reviewed." The
+// card names the pair as "Lumen Packet may match Harbor Ledger".
+func relationshipSheetDuplicateInboxMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if labelPhraseMatches("review possible duplicates", needle) || labelPhraseMatches("needs your review", needle) {
+		preds = append(preds, relationshipVisibleDuplicateCountAtLeast(1))
+	}
+	if count, more, ok := duplicateInboxSentence(needle); ok {
+		if more {
+			preds = append(preds, relationshipVisibleDuplicateCountAtLeast(count+1))
+		} else {
+			preds = append(preds, relationshipVisibleDuplicateCount(count))
+		}
+	}
+	if proposed, existing, ok := duplicateMayMatchNames(needle); ok {
+		preds = append(preds, relationshipDuplicateNamePair(proposed, existing))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func duplicateInboxSentence(needle string) (count int, more bool, ok bool) {
+	text := normalizePersonSearch(needle)
+	const tail = " cannot receive actions until reviewed"
+	index := strings.Index(text, tail)
+	if index < 0 || strings.TrimRight(text[index+len(tail):], ".,;?") != "" {
+		return 0, false, false
+	}
+	const marker = " possible duplicate"
+	at := strings.LastIndex(text[:index], marker)
+	if at < 0 {
+		return 0, false, false
+	}
+	plural := text[at+len(marker):index] == "s"
+	if text[at+len(marker):index] != "" && !plural {
+		return 0, false, false
+	}
+	number := text[:at]
+	if space := strings.LastIndex(number, " "); space >= 0 {
+		number = number[space+1:]
+	}
+	more = strings.HasSuffix(number, "+")
+	if more {
+		number = strings.TrimSuffix(number, "+")
+	}
+	count, err := strconv.Atoi(number)
+	if err != nil || count < 1 || count > 500 {
+		return 0, false, false
+	}
+	if count == 1 && plural {
+		return 0, false, false
+	}
+	if count != 1 && !plural {
+		return 0, false, false
+	}
+	return count, more, true
+}
+
+func duplicateMayMatchNames(needle string) (proposed, existing string, ok bool) {
+	text := normalizePersonSearch(needle)
+	const marker = " may match "
+	index := strings.Index(text, marker)
+	if index <= 0 {
+		return "", "", false
+	}
+	proposed = strings.TrimSpace(text[:index])
+	existing = strings.TrimRight(strings.TrimSpace(text[index+len(marker):]), ".,;?")
+	if proposed == "" || existing == "" || strings.Contains(existing, " may match ") {
+		return "", "", false
+	}
+	return proposed, existing, true
+}
+
+func relationshipDuplicateNamePair(proposed, existing string) predicate.Relationship {
+	visible := relationshipidentitycandidate.StatusIn(identityPending, identityDeferred, identityResolved)
+	return relationship.Or(
+		relationship.And(
+			relationshipPrintedNameEquals(proposed),
+			relationship.HasProposedIdentityCandidatesWith(
+				visible,
+				relationshipidentitycandidate.HasExistingRelationshipWith(relationshipPrintedNameEquals(existing)),
+			),
+		),
+		relationship.And(
+			relationshipPrintedNameEquals(existing),
+			relationship.HasExistingIdentityCandidatesWith(
+				visible,
+				relationshipidentitycandidate.HasProposedRelationshipWith(relationshipPrintedNameEquals(proposed)),
+			),
+		),
+	)
+}
+
+func relationshipVisibleDuplicateCount(count int) predicate.Relationship {
+	return relationshipVisibleDuplicateCountOp("=", count)
+}
+
+func relationshipVisibleDuplicateCountAtLeast(count int) predicate.Relationship {
+	return relationshipVisibleDuplicateCountOp(">=", count)
+}
+
+func relationshipVisibleDuplicateCountOp(op string, count int) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT count(*) FROM ")
+			b.WriteString(relationshipidentitycandidate.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipidentitycandidate.FieldStatus)
+			b.WriteString(fmt.Sprintf(
+				" IN ('%s', '%s', '%s') AND (%s = %s OR %s = %s)) %s ",
+				identityPending,
+				identityDeferred,
+				identityResolved,
+				relationshipidentitycandidate.ProposedRelationshipColumn,
+				s.C(relationship.FieldID),
+				relationshipidentitycandidate.ExistingRelationshipColumn,
+				s.C(relationship.FieldID),
+				op,
+			))
+			b.Arg(count)
+		}))
+	})
+}
+
+// relationshipPrintedNameEquals matches the name the company sheet prints.
+// A blank name, a name that is the domain, or an email-shaped name uses the
+// domain's title. Anything else stays the typed name.
+func relationshipPrintedNameEquals(name string) predicate.Relationship {
+	want := normalizePersonSearch(name)
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			display := s.C(relationship.FieldDisplayName)
+			domain := s.C(relationship.FieldAccountDomain)
+			title := domainHostLabelSQL(s.Dialect(), domain)
+			shown := normalizedColumnSQL(display)
+			b.WriteString("CASE WHEN trim(coalesce(")
+			b.WriteString(domain)
+			b.WriteString(", '')) <> '' AND ")
+			b.WriteString(title)
+			b.WriteString(" <> '' AND (trim(coalesce(")
+			b.WriteString(display)
+			b.WriteString(", '')) = '' OR lower(trim(")
+			b.WriteString(display)
+			b.WriteString(")) = lower(trim(")
+			b.WriteString(domain)
+			b.WriteString(")) OR (trim(")
+			b.WriteString(display)
+			b.WriteString(") NOT LIKE '% %' AND trim(")
+			b.WriteString(display)
+			b.WriteString(") LIKE '%@%.%')) THEN ")
+			b.WriteString(title)
+			b.WriteString(" WHEN ")
+			b.WriteString(shown)
+			b.WriteString(" <> '' THEN ")
+			b.WriteString(shown)
+			b.WriteString(" ELSE 'unknown company' END = ")
+			b.Arg(want)
+		}))
+	})
+}
+
+func normalizedColumnSQL(column string) string {
+	return collapseSpacesSQL(fmt.Sprintf(
+		"lower(replace(replace(replace(trim(coalesce(%s, '')), '-', ' '), '_', ' '), '.', ' '))",
+		column,
+	))
+}
+
+func domainHostLabelSQL(dialectName, column string) string {
+	var host string
+	if dialectName == dialect.Postgres {
+		host = fmt.Sprintf("split_part(trim(coalesce(%s, '')), '.', 1)", column)
+	} else {
+		host = fmt.Sprintf(
+			"CASE WHEN instr(trim(coalesce(%s, '')), '.') = 0 THEN trim(coalesce(%s, '')) ELSE substr(trim(coalesce(%s, '')), 1, instr(trim(coalesce(%s, '')), '.') - 1) END",
+			column, column, column, column,
+		)
+	}
+	return collapseSpacesSQL(fmt.Sprintf("lower(replace(replace(%s, '-', ' '), '_', ' '))", host))
+}
+
+func collapseSpacesSQL(expr string) string {
+	for i := 0; i < 3; i++ {
+		expr = fmt.Sprintf("replace(%s, '  ', ' ')", expr)
+	}
+	return expr
 }
 
 func relationshipConnectSourceCopy(now time.Time) predicate.Relationship {
