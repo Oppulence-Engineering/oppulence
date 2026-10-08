@@ -2997,6 +2997,40 @@ describe("API reference document", () => {
     ).toBe("org_01ABC");
   });
 
+  it("samples the cloud runs the Runs page loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/background-task-runs"].get;
+    expect(operation.summary).toBe("Runs");
+    expect(operation.description).toBe(
+      "The Runs page loads the first 50 cloud runs. Each run on that page failed on a schedule.",
+    );
+    const limit = operation.parameters.find((parameter) => parameter.name === "limit");
+    expect(limit.example).toBe(50);
+    expect(limit.schema.example).toBe(50);
+    for (const name of ["status", "executor", "cursor", "slug"]) {
+      const parameter = operation.parameters.find((item) => item.name === name);
+      expect(parameter.example).toBeUndefined();
+      expect(parameter.schema.enum).toBeUndefined();
+      expect(parameter.schema.example).toBeUndefined();
+    }
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      runs: [
+        {
+          attempt: 1,
+          errorCode: "llm_call_failed",
+          executor: "api",
+          id: "77f5e632-a841-4557-a8e4-9b8f0d207ff4",
+          progressPercent: 10,
+          revision: 5,
+          runId: "sched-temporal-77f5e632-a841-4557-a8e4-9b8f0d207ff4",
+          slug: "oppulence-relationship-refresh",
+          status: "failed",
+          trigger: "cron",
+        },
+      ],
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

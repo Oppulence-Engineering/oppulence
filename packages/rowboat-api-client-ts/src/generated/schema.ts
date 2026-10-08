@@ -436,8 +436,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List account background task runs
-     * @description Lists all background task runs visible to the authenticated user. Use this for dashboards and polling views that need queued, running, failed, or API-worker Temporal runs without knowing a task slug first.
+     * Runs
+     * @description The Runs page loads the first 50 cloud runs. Each run on that page failed on a schedule.
      */
     get: operations["listBackgroundTaskRunsForAccount"];
     put?: never;
@@ -14407,15 +14407,18 @@ export interface operations {
   listBackgroundTaskRunsForAccount: {
     parameters: {
       query?: {
-        /** @description Optional run status filter. Use queued for desktop pickup or running/failed/succeeded for polling dashboards. */
-        status?: "queued" | "running" | "succeeded" | "failed" | "stopped";
-        /** @description Optional execution backend filter. */
-        executor?: "desktop" | "api";
-        /** @description Maximum runs to return, from 1 to 500. Defaults to 100. */
+        /**
+         * @description How many runs to return. The Runs page asks for 50.
+         * @example 50
+         */
         limit?: number;
-        /** @description RFC3339 cursor returned as nextCursor from a previous page. */
+        /** @description Optional run status filter. */
+        status?: string;
+        /** @description Optional cloud or desktop filter. */
+        executor?: string;
+        /** @description Cursor from a previous page. */
         cursor?: string;
-        /** @description Optional task slug filter for account-wide run polling. */
+        /** @description Optional workflow filter. */
         slug?: string;
       };
       header?: never;
@@ -14424,7 +14427,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Account run list. */
+      /** @description Failed cloud runs. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -14434,27 +14437,16 @@ export interface operations {
            * @example {
            *       "runs": [
            *         {
-           *           "completedAt": "2026-06-04T21:02:00Z",
-           *           "createdAt": "2026-06-04T21:00:30Z",
-           *           "error": "",
-           *           "executor": "desktop",
+           *           "attempt": 1,
+           *           "errorCode": "llm_call_failed",
+           *           "executor": "api",
            *           "id": "77f5e632-a841-4557-a8e4-9b8f0d207ff4",
-           *           "localRunId": "local-run-42",
-           *           "model": "openai/gpt-4.1-mini",
-           *           "previousRunId": "",
-           *           "progressMessage": "Completed.",
-           *           "progressPercent": 100,
-           *           "provider": "openai",
-           *           "revision": 2,
-           *           "runId": "run-20260604-210000",
-           *           "slug": "daily-summary",
-           *           "startedAt": "2026-06-04T21:01:00Z",
-           *           "status": "succeeded",
-           *           "subUseCase": "daily-summary",
-           *           "summary": "No high-priority account changes.",
-           *           "trigger": "manual",
-           *           "updatedAt": "2026-06-04T21:02:05Z",
-           *           "useCase": "background-task"
+           *           "progressPercent": 10,
+           *           "revision": 5,
+           *           "runId": "sched-temporal-77f5e632-a841-4557-a8e4-9b8f0d207ff4",
+           *           "slug": "oppulence-relationship-refresh",
+           *           "status": "failed",
+           *           "trigger": "cron"
            *         }
            *       ]
            *     }

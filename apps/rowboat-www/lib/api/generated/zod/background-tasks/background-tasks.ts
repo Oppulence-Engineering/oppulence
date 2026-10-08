@@ -8,27 +8,23 @@
 import * as zod from "zod";
 
 /**
- * Lists all background task runs visible to the authenticated user. Use this for dashboards and polling views that need queued, running, failed, or API-worker Temporal runs without knowing a task slug first.
- * @summary List account background task runs
+ * The Runs page loads the first 50 cloud runs. Each run on that page failed on a schedule.
+ * @summary Runs
  */
+export const listBackgroundTaskRunsForAccountQueryLimitMax = 500;
+
 export const ListBackgroundTaskRunsForAccountQueryParams = zod.object({
-  status: zod
-    .enum(["queued", "running", "succeeded", "failed", "stopped"])
-    .optional()
-    .describe(
-      "Optional run status filter. Use queued for desktop pickup or running\/failed\/succeeded for polling dashboards.",
-    ),
-  executor: zod.enum(["desktop", "api"]).optional().describe("Optional execution backend filter."),
   limit: zod.coerce
     .number()
     .int()
+    .min(1)
+    .max(listBackgroundTaskRunsForAccountQueryLimitMax)
     .optional()
-    .describe("Maximum runs to return, from 1 to 500. Defaults to 100."),
-  cursor: zod.iso
-    .datetime({ offset: true })
-    .optional()
-    .describe("RFC3339 cursor returned as nextCursor from a previous page."),
-  slug: zod.string().optional().describe("Optional task slug filter for account-wide run polling."),
+    .describe("How many runs to return. The Runs page asks for 50."),
+  status: zod.string().optional().describe("Optional run status filter."),
+  executor: zod.string().optional().describe("Optional cloud or desktop filter."),
+  cursor: zod.string().optional().describe("Cursor from a previous page."),
+  slug: zod.string().optional().describe("Optional workflow filter."),
 });
 
 export const ListBackgroundTaskRunsForAccount200Response = zod
