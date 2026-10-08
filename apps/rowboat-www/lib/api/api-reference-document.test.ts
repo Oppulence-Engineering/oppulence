@@ -941,6 +941,20 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the relationship projector version the server stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    for (const name of [
+      "RevenueRelationship",
+      "RelationshipStateSnapshot",
+      "RelationshipAttentionItem",
+      "MissionControlReadModel",
+    ]) {
+      expect(presented.components.schemas[name].properties.projectorVersion.example).toBe(2);
+    }
+    expect(presented.components.schemas.RelationshipAttentionItem.properties.detectorVersion.example).toBe(1);
+    expect(presented.components.schemas.MissionControlReadModel.properties.detectorVersion.example).toBe(1);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

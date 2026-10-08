@@ -671,8 +671,6 @@ func assertConversationReview(t *testing.T, schemas obj) {
 			t.Fatalf("user id changed: %#v", id)
 		}
 	}
-
-	assertSelectedAssertion(t, spec)
 }
 
 func TestContradictionResolutionNamesTheAssertion(t *testing.T) {
@@ -702,8 +700,6 @@ func assertSelectedAssertion(t *testing.T, spec obj) {
 	if asObj(evidence["assertionId"])["example"] != assertionID {
 		t.Fatalf("winning assertion changed: %#v", evidence["assertionId"])
 	}
-
-	assertConversationPolicyVersion(t, schemas)
 }
 
 func TestConversationPolicyNamesTheBuiltinVersion(t *testing.T) {
@@ -760,8 +756,6 @@ func assertGovernanceReceipt(t *testing.T, schemas obj) {
 	if asObj(receipt["receiptId"])["example"] != want || asObj(receipt["receiptId"])["description"] != "Receipt id." {
 		t.Fatalf("receipt id: %#v", receipt["receiptId"])
 	}
-
-	assertDocumentedStateHash(t, spec)
 }
 
 func TestRelationshipStateHashMatchesTheProjector(t *testing.T) {
@@ -804,6 +798,41 @@ func assertDocumentedStateHash(t *testing.T, spec obj) {
 	response := asObj(asObj(asObj(asObj(asObj(post["responses"])["201"])["content"])["application/json"])["schema"])
 	if asObj(asObj(response["properties"])["stateHash"])["example"] != want {
 		t.Fatalf("acknowledgement response: %#v", response)
+	}
+
+	assertProjectorVersion(t, schemas)
+}
+
+func TestProjectorVersionMatchesTheRelationshipProjector(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertProjectorVersion(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertProjectorVersion(t *testing.T, schemas obj) {
+	t.Helper()
+	for _, schema := range []string{"RevenueRelationship", "RelationshipStateSnapshot", "RelationshipAttentionItem", "MissionControlReadModel"} {
+		field := asObj(asObj(asObj(schemas[schema])["properties"])["projectorVersion"])
+		if !exampleEquals(field["example"], 2) {
+			t.Fatalf("%s projector version: %#v", schema, field)
+		}
+	}
+	for _, schema := range []string{"RelationshipAttentionItem", "MissionControlReadModel"} {
+		field := asObj(asObj(asObj(schemas[schema])["properties"])["detectorVersion"])
+		if !exampleEquals(field["example"], 1) {
+			t.Fatalf("%s detector version: %#v", schema, field)
+		}
+	}
+}
+
+func exampleEquals(value any, want int) bool {
+	switch n := value.(type) {
+	case int:
+		return n == want
+	case float64:
+		return n == float64(want)
+	default:
+		return false
 	}
 }
 

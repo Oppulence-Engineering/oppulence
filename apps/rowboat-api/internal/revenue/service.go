@@ -27,9 +27,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
@@ -742,11 +740,6 @@ const taskQueuePage = 100
 // stay out of that list.
 const promiseRegisterPage = 200
 
-// attentionQueuePage is the open queue the companies page asks for. The
-// button is "Show the next companies in the queue" when another open item
-// sits past that page. A resolved item stays off the list.
-const attentionQueuePage = 50
-
 // attentionQueuePage is the open queue the companies page loads. The table
 // under it starts with attentionQueueScreen rows. "Show the other reasons"
 // is the extra rows on that loaded page about companies already on screen.
@@ -755,13 +748,6 @@ const (
 	attentionQueueScreen = 10
 )
 
-// attentionQueuePage is the open queue the companies page loads. Its table
-// starts with attentionQueueScreen rows. "Show the other N companies" is the
-// companies that first appear past that screen on the loaded page.
-const (
-	attentionQueuePage   = 50
-	attentionQueueScreen = 10
-)
 
 // noteTemplatePage is the template list the notes page asks for. The button
 // is "Show the next templates" when another template this person saved sits
@@ -772,11 +758,6 @@ const noteTemplatePage = 100
 // is "Show the next favorites" when another favorite this person saved sits
 // past that page. A template is a different list.
 const noteFavoritePage = 100
-
-// promiseRegisterPage is the promise list What we owe asks for. The register
-// prints "Show the next promises to keep looking." when a search misses that
-// page and another promise is still past it.
-const promiseRegisterPage = 200
 
 // ListRelationships returns the workspace's relationships, most recent
 // interaction first. A company with no interaction follows those, newest
@@ -7065,11 +7046,6 @@ func governanceReceiptCount(needle string) (int, bool) {
 	}
 	return parsed, true
 }
-
-// governanceReceiptPage is how many consent receipts the company sheet shows
-// before the rest are behind "Show the other N receipts". It matches
-// GOVERNANCE_RECEIPT_PAGE in the company sheet.
-const governanceReceiptPage = 5
 
 // governanceHiddenReceiptCount reads that button. One hidden receipt is
 // singular. "Show the other 1 receipts" is not the button.

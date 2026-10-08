@@ -3,11 +3,6 @@ package openapidoc
 import (
 	"crypto/sha256"
 	"encoding/hex"
-)
-
-import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 )
 
