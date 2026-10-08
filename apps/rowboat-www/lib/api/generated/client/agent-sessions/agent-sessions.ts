@@ -198,8 +198,8 @@ export const getListAgentSessionEventsUrl = (id: string, params?: ListAgentSessi
 };
 
 /**
- * Returns ordered durable events used to reconstruct a conversation after navigation or reload.
- * @summary List agent session events
+ * Open conversation reads the history row Review the Acme renewal. The first read asks for 1000 events and sends no cursor. The stored page starts at sequence 0 for Assistant, includes both completed turns, the relationship.read tool call, and three model calls on anthropic/claude-sonnet-4-5, and does not name another page.
+ * @summary Open conversation
  */
 export const listAgentSessionEvents = async (
   id: string,

@@ -2569,6 +2569,8 @@ func assertApprovalToken(t *testing.T, spec obj) {
 	if len(sessions) == 0 || asObj(sessions[0])["title"] != "Review the Acme renewal" {
 		t.Fatal("history list example changed")
 	}
+
+	assertOpenConversation(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -3842,6 +3844,64 @@ func assertProviderDraft(t *testing.T, spec obj) {
 	props := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])
 	if asObj(props["executionStatus"])["example"] != "pending" || asObj(props["queueStatus"])["example"] != "open" {
 		t.Fatalf("shared action examples changed: execution=%#v queue=%#v", props["executionStatus"], props["queueStatus"])
+	}
+}
+
+func TestOpenConversationReadsTheHistoryRow(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertOpenConversation(t, spec)
+}
+
+func assertOpenConversation(t *testing.T, spec obj) {
+	t.Helper()
+	get := asObj(asObj(asObj(spec["paths"])["/v1/agent-sessions/{id}/events"])["get"])
+	if get["summary"] != "Open conversation" {
+		t.Fatalf("summary: %#v", get["summary"])
+	}
+	description, _ := get["description"].(string)
+	if !strings.Contains(description, "Review the Acme renewal") || !strings.Contains(description, "sends no cursor") || !strings.Contains(description, "1000") {
+		t.Fatalf("description: %s", description)
+	}
+	var afterSeq, limit obj
+	for _, raw := range get["parameters"].([]any) {
+		param := asObj(raw)
+		switch param["name"] {
+		case "afterSeq":
+			afterSeq = asObj(param["schema"])
+		case "limit":
+			limit = asObj(param["schema"])
+		}
+	}
+	if _, ok := afterSeq["example"]; ok || afterSeq["type"] != "integer" {
+		t.Fatalf("afterSeq example must be omitted: %#v", afterSeq)
+	}
+	if mustJSON(limit["example"]) != "1000" {
+		t.Fatalf("limit example: %#v", limit["example"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	if _, ok := example["nextSeq"]; ok {
+		t.Fatalf("first page names another page: %#v", example["nextSeq"])
+	}
+	if mustJSON(example) != mustJSON(documentedConversationPage()) {
+		t.Fatalf("conversation page: %s", mustJSON(example))
+	}
+	if strings.Contains(mustJSON(example), `"Review Acme"`) {
+		t.Fatal("conversation page still uses the short review line")
+	}
+	history := asObj(asObj(asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/agent-sessions"])["get"])["responses"])["200"])["content"])["application/json"])["example"])
+	sessions, _ := history["sessions"].([]any)
+	if len(sessions) == 0 || asObj(sessions[0])["title"] != "Review the Acme renewal" {
+		t.Fatalf("history row: %#v", history)
+	}
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	event := asObj(asObj(schemas["DurableAgentSessionEvent"])["properties"])
+	if asObj(event["type"])["example"] != "agent.message" {
+		t.Fatalf("shared event type example changed: %#v", event["type"])
+	}
+	page := asObj(asObj(schemas["AgentSessionEventsResponse"])["properties"])
+	if mustJSON(asObj(page["nextSeq"])["example"]) != "500" {
+		t.Fatalf("shared nextSeq example changed: %#v", page["nextSeq"])
 	}
 }
 

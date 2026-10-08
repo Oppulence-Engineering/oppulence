@@ -1163,10 +1163,10 @@ func addAgentSessionPaths(paths obj) {
 	}
 	paths["/v1/agent-sessions/{id}/events"] = obj{"get": operation("Agent Sessions", "List agent session events", "Returns ordered durable events used to reconstruct a conversation after navigation or reload.", "listAgentSessionEvents", bearer(), []any{
 		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
-		queryParam("afterSeq", "Return events after this sequence.", false, intSchema("Sequence cursor.", 10)),
-		queryParam("limit", "Maximum events to return (up to 1000).", false, intSchema("Page size.", 500)),
+		queryParam("afterSeq", "Return events after this sequence. The first read omits this.", false, obj{"type": "integer", "minimum": 0, "description": "Sequence cursor."}),
+		queryParam("limit", "Maximum events to return (up to 1000).", false, intSchema("Page size.", 1000)),
 	}, nil, obj{
-		"200": jsonResponse("Durable session events.", ref("AgentSessionEventsResponse"), obj{"events": []any{obj{"seq": 1, "type": "agent.turn_started", "turnSeq": 1, "data": obj{"input": "Review Acme"}}}}),
+		"200": jsonResponse("Stored conversation.", ref("AgentSessionEventsResponse"), documentedConversationPage()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
@@ -1214,6 +1214,26 @@ func documentedApprovalToken() obj {
 		"expiresAt":     "2026-09-02T15:10:00Z",
 		"mfa":           false,
 	}
+}
+
+func documentedConversationPage() obj {
+	return obj{"events": []any{
+		obj{"seq": 0, "type": "agent.session_started", "data": obj{"agent": "assistant", "sessionId": "session_abc123"}},
+		obj{"seq": 1, "type": "agent.turn_started", "turnSeq": 0, "data": obj{"input": "Review the Acme renewal", "turn": 0}},
+		obj{"seq": 2, "type": "agent.llm_call_started", "turnSeq": 0, "data": obj{"callIndex": 0, "model": "anthropic/claude-sonnet-4-5", "turn": 0}},
+		obj{"seq": 3, "type": "agent.llm_call_completed", "turnSeq": 0, "data": obj{"callIndex": 0, "inputTokens": 8, "outputTokens": 4, "provider": "openrouter", "turn": 0}},
+		obj{"seq": 4, "type": "agent.tool_call_started", "turnSeq": 0, "data": obj{"callIndex": 0, "tool": "relationship.read", "turn": 0}},
+		obj{"seq": 5, "type": "agent.tool_call_completed", "turnSeq": 0, "data": obj{"callIndex": 0, "resultBytes": 128, "tool": "relationship.read", "turn": 0}},
+		obj{"seq": 6, "type": "agent.llm_call_started", "turnSeq": 0, "data": obj{"callIndex": 1, "model": "anthropic/claude-sonnet-4-5", "turn": 0}},
+		obj{"seq": 7, "type": "agent.llm_call_completed", "turnSeq": 0, "data": obj{"callIndex": 1, "inputTokens": 10, "outputTokens": 8, "provider": "openrouter", "turn": 0}},
+		obj{"seq": 8, "type": "agent.message", "turnSeq": 0, "data": obj{"content": "Acme's renewal is still open.", "turn": 0}},
+		obj{"seq": 9, "type": "agent.turn_completed", "turnSeq": 0, "data": obj{"finishReason": "stop", "summary": "Acme's renewal is still open.", "turn": 0}},
+		obj{"seq": 10, "type": "agent.turn_started", "turnSeq": 1, "data": obj{"input": "What is the next step?", "turn": 1}},
+		obj{"seq": 11, "type": "agent.llm_call_started", "turnSeq": 1, "data": obj{"callIndex": 0, "model": "anthropic/claude-sonnet-4-5", "turn": 1}},
+		obj{"seq": 12, "type": "agent.llm_call_completed", "turnSeq": 1, "data": obj{"callIndex": 0, "inputTokens": 10, "outputTokens": 5, "provider": "openrouter", "turn": 1}},
+		obj{"seq": 13, "type": "agent.message", "turnSeq": 1, "data": obj{"content": "Send the updated terms and wait for Acme to reply.", "turn": 1}},
+		obj{"seq": 14, "type": "agent.turn_completed", "turnSeq": 1, "data": obj{"finishReason": "stop", "summary": "Send the updated terms and wait for Acme to reply.", "turn": 1}},
+	}}
 }
 
 func addVoiceCloudSchemas(schemas obj) {

@@ -336,8 +336,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List agent session events
-     * @description Returns ordered durable events used to reconstruct a conversation after navigation or reload.
+     * Open conversation
+     * @description Open conversation reads the history row Review the Acme renewal. The first read asks for 1000 events and sends no cursor. The stored page starts at sequence 0 for Assistant, includes both completed turns, the relationship.read tool call, and three model calls on anthropic/claude-sonnet-4-5, and does not name another page.
      */
     get: operations["listAgentSessionEvents"];
     put?: never;
@@ -13995,7 +13995,7 @@ export interface operations {
   listAgentSessionEvents: {
     parameters: {
       query?: {
-        /** @description Return events after this sequence. */
+        /** @description Return events after this sequence. The first read omits this. */
         afterSeq?: number;
         /** @description Maximum events to return (up to 1000). */
         limit?: number;
@@ -14009,7 +14009,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Durable session events. */
+      /** @description Stored conversation. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -14020,11 +14020,154 @@ export interface operations {
            *       "events": [
            *         {
            *           "data": {
-           *             "input": "Review Acme"
+           *             "agent": "assistant",
+           *             "sessionId": "session_abc123"
+           *           },
+           *           "seq": 0,
+           *           "type": "agent.session_started"
+           *         },
+           *         {
+           *           "data": {
+           *             "input": "Review the Acme renewal",
+           *             "turn": 0
            *           },
            *           "seq": 1,
+           *           "turnSeq": 0,
+           *           "type": "agent.turn_started"
+           *         },
+           *         {
+           *           "data": {
+           *             "callIndex": 0,
+           *             "model": "anthropic/claude-sonnet-4-5",
+           *             "turn": 0
+           *           },
+           *           "seq": 2,
+           *           "turnSeq": 0,
+           *           "type": "agent.llm_call_started"
+           *         },
+           *         {
+           *           "data": {
+           *             "callIndex": 0,
+           *             "inputTokens": 8,
+           *             "outputTokens": 4,
+           *             "provider": "openrouter",
+           *             "turn": 0
+           *           },
+           *           "seq": 3,
+           *           "turnSeq": 0,
+           *           "type": "agent.llm_call_completed"
+           *         },
+           *         {
+           *           "data": {
+           *             "callIndex": 0,
+           *             "tool": "relationship.read",
+           *             "turn": 0
+           *           },
+           *           "seq": 4,
+           *           "turnSeq": 0,
+           *           "type": "agent.tool_call_started"
+           *         },
+           *         {
+           *           "data": {
+           *             "callIndex": 0,
+           *             "resultBytes": 128,
+           *             "tool": "relationship.read",
+           *             "turn": 0
+           *           },
+           *           "seq": 5,
+           *           "turnSeq": 0,
+           *           "type": "agent.tool_call_completed"
+           *         },
+           *         {
+           *           "data": {
+           *             "callIndex": 1,
+           *             "model": "anthropic/claude-sonnet-4-5",
+           *             "turn": 0
+           *           },
+           *           "seq": 6,
+           *           "turnSeq": 0,
+           *           "type": "agent.llm_call_started"
+           *         },
+           *         {
+           *           "data": {
+           *             "callIndex": 1,
+           *             "inputTokens": 10,
+           *             "outputTokens": 8,
+           *             "provider": "openrouter",
+           *             "turn": 0
+           *           },
+           *           "seq": 7,
+           *           "turnSeq": 0,
+           *           "type": "agent.llm_call_completed"
+           *         },
+           *         {
+           *           "data": {
+           *             "content": "Acme's renewal is still open.",
+           *             "turn": 0
+           *           },
+           *           "seq": 8,
+           *           "turnSeq": 0,
+           *           "type": "agent.message"
+           *         },
+           *         {
+           *           "data": {
+           *             "finishReason": "stop",
+           *             "summary": "Acme's renewal is still open.",
+           *             "turn": 0
+           *           },
+           *           "seq": 9,
+           *           "turnSeq": 0,
+           *           "type": "agent.turn_completed"
+           *         },
+           *         {
+           *           "data": {
+           *             "input": "What is the next step?",
+           *             "turn": 1
+           *           },
+           *           "seq": 10,
            *           "turnSeq": 1,
            *           "type": "agent.turn_started"
+           *         },
+           *         {
+           *           "data": {
+           *             "callIndex": 0,
+           *             "model": "anthropic/claude-sonnet-4-5",
+           *             "turn": 1
+           *           },
+           *           "seq": 11,
+           *           "turnSeq": 1,
+           *           "type": "agent.llm_call_started"
+           *         },
+           *         {
+           *           "data": {
+           *             "callIndex": 0,
+           *             "inputTokens": 10,
+           *             "outputTokens": 5,
+           *             "provider": "openrouter",
+           *             "turn": 1
+           *           },
+           *           "seq": 12,
+           *           "turnSeq": 1,
+           *           "type": "agent.llm_call_completed"
+           *         },
+           *         {
+           *           "data": {
+           *             "content": "Send the updated terms and wait for Acme to reply.",
+           *             "turn": 1
+           *           },
+           *           "seq": 13,
+           *           "turnSeq": 1,
+           *           "type": "agent.message"
+           *         },
+           *         {
+           *           "data": {
+           *             "finishReason": "stop",
+           *             "summary": "Send the updated terms and wait for Acme to reply.",
+           *             "turn": 1
+           *           },
+           *           "seq": 14,
+           *           "turnSeq": 1,
+           *           "type": "agent.turn_completed"
            *         }
            *       ]
            *     }
