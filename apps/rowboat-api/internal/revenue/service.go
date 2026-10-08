@@ -1584,6 +1584,9 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	if queryHasPhrase("no profile details yet", needle) {
 		preds = append(preds, relationshipShowsEmptyPersonProfile())
 	}
+	if fields := relationshipSheetProfileFieldMatch(needle); fields != nil {
+		preds = append(preds, fields)
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -1617,6 +1620,56 @@ func relationshipShowsEmptyPersonProfile() predicate.Relationship {
 			),
 		),
 	)
+}
+
+// relationshipSheetProfileFieldMatch matches the count under a person on the
+// company sheet. The four fields are title, company, seniority, and location.
+// Title falls back to the membership title when the person has none. A blank
+// company name does not count, even when a domain is stored.
+func relationshipSheetProfileFieldMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	for n := 0; n <= 4; n++ {
+		if !labelPhraseMatches(fmt.Sprintf("%d/4 profile fields", n), needle) {
+			continue
+		}
+		preds = append(preds, relationship.HasParticipantsWith(participantProfileFieldCount(n)))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func participantProfileFieldCount(n int) predicate.RelationshipParticipant {
+	return predicate.RelationshipParticipant(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf(`(SELECT
+				(CASE WHEN trim(coalesce(profile_part.%s, '')) <> '' OR trim(coalesce(profile_person.%s, '')) <> '' THEN 1 ELSE 0 END)
+				+ (CASE WHEN trim(coalesce(profile_person.%s, '')) <> '' THEN 1 ELSE 0 END)
+				+ (CASE WHEN trim(coalesce(profile_person.%s, '')) <> '' THEN 1 ELSE 0 END)
+				+ (CASE WHEN trim(coalesce(profile_person.%s, '')) <> '' THEN 1 ELSE 0 END)
+			FROM %s AS profile_part
+			LEFT JOIN %s AS profile_person ON profile_person.%s = profile_part.%s
+			WHERE profile_part.%s = %s) = `,
+				relationshipparticipant.FieldTitle,
+				person.FieldTitle,
+				person.FieldOrgName,
+				person.FieldSeniority,
+				person.FieldLocation,
+				relationshipparticipant.Table,
+				person.Table,
+				person.FieldID,
+				relationshipparticipant.PersonColumn,
+				relationshipparticipant.FieldID,
+				s.C(relationshipparticipant.FieldID),
+			))
+			b.Arg(n)
+		}))
+	})
 }
 
 func participantTextBlank(field string) predicate.RelationshipParticipant {

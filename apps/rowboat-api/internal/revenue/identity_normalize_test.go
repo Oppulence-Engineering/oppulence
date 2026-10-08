@@ -3984,6 +3984,98 @@ func TestRelationshipSearchFindsNoneRecorded(t *testing.T) {
 	assertCompanyQuery("none")
 }
 
+func TestRelationshipSearchFindsProfileFieldCounts(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	addPerson := func(rel *ent.Relationship, name, memberTitle string, fill func(*ent.PersonCreate)) {
+		t.Helper()
+		create := f.client.Person.Create().
+			SetDisplayName(name).
+			SetWorkspace(ws).
+			SetUser(f.user)
+		if fill != nil {
+			fill(create)
+		}
+		personRow, err := create.Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		member := f.client.RelationshipParticipant.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetRelationship(rel).SetPerson(personRow).
+			SetDisplayName(name).SetRole("contact")
+		if memberTitle != "" {
+			member.SetTitle(memberTitle)
+		}
+		if _, err := member.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	makeCompany("Quay None")
+	empty := makeCompany("Quay Empty")
+	addPerson(empty, "No Profile", "", nil)
+	spaces := makeCompany("Quay Space")
+	addPerson(spaces, "Blank Profile", "", func(create *ent.PersonCreate) {
+		create.SetTitle("   ")
+	})
+	titled := makeCompany("Quay Title")
+	addPerson(titled, "Ada Mesa", "Buyer", nil)
+	org := makeCompany("Quay Org")
+	addPerson(org, "North Wind", "", func(create *ent.PersonCreate) {
+		create.SetOrgName("Northwind")
+	})
+	half := makeCompany("Quay Half")
+	addPerson(half, "Casey Quinn", "", func(create *ent.PersonCreate) {
+		create.SetTitle("Engineer").SetLocation("Austin")
+	})
+	three := makeCompany("Quay Three")
+	addPerson(three, "Jules Pike", "", func(create *ent.PersonCreate) {
+		create.SetTitle("Engineer").SetOrgName("Northwind").SetSeniority("director")
+	})
+	full := makeCompany("Quay Full")
+	addPerson(full, "Riley Chen", "", func(create *ent.PersonCreate) {
+		create.SetTitle("Engineer").SetOrgName("Northwind").SetSeniority("director").SetLocation("Austin")
+	})
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("0/4 profile fields", "Quay Empty", "Quay Space")
+	assertCompanyQuery("No profile details yet", "Quay Empty", "Quay Space")
+	assertCompanyQuery("1/4 profile fields", "Quay Title", "Quay Org")
+	assertCompanyQuery("2/4 profile fields", "Quay Half")
+	assertCompanyQuery("3/4 profile fields", "Quay Three")
+	assertCompanyQuery("4/4 profile fields", "Quay Full")
+	assertCompanyQuery("which companies have 4/4 profile fields", "Quay Full")
+	assertCompanyQuery("profile fields")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {
