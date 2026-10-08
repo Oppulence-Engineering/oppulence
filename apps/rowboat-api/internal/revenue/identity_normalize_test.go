@@ -4492,6 +4492,99 @@ func TestRelationshipSearchFindsTheRecommendationBadges(t *testing.T) {
 	assertCompanyQuery("Approved in this workspace")
 }
 
+func TestRelationshipSearchFindsThePlanHeading(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	create := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	savePlan := func(company *ent.Relationship, stable string, version int, payload string) {
+		t.Helper()
+		sum := sha256.Sum256([]byte(payload))
+		if _, err := f.client.ConversationIntelligenceArtifact.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(company).
+			SetKind("mutual_action_plan").SetStableID(stable).SetVersion(version).
+			SetStatus("draft").SetSubjectRef(company.ID.String()).
+			SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+			SetPayloadJSON(payload).SetPayloadHash(hex.EncodeToString(sum[:])).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	draft := create("Plan Draft")
+	approved := create("Plan Approved")
+	unknown := create("Plan Unknown")
+	revised := create("Plan Revised")
+	_ = create("Plan Quiet")
+	savePlan(draft, "plan:draft", 1, `{
+		"status": "draft",
+		"currentRevision": {"version": 1, "items": [
+			{"itemId": "item-1", "title": "Send the security packet", "ownerParticipantRef": "Ada Quill"},
+			{"itemId": "item-2", "title": "  ", "ownerParticipantRef": "owner_token"}
+		]}
+	}`)
+	savePlan(approved, "plan:approved", 1, `{
+		"status": "internally_approved",
+		"currentRevision": {"version": 2, "items": [
+			{"itemId": "item-3", "title": "Kickoff", "ownerParticipantRef": "owner_token"}
+		]}
+	}`)
+	savePlan(unknown, "plan:unknown", 1, `{}`)
+	savePlan(revised, "plan:revised", 1, `{
+		"status": "draft",
+		"currentRevision": {"version": 1, "items": [
+			{"itemId": "item-old", "title": "Old step", "ownerParticipantRef": "owner_token"}
+		]}
+	}`)
+	savePlan(revised, "plan:revised", 2, `{
+		"status": "revised",
+		"currentRevision": {"version": 2, "items": [
+			{"itemId": "item-new", "title": "New step", "ownerParticipantRef": "owner_token"}
+		]}
+	}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+
+	assertCompanyQuery("Draft · Version 1", "Plan Draft")
+	assertCompanyQuery("Approve this plan", "Plan Draft", "Plan Revised")
+	assertCompanyQuery("Send the security packet · Ada Quill", "Plan Draft")
+	assertCompanyQuery("Untitled step", "Plan Draft")
+	assertCompanyQuery("Approved in this workspace · Version 2", "Plan Approved")
+	assertCompanyQuery("Draft an email to share this plan", "Plan Approved")
+	assertCompanyQuery("Kickoff", "Plan Approved")
+	assertCompanyQuery("Unknown · Version 1", "Plan Unknown")
+	assertCompanyQuery("Revised · Version 2", "Plan Revised")
+	assertCompanyQuery("New step", "Plan Revised")
+	assertCompanyQuery("Draft · Version 2")
+	assertCompanyQuery("Old step")
+	assertCompanyQuery("which companies show draft · version 1", "Plan Draft")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {

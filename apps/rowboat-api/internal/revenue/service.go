@@ -958,6 +958,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if plan := relationshipSheetPlanEmptyMatch(needle); plan != nil {
 			parts = append(parts, plan)
 		}
+		if card := relationshipSheetPlanCardMatch(needle); card != nil {
+			parts = append(parts, card)
+		}
 		if deletion := relationshipSheetDeletionEmptyMatch(needle); deletion != nil {
 			parts = append(parts, deletion)
 		}
@@ -2418,6 +2421,236 @@ func relationshipSheetPlanEmptyMatch(needle string) predicate.Relationship {
 		return nil
 	}
 	return relationship.Not(relationshipHasArtifactKind("mutual_action_plan"))
+}
+
+// relationshipSheetPlanCardMatch matches the shared-plan card. The heading is
+// "Draft · Version 1" or "Approved in this workspace · Version 2". A draft or
+// revised plan says "Approve this plan". An approved plan says "Draft an email
+// to share this plan". Each step is the title, or "Send the packet · Ada Quill"
+// when the owner is a person.
+func relationshipSheetPlanCardMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if status, version, ok := planHeadingQuery(needle); ok {
+		preds = append(preds, relationshipPlanHeading(status, version))
+	} else if line := normalizePersonSearch(needle); line != "" {
+		preds = append(preds, relationshipPlanStepLine(line))
+	}
+	if labelPhraseMatches("approve this plan", needle) {
+		preds = append(preds, relationshipLatestPlanStatus("draft", "revised"))
+	}
+	if labelPhraseMatches("draft an email to share this plan", needle) {
+		preds = append(preds, relationshipLatestPlanStatus("internally_approved"))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func planHeadingQuery(needle string) (status string, version int, ok bool) {
+	text := normalizePersonSearch(needle)
+	const marker = " · version "
+	index := strings.LastIndex(text, marker)
+	if index <= 0 {
+		return "", 0, false
+	}
+	prefix := strings.TrimSpace(text[:index])
+	labels := []struct{ label, status string }{
+		{"approved in this workspace", "internally_approved"},
+		{"they responded", "counterparty_responded"},
+		{"cancelled", "cancelled"},
+		{"finished", "completed"},
+		{"revised", "revised"},
+		{"unknown", ""},
+		{"draft", "draft"},
+	}
+	for _, item := range labels {
+		if prefix == item.label || strings.HasSuffix(prefix, " "+item.label) {
+			status = item.status
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return "", 0, false
+	}
+	rest := text[index+len(marker):]
+	end := 0
+	for end < len(rest) && rest[end] >= '0' && rest[end] <= '9' {
+		end++
+	}
+	if end == 0 {
+		return "", 0, false
+	}
+	version, err := strconv.Atoi(rest[:end])
+	if err != nil || version < 1 || version > 500 || strings.TrimRight(rest[end:], ".,;?") != "" {
+		return "", 0, false
+	}
+	return status, version, true
+}
+
+func relationshipPlanHeading(status string, version int) predicate.Relationship {
+	return relationshipLatestPlan(func(b *sql.Builder, s *sql.Selector) {
+		b.WriteString(" AND ")
+		writePlanStatusExpr(b, s)
+		if status == "" {
+			b.WriteString(" IN ('', 'unknown')")
+		} else {
+			b.WriteString(" = ")
+			b.Arg(status)
+		}
+		b.WriteString(" AND ")
+		writePlanVersionExpr(b, s)
+		b.WriteString(" = ")
+		b.Arg(version)
+	})
+}
+
+func relationshipLatestPlanStatus(statuses ...string) predicate.Relationship {
+	return relationshipLatestPlan(func(b *sql.Builder, s *sql.Selector) {
+		b.WriteString(" AND ")
+		writePlanStatusExpr(b, s)
+		b.WriteString(" IN (")
+		for i, status := range statuses {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.Arg(status)
+		}
+		b.WriteString(")")
+	})
+}
+
+func relationshipPlanStepLine(line string) predicate.Relationship {
+	return relationshipLatestPlan(func(b *sql.Builder, s *sql.Selector) {
+		b.WriteString(" AND ")
+		writePlanStepMatch(b, s, line)
+	})
+}
+
+func relationshipLatestPlan(extra func(*sql.Builder, *sql.Selector)) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			art := conversationintelligenceartifact.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS plan WHERE plan.")
+			b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND plan.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = 'mutual_action_plan' AND plan.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(" = (SELECT MAX(newer.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(") FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS newer WHERE newer.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" = plan.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = plan.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+			b.WriteString(" = plan.")
+			b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+			b.WriteString(")")
+			extra(b, s)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writePlanStatusExpr(b *sql.Builder, s *sql.Selector) {
+	column := "plan." + conversationintelligenceartifact.FieldPayloadJSON
+	b.WriteString("trim(coalesce(")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->>'status'")
+	} else {
+		b.WriteString("json_extract(")
+		b.WriteString(column)
+		b.WriteString(", '$.status')")
+	}
+	b.WriteString(", ''))")
+}
+
+func writePlanVersionExpr(b *sql.Builder, s *sql.Selector) {
+	column := "plan." + conversationintelligenceartifact.FieldPayloadJSON
+	var raw string
+	if s.Dialect() == dialect.Postgres {
+		raw = fmt.Sprintf("CAST((%s::jsonb)->'currentRevision'->>'version' AS INTEGER)", column)
+	} else {
+		raw = fmt.Sprintf("CAST(json_extract(%s, '$.currentRevision.version') AS INTEGER)", column)
+	}
+	b.WriteString("CASE WHEN coalesce(")
+	b.WriteString(raw)
+	b.WriteString(", 0) <= 0 THEN 1 ELSE ")
+	b.WriteString(raw)
+	b.WriteString(" END")
+}
+
+func writePlanStepMatch(b *sql.Builder, s *sql.Selector, line string) {
+	column := "plan." + conversationintelligenceartifact.FieldPayloadJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("EXISTS (SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof((")
+		b.WriteString(column)
+		b.WriteString("::jsonb)->'currentRevision'->'items') = 'array' THEN (")
+		b.WriteString(column)
+		b.WriteString("::jsonb)->'currentRevision'->'items' ELSE '[]'::jsonb END) AS item WHERE ")
+		b.WriteString(planItemPrintedSQL(
+			"item->>'title'",
+			"item->>'ownerParticipantRef'",
+			tokenOwnerSQL("item->>'ownerParticipantRef'"),
+		))
+		b.WriteString(" = ")
+		b.Arg(line)
+		b.WriteString(")")
+		return
+	}
+	b.WriteString("EXISTS (SELECT 1 FROM json_each(coalesce(json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.currentRevision.items'), '[]')) WHERE ")
+	b.WriteString(planItemPrintedSQL(
+		"json_extract(value, '$.title')",
+		"json_extract(value, '$.ownerParticipantRef')",
+		tokenOwnerSQL("json_extract(value, '$.ownerParticipantRef')"),
+	))
+	b.WriteString(" = ")
+	b.Arg(line)
+	b.WriteString(")")
+}
+
+func planItemPrintedSQL(title, owner, token string) string {
+	normalizedTitle := normalizedSearchExpr(title)
+	normalizedOwner := normalizedSearchExpr(owner)
+	return fmt.Sprintf(`CASE WHEN trim(coalesce(%s, '')) = '' THEN 'untitled step' WHEN trim(coalesce(%s, '')) = '' OR trim(coalesce(%s, '')) = 'plan-participant' OR %s THEN %s ELSE %s || ' · ' || %s END`,
+		title, owner, owner, token, normalizedTitle, normalizedTitle, normalizedOwner)
+}
+
+func tokenOwnerSQL(owner string) string {
+	raw := fmt.Sprintf("trim(coalesce(%s, ''))", owner)
+	stripped := raw
+	for _, ch := range "abcdefghijklmnopqrstuvwxyz0123456789_-:" {
+		stripped = fmt.Sprintf("replace(%s, '%c', '')", stripped, ch)
+	}
+	return fmt.Sprintf("(%s <> '' AND length(%s) = 0)", raw, stripped)
+}
+
+func normalizedSearchExpr(expr string) string {
+	wrapped := fmt.Sprintf("lower(replace(replace(replace(trim(coalesce(%s, '')), '-', ' '), '_', ' '), '.', ' '))", expr)
+	for i := 0; i < 3; i++ {
+		wrapped = fmt.Sprintf("replace(%s, '  ', ' ')", wrapped)
+	}
+	return wrapped
 }
 
 // relationshipSheetDeletionEmptyMatch matches the privacy line. The delete
