@@ -380,4 +380,18 @@ describe("API reference document", () => {
     expect(member).toBe("Status for this record.");
     expect(member).not.toContain("Plans use billing");
   });
+
+  it("names the operation values when the sample is not one of them", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const voice = presented.components.schemas.VoiceSyncMutation.properties.operation;
+    expect(voice.description).toBe("Saved or deleted.");
+    expect(voice.description).not.toContain("history");
+    expect(voice.example).toBe("upsert");
+    const history = presented.components.schemas.UserHistory.properties.operation;
+    expect(history.description).toBe("Mutation operation that produced this history row.");
+    expect(history.example).toBe("UPDATE");
+    const capture = presented.components.schemas.CaptureArtifact.properties.operation;
+    expect(capture.description).toBe("What changed on this record.");
+    expect(capture.example).toBeUndefined();
+  });
 });

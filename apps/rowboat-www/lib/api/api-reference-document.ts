@@ -556,6 +556,44 @@ function presentReferenceProse(value: string): string {
 }
 
 /**
+ * One stored sentence is copied onto every operation column, and the sample
+ * is always UPDATE. A voice sync or capture change is saved or deleted, so
+ * that sample is not one of the values the field allows.
+ */
+const GENERIC_OPERATION_DESCRIPTION = "Mutation operation that produced this history row.";
+
+const OPERATION_WITHOUT_VALUES = "What changed on this record.";
+
+const OPERATION_VALUE_LABELS: Record<string, string> = {
+  DELETE: "deleted",
+  INSERT: "inserted",
+  UPDATE: "updated",
+  delete: "deleted",
+  upsert: "saved",
+};
+
+/** The values listed beside an operation field, as one sentence. */
+export function operationFieldCopy(values: readonly string[]): string {
+  const labels = values.map(
+    (value) => OPERATION_VALUE_LABELS[value] ?? value.replaceAll("_", " "),
+  );
+  if (labels.length === 0) return OPERATION_WITHOUT_VALUES;
+  const sentence =
+    labels.length === 1
+      ? labels[0]
+      : labels.length === 2
+        ? `${labels[0]} or ${labels[1]}`
+        : `${labels.slice(0, -1).join(", ")}, or ${labels[labels.length - 1]}`;
+  return `${sentence.charAt(0).toUpperCase()}${sentence.slice(1)}.`;
+}
+
+function stringEnum(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  if (!value.every((item) => typeof item === "string")) return null;
+  return value;
+}
+
+/**
  * Field descriptions live on schemas, request bodies, and responses. Parameter
  * descriptions stay as published so a path parameter does not change under a
  * generated client.
