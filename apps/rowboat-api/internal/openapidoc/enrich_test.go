@@ -4162,6 +4162,11 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if !ok || len(milestones) != 1 || milestones[0] != openedCompanyMilestone {
 		t.Fatalf("milestones: %#v", relationship["milestones"])
 	}
+	facts, factsErr := json.Marshal(relationship["companyEnrichmentData"])
+	wantFacts, wantErr := json.Marshal(companyProfileFactsExample())
+	if factsErr != nil || wantErr != nil || string(facts) != string(wantFacts) {
+		t.Fatalf("profile facts: %s", facts)
+	}
 	threads, ok := example["emailThreads"].([]any)
 	if !ok || len(threads) != 0 {
 		t.Fatalf("email threads: %#v", example["emailThreads"])

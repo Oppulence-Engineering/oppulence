@@ -28,7 +28,7 @@ const (
 	openedCompanyMilestone = "Proposal shared."
 )
 
-const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared."
+const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared. The headquarters is San Francisco, California, United States."
 
 func openedCompanyParams() []any {
 	return []any{obj{
@@ -45,32 +45,33 @@ func openedCompanySheetExample() obj {
 	empty := []any{}
 	return obj{
 		"relationship": obj{
-			"id":                 openedCompanyID,
-			"kind":               "company",
-			"displayName":        "Acme",
-			"accountDomain":      "acme.com",
-			"status":             "active",
-			"lastTouchAt":        openedCompanyTouchedAt,
-			"peopleCount":        1,
-			"emailThreadCount":   0,
-			"commitmentCount":    0,
-			"companyDescription": openedCompanyDescription,
-			"lifecycle":          "evaluation",
-			"linkedinUrl":        openedCompanyLinkedInURL,
-			"engagement":         "declining",
-			"sentiment":          "unknown",
-			"health":             "needs_attention",
-			"stateReason":        openedCompanyReason,
-			"stateVersion":       1,
-			"stateHash":          openedCompanyHash,
-			"projectorVersion":   2,
-			"projectedAt":        openedCompanyProjectedAt,
-			"lastChangedAt":      openedCompanyProjectedAt,
-			"risks":              []any{openedCompanyRisk},
-			"milestones":         []any{openedCompanyMilestone},
-			"resourceRefs":       empty,
-			"categories":         []any{openedCompanyCategory},
-			"primaryEmail":       openedCompanyEmail,
+			"id":                    openedCompanyID,
+			"kind":                  "company",
+			"displayName":           "Acme",
+			"accountDomain":         "acme.com",
+			"status":                "active",
+			"lastTouchAt":           openedCompanyTouchedAt,
+			"peopleCount":           1,
+			"emailThreadCount":      0,
+			"commitmentCount":       0,
+			"companyDescription":    openedCompanyDescription,
+			"companyEnrichmentData": companyProfileFactsExample(),
+			"lifecycle":             "evaluation",
+			"linkedinUrl":           openedCompanyLinkedInURL,
+			"engagement":            "declining",
+			"sentiment":             "unknown",
+			"health":                "needs_attention",
+			"stateReason":           openedCompanyReason,
+			"stateVersion":          1,
+			"stateHash":             openedCompanyHash,
+			"projectorVersion":      2,
+			"projectedAt":           openedCompanyProjectedAt,
+			"lastChangedAt":         openedCompanyProjectedAt,
+			"risks":                 []any{openedCompanyRisk},
+			"milestones":            []any{openedCompanyMilestone},
+			"resourceRefs":          empty,
+			"categories":            []any{openedCompanyCategory},
+			"primaryEmail":          openedCompanyEmail,
 		},
 		"actions":         empty,
 		"recommendations": empty,
