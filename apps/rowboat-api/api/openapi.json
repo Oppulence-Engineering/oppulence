@@ -11152,8 +11152,7 @@
           },
           "delta": {
             "additionalProperties": true,
-            "description": "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.",
-            "example": -42,
+            "description": "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason.",
             "type": "object"
           },
           "effectivePolicy": {

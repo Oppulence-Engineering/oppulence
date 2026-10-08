@@ -231,8 +231,12 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	}
 	creditLedger := asObj(schemas["CreditLedger"])
 	delta := asObj(asObj(creditLedger["properties"])["delta"])
-	if delta["description"] == nil || delta["example"] == nil {
-		t.Fatal("CreditLedger.delta should have a detailed description and example")
+	if delta["description"] != "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits." || delta["example"] != -42 {
+		t.Fatalf("CreditLedger.delta lost its credit contract: %#v", delta)
+	}
+	intelligenceDelta := asObj(asObj(asObj(schemas["RelationshipIntelligence"])["properties"])["delta"])
+	if intelligenceDelta["type"] != "object" || intelligenceDelta["example"] != nil || intelligenceDelta["description"] != "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason." {
+		t.Fatalf("RelationshipIntelligence.delta was rewritten as a credit change: %#v", intelligenceDelta)
 	}
 	ledgerReason := asObj(asObj(creditLedger["properties"])["reason"])
 	if ledgerReason["description"] != "Reason code for the ledger entry." || ledgerReason["example"] != "llm_settle" {
@@ -389,6 +393,14 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 	if oauth := asObj(asObj(asObj(schemas["OAuthPending"])["properties"])["state"]); oauth["example"] != "state_abc123" {
 		t.Fatalf("checked-in OAuthPending.state lost its handoff ticket: %#v", oauth)
+	}
+
+	intelligenceDelta := asObj(asObj(asObj(schemas["RelationshipIntelligence"])["properties"])["delta"])
+	if intelligenceDelta["description"] != "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason." || intelligenceDelta["example"] != nil {
+		t.Fatalf("checked-in RelationshipIntelligence.delta is a credit change: %#v", intelligenceDelta)
+	}
+	if ledgerDelta := asObj(asObj(asObj(schemas["CreditLedger"])["properties"])["delta"]); ledgerDelta["example"] != float64(-42) && ledgerDelta["example"] != -42 {
+		t.Fatalf("checked-in CreditLedger.delta lost its credit example: %#v", ledgerDelta)
 	}
 	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)

@@ -1970,6 +1970,17 @@ func enrichEntitySchemas(schemas obj) {
 		state["example"] = "state_abc123"
 	}
 
+	// delta is a credit change only on the ledger. Relationship intelligence
+	// reuses the name for the before-and-after of a projected account.
+	if ledger := asObj(schemas["CreditLedger"]); ledger != nil {
+		if props := asObj(ledger["properties"]); props != nil {
+			if delta := asObj(props["delta"]); delta != nil {
+				delta["description"] = "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits."
+				delta["example"] = -42
+			}
+		}
+	}
+
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
 		"name":                 {"description": "Human-readable background task name.", "example": "Daily Account Summary"},
