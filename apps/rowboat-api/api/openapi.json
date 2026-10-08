@@ -11955,7 +11955,7 @@
             "description": "Missing or revoked required scopes.",
             "items": {
               "description": "Scope.",
-              "example": "https://www.googleapis.com/auth/gmail.readonly",
+              "example": "https://www.googleapis.com/auth/gmail.send",
               "type": "string"
             },
             "type": "array"

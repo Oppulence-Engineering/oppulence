@@ -340,6 +340,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 	assertEventObservation(t, schemas)
 	assertGraphExecutionNeedsReconcile(t, schemas)
+	assertMissingSendScope(t, schemas)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -451,5 +452,28 @@ func assertGraphExecutionNeedsReconcile(t *testing.T, schemas obj) {
 	action := asObj(asObj(asObj(schemas["RevenueAction"])["properties"])["executionStatus"])
 	if action["example"] != "pending" {
 		t.Fatalf("revenue action execution example changed: %#v", action)
+	}
+}
+
+func TestMissingSendScopeIsDocumented(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertMissingSendScope(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertMissingSendScope(t *testing.T, schemas obj) {
+	t.Helper()
+	props := asObj(asObj(schemas["RelationshipSourceStatus"])["properties"])
+	missing := asObj(asObj(props["missingScopes"])["items"])
+	if missing["example"] != missingSendScopeExample || missing["description"] != "Scope." {
+		t.Fatalf("missing scope: %#v", missing)
+	}
+	granted := asObj(asObj(props["grantedScopes"])["items"])
+	if granted["example"] != "https://www.googleapis.com/auth/gmail.readonly" {
+		t.Fatalf("granted mail scope changed: %#v", granted)
+	}
+	required := asObj(asObj(props["requiredScopes"])["items"])
+	if required["example"] != "https://www.googleapis.com/auth/gmail.readonly" {
+		t.Fatalf("required mail scope changed: %#v", required)
 	}
 }
