@@ -2051,6 +2051,25 @@ func enrichEntitySchemas(schemas obj) {
 		properties["model"] = stringSchema(item.description, item.example, nullable())
 	}
 
+	// The shared provider note samples openai. These rows record a sign-in service.
+	for _, item := range []struct {
+		schema, description, example string
+	}{
+		{"OAuthConnection", "Sign-in service for this connection.", "google"},
+		{"OAuthConnectionHistory", "Sign-in service recorded for this connection.", "google"},
+		{"OAuthPending", "Sign-in service for this handoff. google, canvas, corinthian, or wispr.", "google"},
+	} {
+		schema := asObj(schemas[item.schema])
+		if schema == nil {
+			continue
+		}
+		properties := asObj(schema["properties"])
+		if properties == nil || properties["provider"] == nil {
+			continue
+		}
+		properties["provider"] = stringSchema(item.description, item.example)
+	}
+
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
 		"name":                 {"description": "Human-readable background task name.", "example": "Daily Account Summary"},

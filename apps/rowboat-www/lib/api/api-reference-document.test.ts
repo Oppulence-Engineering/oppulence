@@ -410,6 +410,26 @@ describe("API reference document", () => {
     expect(chat.example).toBe("openai/gpt-4.1-mini");
   });
 
+  it("does not sample a model provider for a sign-in connection", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const pending = presented.components.schemas.OAuthPending.properties.provider;
+    expect(pending.description).toBe(
+      "Sign-in service for this handoff. google, canvas, corinthian, or wispr.",
+    );
+    expect(pending.example).toBe("google");
+    const connection = presented.components.schemas.OAuthConnection.properties.provider;
+    expect(connection.description).toBe("Sign-in service for this connection.");
+    expect(connection.example).toBe("google");
+    const history = presented.components.schemas.OAuthConnectionHistory.properties.provider;
+    expect(history.description).toBe("Sign-in service recorded for this connection.");
+    expect(history.example).toBe("google");
+    const task = presented.components.schemas.BackgroundTask.properties.provider;
+    expect(task.example).toBe("openai");
+    expect(task.description).toBe(
+      "Which service this uses. That can be a sign-in service, a model provider, or where the work runs.",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

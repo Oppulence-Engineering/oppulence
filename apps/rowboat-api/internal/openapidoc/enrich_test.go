@@ -312,6 +312,21 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if chatModel := asObj(asObj(asObj(schemas["LLMChatCompletionsRequest"])["properties"])["model"]); chatModel["example"] != "openai/gpt-4.1-mini" {
 		t.Fatalf("LLMChatCompletionsRequest.model lost its chat example: %#v", chatModel)
 	}
+	pendingProvider := asObj(asObj(asObj(schemas["OAuthPending"])["properties"])["provider"])
+	if pendingProvider["example"] != "google" || pendingProvider["description"] != "Sign-in service for this handoff. google, canvas, corinthian, or wispr." {
+		t.Fatalf("OAuthPending.provider sampled a model provider: %#v", pendingProvider)
+	}
+	connectionProvider := asObj(asObj(asObj(schemas["OAuthConnection"])["properties"])["provider"])
+	if connectionProvider["example"] != "google" || connectionProvider["description"] != "Sign-in service for this connection." {
+		t.Fatalf("OAuthConnection.provider sampled a model provider: %#v", connectionProvider)
+	}
+	historyProvider := asObj(asObj(asObj(schemas["OAuthConnectionHistory"])["properties"])["provider"])
+	if historyProvider["example"] != "google" || historyProvider["description"] != "Sign-in service recorded for this connection." {
+		t.Fatalf("OAuthConnectionHistory.provider sampled a model provider: %#v", historyProvider)
+	}
+	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
+		t.Fatalf("BackgroundTask.provider lost its model example: %#v", taskProvider)
+	}
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -451,6 +466,22 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 	if chatModel := asObj(asObj(asObj(schemas["LLMChatCompletionsRequest"])["properties"])["model"]); chatModel["example"] != "openai/gpt-4.1-mini" {
 		t.Fatalf("checked-in LLMChatCompletionsRequest.model lost its chat example: %#v", chatModel)
+	}
+
+	pendingProvider := asObj(asObj(asObj(schemas["OAuthPending"])["properties"])["provider"])
+	if pendingProvider["example"] != "google" || pendingProvider["description"] != "Sign-in service for this handoff. google, canvas, corinthian, or wispr." {
+		t.Fatalf("checked-in OAuthPending.provider sampled a model provider: %#v", pendingProvider)
+	}
+	connectionProvider := asObj(asObj(asObj(schemas["OAuthConnection"])["properties"])["provider"])
+	if connectionProvider["example"] != "google" || connectionProvider["description"] != "Sign-in service for this connection." {
+		t.Fatalf("checked-in OAuthConnection.provider sampled a model provider: %#v", connectionProvider)
+	}
+	historyProvider := asObj(asObj(asObj(schemas["OAuthConnectionHistory"])["properties"])["provider"])
+	if historyProvider["example"] != "google" || historyProvider["description"] != "Sign-in service recorded for this connection." {
+		t.Fatalf("checked-in OAuthConnectionHistory.provider sampled a model provider: %#v", historyProvider)
+	}
+	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
+		t.Fatalf("checked-in BackgroundTask.provider lost its model example: %#v", taskProvider)
 	}
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
