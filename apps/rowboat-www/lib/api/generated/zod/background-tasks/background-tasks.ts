@@ -191,8 +191,8 @@ export const ListBackgroundTaskRunsForAccount500Response = zod
   );
 
 /**
- * Lists built-in API-target task templates that can be instantiated into normal background tasks. Templates provide known-good instructions, triggers, and execution defaults for common cloud task patterns.
- * @summary List background task templates
+ * Templates loads the built-in list. The request sends no filter. The list is every workflow you can start from.
+ * @summary Templates
  */
 export const ListBackgroundTaskTemplates200Response = zod
   .strictObject({

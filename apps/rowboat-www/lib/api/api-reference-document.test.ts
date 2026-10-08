@@ -2824,6 +2824,30 @@ describe("API reference document", () => {
     expect(JSON.stringify(graph)).not.toContain("9c8dfa9b");
   });
 
+  it("samples the page Templates loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/background-task-templates"]?.get;
+    expect(operation?.summary).toBe("Templates");
+    expect(operation?.description).toBe(
+      "Templates loads the built-in list. The request sends no filter. The list is every workflow you can start from.",
+    );
+    expect(operation?.parameters).toBeUndefined();
+    const example = operation?.responses?.["200"]?.content?.["application/json"]?.example as {
+      templates?: Array<{ name?: string; slug?: string; instructions?: string; description?: string }>;
+    };
+    expect(example.templates).toHaveLength(10);
+    expect(example.templates?.[0]?.name).toBe("Relationship Refresh");
+    const inbox = example.templates?.find((template) => template.slug === "inbox-digest");
+    expect(inbox?.instructions).toContain("concrete next actions");
+    const encoded = JSON.stringify(example);
+    expect(encoded).not.toContain("produce a markdown digest.");
+    expect(encoded).not.toContain("report artifact");
+    const one = presented.paths["/v1/background-task-templates/{templateSlug}"]?.get?.responses?.["200"]?.content?.[
+      "application/json"
+    ]?.example as { instructions?: string };
+    expect(one.instructions).toBe("Review recent important Gmail messages and produce a markdown digest.");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
