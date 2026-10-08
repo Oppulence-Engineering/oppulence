@@ -3777,7 +3777,7 @@ export const GetRelationshipGraph404Response = zod
   );
 
 /**
- * The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+ * The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations.
  * @summary Open a company
  */
 export const GetRelationshipParams = zod.object({

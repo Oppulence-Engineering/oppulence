@@ -4108,7 +4108,7 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if operation["summary"] != "Open a company" {
 		t.Fatalf("summary: %#v", operation["summary"])
 	}
-	if operation["description"] != "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises." {
+	if operation["description"] != openedCompanyOperationDescription {
 		t.Fatalf("description: %#v", operation["description"])
 	}
 	params, ok := operation["parameters"].([]any)
@@ -4122,7 +4122,7 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	media := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])
 	example := asObj(media["example"])
 	relationship := asObj(example["relationship"])
-	if relationship["displayName"] != "Acme" || relationship["accountDomain"] != "acme.com" || relationship["id"] != openedCompanyID || relationship["health"] != "needs_attention" || relationship["lifecycle"] != "evaluation" || relationship["stateHash"] != openedCompanyHash {
+	if relationship["displayName"] != "Acme" || relationship["accountDomain"] != "acme.com" || relationship["companyDescription"] != openedCompanyDescription || relationship["id"] != openedCompanyID || relationship["health"] != "needs_attention" || relationship["lifecycle"] != "evaluation" || relationship["stateHash"] != openedCompanyHash {
 		t.Fatalf("relationship: %#v", relationship)
 	}
 	version, err := json.Marshal(relationship["stateVersion"])
