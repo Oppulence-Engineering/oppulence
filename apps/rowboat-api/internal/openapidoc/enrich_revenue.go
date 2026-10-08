@@ -217,8 +217,8 @@ func addRevenueSchemas(schemas obj) {
 		"observationIds":        arraySchema("Moved observation ids.", stringSchema("Observation id.", "observation:1")),
 		"identityIds":           arraySchema("Affected identity ids.", stringSchema("Identity id.", "identity:1")),
 		"movedObjectRefs":       arraySchema("All moved graph objects.", stringSchema("Object ref.", "relationship-observation:1")),
-		"beforeRelationshipIds": arraySchema("Relationship ids before.", stringSchema("Relationship id.", "relationship:1")),
-		"afterRelationshipIds":  arraySchema("Relationship ids after.", stringSchema("Relationship id.", "relationship:2")),
+		"beforeRelationshipIds": withExample(arraySchema("Relationship ids before.", stringSchema("Relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5")), []any{"9c8dfa9b-a7b2-46ea-982c-622a914c00e5", "3a196c5e-b10e-46cb-a177-7c001f7be573"}),
+		"afterRelationshipIds":  withExample(arraySchema("Relationship ids after.", stringSchema("Relationship id.", "3a196c5e-b10e-46cb-a177-7c001f7be573")), []any{"3a196c5e-b10e-46cb-a177-7c001f7be573"}),
 		"occurredAt":            stringSchema("Event time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 	}, "id", "kind", "actorId", "observationIds", "identityIds", "movedObjectRefs", "beforeRelationshipIds", "afterRelationshipIds", "occurredAt")
 	schemas["RelationshipIdentityCandidate"] = objectSchema("Durable, optimistic-versioned exact-anchor ambiguity review.", obj{
@@ -1345,4 +1345,9 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+func withExample(schema obj, example any) obj {
+	schema["example"] = example
+	return schema
 }

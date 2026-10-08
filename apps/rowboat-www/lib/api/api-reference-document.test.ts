@@ -714,6 +714,24 @@ describe("API reference document", () => {
     expect(item.reasonCode.example).toBe("overdue_commitment");
   });
 
+  it("records a merge with the two relationship ids", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const lineage = presented.components.schemas.RelationshipIdentityLineage.properties;
+    expect(lineage.beforeRelationshipIds).toMatchObject({
+      description: "Relationship ids before.",
+      example: [
+        "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+        "3a196c5e-b10e-46cb-a177-7c001f7be573",
+      ],
+    });
+    expect(lineage.afterRelationshipIds).toMatchObject({
+      description: "Relationship ids after.",
+      example: ["3a196c5e-b10e-46cb-a177-7c001f7be573"],
+    });
+    expect(JSON.stringify(lineage.beforeRelationshipIds)).not.toContain("relationship:1");
+    expect(JSON.stringify(lineage.afterRelationshipIds)).not.toContain("relationship:2");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
