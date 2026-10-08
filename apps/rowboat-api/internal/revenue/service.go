@@ -869,6 +869,13 @@ func (s *Service) ListRelationshipsFiltered(
 		if none := relationshipSheetNoneRecordedMatch(needle); none != nil {
 			parts = append(parts, none)
 		}
+
+		// The graph inspector says "No visible connections." when the company
+		// node has no edge. People, promises, actions, risks, milestones, and
+		// conversations are those edges. Mail alone is not one.
+		if labelPhraseMatches("no visible connections.", needle) {
+			parts = append(parts, relationshipHasNoVisibleConnections())
+		}
 		// The subject and the address are the first two lines of each thread.
 		// Searching either word has to open that company.
 		parts = append(parts, relationship.HasMailThreadsWith(mailthread.Or(
@@ -8357,6 +8364,30 @@ func relationshipHasEarlierMail() predicate.Relationship {
 			b.WriteString(" = ")
 			b.Arg(false)
 			b.WriteString(") > 50")
+		}))
+	})
+}
+
+func relationshipHasNoVisibleConnections() predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationship.HasObservations()),
+		relationship.Not(relationship.HasParticipants()),
+		relationship.Not(relationship.HasCommitments()),
+		relationship.Not(relationship.HasActions()),
+		relationshipJSONArrayEmpty(relationship.FieldRisks),
+		relationshipJSONArrayEmpty(relationship.FieldMilestones),
+	)
+}
+
+func relationshipJSONArrayEmpty(field string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(field)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb)) = 0", column))
+				return
+			}
+			b.WriteString(fmt.Sprintf("json_array_length(coalesce(%s, '[]')) = 0", column))
 		}))
 	})
 }
