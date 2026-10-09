@@ -40,6 +40,7 @@ import { agentKeys } from "@/hooks/queries/utils/agent-keys";
 import { dashboardFetch } from "@/lib/auth/client";
 import {
   type AgentSummary,
+  agentConnectionLabel,
   agentDisplayName,
   agentInstructionsCopy,
   agentProviderLabel,
@@ -488,7 +489,11 @@ export function AgentsView({
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Required connections</p>
-                      <p className="mt-1 text-sm">{selected.connectorReqs?.join(", ") || "None"}</p>
+                      <p className="mt-1 text-sm">
+                        {selected.connectorReqs?.length
+                          ? selected.connectorReqs.map((name) => agentConnectionLabel(name)).join(", ")
+                          : "None"}
+                      </p>
                     </div>
                   </section>
                 ) : null}

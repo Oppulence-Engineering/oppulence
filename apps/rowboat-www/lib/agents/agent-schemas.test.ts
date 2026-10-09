@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   agentArtifactTitle,
+  agentConnectionLabel,
   agentDisplayName,
   agentInstructionsCopy,
   agentSlugTitle,
@@ -46,6 +47,16 @@ describe("agent schemas", () => {
       },
     ]);
     expect(() => parseAgentsResponse({ agents: [{ name: "Missing slug" }] })).toThrow();
+  });
+
+  it("names a required connection the way the connections page does", () => {
+    expect(agentConnectionLabel("google")).toBe("Google");
+    expect(agentConnectionLabel("hubspot")).toBe("HubSpot");
+    expect(agentConnectionLabel("github")).toBe("GitHub");
+    expect(agentConnectionLabel("wispr")).toBe("Wispr Flow");
+    expect(agentConnectionLabel("canvas:invoices.read")).toBe("Read invoices");
+    expect(agentConnectionLabel("gmail:messages.send")).toBe("Gmail messages send");
+    expect(agentConnectionLabel("")).toBe("");
   });
 
   it("names a stored provider without changing the slug", () => {

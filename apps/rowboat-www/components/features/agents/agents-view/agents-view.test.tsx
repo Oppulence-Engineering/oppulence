@@ -22,6 +22,8 @@ describe("AgentsView", () => {
     expect(source).toMatch(/>\s*Purpose\s*</);
     expect(source).toContain("{agentToolLabel(tool)}");
     expect(source).toContain("{agentProviderLabel(selected.provider)}");
+    expect(source).toContain("agentConnectionLabel(name)");
+    expect(source).not.toContain('selected.connectorReqs?.join(", ")');
     expect(source).toContain("calledModelLabel(selected.model)");
     expect(source).not.toContain("{selected.provider || \"Workspace default\"}");
     expect(source).not.toContain("{selected.model || \"Workspace default\"}");

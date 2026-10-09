@@ -38,6 +38,7 @@ describe("AgentConfigurationForm", () => {
     expect(source).toContain("agentSlugTitle(slug)");
     expect(source).toContain("More tools");
     expect(source).toContain("Connected services");
+    expect(source).toContain("format={agentConnectionLabel}");
     expect(source).not.toContain("registered name");
     expect(source).not.toContain("connector.custom.action");
     expect(source).not.toContain("slack:messages.read");
