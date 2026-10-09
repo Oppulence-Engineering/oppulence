@@ -42,9 +42,11 @@ import {
   type AgentSummary,
   agentDisplayName,
   agentInstructionsCopy,
+  agentProviderLabel,
   agentSourceLabel,
   duplicateAgentInstructions,
 } from "@/lib/agents/agent-schemas";
+import { calledModelLabel } from "@/lib/workflows/cloud-workflows";
 import { shownAgentError } from "@/lib/agents/agent-history";
 import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
@@ -434,11 +436,13 @@ export function AgentsView({
                 <dl className="grid gap-4 border-y py-4 sm:grid-cols-2">
                   <div>
                     <p className="text-xs text-muted-foreground">Provider</p>
-                    <p className="mt-1 text-sm">{selected.provider || "Workspace default"}</p>
+                    <p className="mt-1 text-sm">{agentProviderLabel(selected.provider)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Model</p>
-                    <p className="mt-1 text-sm">{selected.model || "Workspace default"}</p>
+                    <p className="mt-1 text-sm">
+                      {selected.model?.trim() ? calledModelLabel(selected.model) : "Workspace default"}
+                    </p>
                   </div>
                 </dl>
 

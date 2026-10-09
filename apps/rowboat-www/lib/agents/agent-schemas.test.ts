@@ -5,6 +5,7 @@ import {
   agentDisplayName,
   agentInstructionsCopy,
   agentSlugTitle,
+  agentProviderLabel,
   agentSourceLabel,
   duplicateAgentInstructions,
   parseAgentDocument,
@@ -45,6 +46,13 @@ describe("agent schemas", () => {
       },
     ]);
     expect(() => parseAgentsResponse({ agents: [{ name: "Missing slug" }] })).toThrow();
+  });
+
+  it("names a stored provider without changing the slug", () => {
+    expect(agentProviderLabel("openai")).toBe("OpenAI");
+    expect(agentProviderLabel("openrouter")).toBe("OpenRouter");
+    expect(agentProviderLabel("")).toBe("Workspace default");
+    expect(agentProviderLabel(null)).toBe("Workspace default");
   });
 
   it("shows the agent name while the stored value stays the slug", () => {

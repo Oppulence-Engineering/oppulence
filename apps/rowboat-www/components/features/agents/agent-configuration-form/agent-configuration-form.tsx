@@ -28,6 +28,7 @@ import { Textarea } from "@oppulence/ui/components/textarea";
 
 import { dashboardFetch } from "@/lib/auth/client";
 import { agentInstructionsCopy, agentSlugTitle } from "@/lib/agents/agent-schemas";
+import { calledModelLabel } from "@/lib/workflows/cloud-workflows";
 import { AGENT_TOOL_CATALOG, DEVELOPER_TOOL_NAMES, agentToolLabel } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
 
@@ -394,11 +395,13 @@ export function AgentConfigurationForm({
                 <SelectContent>
                   <SelectItem value="workspace-default">Workspace default</SelectItem>
                   {document.spec.model && !modelOptions.includes(document.spec.model) ? (
-                    <SelectItem value={document.spec.model}>{document.spec.model}</SelectItem>
+                    <SelectItem value={document.spec.model}>
+                      {calledModelLabel(document.spec.model)}
+                    </SelectItem>
                   ) : null}
                   {modelOptions.map((model) => (
                     <SelectItem key={model} value={model}>
-                      {model}
+                      {calledModelLabel(model)}
                     </SelectItem>
                   ))}
                 </SelectContent>

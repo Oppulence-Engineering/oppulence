@@ -177,6 +177,22 @@ export function agentSlugTitle(slug: string): string {
   return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+const AGENT_PROVIDER_LABELS: Record<string, string> = {
+  openai: "OpenAI",
+  openrouter: "OpenRouter",
+  anthropic: "Anthropic",
+  google: "Google",
+};
+
+/** The agents page names the provider. The stored slug stays on the agent. */
+export function agentProviderLabel(provider?: string | null): string {
+  const trimmed = provider?.trim() ?? "";
+  if (!trimmed) return "Workspace default";
+  const known = AGENT_PROVIDER_LABELS[trimmed.toLowerCase()];
+  if (known) return known;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
 /** The API stores a source enum. The agents page badge is a product label. */
 export function agentSourceLabel(source: string): string {
   const known = AGENT_SOURCE_LABELS[source];

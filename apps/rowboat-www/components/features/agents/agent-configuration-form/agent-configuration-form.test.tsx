@@ -57,6 +57,9 @@ describe("AgentConfigurationForm", () => {
     );
     expect(source).toContain("agentIdentityHint(readOnly)");
     expect(source).toContain("agentModelHint(readOnly)");
+    expect(source).toContain("{calledModelLabel(model)}");
+    expect(source).toContain("{calledModelLabel(document.spec.model)}");
+    expect(source).not.toContain("<SelectItem key={model} value={model}>\n                      {model}");
     expect(source).toContain("agentToolsHint(readOnly)");
     expect(source).toContain("agentExtraToolsHint(readOnly, customTools.length)");
     expect(source).toContain(">Short name</Label>");
