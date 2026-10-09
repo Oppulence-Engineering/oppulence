@@ -273,12 +273,47 @@ describe("source product copy", () => {
       external_participant_count: 2,
     });
     expect(lines).toEqual([
-      "Attachment Count: 1",
-      "Participant Count: 3",
-      "External Participant Count: 2",
+      "1 file attached to this activity",
+      "3 people on this activity",
+      "2 people outside the company",
     ]);
-    expect(lines.join("\n")).not.toMatch(/18abc|18def|Thread Id|Message Id/);
-    expect(activityLinesBesideSummary(["Attachment Count: 1"], "1")).toEqual([]);
+    expect(lines.join("\n")).not.toMatch(/18abc|18def|Thread Id|Message Id|Attachment Count/);
+    expect(activityEvidenceLines(null, { attachment_count: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(
+      activityLinesBesideSummary(
+        ["1 file attached to this activity"],
+        "1 file attached to this activity",
+      ),
+    ).toEqual([]);
+    expect(activityLinesBesideSummary(["1 file attached to this activity"], "1")).toEqual([
+      "1 file attached to this activity",
+    ]);
+  });
+
+  it("names message counts without the mail row's sentence", () => {
+    expect(
+      activityEvidenceLines(null, {
+        message_count: 4,
+        outbound_count: 2,
+        inbound_count: 1,
+      }),
+    ).toEqual([
+      "4 messages in this activity",
+      "2 messages sent from this mailbox",
+      "1 message received from them",
+    ]);
+    expect(activityEvidenceLines(null, { message_count: 0, outbound_count: 1 })).toEqual([
+      "0 messages in this activity",
+      "1 message sent from this mailbox",
+    ]);
+    expect(activityEvidenceLines(null, { message_count: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(
+      activityLinesBesideSummary(["4 messages in this activity"], "4 messages in this activity"),
+    ).toEqual([]);
   });
 
   it("names a provider and a mail direction the way the heading does", () => {

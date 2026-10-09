@@ -386,6 +386,33 @@ function activityDepartureKindLine(value: unknown): string | null {
 }
 
 /**
+ * Gmail stores how many messages, files, and people were on the thread.
+ * The opened activity says the count. The mail row's "4 messages" stays
+ * its own sentence.
+ */
+function activityCountLine(key: string, value: unknown): string | null {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) return null;
+  const n = value;
+  const unit = (one: string, many: string) => (n === 1 ? `1 ${one}` : `${String(n)} ${many}`);
+  switch (key) {
+    case "message_count":
+      return unit("message in this activity", "messages in this activity");
+    case "outbound_count":
+      return unit("message sent from this mailbox", "messages sent from this mailbox");
+    case "inbound_count":
+      return unit("message received from them", "messages received from them");
+    case "attachment_count":
+      return unit("file attached to this activity", "files attached to this activity");
+    case "participant_count":
+      return unit("person on this activity", "people on this activity");
+    case "external_participant_count":
+      return unit("person outside the company", "people outside the company");
+    default:
+      return null;
+  }
+}
+
+/**
  * Gmail stores yes/no flags. The opened activity says the fact. A number such
  * as 1 stays on the count line, because it is not the word true.
  */
@@ -513,6 +540,18 @@ function linesFromActivity(value: unknown): string[] {
     if (key === "reply_state") {
       const reply = activityReplyStateLine(item);
       if (reply) lines.push(reply);
+      continue;
+    }
+    if (
+      key === "message_count" ||
+      key === "outbound_count" ||
+      key === "inbound_count" ||
+      key === "attachment_count" ||
+      key === "participant_count" ||
+      key === "external_participant_count"
+    ) {
+      const count = activityCountLine(key, item);
+      if (count) lines.push(count);
       continue;
     }
     if (

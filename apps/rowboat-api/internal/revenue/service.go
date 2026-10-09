@@ -3623,81 +3623,16 @@ func observationFactMessageOn(key string, start time.Time, printed string) predi
 	})
 }
 
-// relationshipSheetActivityRosterMatch is "Attachment Count: 1",
-// "Participant Count: 3", or "External Participant Count: 2" on an opened
+// relationshipSheetActivityRosterMatch is "1 file attached to this activity",
+// "3 people on this activity", or "2 people outside the company" on an opened
 // activity. Gmail stores those as numbers. The thread id and the message id
-// are not printed. "External Participant Count" contains the shorter
-// participant sentence, so that shorter sentence is a different count.
-// A count that repeats the row summary stays hidden.
+// are not printed. The mail row does not use these sentences. A sentence that
+// repeats the row summary stays hidden.
 func relationshipSheetActivityRosterMatch(needle string) predicate.Relationship {
-	roster := []struct{ marker, key, skipAfter string }{
-		{"external participant count: ", "external_participant_count", ""},
-		{"participant count: ", "participant_count", "external "},
-		{"attachment count: ", "attachment_count", ""},
-	}
-	var preds []predicate.RelationshipObservation
-	for _, item := range roster {
-		index := rosterMarkerIndex(needle, item.marker, item.skipAfter)
-		if index < 0 {
-			continue
-		}
-		fields := strings.Fields(needle[index+len(item.marker):])
-		if len(fields) == 0 || fields[0] == "" {
-			continue
-		}
-		preds = append(preds, observationFactCount(item.key, fields[0]))
-	}
-	switch len(preds) {
-	case 0:
-		return nil
-	case 1:
-		return relationship.HasObservationsWith(preds[0])
-	default:
-		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
-	}
-}
-
-func rosterMarkerIndex(needle, marker, skipAfter string) int {
-	from := 0
-	for from <= len(needle) {
-		index := strings.Index(needle[from:], marker)
-		if index < 0 {
-			return -1
-		}
-		index += from
-		if skipAfter != "" && index >= len(skipAfter) && needle[index-len(skipAfter):index] == skipAfter {
-			from = index + len(marker)
-			continue
-		}
-		return index
-	}
-	return -1
-}
-
-func observationFactCount(key, value string) predicate.RelationshipObservation {
-	return predicate.RelationshipObservation(func(s *sql.Selector) {
-		s.Where(sql.P(func(b *sql.Builder) {
-			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
-			summary := s.C(relationshipobservation.FieldSummary)
-			b.WriteString("(")
-			writeCountShown(b, s, facts, key)
-			b.WriteString(" <> '' AND ")
-			writeCountShown(b, s, facts, key)
-			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
-			writeNormalizedCount(b, s, facts, key)
-			b.WriteString(" = ")
-			b.Arg(value)
-			b.WriteString(" AND ")
-			writeCountShown(b, s, facts, key)
-			b.WriteString(" <> ")
-			if s.Dialect() == dialect.Postgres {
-				b.WriteString("btrim(coalesce(")
-			} else {
-				b.WriteString("trim(coalesce(")
-			}
-			b.WriteString(summary)
-			b.WriteString(", '')))")
-		}))
+	return activityCountSentenceMatch(needle, []activityCountPhrase{
+		{"file attached to this activity", "files attached to this activity", "attachment_count"},
+		{"person outside the company", "people outside the company", "external_participant_count"},
+		{"person on this activity", "people on this activity", "participant_count"},
 	})
 }
 
@@ -3717,24 +3652,81 @@ func writeCountShown(b *sql.Builder, s *sql.Selector, facts, key string) {
 	b.WriteString("') AS TEXT), ''))")
 }
 
-func writeNormalizedCount(b *sql.Builder, s *sql.Selector, facts, key string) {
-	if s.Dialect() == dialect.Postgres {
-		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
-		writeCountShown(b, s, facts, key)
-		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
-		return
+type activityCountPhrase struct {
+	one, many, key string
+}
+
+// activityCountSentenceMatch reads "N <phrase>" from a search. One message
+// uses the singular phrase. Any other count, including zero, uses the plural.
+func activityCountSentenceMatch(needle string, phrases []activityCountPhrase) predicate.Relationship {
+	var preds []predicate.RelationshipObservation
+	for _, phrase := range phrases {
+		if n, printed, ok := activityCountBefore(needle, phrase.many); ok && n != 1 {
+			preds = append(preds, observationFactCountSentence(phrase.key, strconv.Itoa(n), printed))
+		}
+		if n, printed, ok := activityCountBefore(needle, phrase.one); ok && n == 1 {
+			preds = append(preds, observationFactCountSentence(phrase.key, "1", printed))
+		}
 	}
-	b.WriteString("trim(")
-	for range 4 {
-		b.WriteString("replace(")
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
 	}
-	b.WriteString("replace(replace(replace(lower(")
-	writeCountShown(b, s, facts, key)
-	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
-	for range 4 {
-		b.WriteString(", '  ', ' ')")
+}
+
+func activityCountBefore(needle, phrase string) (int, string, bool) {
+	index := strings.Index(needle, phrase)
+	if index <= 0 || needle[index-1] != ' ' {
+		return 0, "", false
 	}
-	b.WriteString(")")
+	before := strings.TrimRight(needle[:index-1], " ")
+	end := len(before)
+	start := end
+	for start > 0 && before[start-1] >= '0' && before[start-1] <= '9' {
+		start--
+	}
+	if start == end {
+		return 0, "", false
+	}
+	if start > 0 && before[start-1] != ' ' {
+		return 0, "", false
+	}
+	raw := before[start:end]
+	if len(raw) > 1 && raw[0] == '0' {
+		return 0, "", false
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 0 {
+		return 0, "", false
+	}
+	return n, raw + " " + phrase, true
+}
+
+func observationFactCountSentence(key, number, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeCountShown(b, s, facts, key)
+			b.WriteString(" = ")
+			b.Arg(number)
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+			} else {
+				b.WriteString("lower(trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
 }
 
 // relationshipSheetActivityProviderMatch is "Provider: Gmail" or
@@ -13116,36 +13108,17 @@ func observationFactDepartureKind(kind, printed string) predicate.RelationshipOb
 	})
 }
 
-// relationshipSheetActivityCountMatch is "Message Count: 4", "Outbound Count: 2",
-// or "Inbound Count: 1" on an opened activity. Gmail stores those as numbers.
-// The mail row's "4 messages" is a different sentence. A count that repeats
-// the row summary stays hidden.
+// relationshipSheetActivityCountMatch is "4 messages in this activity",
+// "2 messages sent from this mailbox", or "1 message received from them"
+// on an opened activity. Gmail stores those as numbers. The mail row's
+// "4 messages" is a different sentence. A sentence that repeats the row
+// summary stays hidden.
 func relationshipSheetActivityCountMatch(needle string) predicate.Relationship {
-	counts := []struct{ marker, key string }{
-		{"message count: ", "message_count"},
-		{"outbound count: ", "outbound_count"},
-		{"inbound count: ", "inbound_count"},
-	}
-	var preds []predicate.RelationshipObservation
-	for _, count := range counts {
-		index := strings.Index(needle, count.marker)
-		if index < 0 {
-			continue
-		}
-		value := strings.TrimSpace(needle[index+len(count.marker):])
-		if value == "" {
-			continue
-		}
-		preds = append(preds, observationFactLine(count.key, value))
-	}
-	switch len(preds) {
-	case 0:
-		return nil
-	case 1:
-		return relationship.HasObservationsWith(preds[0])
-	default:
-		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
-	}
+	return activityCountSentenceMatch(needle, []activityCountPhrase{
+		{"message in this activity", "messages in this activity", "message_count"},
+		{"message sent from this mailbox", "messages sent from this mailbox", "outbound_count"},
+		{"message received from them", "messages received from them", "inbound_count"},
+	})
 }
 
 func observationFactSubject(subject string) predicate.RelationshipObservation {

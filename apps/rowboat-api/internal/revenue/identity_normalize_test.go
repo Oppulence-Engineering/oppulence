@@ -3224,10 +3224,13 @@ func TestRelationshipSearchFindsTheActivityCounts(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Message Count: 4", "Quill Packet")
-	assertCompanyQuery("which activity says message count: 4", "Quill Packet")
-	assertCompanyQuery("Outbound Count: 2", "Birch Slide")
-	assertCompanyQuery("Inbound Count: 1", "Cedar Quiet")
+	assertCompanyQuery("4 messages in this activity", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("which activity says 4 messages in this activity", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("2 messages sent from this mailbox", "Birch Slide")
+	assertCompanyQuery("1 message received from them", "Cedar Quiet")
+	assertCompanyQuery("Message Count: 4")
+	assertCompanyQuery("Outbound Count: 2")
+	assertCompanyQuery("Inbound Count: 1")
 	assertCompanyQuery("Message Count: local-user")
 	assertCompanyQuery("4 messages")
 	assertCompanyQuery("message count")
@@ -3416,12 +3419,13 @@ func TestRelationshipSearchFindsTheActivityRoster(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Attachment Count: 1", "Quill Packet")
-	assertCompanyQuery("which activity says attachment count: 1", "Quill Packet")
-	assertCompanyQuery("Participant Count: 3", "Birch Slide")
-	assertCompanyQuery("External Participant Count: 2", "Cedar Quiet")
-	assertCompanyQuery("Participant Count: 2", "Cedar Mark")
-	assertCompanyQuery("participant count: 2 external participant count: 4", "Cedar Mark")
+	assertCompanyQuery("1 file attached to this activity", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("which activity says 1 file attached to this activity", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("3 people on this activity", "Birch Slide")
+	assertCompanyQuery("2 people outside the company", "Cedar Quiet")
+	assertCompanyQuery("2 people on this activity", "Cedar Mark")
+	assertCompanyQuery("2 people on this activity and 4 people outside the company", "Cedar Mark")
+	assertCompanyQuery("Attachment Count: 1")
 	assertCompanyQuery("Attachment Count: local-user")
 	assertCompanyQuery("Thread Id: 18abc")
 	assertCompanyQuery("Message Id: 18def")
