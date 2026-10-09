@@ -301,6 +301,24 @@ describe("source product copy", () => {
     ]);
   });
 
+  it("names who speaks next without the stored reply token", () => {
+    expect(activityEvidenceLines(null, { reply_state: "awaiting_reply" })).toEqual([
+      "Their reply has not arrived",
+    ]);
+    expect(activityEvidenceLines(null, { reply_state: "needs_reply" })).toEqual([
+      "We have not answered this thread",
+    ]);
+    expect(activityEvidenceLines(null, { reply_state: "quiet" })).toEqual([
+      "No reply is outstanding",
+    ]);
+    expect(activityEvidenceLines(null, { reply_state: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(
+      activityLinesBesideSummary(["Their reply has not arrived"], "Their reply has not arrived"),
+    ).toEqual([]);
+  });
+
   it("names a bounce without the stored departure token", () => {
     expect(activityEvidenceLines(null, { departure_kind: "left_organization" })).toEqual([
       "Left this company",

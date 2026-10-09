@@ -351,6 +351,25 @@ function activityDueLine(value: unknown): string | null {
 }
 
 /**
+ * Gmail stores who speaks next. The opened activity says that in words.
+ * The mail row's "Waiting on them", "Needs a reply", and "Quiet" stay
+ * their own sentences.
+ */
+function activityReplyStateLine(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  switch (value.trim()) {
+    case "awaiting_reply":
+      return "Their reply has not arrived";
+    case "needs_reply":
+      return "We have not answered this thread";
+    case "quiet":
+      return "No reply is outstanding";
+    default:
+      return null;
+  }
+}
+
+/**
  * A bounce stores why the address failed. The opened activity says that in
  * words. The stored token stays on the observation.
  */
@@ -489,6 +508,11 @@ function linesFromActivity(value: unknown): string[] {
     if (key === "departure_kind") {
       const departure = activityDepartureKindLine(item);
       if (departure) lines.push(departure);
+      continue;
+    }
+    if (key === "reply_state") {
+      const reply = activityReplyStateLine(item);
+      if (reply) lines.push(reply);
       continue;
     }
     if (

@@ -3022,10 +3022,13 @@ func TestRelationshipSearchFindsTheActivityReplyState(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Reply State: Awaiting Reply", "Quill Packet", "Cedar Mark")
-	assertCompanyQuery("which activity says reply state: Awaiting Reply", "Quill Packet", "Cedar Mark")
-	assertCompanyQuery("Reply State: Needs Reply", "Birch Slide", "Cedar Locked")
-	assertCompanyQuery("Reply State: quiet", "Cedar Mine")
+	assertCompanyQuery("Their reply has not arrived", "Quill Packet", "Cedar Mark", "Cedar Echo")
+	assertCompanyQuery("which activity says their reply has not arrived", "Quill Packet", "Cedar Mark", "Cedar Echo")
+	assertCompanyQuery("We have not answered this thread", "Birch Slide", "Cedar Locked")
+	assertCompanyQuery("No reply is outstanding", "Cedar Mine")
+	assertCompanyQuery("Reply State: Awaiting Reply")
+	assertCompanyQuery("Reply State: Needs Reply")
+	assertCompanyQuery("Reply State: quiet")
 	assertCompanyQuery("Reply State: local-user")
 	assertCompanyQuery("awaiting reply")
 	assertCompanyQuery("reply state")

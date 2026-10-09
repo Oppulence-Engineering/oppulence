@@ -13010,56 +13010,55 @@ func isValidationError(err error) bool {
 	return errors.As(err, &ve)
 }
 
-// relationshipSheetActivityReplyMatch is "Reply State: …" on an opened activity.
-// Gmail stores who speaks next as awaiting_reply or needs_reply. The sheet
-// prints those as labels. A label that repeats the row summary stays hidden.
-// The mail row's "Waiting on them" is a different sentence.
+// relationshipSheetActivityReplyMatch is "Their reply has not arrived",
+// "We have not answered this thread", or "No reply is outstanding" on an
+// opened activity. Gmail stores who speaks next as awaiting_reply,
+// needs_reply, or quiet. A sentence that repeats the row stays hidden.
+// The mail row's "Waiting on them", "Needs a reply", and "Quiet" are
+// different sentences.
 func relationshipSheetActivityReplyMatch(needle string) predicate.Relationship {
-	const marker = "reply state: "
-	index := strings.Index(needle, marker)
-	if index < 0 {
-		return nil
+	sentences := []struct{ phrase, state string }{
+		{"their reply has not arrived", "awaiting_reply"},
+		{"we have not answered this thread", "needs_reply"},
+		{"no reply is outstanding", "quiet"},
 	}
-	value := strings.TrimSpace(needle[index+len(marker):])
-	if value == "" {
-		return nil
+	var preds []predicate.RelationshipObservation
+	for _, sentence := range sentences {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, observationFactReplyState(sentence.state, sentence.phrase))
+		}
 	}
-	return relationship.HasObservationsWith(observationFactReplyState(value))
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
 }
 
-func observationFactReplyState(value string) predicate.RelationshipObservation {
+func observationFactReplyState(state, printed string) predicate.RelationshipObservation {
 	return predicate.RelationshipObservation(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
 			summary := s.C(relationshipobservation.FieldSummary)
 			b.WriteString("(")
 			writeActivityFactTrim(b, s, facts, "reply_state")
-			b.WriteString(" <> '' AND ")
-			writeActivityFactTrim(b, s, facts, "reply_state")
-			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
-			writeNormalizedActivityFact(b, s, facts, "reply_state")
 			b.WriteString(" = ")
-			b.Arg(value)
+			b.Arg(state)
 			b.WriteString(" AND ")
-			writeReplyStateShown(b, s, facts)
-			b.WriteString(" <> ")
 			if s.Dialect() == dialect.Postgres {
-				b.WriteString("btrim(coalesce(")
+				b.WriteString("lower(btrim(coalesce(")
 			} else {
-				b.WriteString("trim(coalesce(")
+				b.WriteString("lower(trim(coalesce(")
 			}
 			b.WriteString(summary)
-			b.WriteString(", '')))")
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
 		}))
 	})
-}
-
-func writeReplyStateShown(b *sql.Builder, s *sql.Selector, facts string) {
-	b.WriteString("CASE ")
-	writeActivityFactTrim(b, s, facts, "reply_state")
-	b.WriteString(" WHEN 'awaiting_reply' THEN 'Awaiting Reply' WHEN 'needs_reply' THEN 'Needs Reply' ELSE ")
-	writeActivityFactTrim(b, s, facts, "reply_state")
-	b.WriteString(" END")
 }
 
 // relationshipSheetActivityDepartureKindMatch is "Left this company" or
