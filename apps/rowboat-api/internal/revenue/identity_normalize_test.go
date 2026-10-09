@@ -7723,6 +7723,7 @@ func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
 	}
 	if _, err := f.client.Relationship.UpdateOneID(austin.ID).
 		SetCompanyEnrichmentData(map[string]string{"headquarters": "Austin"}).
+		SetCompanyEnrichmentRefs(map[string][]string{"headquarters": {"https://acme.example/team"}}).
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -7743,6 +7744,20 @@ func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
 	}
 	if got := namesOf(found.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
 		t.Fatalf("Austin = %v", got)
+	}
+	cited, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Check the source"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(cited.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("Check the source = %v", got)
+	}
+	fragment, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "source"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(fragment.Relationships); len(got) != 0 {
+		t.Fatalf("source = %v", got)
 	}
 }
 

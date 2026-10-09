@@ -838,6 +838,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if labels := relationshipLinkedInLabelMatch(value); labels != nil {
 			parts = append(parts, labels)
 		}
+		if source := relationshipFactSourceLabelMatch(value); source != nil {
+			parts = append(parts, source)
+		}
 		if threads := relationshipEmailThreadLabelMatch(value); threads != nil {
 			parts = append(parts, threads)
 		}
@@ -1562,6 +1565,39 @@ func relationshipLinkedInLabelMatch(term string) predicate.Relationship {
 	default:
 		return nil
 	}
+}
+
+// relationshipFactSourceLabelMatch matches the citation on a company fact.
+// A saved http(s) research link reads "Check the source". A short fragment
+// such as "source" is not that link.
+func relationshipFactSourceLabelMatch(term string) predicate.Relationship {
+	needle := normalizePersonSearch(term)
+	if needle == "" || !labelPhraseMatches("check the source", needle) {
+		return nil
+	}
+	return relationshipHasCitationURL()
+}
+
+func relationshipHasCitationURL() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.Or(
+			companyEnrichmentRefLike(s, "%https://%"),
+			companyEnrichmentRefLike(s, "%http://%"),
+		))
+	})
+}
+
+func companyEnrichmentRefLike(s *sql.Selector, needle string) *sql.Predicate {
+	return sql.P(func(b *sql.Builder) {
+		column := s.C(relationship.FieldCompanyEnrichmentRefs)
+		if s.Dialect() == dialect.Postgres {
+			b.WriteString(fmt.Sprintf("lower(%s::text) LIKE ", column))
+		} else {
+			b.WriteString(fmt.Sprintf("lower(coalesce(%s, '')) LIKE ", column))
+		}
+		b.Arg(needle)
+		b.WriteString(" ESCAPE '!'")
+	})
 }
 
 func relationshipSavedLinkedIn() predicate.Relationship {
