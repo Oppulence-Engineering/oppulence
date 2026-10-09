@@ -155,6 +155,7 @@ import {
   personEvidenceLabel,
   personFactValue,
   personSeniorityLabel,
+  verifySourceLabel,
   personAccountDomain,
   personSheetDetail,
   personAliasNames,
@@ -1372,7 +1373,10 @@ describe("task due order", () => {
 
   it("puts undated tasks after dated ones, and reverses when latest is requested", () => {
     expect(source).toContain("personEvidenceLabel(attribute.dimension)");
-    expect(source).toContain("Verify source {index + 1}");
+    expect(source).toContain("verifySourceLabel(index)");
+    expect(verifySourceLabel(0)).toBe("Verify source 1");
+    expect(verifySourceLabel(1)).toBe("Verify source 2");
+    expect(source).not.toContain("Verify source {index + 1}");
     expect(source).not.toContain(".slice(0, 2)\n                    .map((url, index)");
     expect(source).not.toContain('attribute.dimension.replaceAll("_", " ")');
     const tasks = [

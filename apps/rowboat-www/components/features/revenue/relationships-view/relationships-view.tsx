@@ -215,6 +215,7 @@ import {
   personEvidenceLabel,
   personFactValue,
   personSeniorityLabel,
+  verifySourceLabel,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
 import {
   activityEvidenceLines,
@@ -4868,20 +4869,20 @@ export function RelationshipSheet({
                                           </Badge>
                                           : {personFactValue(attribute.dimension, attribute.value)}
                                           {` · ${Math.round(attribute.confidence * 100)}% confidence`}
-                                          {(attribute.citations ?? []).map((citation, index) => {
-                                            const href = safeResearchCitationURL(citation.url);
-                                            return href ? (
+                                          {(attribute.citations ?? [])
+                                            .map((citation) => safeResearchCitationURL(citation.url))
+                                            .filter((url): url is string => Boolean(url))
+                                            .map((url, index) => (
                                               <a
-                                                key={`${attribute.id}:${index}`}
+                                                key={`${attribute.id}:${url}`}
                                                 className="ml-1 text-oppulence-orange underline underline-offset-2"
-                                                href={href}
+                                                href={url}
                                                 target="_blank"
                                                 rel="noreferrer"
                                               >
-                                                {citation.title || `Source ${index + 1}`}
+                                                {verifySourceLabel(index)}
                                               </a>
-                                            ) : null;
-                                          })}
+                                            ))}
                                         </li>
                                       ))}
                                     </ul>

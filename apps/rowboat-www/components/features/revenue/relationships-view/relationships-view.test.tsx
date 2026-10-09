@@ -1394,6 +1394,8 @@ describe("RelationshipsView", () => {
     expect(source).toContain("personFactValue(attribute.dimension, attribute.value)");
     expect(source).not.toContain("${participant.role}");
     expect(source).toContain("personEvidenceLabel(attribute.dimension)");
+    expect(source).toContain("verifySourceLabel(index)");
+    expect(source).not.toContain("citation.title");
     expect(source).not.toContain("{action.policyStatus}");
     expect(source).not.toContain("{action.approvalStatus}");
     expect(source).not.toContain("window.confirm");
