@@ -436,6 +436,10 @@ describe("RelationshipsView", () => {
     expect(source).toContain('placeholder="Company domain (optional)"');
     expect(source).toContain('aria-label="Description"');
     expect(source).toContain('placeholder="Description (optional)"');
+    expect(source).toContain('aria-label="Email"');
+    expect(source).toContain('placeholder="Email (optional)"');
+    expect(source).not.toContain('aria-label="Primary email"');
+    expect(source).not.toContain("Primary email (optional)");
     expect(source).not.toContain('aria-label="Company notes"');
     expect(source).not.toContain("Notes about this company");
     expect(source).toContain("Mail and meetings can fill in its people and activity later.");
