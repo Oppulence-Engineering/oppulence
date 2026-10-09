@@ -78,6 +78,7 @@ import {
   earlierEvidenceLabel,
   mailThreadSubjectLabel,
   mailThreadPartyLabel,
+  mailThreadActivityLabel,
   mailMessageCountLabel,
   mailReplyLabel,
   reviewEvidenceKindLabel,
@@ -947,6 +948,12 @@ describe("RelationshipsView", () => {
     expect(source).toContain("mailThreadSubjectLabel(thread.subject)");
     expect(source).toContain("mailThreadPartyLabel(thread.counterpartyEmail)");
     expect(source).toContain("mailMessageCountLabel(thread.messageCount)");
+    expect(mailThreadActivityLabel(null)).toBe("Not known");
+    expect(mailThreadActivityLabel("")).toBe("Not known");
+    expect(mailThreadActivityLabel("not-a-date")).toBe("Not known");
+    expect(mailThreadActivityLabel("2026-08-04T12:00:00Z")).not.toBe("Not known");
+    expect(source).toContain("mailThreadActivityLabel(thread.lastActivityAt)");
+    expect(source).not.toContain("Unknown date");
     expect(source).not.toContain('thread.subject || "Email conversation"');
     expect(mailReplyLabel("needs_reply")).toBe("Needs a reply");
     expect(mailReplyLabel("awaiting_reply")).toBe("Waiting on them");

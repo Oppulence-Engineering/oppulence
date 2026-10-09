@@ -2612,6 +2612,12 @@ export function mailMessageCountLabel(count: number): string {
   return n === 1 ? "1 message" : `${String(n)} messages`;
 }
 
+/** A thread with no saved time uses the same words as a missing person date. */
+export function mailThreadActivityLabel(iso?: string | null): string {
+  const label = iso ? relativeTime(iso) : "";
+  return label || "Not known";
+}
+
 /** A Gmail thread stores who spoke last. The company sheet says what that means. */
 export function mailReplyLabel(state: string): string {
   switch (state) {
@@ -4425,9 +4431,7 @@ export function RelationshipSheet({
                               {mailReplyLabel(thread.replyState)}
                             </p>
                             <p className="mt-1 text-[11px] text-primary/35">
-                              {thread.lastActivityAt
-                                ? relativeTime(thread.lastActivityAt)
-                                : "Unknown date"}
+                              {mailThreadActivityLabel(thread.lastActivityAt)}
                             </p>
                           </div>
                         </li>
