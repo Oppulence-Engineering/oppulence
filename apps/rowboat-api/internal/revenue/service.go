@@ -13062,20 +13062,29 @@ func writeReplyStateShown(b *sql.Builder, s *sql.Selector, facts string) {
 	b.WriteString(" END")
 }
 
-// relationshipSheetActivityDepartureKindMatch is "Departure Kind: …" on an
-// opened activity. A bounce stores left_organization or recipient_unknown.
-// The sheet prints the label. A label that repeats the row stays hidden.
+// relationshipSheetActivityDepartureKindMatch is "Left this company" or
+// "Address was not recognized" on an opened activity. A bounce stores
+// left_organization or recipient_unknown. A sentence that repeats the row
+// stays hidden. local-user is not a departure.
 func relationshipSheetActivityDepartureKindMatch(needle string) predicate.Relationship {
-	const marker = "departure kind: "
-	index := strings.Index(needle, marker)
-	if index < 0 {
-		return nil
+	sentences := []struct{ phrase, kind string }{
+		{"left this company", "left_organization"},
+		{"address was not recognized", "recipient_unknown"},
 	}
-	value := strings.TrimSpace(needle[index+len(marker):])
-	if value == "" {
-		return nil
+	var preds []predicate.RelationshipObservation
+	for _, sentence := range sentences {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, observationFactDepartureKind(sentence.kind, sentence.phrase))
+		}
 	}
-	return relationship.HasObservationsWith(observationFactDepartureKind(value))
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
 }
 
 // relationshipSheetActivityDepartureEvidenceMatch is "Departure Evidence: …"
@@ -13085,39 +13094,27 @@ func relationshipSheetActivityDepartureEvidenceMatch(needle string) predicate.Re
 	return relationshipSheetActivityFactMatch(needle, "departure evidence: ", "departure_evidence")
 }
 
-func observationFactDepartureKind(value string) predicate.RelationshipObservation {
+func observationFactDepartureKind(kind, printed string) predicate.RelationshipObservation {
 	return predicate.RelationshipObservation(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
 			summary := s.C(relationshipobservation.FieldSummary)
 			b.WriteString("(")
 			writeActivityFactTrim(b, s, facts, "departure_kind")
-			b.WriteString(" <> '' AND ")
-			writeActivityFactTrim(b, s, facts, "departure_kind")
-			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
-			writeNormalizedActivityFact(b, s, facts, "departure_kind")
 			b.WriteString(" = ")
-			b.Arg(value)
+			b.Arg(kind)
 			b.WriteString(" AND ")
-			writeDepartureKindShown(b, s, facts)
-			b.WriteString(" <> ")
 			if s.Dialect() == dialect.Postgres {
-				b.WriteString("btrim(coalesce(")
+				b.WriteString("lower(btrim(coalesce(")
 			} else {
-				b.WriteString("trim(coalesce(")
+				b.WriteString("lower(trim(coalesce(")
 			}
 			b.WriteString(summary)
-			b.WriteString(", '')))")
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
 		}))
 	})
-}
-
-func writeDepartureKindShown(b *sql.Builder, s *sql.Selector, facts string) {
-	b.WriteString("CASE ")
-	writeActivityFactTrim(b, s, facts, "departure_kind")
-	b.WriteString(" WHEN 'left_organization' THEN 'Left Organization' WHEN 'recipient_unknown' THEN 'Recipient Unknown' ELSE ")
-	writeActivityFactTrim(b, s, facts, "departure_kind")
-	b.WriteString(" END")
 }
 
 // relationshipSheetActivityCountMatch is "Message Count: 4", "Outbound Count: 2",

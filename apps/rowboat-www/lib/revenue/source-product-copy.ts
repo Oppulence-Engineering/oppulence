@@ -351,6 +351,22 @@ function activityDueLine(value: unknown): string | null {
 }
 
 /**
+ * A bounce stores why the address failed. The opened activity says that in
+ * words. The stored token stays on the observation.
+ */
+function activityDepartureKindLine(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  switch (value.trim()) {
+    case "left_organization":
+      return "Left this company";
+    case "recipient_unknown":
+      return "Address was not recognized";
+    default:
+      return null;
+  }
+}
+
+/**
  * Gmail stores yes/no flags. The opened activity says the fact. A number such
  * as 1 stays on the count line, because it is not the word true.
  */
@@ -468,6 +484,11 @@ function linesFromActivity(value: unknown): string[] {
     const flag = activityFlagLine(key, item);
     if (flag) {
       lines.push(flag);
+      continue;
+    }
+    if (key === "departure_kind") {
+      const departure = activityDepartureKindLine(item);
+      if (departure) lines.push(departure);
       continue;
     }
     if (

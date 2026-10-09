@@ -300,4 +300,17 @@ describe("source product copy", () => {
       "Direction: Outbound",
     ]);
   });
+
+  it("names a bounce without the stored departure token", () => {
+    expect(activityEvidenceLines(null, { departure_kind: "left_organization" })).toEqual([
+      "Left this company",
+    ]);
+    expect(activityEvidenceLines(null, { departure_kind: "recipient_unknown" })).toEqual([
+      "Address was not recognized",
+    ]);
+    expect(activityEvidenceLines(null, { departure_kind: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(activityLinesBesideSummary(["Left this company"], "Left this company")).toEqual([]);
+  });
 });

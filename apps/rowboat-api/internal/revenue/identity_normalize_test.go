@@ -3090,9 +3090,10 @@ func TestRelationshipSearchFindsTheActivityDeparture(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Departure Kind: Left Organization", "Quill Packet")
-	assertCompanyQuery("which activity says departure kind: Left Organization", "Quill Packet")
-	assertCompanyQuery("Departure Kind: Recipient Unknown", "Cedar Locked")
+	assertCompanyQuery("Left this company", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("which activity says left this company", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("Address was not recognized", "Cedar Locked")
+	assertCompanyQuery("Departure Kind: Left Organization")
 	assertCompanyQuery("Departure Kind: local-user")
 	assertCompanyQuery("Departure Evidence: The mailbox rejected the harbor packet.", "Birch Slide")
 	assertCompanyQuery("left organization")
