@@ -2232,6 +2232,12 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	if research, ok := publicResearchDetailCount(needle); ok {
 		preds = append(preds, relationshipHasPublicResearchDetailCount(research))
 	}
+	// Each public-research fact on the people card ends with "N% confidence".
+	if percent, ok := printedConfidencePercent(needle); ok {
+		preds = append(preds, relationship.HasParticipantsWith(
+			relationshipparticipant.HasPersonWith(personPrintsResearchConfidence(percent)),
+		))
+	}
 	switch len(preds) {
 	case 0:
 		return nil

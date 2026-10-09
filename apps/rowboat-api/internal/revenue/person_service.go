@@ -296,10 +296,84 @@ func personSheetEvidenceMatch(needle string) predicate.Person {
 	if sheetPhraseMatches("recorded in this workspace", needle) {
 		preds = append(preds, personEvidenceRecordedHere())
 	}
+	// The evidence row says "80% confidence". The word alone is not that badge.
+	if percent, ok := printedConfidencePercent(needle); ok {
+		preds = append(preds, personPrintsEvidenceConfidence(percent))
+	}
 	if len(preds) == 0 {
 		return nil
 	}
 	return person.Or(preds...)
+}
+
+// printedConfidencePercent reads the badge "N% confidence". A fragment such
+// as "confidence" or "80%" is not the badge. The number is the rounded percent.
+func printedConfidencePercent(needle string) (int, bool) {
+	text := normalizePersonSearch(needle)
+	const marker = "% confidence"
+	index := strings.Index(text, marker)
+	if index <= 0 {
+		return 0, false
+	}
+	end := index + len(marker)
+	if end < len(text) {
+		switch text[end] {
+		case ' ', '.', ',', ';', '?', ':':
+		default:
+			return 0, false
+		}
+	}
+	start := index
+	for start > 0 && text[start-1] >= '0' && text[start-1] <= '9' {
+		start--
+	}
+	if start == index {
+		return 0, false
+	}
+	if start > 0 && text[start-1] != ' ' {
+		return 0, false
+	}
+	raw := text[start:index]
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 0 || n > 100 || raw != strconv.Itoa(n) {
+		return 0, false
+	}
+	return n, true
+}
+
+func personAttributeConfidencePercent(percent int) predicate.PersonAttribute {
+	return predicate.PersonAttribute(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(personattribute.FieldConfidence)
+			// The badge is Math.round(confidence * 100). Postgres round() takes
+			// numeric; SQLite round() takes the stored real.
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf("CAST(ROUND((%s)::numeric * 100) AS INTEGER) = ", column))
+			} else {
+				b.WriteString(fmt.Sprintf("CAST(ROUND(%s * 100) AS INTEGER) = ", column))
+			}
+			b.Arg(percent)
+		}))
+	})
+}
+
+// personPrintsEvidenceConfidence matches a fact the person sheet lists.
+// The name and aliases are not that list, and a retracted fact is gone.
+func personPrintsEvidenceConfidence(percent int) predicate.Person {
+	return person.HasAttributesWith(append(
+		visiblePersonEvidence(),
+		personAttributeConfidencePercent(percent),
+	)...)
+}
+
+// personPrintsResearchConfidence matches the percent on a company people card.
+// That card lists public research that has not been retracted.
+func personPrintsResearchConfidence(percent int) predicate.Person {
+	return person.HasAttributesWith(
+		personattribute.SourceTypeEQ("external_research"),
+		personattribute.StatusNEQ("retracted"),
+		personAttributeConfidencePercent(percent),
+	)
 }
 
 func visiblePersonEvidence(extra ...predicate.PersonAttribute) []predicate.PersonAttribute {

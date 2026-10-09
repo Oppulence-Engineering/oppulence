@@ -1489,11 +1489,15 @@ func TestPersonSearchFindsTheSheetEvidence(t *testing.T) {
 	one("extra details", "Casey Quinn")
 	one("From their email signature", "Quill Morse")
 	one("Gmail", "Nia Holt")
+	one("80% confidence", "Quill Morse")
+	one("60% confidence", "Nia Holt")
+	one("90% confidence", "Mira Chen")
+	one("100% confidence", "Indira Cole")
 	added := names("Added by you")
 	if len(added) != 2 || !containsAll(added, "Indira Cole", "Mira Chen") {
 		t.Fatalf("added by you = %v", added)
 	}
-	for _, query := range []string{"details", "you", "yet"} {
+	for _, query := range []string{"details", "you", "yet", "confidence", "80%", "00% confidence"} {
 		if got := names(query); len(got) != 0 {
 			t.Fatalf("query %q = %v", query, got)
 		}
@@ -1512,6 +1516,9 @@ func TestPersonSearchFindsTheSheetEvidence(t *testing.T) {
 	}
 	if got := names("From their email signature"); len(got) != 0 {
 		t.Fatalf("retracted signature = %v", got)
+	}
+	if got := names("80% confidence"); len(got) != 0 {
+		t.Fatalf("retracted confidence = %v", got)
 	}
 	after := names("No extra details yet")
 	if len(after) != 2 || !containsAll(after, "Casey Quinn", "Quill Morse") {

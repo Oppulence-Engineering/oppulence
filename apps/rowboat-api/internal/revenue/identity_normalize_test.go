@@ -9580,6 +9580,10 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 	assertCompanyQuery("which companies have public research · 2 details", "Quay Two")
 	assertCompanyQuery("Public research · 1 details")
 	assertCompanyQuery("Public research · 2 detail")
+	assertCompanyQuery("80% confidence", "Quay One", "Quay Two")
+	assertCompanyQuery("the title is 80% confidence", "Quay One", "Quay Two")
+	assertCompanyQuery("confidence")
+	assertCompanyQuery("80%")
 }
 
 func TestRelationshipSearchFindsTheDuplicateLines(t *testing.T) {
