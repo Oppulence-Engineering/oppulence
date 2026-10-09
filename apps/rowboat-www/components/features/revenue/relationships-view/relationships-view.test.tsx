@@ -24,6 +24,7 @@ import {
   companyHealthFilterName,
   companyRecordLabel,
   companyListEmptyCopy,
+  companyRecordedEmptyCopy,
   companyListFailureCopy,
   companyDirectoryHasConnectedSource,
   companySourceCountsAsConnected,
@@ -241,6 +242,16 @@ describe("RelationshipsView", () => {
     expect(sourcesAttentionLabel(2)).toBe("2 need attention");
     expect(source).toContain("sourcesAttentionLabel(needsRepair)");
     expect(source).toContain("companyListEmptyCopy({");
+    expect(companyRecordedEmptyCopy("People")).toBe(
+      "No people recorded for this company yet.",
+    );
+    expect(companyRecordedEmptyCopy("Risks")).toBe("No risks recorded for this company yet.");
+    expect(companyRecordedEmptyCopy("Milestones")).toBe(
+      "No milestones recorded for this company yet.",
+    );
+    expect(source).toContain('companyRecordedEmptyCopy("People")');
+    expect(source).toContain("companyRecordedEmptyCopy(title as string)");
+    expect(source).not.toContain(">None recorded.</EmptyText>");
     expect(companyListFailureCopy()).toBe("Companies could not load. Try again.");
     expect(source).toContain(
       "listNeverLoaded(relationshipsQuery.isError, relationshipsQuery.data)",
