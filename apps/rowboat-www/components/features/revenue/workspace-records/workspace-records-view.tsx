@@ -1071,9 +1071,9 @@ function CreatePersonDialog({
             onChange={(event) => setName(event.target.value)}
           />
           <Input
-            aria-label="Email address"
+            aria-label="Email"
             type="email"
-            placeholder="Email address (optional)"
+            placeholder="Email (optional)"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
