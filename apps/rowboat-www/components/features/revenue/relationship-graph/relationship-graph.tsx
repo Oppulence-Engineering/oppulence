@@ -15,6 +15,7 @@ import {
   consoleResourceRows,
   fetchConsoleResources,
 } from "@/hooks/queries/utils/fetch-console";
+import { personResearchConfidenceLabel } from "@/components/features/revenue/workspace-records/workspace-records-view";
 import { companyName, promiseDirectionLabel, promiseDueDay } from "@/lib/revenue/revenue-records";
 import { getRelationshipGraph } from "@/lib/revenue/revenue";
 import {
@@ -237,7 +238,7 @@ function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
         : "",
     node.approvalStatus ? graphNodeFieldLabel(node.kind, "approval", node.approvalStatus) : "",
     node.freshness ? graphNodeFieldLabel(node.kind, "freshness", node.freshness) : "",
-    node.confidence === undefined ? "" : `${Math.round(node.confidence * 100)}%`,
+    node.confidence === undefined ? "" : personResearchConfidenceLabel(node.confidence),
   ].filter(Boolean);
 
   return (
