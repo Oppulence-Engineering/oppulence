@@ -59,7 +59,14 @@ describe("source product copy", () => {
 
   it("reads a state change as words", () => {
     expect(relationshipDeltaValue("prospect")).toBe("Prospect");
-    expect(relationshipDeltaValue("needs_attention")).toBe("Needs Attention");
+    expect(relationshipDeltaValue("needs_attention")).toBe("Needs attention");
+    expect(relationshipDeltaValue("unknown")).toBe("Not known");
+    expect(relationshipDeltaValue("active_customer")).toBe("Active customer");
+    expect(relationshipDeltaValue("former_customer")).toBe("Former customer");
+    expect(relationshipDeltaValue("historical_unknown")).toBe("Not recorded for this date");
+    expect(relationshipDeltaValue("review_required")).toBe("Needs review");
+    expect(relationshipDeltaValue("at_risk")).toBe("At risk");
+    expect(relationshipDeltaValue("stale")).toBe("Out of date");
     expect(relationshipDeltaValue(null)).toBe("Unknown");
     expect(relationshipDeltaValue("")).toBe("Unknown");
     expect(relationshipDeltaValue("Call them Friday")).toBe("Call them Friday");

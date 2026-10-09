@@ -247,16 +247,32 @@ export function mailAccessReason(reason: string): string {
 }
 
 /**
- * A company-sheet state change is a word or a short phrase. Stored enums
- * become labels. Free text stays as written. Missing values stay "Unknown"
- * instead of a quoted JSON token.
+ * The company sheet already names these tokens. Title-casing them made What
+ * changed say "Needs Attention" beside a badge that says "Needs attention".
+ * A missing value stays "Unknown". The stored token unknown is "Not known".
+ */
+const SHEET_STATE_LABELS: Record<string, string> = {
+  unknown: "Not known",
+  historical_unknown: "Not recorded for this date",
+  review_required: "Needs review",
+  needs_attention: "Needs attention",
+  at_risk: "At risk",
+  active_customer: "Active customer",
+  former_customer: "Former customer",
+  stale: "Out of date",
+};
+
+/**
+ * A company-sheet state change is a word or a short phrase. Closed sheet
+ * tokens use the sheet's words. Other stored enums become labels. Free text
+ * stays as written. Missing values stay "Unknown" instead of a quoted JSON token.
  */
 export function relationshipDeltaValue(value: unknown): string {
   if (value == null) return "Unknown";
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) return "Unknown";
-    if (/^[a-z0-9_]+$/.test(trimmed)) return enumLabel(trimmed);
+    if (/^[a-z0-9_]+$/.test(trimmed)) return SHEET_STATE_LABELS[trimmed] ?? enumLabel(trimmed);
     return trimmed;
   }
   if (typeof value === "number" || typeof value === "boolean") return String(value);
