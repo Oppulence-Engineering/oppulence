@@ -12,6 +12,7 @@ import {
   communicationPreviewLabel,
   companyDomainHref,
   companyDomainLabel,
+  companyEnrichmentColumnLabel,
   companyName,
   evidenceExcerptLabel,
   companyDirectoryCount,
@@ -1253,6 +1254,22 @@ describe("RelationshipsView", () => {
     expect(companyNextActionCopy({ nextAction: "Send the packet" })).toBe("Send the packet");
     expect(companyNextActionCopy({ openActions: 1 })).toBe("1 open action");
     expect(companyNextActionCopy({ openActions: 2 })).toBe("2 open actions");
+    expect(companyEnrichmentColumnLabel(undefined, "No headquarters recorded")).toBe(
+      "No headquarters recorded",
+    );
+    expect(companyEnrichmentColumnLabel("   ", "No headquarters recorded")).toBe(
+      "No headquarters recorded",
+    );
+    expect(companyEnrichmentColumnLabel("Austin", "No headquarters recorded")).toBe("Austin");
+    expect(source).toContain(
+      'companyEnrichmentColumnLabel(\n                            relationship.companyEnrichmentData?.headquarters,\n                            "No headquarters recorded",\n                          )',
+    );
+    expect(source).toContain('"No employee range recorded"');
+    expect(source).toContain('"No funding recorded"');
+    expect(source).toContain('"No revenue recorded"');
+    expect(source).toContain('"No growth signals recorded"');
+    expect(source).not.toContain('companyEnrichmentData?.headquarters || "—"');
+    expect(source).not.toContain('companyEnrichmentData?.employee_range || "—"');
     expect(source).toContain("companyDescriptionCopy(data.relationship)");
     expect(source).toContain("companyNextActionCopy(relationship)");
     expect(source).toContain("commitmentPreviewRemainder(hiddenCommitments)");

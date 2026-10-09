@@ -313,6 +313,18 @@ export function companyDomainLabel(domain: string | null | undefined): string {
 }
 
 /**
+ * A research column stays blank until that fact is saved. An em dash looked
+ * like a missing number. The cell names the fact that was never recorded.
+ * Spaces are not a fact.
+ */
+export function companyEnrichmentColumnLabel(
+  value: string | null | undefined,
+  empty: string,
+): string {
+  return value?.trim() || empty;
+}
+
+/**
  * Policy on a recommendation uses the words Recovery and the graph already
  * use. A passed check is cleared, and a check that has not run is not pending
  * approval.
@@ -1614,27 +1626,42 @@ export function RelationshipsView({
                       ) : null}
                       {optionalColumns.includes("headquarters") ? (
                         <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
-                          {relationship.companyEnrichmentData?.headquarters || "—"}
+                          {companyEnrichmentColumnLabel(
+                            relationship.companyEnrichmentData?.headquarters,
+                            "No headquarters recorded",
+                          )}
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("employees") ? (
                         <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
-                          {relationship.companyEnrichmentData?.employee_range || "—"}
+                          {companyEnrichmentColumnLabel(
+                            relationship.companyEnrichmentData?.employee_range,
+                            "No employee range recorded",
+                          )}
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("funding") ? (
                         <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
-                          {relationship.companyEnrichmentData?.funding_summary || "—"}
+                          {companyEnrichmentColumnLabel(
+                            relationship.companyEnrichmentData?.funding_summary,
+                            "No funding recorded",
+                          )}
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("revenue") ? (
                         <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
-                          {relationship.companyEnrichmentData?.revenue_range || "—"}
+                          {companyEnrichmentColumnLabel(
+                            relationship.companyEnrichmentData?.revenue_range,
+                            "No revenue recorded",
+                          )}
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("signals") ? (
                         <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
-                          {relationship.companyEnrichmentData?.growth_signals || "—"}
+                          {companyEnrichmentColumnLabel(
+                            relationship.companyEnrichmentData?.growth_signals,
+                            "No growth signals recorded",
+                          )}
                         </TableCell>
                       ) : null}
                     </TableRow>

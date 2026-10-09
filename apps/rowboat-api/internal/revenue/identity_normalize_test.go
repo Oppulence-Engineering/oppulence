@@ -7731,7 +7731,10 @@ func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := f.client.Relationship.UpdateOneID(austin.ID).
-		SetCompanyEnrichmentData(map[string]string{"headquarters": "Austin"}).
+		SetCompanyEnrichmentData(map[string]string{
+			"headquarters":   "Austin",
+			"employee_range": "11-50",
+		}).
 		SetCompanyEnrichmentRefs(map[string][]string{"headquarters": {"https://acme.example/team"}}).
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
@@ -7768,6 +7771,42 @@ func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
 	if got := namesOf(fragment.Relationships); len(got) != 0 {
 		t.Fatalf("source = %v", got)
 	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Northwind Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	blank, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Birch Slide",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(blank.ID).
+		SetCompanyEnrichmentData(map[string]string{"headquarters": "  ", "employee_range": "  "}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	assertEnrichment := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertEnrichment("No headquarters recorded", "Birch Slide", "Northwind Quiet")
+	assertEnrichment("No employee range recorded", "Birch Slide", "Lumen Packet", "Northwind Quiet")
+	assertEnrichment("No funding recorded", "Birch Slide", "Lumen Packet", "Northwind Quiet", "Quill Atelier")
+	assertEnrichment("funding")
 }
 
 func TestRelationshipSearchFindsTheDirectoryColumns(t *testing.T) {

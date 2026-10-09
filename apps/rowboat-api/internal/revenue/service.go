@@ -1526,6 +1526,39 @@ func relationshipCategoryContains(term string) predicate.Relationship {
 	})
 }
 
+// relationshipEnrichmentFactBlank matches an optional research column whose
+// cell says the fact was never recorded. A missing key, a null, and spaces
+// are the same empty cell. A saved city or range is not.
+func relationshipEnrichmentFactBlank(key string) predicate.Relationship {
+	switch key {
+	case "headquarters", "employee_range", "funding_summary", "revenue_range", "growth_signals":
+	default:
+		return predicate.Relationship(func(s *sql.Selector) {
+			s.Where(sql.P(func(b *sql.Builder) {
+				b.WriteString("1 = 0")
+			}))
+		})
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationship.FieldCompanyEnrichmentData)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+				b.WriteString(column)
+				b.WriteString("::jsonb->>'")
+				b.WriteString(key)
+				b.WriteString("', '')) = ''")
+				return
+			}
+			b.WriteString("trim(coalesce(CAST(json_extract(")
+			b.WriteString(column)
+			b.WriteString(", '$.")
+			b.WriteString(key)
+			b.WriteString("') AS TEXT), '')) = ''")
+		}))
+	})
+}
+
 // relationshipEnrichmentContains matches the research facts the directory
 // can show: headquarters, employee range, funding, revenue, and growth
 // signals. They live in one JSON object, so the search reads that object as
@@ -1706,6 +1739,24 @@ func relationshipDirectoryColumnMatch(term string, now time.Time) predicate.Rela
 	}
 	if action := relationshipOpenActionLabelMatch(needle); action != nil {
 		preds = append(preds, action)
+	}
+	// Optional research columns print "No headquarters recorded" (and the
+	// same shape for employees, funding, revenue, and growth signals) when
+	// that fact was never saved. A filled fact keeps its own words. A short
+	// fragment such as "headquarters" is the column name, not the empty cell.
+	for _, column := range []struct {
+		phrase string
+		key    string
+	}{
+		{"no headquarters recorded", "headquarters"},
+		{"no employee range recorded", "employee_range"},
+		{"no funding recorded", "funding_summary"},
+		{"no revenue recorded", "revenue_range"},
+		{"no growth signals recorded", "growth_signals"},
+	} {
+		if labelPhraseMatches(column.phrase, needle) {
+			preds = append(preds, relationshipEnrichmentFactBlank(column.key))
+		}
 	}
 	if len(preds) == 0 {
 		return nil
