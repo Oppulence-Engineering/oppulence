@@ -7,6 +7,7 @@ import {
   outcomeKindLabel,
   outcomeSourceLabel,
   policyReasonLabel,
+  policySnapshotLines,
   revisionActionLabel,
   revisionChannelLabel,
 } from "@/components/features/revenue/audit-sheet/audit-sheet";
@@ -47,6 +48,24 @@ describe("AuditSheet", () => {
     expect(policyReasonLabel("verification.mailbox_mismatch")).toBe(
       "Verification Mailbox Mismatch",
     );
+    expect(
+      policySnapshotLines({
+        status: "passed",
+        mailbox: "avery@acme.com",
+        checkedAt: "2026-07-12T12:00:00Z",
+      }),
+    ).toEqual([
+      "Status: Cleared",
+      "Mailbox: avery@acme.com",
+      "Checked At: 2026-07-12T12:00:00Z",
+    ]);
+    expect(policySnapshotLines({ reason: "review_required", optedOut: false })).toEqual([
+      "Reason: Review required",
+      "Opted Out: No",
+    ]);
+    expect(policySnapshotLines({ note: "  ", skipped: null })).toEqual([]);
+    expect(source).toContain("policySnapshotLines(value)");
+    expect(source).not.toContain("JSON.stringify(v, null, 2)");
     expect(source).toContain("policyReasonLabel(code)");
     expect(source).not.toContain("font-mono text-[10px]");
     expect(source).toContain("setSheetError(message)");

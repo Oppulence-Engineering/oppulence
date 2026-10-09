@@ -83,6 +83,52 @@ export function policyReasonLabel(code: string): string {
   return titledSlug(code) || "Policy reason";
 }
 
+const POLICY_SNAPSHOT_TOKENS: Record<string, string> = {
+  passed: "Cleared",
+  review_required: "Review required",
+  blocked: "Blocked",
+  stale: "Re-check needed",
+  pending: "Not checked",
+  unknown: "Not known",
+};
+
+function snapshotKeyLabel(key: string): string {
+  return titledSlug(key.replaceAll(/([a-z0-9])([A-Z])/g, "$1 $2"));
+}
+
+function policySnapshotScalar(value: unknown): string {
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "";
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^[a-z0-9_]+$/.test(trimmed)) return POLICY_SNAPSHOT_TOKENS[trimmed] ?? titledSlug(trimmed);
+  return trimmed;
+}
+
+/**
+ * A preflight snapshot is a free-form object. History names each field.
+ * A raw JSON block is not a decision a person can read.
+ */
+export function policySnapshotLines(value: unknown, prefix = ""): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) =>
+      policySnapshotLines(item, prefix ? `${prefix} ${index + 1}` : String(index + 1)),
+    );
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value).flatMap(([key, item]) => {
+      const label = prefix ? `${prefix} · ${snapshotKeyLabel(key)}` : snapshotKeyLabel(key);
+      if (item && typeof item === "object") return policySnapshotLines(item, label);
+      const shown = policySnapshotScalar(item);
+      return shown ? [`${label}: ${shown}`] : [];
+    });
+  }
+  const shown = policySnapshotScalar(value);
+  if (!shown) return [];
+  return [prefix ? `${prefix}: ${shown}` : shown];
+}
+
 /** An outcome source is where the result was seen. The row names that place. */
 export function outcomeSourceLabel(source: string): string {
   switch (source) {
@@ -378,16 +424,21 @@ function SubObjects({ decision }: { decision: ActionAudit["decisions"][number] }
     ["Research", decision.research],
     ["CRM", decision.crm],
   ];
-  const present = parts.filter(([, v]) => v && Object.keys(v as object).length > 0);
+  const present = parts.flatMap(([label, value]) => {
+    const lines = policySnapshotLines(value);
+    return lines.length > 0 ? [[label, lines] as const] : [];
+  });
   if (present.length === 0) return null;
   return (
     <div className="mt-2 flex flex-col gap-1">
-      {present.map(([label, v]) => (
+      {present.map(([label, lines]) => (
         <details key={label} className="text-xs">
           <summary className="cursor-pointer text-primary/55">{label}</summary>
-          <pre className="mt-1 overflow-x-auto rounded-[2px] bg-background-100/60 p-2 text-[11px] text-primary/70 dark:bg-background-100/40">
-            {JSON.stringify(v, null, 2)}
-          </pre>
+          <ul className="mt-1 flex flex-col gap-1 rounded-[2px] bg-background-100/60 p-2 text-[11px] text-primary/70 dark:bg-background-100/40">
+            {lines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
         </details>
       ))}
     </div>
