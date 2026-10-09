@@ -3012,6 +3012,11 @@ export function earlierActivityLabel(): string {
   return "Show earlier activity";
 }
 
+/** Mail and account changes name the empty list. Activity history does too. */
+export function activityHistoryEmptyCopy(): string {
+  return "No activity recorded for this company yet.";
+}
+
 function pageCursor(page: {
   nextBefore?: string;
   nextBeforeId?: string;
@@ -5308,7 +5313,7 @@ export function RelationshipSheet({
                   />
                   <SheetPaneStatus
                     count={timeline.length}
-                    empty="Nothing recorded yet."
+                    empty={activityHistoryEmptyCopy()}
                     failed={historyFailed}
                     noun="Activity"
                     onRetry={() => void load()}

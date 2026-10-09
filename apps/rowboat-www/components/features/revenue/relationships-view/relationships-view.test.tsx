@@ -63,6 +63,7 @@ import {
   communicationTimelineTitle,
   earlierMailLabel,
   activityHistoryTitle,
+  activityHistoryEmptyCopy,
   applySheetPane,
   captureSheetPane,
   sheetPaneFailureCopy,
@@ -1290,6 +1291,9 @@ describe("RelationshipsView", () => {
     expect(activityHistoryTitle(50, true)).toBe("Activity history (50+)");
     expect(activityHistoryTitle(51, false)).toBe("Activity history (51)");
     expect(activityHistoryTitle(0, false, true)).toBe("Activity history");
+    expect(activityHistoryEmptyCopy()).toBe("No activity recorded for this company yet.");
+    expect(source).toContain("empty={activityHistoryEmptyCopy()}");
+    expect(source).not.toContain('empty="Nothing recorded yet."');
     expect(earlierActivityLabel()).toBe("Show earlier activity");
     expect(relationshipChangeTitle(2, true)).toBe("What changed (2+)");
     expect(relationshipChangeTitle(3, false)).toBe("What changed (3)");
