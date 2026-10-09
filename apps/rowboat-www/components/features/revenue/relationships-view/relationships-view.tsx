@@ -2520,6 +2520,11 @@ export function companyEmailDetail(email: string | null | undefined): {
   return href ? { text: trimmed, href } : { text: trimmed };
 }
 
+/** Profile facts and the Source row open the same kind of page. */
+export function companyFactSourceLabel(): string {
+  return "Check the source";
+}
+
 /** Record badges sit together. The dimension has to travel with the value. */
 export function recordDetailBadge(label: string, value: string): string {
   return `${label} · ${companyRecordLabel(value)}`;
@@ -4214,7 +4219,7 @@ export function RelationshipSheet({
                           rel="noreferrer"
                           target="_blank"
                         >
-                          Check the source
+                          {companyFactSourceLabel()}
                         </a>
                       </dd>
                     </>
@@ -4246,7 +4251,7 @@ export function RelationshipSheet({
                                 rel="noreferrer"
                                 target="_blank"
                               >
-                                source
+                                {companyFactSourceLabel()}
                               </a>
                             ) : null}
                           </dd>

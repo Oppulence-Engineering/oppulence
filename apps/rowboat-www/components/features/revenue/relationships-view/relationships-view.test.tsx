@@ -38,6 +38,7 @@ import {
   recommendationPriorityLabel,
   companyEmailDetail,
   companyEmailHref,
+  companyFactSourceLabel,
   companyNextActionCopy,
   companyStateAnswer,
   missionControlChangeAnswer,
@@ -1200,6 +1201,9 @@ describe("RelationshipsView", () => {
     expect(companyEmailHref("ada@acme.com?bcc=evil@example.com")).toBeNull();
     expect(companyEmailHref("javascript:alert(1)")).toBeNull();
     expect(companyEmailHref("")).toBeNull();
+    expect(companyFactSourceLabel()).toBe("Check the source");
+    expect(source.match(/\{companyFactSourceLabel\(\)\}/g)).toHaveLength(2);
+    expect(source).not.toContain("\n                                source\n");
     expect(companyEmailDetail("")).toEqual({ text: "Not filled in" });
     expect(companyEmailDetail("ada@acme.com")).toEqual({
       text: "ada@acme.com",
