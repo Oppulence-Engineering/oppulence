@@ -5742,10 +5742,10 @@ function CreateRelationshipDialog({
             placeholder="Company domain (optional)"
           />
           <Input
-            aria-label="Primary email"
+            aria-label="Email"
             value={primaryEmail}
             onChange={(event) => setPrimaryEmail(event.target.value)}
-            placeholder="Primary email (optional)"
+            placeholder="Email (optional)"
           />
           <Input
             aria-label="Description"
