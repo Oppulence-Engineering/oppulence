@@ -3283,11 +3283,13 @@ func TestRelationshipSearchFindsTheActivityFlags(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Has Attachments: true", "Quill Packet")
-	assertCompanyQuery("which activity says has attachments: true", "Quill Packet")
-	assertCompanyQuery("Has Attachments: false", "Birch Slide")
-	assertCompanyQuery("Is First Contact: true", "Cedar Quiet")
-	assertCompanyQuery("Subject Present: false", "Cedar Mine")
+	assertCompanyQuery("Includes an attachment", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("which activity says includes an attachment", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("No attachments", "Birch Slide")
+	assertCompanyQuery("First email in this thread", "Cedar Quiet")
+	assertCompanyQuery("Subject was left blank", "Cedar Mine")
+	assertCompanyQuery("Has Attachments: true")
+	assertCompanyQuery("Has Attachments: false")
 	assertCompanyQuery("Has Attachments: 1", "Cedar Mark")
 	assertCompanyQuery("Has Attachments: local-user")
 	assertCompanyQuery("has attachments")

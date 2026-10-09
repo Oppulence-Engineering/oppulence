@@ -3353,26 +3353,39 @@ func writeParticipantToken(b *sql.Builder, s *sql.Selector, facts, key string) {
 	b.WriteString(" NOT GLOB '*[^a-z0-9_:-]*'")
 }
 
-// relationshipSheetActivityFlagMatch is "Has Attachments: true",
-// "Is First Contact: false", or "Subject Present: true" on an opened activity.
-// Gmail stores those as booleans. The sheet prints the words, including false.
-// SQLite json_extract turns a JSON boolean into 1 or 0, so the comparison uses
-// the word the sheet shows. A flag that repeats the row summary stays hidden.
-// A numeric 1 is not the word true. local-user is not a flag.
+// relationshipSheetActivityFlagMatch is "Includes an attachment",
+// "No attachments", "First email in this thread", "Not the first email",
+// "Subject is filled in", or "Subject was left blank" on an opened activity.
+// Gmail stores those as booleans. A numeric 1 still prints "Has Attachments: 1",
+// which is not the word true. A sentence that repeats the row summary stays
+// hidden. local-user is not a flag.
 func relationshipSheetActivityFlagMatch(needle string) predicate.Relationship {
+	sentences := []struct{ phrase, key, word string }{
+		{"includes an attachment", "has_attachments", "true"},
+		{"no attachments", "has_attachments", "false"},
+		{"first email in this thread", "is_first_contact", "true"},
+		{"not the first email", "is_first_contact", "false"},
+		{"subject is filled in", "subject_present", "true"},
+		{"subject was left blank", "subject_present", "false"},
+	}
 	flags := []struct{ marker, key string }{
 		{"has attachments: ", "has_attachments"},
 		{"is first contact: ", "is_first_contact"},
 		{"subject present: ", "subject_present"},
 	}
 	var preds []predicate.RelationshipObservation
+	for _, sentence := range sentences {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, observationFactFlagSentence(sentence.key, sentence.word, sentence.phrase))
+		}
+	}
 	for _, flag := range flags {
 		index := strings.Index(needle, flag.marker)
 		if index < 0 {
 			continue
 		}
 		value := strings.TrimSpace(needle[index+len(flag.marker):])
-		if value == "" {
+		if value == "" || value == "true" || value == "false" {
 			continue
 		}
 		preds = append(preds, observationFactFlag(flag.key, value))
@@ -3385,6 +3398,29 @@ func relationshipSheetActivityFlagMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
 	}
+}
+
+func observationFactFlagSentence(key, word, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeFlagShown(b, s, facts, key)
+			b.WriteString(" = ")
+			b.Arg(word)
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+			} else {
+				b.WriteString("lower(trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
 }
 
 func observationFactFlag(key, value string) predicate.RelationshipObservation {

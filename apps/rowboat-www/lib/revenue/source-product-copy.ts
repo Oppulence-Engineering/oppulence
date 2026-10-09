@@ -350,6 +350,24 @@ function activityDueLine(value: unknown): string | null {
   return day ? `Due: ${day}` : null;
 }
 
+/**
+ * Gmail stores yes/no flags. The opened activity says the fact. A number such
+ * as 1 stays on the count line, because it is not the word true.
+ */
+function activityFlagLine(key: string, value: unknown): string | null {
+  if (typeof value !== "boolean") return null;
+  switch (key) {
+    case "has_attachments":
+      return value ? "Includes an attachment" : "No attachments";
+    case "is_first_contact":
+      return value ? "First email in this thread" : "Not the first email";
+    case "subject_present":
+      return value ? "Subject is filled in" : "Subject was left blank";
+    default:
+      return null;
+  }
+}
+
 /** Gmail stores the first and last message as instants. The activity names the day. */
 function activityMessageDayLine(label: string, value: unknown): string | null {
   const day = activityUtcDay(value);
@@ -445,6 +463,11 @@ function linesFromActivity(value: unknown): string[] {
       const quote = activityScalar(item);
       const promise = activityScalar(record.commitment_text);
       if (quote && quote !== promise) lines.push(`Quote: ${quote}`);
+      continue;
+    }
+    const flag = activityFlagLine(key, item);
+    if (flag) {
+      lines.push(flag);
       continue;
     }
     if (

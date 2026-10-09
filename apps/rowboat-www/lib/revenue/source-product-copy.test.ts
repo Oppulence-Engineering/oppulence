@@ -233,13 +233,21 @@ describe("source product copy", () => {
         is_first_contact: false,
         subject_present: true,
       }),
-    ).toEqual([
-      "Has Attachments: true",
-      "Is First Contact: false",
-      "Subject Present: true",
-    ]);
+    ).toEqual(["Includes an attachment", "Not the first email", "Subject is filled in"]);
+    expect(
+      activityEvidenceLines(null, {
+        has_attachments: false,
+        is_first_contact: true,
+        subject_present: false,
+      }),
+    ).toEqual(["No attachments", "First email in this thread", "Subject was left blank"]);
     expect(activityEvidenceLines(null, { has_attachments: 1 })).toEqual(["Has Attachments: 1"]);
-    expect(activityLinesBesideSummary(["Has Attachments: true"], "true")).toEqual([]);
+    expect(activityLinesBesideSummary(["Includes an attachment"], "Includes an attachment")).toEqual(
+      [],
+    );
+    expect(activityLinesBesideSummary(["Includes an attachment"], "true")).toEqual([
+      "Includes an attachment",
+    ]);
   });
 
   it("names the first and last message by the UTC day", () => {
