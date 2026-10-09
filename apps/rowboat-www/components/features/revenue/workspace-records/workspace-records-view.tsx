@@ -550,6 +550,15 @@ export function personEvidenceProvenance(
   return EVIDENCE_SOURCE_LABELS[attribute.source] ?? "Recorded in this workspace";
 }
 
+/**
+ * A citation title is often the person's name. Opening the person and opening
+ * the company both say which source to check.
+ */
+export function verifySourceLabel(index: number): string {
+  const shown = Number.isFinite(index) ? Math.max(0, Math.floor(index)) : 0;
+  return `Verify source ${shown + 1}`;
+}
+
 /** Stored person facts use dimension tokens. The sheet names the fact. */
 export function personEvidenceLabel(dimension: string): string {
   const labels: Record<string, string> = {
@@ -1244,7 +1253,7 @@ function PersonSheet({
                         rel="noreferrer"
                         target="_blank"
                       >
-                        Verify source {index + 1}
+                        {verifySourceLabel(index)}
                       </a>
                     ))}
                 </li>
