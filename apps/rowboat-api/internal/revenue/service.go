@@ -8463,7 +8463,7 @@ func writeMailThreadID(b *sql.Builder, s *sql.Selector) {
 // relationshipSheetMailMatch matches the mail section on the company sheet.
 // An empty mailbox says "No Gmail threads linked yet." A thread with no
 // subject says "Email conversation," a blank address says "Gmail," a missing
-// time says "Unknown date," and the reply state says who speaks next. The
+// time says "Not known," and the reply state says who speaks next. The
 // count line is "1 message" or "N messages." A one-word fragment of a longer
 // sentence stays out, so "gmail" finds a thread whose party line is the
 // fallback and does not mean a company with no mail.
@@ -8515,7 +8515,7 @@ func relationshipSheetMailMatch(needle string) predicate.Relationship {
 	if needleHasAddressPartyLine(needle) {
 		preds = append(preds, relationship.HasMailThreadsWith(mailThreadAddressPartyLine(needle)))
 	}
-	if sheetPhraseMatches("unknown date", needle) {
+	if sheetPhraseMatches("not known", needle) {
 		preds = append(preds, relationship.HasMailThreadsWith(mailthread.LastActivityAtIsNil()))
 	}
 	if sheetPhraseMatches("needs a reply", needle) {

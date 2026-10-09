@@ -1164,9 +1164,10 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
 		Kind: "company", DisplayName: "Lumen Packet",
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
@@ -1250,8 +1251,15 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 			}
 		}
 	}
+	// Health unknown also reads "Not known". These companies are healthy so
+	// the undated thread is the only "Not known" on Harbor Ledger.
+	for _, row := range []*ent.Relationship{quiet, lumen, harbor, waiting, addressed} {
+		if _, err := f.client.Relationship.UpdateOneID(row.ID).SetHealth("healthy").Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
 	assertCompanyQuery("No Gmail threads linked yet", "Lumen Packet")
-	assertCompanyQuery("Unknown date", "Harbor Ledger")
+	assertCompanyQuery("Not known", "Harbor Ledger")
 	assertCompanyQuery("Email conversation", "Harbor Ledger")
 	assertCompanyQuery("Needs a reply", "Harbor Ledger")
 	assertCompanyQuery("Waiting on them", "Northwind Ledger")
