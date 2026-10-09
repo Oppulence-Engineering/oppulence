@@ -154,6 +154,7 @@ import {
   personEvidenceProvenance,
   personEvidenceLabel,
   personFactValue,
+  personResearchConfidenceLabel,
   personSeniorityLabel,
   verifySourceLabel,
   personAccountDomain,
@@ -1377,6 +1378,11 @@ describe("task due order", () => {
     expect(verifySourceLabel(0)).toBe("Verify source 1");
     expect(verifySourceLabel(1)).toBe("Verify source 2");
     expect(source).not.toContain("Verify source {index + 1}");
+    expect(personResearchConfidenceLabel(0.8)).toBe("80% confidence");
+    expect(personResearchConfidenceLabel(0.855)).toBe("86% confidence");
+    expect(personResearchConfidenceLabel(Number.NaN)).toBe("0% confidence");
+    expect(source).toContain("personResearchConfidenceLabel(attribute.confidence)");
+    expect(source).not.toContain("{Math.round(attribute.confidence * 100)}%");
     expect(source).not.toContain(".slice(0, 2)\n                    .map((url, index)");
     expect(source).not.toContain('attribute.dimension.replaceAll("_", " ")');
     const tasks = [

@@ -214,6 +214,7 @@ export { companyName };
 import {
   personEvidenceLabel,
   personFactValue,
+  personResearchConfidenceLabel,
   personSeniorityLabel,
   verifySourceLabel,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
@@ -4877,7 +4878,7 @@ export function RelationshipSheet({
                                             {personEvidenceLabel(attribute.dimension)}
                                           </Badge>
                                           : {personFactValue(attribute.dimension, attribute.value)}
-                                          {` · ${Math.round(attribute.confidence * 100)}% confidence`}
+                                          {` · ${personResearchConfidenceLabel(attribute.confidence)}`}
                                           {(attribute.citations ?? [])
                                             .map((citation) => safeResearchCitationURL(citation.url))
                                             .filter((url): url is string => Boolean(url))
