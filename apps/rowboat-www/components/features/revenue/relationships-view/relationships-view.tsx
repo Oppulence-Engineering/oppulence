@@ -736,6 +736,14 @@ export function companyListEmptyCopy(input: {
 }
 
 /**
+ * Promises already say that none are recorded for this company. People, risks,
+ * and milestones use the same sentence so an empty section names itself.
+ */
+export function companyRecordedEmptyCopy(section: string): string {
+  return `No ${section.toLowerCase()} recorded for this company yet.`;
+}
+
+/**
  * A missed sync is still a connected mailbox. Stale, rebuilding, and degraded
  * used to look disconnected, so an empty company list told someone who had
  * already authorized Gmail to connect it again.
@@ -4797,7 +4805,7 @@ export function RelationshipSheet({
                       </div>
                     ) : null}
                     {data.participants.length === 0 ? (
-                      <EmptyText>None recorded.</EmptyText>
+                      <EmptyText>{companyRecordedEmptyCopy("People")}</EmptyText>
                     ) : (
                       <ul className="flex flex-col gap-1.5" aria-label="People">
                         {data.participants.map((participant) => {
@@ -5656,7 +5664,7 @@ function TwoColumnList({
         <section key={title as string}>
           <SectionTitle title={title as string} />
           {(items as string[]).length === 0 ? (
-            <EmptyText>None recorded.</EmptyText>
+            <EmptyText>{companyRecordedEmptyCopy(title as string)}</EmptyText>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {(items as string[]).map((item, index) => (
