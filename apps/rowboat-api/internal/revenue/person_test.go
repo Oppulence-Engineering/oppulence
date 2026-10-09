@@ -1447,14 +1447,16 @@ func TestPersonSearchFindsTheSheetEvidence(t *testing.T) {
 	if err := upsertPersonAttributes(f.ctx, f.client, ws, f.user, quill, nil, []PersonAttributeInput{{
 		Dimension: "title", Value: "Designer", SourceType: "source_fact",
 		Source: "gmail", Extractor: "email_signature", Confidence: 0.8, ObservedAt: now,
-		ExternalID: "quill-title",
+		ExternalID:    "quill-title",
+		CitationsJSON: `[{"url":"https://example.com/bio"},{"url":"https://example.com/team"}]`,
 	}}); err != nil {
 		t.Fatal(err)
 	}
 	if err := upsertPersonAttributes(f.ctx, f.client, ws, f.user, nia, nil, []PersonAttributeInput{{
 		Dimension: "title", Value: "Writer", SourceType: "source_fact",
 		Source: "gmail", Extractor: "unknown", Confidence: 0.6, ObservedAt: now,
-		ExternalID: "nia-title",
+		ExternalID:    "nia-title",
+		CitationsJSON: `[{"url":"javascript:alert(1)"}]`,
 	}}); err != nil {
 		t.Fatal(err)
 	}
@@ -1490,6 +1492,9 @@ func TestPersonSearchFindsTheSheetEvidence(t *testing.T) {
 	one("From their email signature", "Quill Morse")
 	one("Gmail", "Nia Holt")
 	one("80% confidence", "Quill Morse")
+	one("Verify source", "Quill Morse")
+	one("Verify source 1", "Quill Morse")
+	one("Verify source 2", "Quill Morse")
 	one("60% confidence", "Nia Holt")
 	one("90% confidence", "Mira Chen")
 	one("100% confidence", "Indira Cole")
@@ -1497,7 +1502,7 @@ func TestPersonSearchFindsTheSheetEvidence(t *testing.T) {
 	if len(added) != 2 || !containsAll(added, "Indira Cole", "Mira Chen") {
 		t.Fatalf("added by you = %v", added)
 	}
-	for _, query := range []string{"details", "you", "yet", "confidence", "80%", "00% confidence"} {
+	for _, query := range []string{"details", "you", "yet", "confidence", "80%", "00% confidence", "source", "verify", "Verify source 3"} {
 		if got := names(query); len(got) != 0 {
 			t.Fatalf("query %q = %v", query, got)
 		}
@@ -1519,6 +1524,9 @@ func TestPersonSearchFindsTheSheetEvidence(t *testing.T) {
 	}
 	if got := names("80% confidence"); len(got) != 0 {
 		t.Fatalf("retracted confidence = %v", got)
+	}
+	if got := names("Verify source"); len(got) != 0 {
+		t.Fatalf("retracted citation = %v", got)
 	}
 	after := names("No extra details yet")
 	if len(after) != 2 || !containsAll(after, "Casey Quinn", "Quill Morse") {

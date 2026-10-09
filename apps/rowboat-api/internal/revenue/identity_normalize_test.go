@@ -20,6 +20,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 
@@ -9552,6 +9553,12 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 	two := makeCompany("Quay Two")
 	twoPerson := addPerson(two, "Riley Chen")
 	addAttribute(twoPerson, "external_research", "active", "research-two-a", "Engineer")
+	if _, err := f.client.PersonAttribute.Update().
+		Where(personattribute.DedupeKeyEQ("research-two-a")).
+		SetCitationsJSON(`[{"url":"https://example.com/bio"},{"url":"https://example.com/team"}]`).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 	addAttribute(twoPerson, "external_research", "superseded", "research-two-b", "Director")
 	retracted := makeCompany("Quay Retracted")
 	addAttribute(addPerson(retracted, "Jules Pike"), "external_research", "retracted", "research-retracted", "Engineer")
@@ -9584,6 +9591,12 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 	assertCompanyQuery("the title is 80% confidence", "Quay One", "Quay Two")
 	assertCompanyQuery("confidence")
 	assertCompanyQuery("80%")
+	assertCompanyQuery("Verify source", "Quay One", "Quay Two")
+	assertCompanyQuery("Verify source 1", "Quay One", "Quay Two")
+	assertCompanyQuery("Verify source 2", "Quay Two")
+	assertCompanyQuery("Verify source 3")
+	assertCompanyQuery("source")
+	assertCompanyQuery("verify")
 }
 
 func TestRelationshipSearchFindsTheDuplicateLines(t *testing.T) {

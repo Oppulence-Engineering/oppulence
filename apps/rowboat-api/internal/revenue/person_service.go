@@ -300,6 +300,10 @@ func personSheetEvidenceMatch(needle string) predicate.Person {
 	if percent, ok := printedConfidencePercent(needle); ok {
 		preds = append(preds, personPrintsEvidenceConfidence(percent))
 	}
+	// A saved http(s) citation is "Verify source 1". The word "source" is not that link.
+	if count, ok := verifySourceMinimum(needle); ok {
+		preds = append(preds, personPrintsVerifySource(count))
+	}
 	if len(preds) == 0 {
 		return nil
 	}
@@ -373,6 +377,83 @@ func personPrintsResearchConfidence(percent int) predicate.Person {
 		personattribute.SourceTypeEQ("external_research"),
 		personattribute.StatusNEQ("retracted"),
 		personAttributeConfidencePercent(percent),
+	)
+}
+
+// verifySourceMinimum reads "Verify source" and "Verify source N". The first
+// link is always Verify source 1. A fragment such as "source" is not the link.
+func verifySourceMinimum(needle string) (int, bool) {
+	text := normalizePersonSearch(needle)
+	const phrase = "verify source"
+	index := strings.Index(text, phrase)
+	if index < 0 {
+		return 0, false
+	}
+	if index > 0 && text[index-1] != ' ' {
+		return 0, false
+	}
+	rest := text[index+len(phrase):]
+	if rest == "" {
+		return 1, true
+	}
+	switch rest[0] {
+	case ' ', '.', ',', ';', '?', ':':
+	default:
+		return 0, false
+	}
+	rest = strings.TrimLeft(rest, " .,;?:")
+	if rest == "" {
+		return 1, true
+	}
+	word := strings.TrimRight(strings.Fields(rest)[0], ".,;:?")
+	n, err := strconv.Atoi(word)
+	if err != nil {
+		return 1, true
+	}
+	if n < 1 || n > 20 || word != strconv.Itoa(n) {
+		return 0, false
+	}
+	return n, true
+}
+
+func personAttributeWebCitationCountAtLeast(min int) predicate.PersonAttribute {
+	return predicate.PersonAttribute(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(personattribute.FieldCitationsJSON)
+			text := column
+			if s.Dialect() == dialect.Postgres {
+				text = fmt.Sprintf("lower(%s::text)", column)
+			} else {
+				text = fmt.Sprintf("lower(coalesce(%s, ''))", column)
+			}
+			// https:// does not contain http://, so both schemes are counted.
+			b.WriteString("((")
+			b.WriteString(fmt.Sprintf("(length(%s) - length(replace(%s, 'https://', ''))) / 8", text, text))
+			b.WriteString(" + ")
+			b.WriteString(fmt.Sprintf("(length(%s) - length(replace(%s, 'http://', ''))) / 7", text, text))
+			b.WriteString(") >= ")
+			b.Arg(min)
+			b.WriteString(")")
+		}))
+	})
+}
+
+// personPrintsVerifySource matches a citation the person sheet can open.
+// The name and aliases are not that list, and a retracted fact is gone.
+func personPrintsVerifySource(min int) predicate.Person {
+	return person.HasAttributesWith(append(
+		visiblePersonEvidence(),
+		personAttributeWebCitationCountAtLeast(min),
+	)...)
+}
+
+// personPrintsResearchVerifySource matches the citation on a company people card.
+// That card lists public research that has not been retracted.
+func personPrintsResearchVerifySource(min int) predicate.Person {
+	return person.HasAttributesWith(
+		personattribute.SourceTypeEQ("external_research"),
+		personattribute.StatusNEQ("retracted"),
+		personAttributeWebCitationCountAtLeast(min),
 	)
 }
 

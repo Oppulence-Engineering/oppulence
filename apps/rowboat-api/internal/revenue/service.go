@@ -2238,6 +2238,12 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 			relationshipparticipant.HasPersonWith(personPrintsResearchConfidence(percent)),
 		))
 	}
+	// The same card links each saved page as "Verify source N".
+	if count, ok := verifySourceMinimum(needle); ok {
+		preds = append(preds, relationship.HasParticipantsWith(
+			relationshipparticipant.HasPersonWith(personPrintsResearchVerifySource(count)),
+		))
+	}
 	switch len(preds) {
 	case 0:
 		return nil
