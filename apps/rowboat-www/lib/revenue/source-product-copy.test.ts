@@ -292,6 +292,41 @@ describe("source product copy", () => {
     ]);
   });
 
+  it("names calendar attendance without the event id", () => {
+    expect(activityHeading("calendar", "meeting_attendance_recorded")).toBe(
+      "Calendar · Attendance",
+    );
+    expect(
+      activityEvidenceLines(null, {
+        calendar_event_id: "evt_18",
+        meeting_title: "Q3 review",
+        attendance_source: "calendar_invite",
+        recorded: false,
+        meeting_size: 4,
+        invitee_count: 3,
+        external_count: 2,
+        declined_count: 1,
+        external_domains: ["acme.com"],
+        organizer_email: "ada@acme.com",
+        capture_caveats: ["Attendance comes from the invite alone."],
+      }),
+    ).toEqual([
+      "Meeting: Q3 review",
+      "Taken from the invite",
+      "No recording was saved",
+      "4 people on the invite",
+      "3 people invited",
+      "2 people from outside the company",
+      "1 person declined",
+      "Outside domains: acme.com",
+      "Organizer: ada@acme.com",
+      "Attendance comes from the invite alone.",
+    ]);
+    expect(activityEvidenceLines(null, { calendar_event_id: "evt_18", recorded: 0 })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+  });
+
   it("names message counts without the mail row's sentence", () => {
     expect(
       activityEvidenceLines(null, {

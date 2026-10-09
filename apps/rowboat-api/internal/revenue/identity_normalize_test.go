@@ -5209,8 +5209,15 @@ func TestRelationshipSearchFindsTheActivityHeading(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	attend, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Attend",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	writeObservation(note, "user", "note", "harbor-note")
 	writeObservation(mail, "gmail", "thread.updated", "harbor-mail")
+	writeObservation(attend, "calendar", "meeting_attendance_recorded", "harbor-attend")
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -5234,6 +5241,79 @@ func TestRelationshipSearchFindsTheActivityHeading(t *testing.T) {
 	assertCompanyQuery("Gmail · Mail updated", "Harbor Mail")
 	assertCompanyQuery("Gmail", "Harbor Mail")
 	assertCompanyQuery("Added by you", "Harbor Note")
+	assertCompanyQuery("Attendance", "Harbor Attend")
+	assertCompanyQuery("Calendar · Attendance", "Harbor Attend")
+}
+
+func TestRelationshipSearchFindsTheActivityAttendance(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("calendar").SetExternalID(name).SetEventType("meeting_attendance_recorded").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Quill Packet", "2 external participant(s) on \"Q3 review\"", `{
+		"calendar_event_id":"evt_18",
+		"meeting_title":"Q3 review",
+		"attendance_source":"calendar_invite",
+		"recorded":false,
+		"meeting_size":4,
+		"invitee_count":3,
+		"external_count":2,
+		"declined_count":1,
+		"organizer_email":"ada@acme.com"
+	}`)
+	saveNote("Cedar Echo", "No recording was saved", `{"recorded":false}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Taken from the invite", "Quill Packet")
+	assertCompanyQuery("No recording was saved", "Quill Packet")
+	assertCompanyQuery("4 people on the invite", "Quill Packet")
+	assertCompanyQuery("3 people invited", "Quill Packet")
+	assertCompanyQuery("2 people from outside the company", "Quill Packet")
+	assertCompanyQuery("1 person declined", "Quill Packet")
+	assertCompanyQuery("Meeting: Q3 review", "Quill Packet")
+	assertCompanyQuery("Organizer: ada@acme.com", "Quill Packet")
+	assertCompanyQuery("Recorded: false")
+	assertCompanyQuery("evt_18")
 }
 
 func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {

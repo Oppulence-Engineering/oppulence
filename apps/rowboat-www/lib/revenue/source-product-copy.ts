@@ -113,6 +113,7 @@ const ACTIVITY_EVENT_LABELS: Record<string, string> = {
   engagement_declined: "Engagement changed",
   engagement_changed: "Engagement changed",
   contact_departed: "Contact left",
+  meeting_attendance_recorded: "Attendance",
   conversation_evidence_compiled: "Conversation reviewed",
   conversation_evidence_corrected: "Conversation corrected",
   relationship_contradiction_resolved: "Contradiction resolved",
@@ -386,6 +387,63 @@ function activityDepartureKindLine(value: unknown): string | null {
 }
 
 /**
+ * Calendar attendance stores the invite beside the event id. The opened
+ * activity says who was invited. The event id stays hidden.
+ */
+function activityAttendanceLines(key: string, value: unknown): string[] | null {
+  switch (key) {
+    case "calendar_event_id":
+      return [];
+    case "meeting_title": {
+      const title = activityScalar(value);
+      return title && title !== "local-user" ? [`Meeting: ${title}`] : [];
+    }
+    case "attendance_source":
+      return value === "calendar_invite" ? ["Taken from the invite"] : [];
+    case "recorded":
+      if (typeof value !== "boolean") return [];
+      return [value ? "A recording was saved" : "No recording was saved"];
+    case "meeting_size":
+      return activityPeopleCount(value, "person on the invite", "people on the invite");
+    case "invitee_count":
+      return activityPeopleCount(value, "person invited", "people invited");
+    case "external_count":
+      return activityPeopleCount(
+        value,
+        "person from outside the company",
+        "people from outside the company",
+      );
+    case "declined_count":
+      return activityPeopleCount(value, "person declined", "people declined");
+    case "external_domains": {
+      const domains = Array.isArray(value)
+        ? value
+            .filter((item): item is string => typeof item === "string" && item.trim() !== "")
+            .map((item) => item.trim())
+        : [];
+      return domains.length > 0 ? [`Outside domains: ${domains.join(", ")}`] : [];
+    }
+    case "organizer_email": {
+      const email = activityScalar(value);
+      if (!email || email === "local-user" || /^[a-z0-9_:-]+$/.test(email)) return [];
+      return [`Organizer: ${email}`];
+    }
+    case "capture_caveats":
+      if (!Array.isArray(value)) return [];
+      return value
+        .filter((item): item is string => typeof item === "string" && item.trim() !== "")
+        .map((item) => item.trim());
+    default:
+      return null;
+  }
+}
+
+function activityPeopleCount(value: unknown, one: string, many: string): string[] {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) return [];
+  return [value === 1 ? `1 ${one}` : `${String(value)} ${many}`];
+}
+
+/**
  * Gmail stores how many messages, files, and people were on the thread.
  * The opened activity says the count. The mail row's "4 messages" stays
  * its own sentence.
@@ -540,6 +598,11 @@ function linesFromActivity(value: unknown): string[] {
     if (key === "reply_state") {
       const reply = activityReplyStateLine(item);
       if (reply) lines.push(reply);
+      continue;
+    }
+    const attendance = activityAttendanceLines(key, item);
+    if (attendance !== null) {
+      lines.push(...attendance);
       continue;
     }
     if (

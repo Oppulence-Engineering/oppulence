@@ -1142,6 +1142,10 @@ func (s *Service) ListRelationshipsFiltered(
 			parts = append(parts, roster)
 		}
 
+		if attendance := relationshipSheetActivityAttendanceMatch(needle); attendance != nil {
+			parts = append(parts, attendance)
+		}
+
 		if provider := relationshipSheetActivityProviderMatch(needle); provider != nil {
 			parts = append(parts, provider)
 		}
@@ -2490,6 +2494,7 @@ var activityEventSearchLabels = []struct {
 	{"engagement changed", "engagement_declined"},
 	{"engagement changed", "engagement_changed"},
 	{"contact left", "contact_departed"},
+	{"attendance", "meeting_attendance_recorded"},
 	{"conversation reviewed", "conversation_evidence_compiled"},
 	{"conversation corrected", "conversation_evidence_corrected"},
 	{"contradiction resolved", "relationship_contradiction_resolved"},
@@ -3633,6 +3638,73 @@ func relationshipSheetActivityRosterMatch(needle string) predicate.Relationship 
 		{"file attached to this activity", "files attached to this activity", "attachment_count"},
 		{"person outside the company", "people outside the company", "external_participant_count"},
 		{"person on this activity", "people on this activity", "participant_count"},
+	})
+}
+
+// relationshipSheetActivityAttendanceMatch is the opened calendar attendance
+// activity. The heading is "Calendar · Attendance". The invite counts and the
+// recording are sentences. The calendar event id is not printed.
+func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if strings.Contains(needle, "taken from the invite") {
+		preds = append(preds, relationship.HasObservationsWith(
+			observationFactExact("attendance_source", "calendar_invite", "taken from the invite"),
+		))
+	}
+	if strings.Contains(needle, "no recording was saved") {
+		preds = append(preds, relationship.HasObservationsWith(
+			observationFactFlagSentence("recorded", "false", "no recording was saved"),
+		))
+	}
+	if strings.Contains(needle, "a recording was saved") {
+		preds = append(preds, relationship.HasObservationsWith(
+			observationFactFlagSentence("recorded", "true", "a recording was saved"),
+		))
+	}
+	if counts := activityCountSentenceMatch(needle, []activityCountPhrase{
+		{"person on the invite", "people on the invite", "meeting_size"},
+		{"person invited", "people invited", "invitee_count"},
+		{"person from outside the company", "people from outside the company", "external_count"},
+		{"person declined", "people declined", "declined_count"},
+	}); counts != nil {
+		preds = append(preds, counts)
+	}
+	if title := relationshipSheetActivityFactMatch(needle, "meeting: ", "meeting_title"); title != nil {
+		preds = append(preds, title)
+	}
+	if organizer := relationshipSheetActivityFactMatch(needle, "organizer: ", "organizer_email"); organizer != nil {
+		preds = append(preds, organizer)
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func observationFactExact(key, token, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeActivityFactTrim(b, s, facts, key)
+			b.WriteString(" = ")
+			b.Arg(token)
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+			} else {
+				b.WriteString("lower(trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
 	})
 }
 
