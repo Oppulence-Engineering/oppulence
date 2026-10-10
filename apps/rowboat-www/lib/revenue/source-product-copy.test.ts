@@ -476,6 +476,18 @@ describe("source product copy", () => {
     expect(activityEvidenceLines(null, { transcription_engine: "speaker_2" })).toEqual([
       "Nothing else was saved with this activity.",
     ]);
+    expect(activityEvidenceLines(null, { transcription_model: "base.en-q5_1" })).toEqual([
+      "Model: Base · English (recommended)",
+    ]);
+    expect(
+      activityEvidenceLines(null, { transcription_model: "parakeet-tdt-0.6b-v3-coreml" }),
+    ).toEqual(["Model: Parakeet v3"]);
+    expect(activityEvidenceLines(null, { transcription_model: "parakeet-tdt-0.6b-v2" })).toEqual([
+      "Model: Parakeet v2",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_model: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
     expect(
       activityEvidenceLines(null, {
         tracks: [

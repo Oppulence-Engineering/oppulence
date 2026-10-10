@@ -916,11 +916,8 @@ function activityTranscriptLines(key: string, value: unknown): string[] | null {
       return value === true ? ["The transcript was shortened"] : [];
     case "transcription_engine":
       return activityTranscriptionEngineLines(value);
-    case "transcription_model": {
-      const model = activityScalar(value);
-      if (!model || model === "local-user") return [];
-      return [`Model: ${model}`];
-    }
+    case "transcription_model":
+      return activityTranscriptionModelLines(value);
     case "audio_retention":
       if (typeof value !== "string") return [];
       switch (value.trim()) {
@@ -958,6 +955,31 @@ function activityTranscriptionEngineLines(value: unknown): string[] {
       if (/^[a-z0-9_:-]+$/.test(engine)) return [];
       return [`Transcribed with ${engine}`];
   }
+}
+
+/**
+ * Settings name the downloaded model. A Parakeet meeting stores the
+ * checkpoint filename. An unknown file name stays as written.
+ */
+const TRANSCRIPTION_MODEL_LABELS: Record<string, string> = {
+  "tiny.en-q5_1": "Tiny · English",
+  "base.en-q5_1": "Base · English (recommended)",
+  "base-q5_1": "Base · Multilingual",
+  "small.en-q5_1": "Small · English",
+  "small-q5_1": "Small · Multilingual",
+  "large-v3-turbo-q5_0": "Large v3 Turbo · Multilingual (fast, accurate)",
+  "large-v3-q5_0": "Large v3 · Multilingual (max accuracy)",
+  "parakeet-tdt-0.6b-v3": "Parakeet v3",
+  "parakeet-tdt-0.6b-v3-coreml": "Parakeet v3",
+  "parakeet-tdt-0.6b-v2": "Parakeet v2",
+  "parakeet-tdt-0.6b-v2-coreml": "Parakeet v2",
+};
+
+function activityTranscriptionModelLines(value: unknown): string[] {
+  const model = activityScalar(value);
+  if (!model || model === "local-user" || model === "meeting-counterparty") return [];
+  const known = TRANSCRIPTION_MODEL_LABELS[model.trim().toLowerCase()];
+  return [`Model: ${known ?? model}`];
 }
 
 /**
