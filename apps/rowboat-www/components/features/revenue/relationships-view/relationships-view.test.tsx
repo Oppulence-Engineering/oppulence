@@ -13,6 +13,7 @@ import {
   companyDomainHref,
   companyDomainLabel,
   companyEnrichmentColumnLabel,
+  companyEnrichmentSheetValue,
   companyName,
   evidenceExcerptLabel,
   companyDirectoryCount,
@@ -1261,6 +1262,15 @@ describe("RelationshipsView", () => {
       "No headquarters recorded",
     );
     expect(companyEnrichmentColumnLabel("Austin", "No headquarters recorded")).toBe("Austin");
+    expect(companyEnrichmentSheetValue("headquarters", "   ")).toBe("No headquarters recorded");
+    expect(companyEnrichmentSheetValue("employee_range", "")).toBe("No employee range recorded");
+    expect(companyEnrichmentSheetValue("funding_summary", "   ")).toBe("No funding recorded");
+    expect(companyEnrichmentSheetValue("revenue_range", " ")).toBe("No revenue recorded");
+    expect(companyEnrichmentSheetValue("growth_signals", "")).toBe("No growth signals recorded");
+    expect(companyEnrichmentSheetValue("headquarters", "Austin")).toBe("Austin");
+    expect(companyEnrichmentSheetValue("founded_year", "   ")).toBeNull();
+    expect(companyEnrichmentSheetValue("founded_year", "2014")).toBe("2014");
+    expect(source).toContain("companyEnrichmentSheetValue(field, value)");
     expect(source).toContain(
       'companyEnrichmentColumnLabel(\n                            relationship.companyEnrichmentData?.headquarters,\n                            "No headquarters recorded",\n                          )',
     );

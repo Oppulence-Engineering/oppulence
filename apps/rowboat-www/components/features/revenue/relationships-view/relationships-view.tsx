@@ -324,6 +324,26 @@ export function companyEnrichmentColumnLabel(
   return value?.trim() || empty;
 }
 
+const COMPANY_ENRICHMENT_EMPTY: Record<string, string> = {
+  headquarters: "No headquarters recorded",
+  employee_range: "No employee range recorded",
+  funding_summary: "No funding recorded",
+  revenue_range: "No revenue recorded",
+  growth_signals: "No growth signals recorded",
+};
+
+/**
+ * The directory names a research fact that was never recorded. The company
+ * sheet used to print the stored spaces, so Headquarters showed a blank line.
+ * Any other blank fact is left off the sheet.
+ */
+export function companyEnrichmentSheetValue(field: string, value: unknown): string | null {
+  const text = typeof value === "string" ? value.trim() : "";
+  const empty = COMPANY_ENRICHMENT_EMPTY[field];
+  if (empty) return companyEnrichmentColumnLabel(text, empty);
+  return text || null;
+}
+
 /**
  * Policy on a recommendation uses the words Recovery and the graph already
  * use. A passed check is cleared, and a check that has not run is not pending
@@ -4268,6 +4288,8 @@ export function RelationshipSheet({
                         ].includes(field),
                     )
                     .map(([field, value]) => {
+                      const shown = companyEnrichmentSheetValue(field, value);
+                      if (!shown) return null;
                       const source = (data.relationship.companyEnrichmentRefs?.[field] ?? [])
                         .map(safeResearchCitationURL)
                         .find((url): url is string => Boolean(url));
@@ -4277,7 +4299,7 @@ export function RelationshipSheet({
                             {COMPANY_FIELD_LABELS[field] ?? humanize(field)}
                           </dt>
                           <dd className="text-primary/75">
-                            {value}
+                            {shown}
                             {source ? (
                               <a
                                 className="ml-2 text-[11px] text-primary/40 underline-offset-2 hover:underline"
