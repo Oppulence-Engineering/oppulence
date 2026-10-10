@@ -446,6 +446,34 @@ export function activityMailThreadSummary(summary: string): string | null {
 }
 
 /**
+ * A confirmed meeting stores "We committed to: Send the proposal". The row
+ * uses the same promise sentence as the opened activity. A named guest keeps
+ * their name. A speaker id does not.
+ */
+export function activityCommitmentSummary(summary: string): string | null {
+  const match = /^(.+?) committed to: (.+)$/.exec(summary.trim());
+  if (!match?.[1] || !match[2]) return null;
+  const who = match[1].trim();
+  const text = match[2].trim();
+  if (!who || !text) return null;
+  const unnamed =
+    who === "local-user" ||
+    who === "meeting-counterparty" ||
+    who === "Other" ||
+    who === "Unknown speaker" ||
+    /^speaker\s+\d+$/i.test(who) ||
+    /^[a-z0-9_:-]+$/.test(who);
+  const owner =
+    who === "We"
+      ? "We made this promise"
+      : unnamed
+        ? "They made this promise"
+        : `${who} made this promise`;
+  if (text === "local-user" || text === "meeting-counterparty") return owner;
+  return `${owner}: ${text}`;
+}
+
+/**
  * The activity row and the company graph share one sentence. A stored
  * summary that is already company language stays as written.
  */
@@ -454,6 +482,7 @@ export function activityRowSummary(summary: string): string {
   return (
     activityOutcomeSummary(trimmed) ??
     activityPromiseUpdateSummary(trimmed) ??
+    activityCommitmentSummary(trimmed) ??
     activityAttendanceSummary(trimmed) ??
     activityConversationSummary(trimmed) ??
     activityMailThreadSummary(trimmed) ??

@@ -1177,8 +1177,9 @@ export function graphInspectorSummary(node: {
   label?: string | null;
   summary?: string | null;
 }): string | undefined {
-  const summary = node.summary?.trim() ?? "";
-  if (!summary || summary === (node.label?.trim() ?? "")) return undefined;
+  const summary = activityRowSummary(node.summary ?? "");
+  const label = activityRowSummary(node.label ?? "");
+  if (!summary || summary === label) return undefined;
   return summary;
 }
 
@@ -1769,7 +1770,9 @@ export function RelationshipGraphWorkspace({
       nodes: visible.nodes.map((node) => {
         if (node.kind === "evidence") {
           const label = activityRowSummary(node.label);
-          return label && label !== node.label ? { ...node, label } : node;
+          const summary = node.summary ? activityRowSummary(node.summary) : node.summary;
+          if (label === node.label && summary === node.summary) return node;
+          return { ...node, label: label || node.label, summary };
         }
         if (node.kind !== "relationship" || !node.relationshipId) return node;
         const title = titles.get(node.relationshipId);

@@ -584,6 +584,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphEvidenceChipLabel({ label: "   ", source: "gmail" })).toBe("Gmail");
     expect(graphEvidenceChipLabel({ label: "", source: "" })).toBe("Detail");
     expect(source).toContain("activityRowSummary(node.label)");
+    expect(source).toContain("activityRowSummary(node.summary");
     expect(source).toContain('node.kind === "evidence"');
     const confirmation = {
       id: "evidence:obs",
@@ -604,6 +605,18 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphInspectorSummary({ label: "Promise confirmed", summary: "Send the quay echo" })).toBe(
       "Send the quay echo",
     );
+    expect(
+      graphInspectorSummary({
+        label: "Promise confirmed",
+        summary: "We committed to: Send the proposal",
+      }),
+    ).toBe("We made this promise: Send the proposal");
+    expect(
+      graphInspectorSummary({
+        label: "Promise confirmed",
+        summary: "Avery committed to: Send the proposal",
+      }),
+    ).toBe("Avery made this promise: Send the proposal");
     expect(graphInspectorSummary({ label: "Send the quay echo", summary: "   " })).toBeUndefined();
     expect(source).toContain("graphInspectorSummary(node)");
     expect(source).toContain("{inspectorSummary}");

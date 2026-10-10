@@ -365,6 +365,15 @@ describe("RelationshipsView", () => {
     expect(activitySummaryLabel("Commitment marked open: Send the proposal")).toBe(
       "This promise is still open: Send the proposal",
     );
+    expect(activitySummaryLabel("We committed to: Send the proposal")).toBe(
+      "We made this promise: Send the proposal",
+    );
+    expect(activitySummaryLabel("Avery committed to: Send the proposal")).toBe(
+      "Avery made this promise: Send the proposal",
+    );
+    expect(activitySummaryLabel("speaker 2 committed to: Send the proposal")).toBe(
+      "They made this promise: Send the proposal",
+    );
     expect(activitySummaryLabel('2 external participant(s) on "Q3 review"')).toBe(
       "2 people from outside the company on Q3 review",
     );
