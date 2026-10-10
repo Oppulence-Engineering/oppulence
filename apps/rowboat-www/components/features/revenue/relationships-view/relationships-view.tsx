@@ -3298,8 +3298,9 @@ export function liveCueCopy(cue: { kind: string; title: string; detail: string }
 
 /**
  * Missing-detail text is stored for the model. The sheet says what the person
- * can do about it. A review reason that still says "User" is rewritten. Any
- * other supported detail keeps the reason that was recorded.
+ * can do about it. A review reason that still says "User", and a HubSpot
+ * lifecycle stage, are rewritten. Any other supported detail keeps the reason
+ * that was recorded.
  */
 const DETAIL_REASON_COPY: Record<string, string> = {
   "User corrected focused conversation evidence.": "You corrected what was said.",
@@ -3307,6 +3308,7 @@ const DETAIL_REASON_COPY: Record<string, string> = {
   "User decided a proposed conversation change.": "You decided a suggested change.",
   "User selected the current value from a focused contradiction case.":
     "You chose the current value.",
+  "HubSpot company lifecycle stage.": "Taken from HubSpot.",
 };
 
 export function detailEvidenceCopy(item: {

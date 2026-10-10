@@ -1243,6 +1243,9 @@ describe("RelationshipsView", () => {
         reason: "User selected the current value from a focused contradiction case.",
       }),
     ).toBe("You chose the current value.");
+    expect(
+      detailEvidenceCopy({ supported: true, reason: "HubSpot company lifecycle stage." }),
+    ).toBe("Taken from HubSpot.");
     expect(source).toContain("detailEvidenceCopy(item)");
     expect(source).not.toContain("{item.reason || item.missingReason}");
     expect(
