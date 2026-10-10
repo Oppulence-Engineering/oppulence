@@ -222,6 +222,7 @@ import {
   activityEvidenceLines,
   activityLinesBesideSummary,
   activityHeading,
+  activityAttendanceSummary,
   activityOutcomeSummary,
   activityPromiseUpdateSummary,
   activitySourceLabel,
@@ -2642,6 +2643,8 @@ export function activitySummaryLabel(summary?: string | null): string {
   if (outcome) return outcome;
   const updated = activityPromiseUpdateSummary(trimmed);
   if (updated) return updated;
+  const attendance = activityAttendanceSummary(trimmed);
+  if (attendance) return attendance;
   return trimmed || "Open the source";
 }
 

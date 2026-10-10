@@ -393,6 +393,25 @@ export function activityPromiseUpdateSummary(summary: string): string | null {
   return `${status}: ${text}`;
 }
 
+/**
+ * Attendance stores "2 external participant(s) on \"Q3 review\"". The row
+ * uses the same people sentence as the opened activity.
+ */
+export function activityAttendanceSummary(summary: string): string | null {
+  const match = /^(\d+) external participant\(s\) on "(.+)"$/.exec(summary.trim());
+  if (!match?.[1] || !match[2]) return null;
+  const count = Number(match[1]);
+  const title = match[2].trim();
+  if (!Number.isInteger(count) || count < 0 || !title || title === "local-user") return null;
+  const people =
+    count === 0
+      ? "No one from outside the company"
+      : count === 1
+        ? "1 person from outside the company"
+        : `${String(count)} people from outside the company`;
+  return `${people} on ${title}`;
+}
+
 /** A status change stores the promise and the new state together. */
 function activityCommitmentUpdateLines(value: unknown): string[] {
   if (!Array.isArray(value)) return [];

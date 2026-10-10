@@ -365,6 +365,15 @@ describe("RelationshipsView", () => {
     expect(activitySummaryLabel("Commitment marked open: Send the proposal")).toBe(
       "This promise is still open: Send the proposal",
     );
+    expect(activitySummaryLabel('2 external participant(s) on "Q3 review"')).toBe(
+      "2 people from outside the company on Q3 review",
+    );
+    expect(activitySummaryLabel('1 external participant(s) on "Q3 review"')).toBe(
+      "1 person from outside the company on Q3 review",
+    );
+    expect(activitySummaryLabel('0 external participant(s) on "Q3 review"')).toBe(
+      "No one from outside the company on Q3 review",
+    );
     expect(communicationPreviewLabel("   ")).toBe("No message preview");
     expect(communicationPreviewLabel("Invoice packet")).toBe("Invoice packet");
     expect(evidenceExcerptLabel("   ")).toBe("Evidence excerpt unavailable");
