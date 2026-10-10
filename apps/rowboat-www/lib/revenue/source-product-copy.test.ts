@@ -380,6 +380,9 @@ describe("source product copy", () => {
           "This meeting was not recorded; attendance comes from the invite alone.",
           "remote speaker was resolved from the 1:1 calendar attendee; the system track may still contain other voices and no persistent voiceprint was created",
           "speaker assignment requires review",
+          "renderer fallback: timed audio evidence was not retained",
+          "capture guardian: microphone_missing — Your side of the conversation is not being captured.",
+          "mic_voice_processing_unavailable: echo cancellation unavailable — recording raw mic",
         ],
       }),
     ).toEqual([
@@ -402,6 +405,9 @@ describe("source product copy", () => {
       "1 of 3 people had not accepted.",
       "The other person was named from the guest list.",
       "Who spoke is not confirmed.",
+      "The timed recording was not saved with this transcript.",
+      "Your side of the conversation is not being captured.",
+      "Echo cancellation was unavailable, so the microphone was recorded without it.",
     ]);
     expect(
       activityEvidenceLines(null, {
@@ -509,6 +515,28 @@ describe("source product copy", () => {
       }),
     ).toEqual(["The other side was silent", "The microphone was silent"]);
     expect(lines.join("\n")).not.toMatch(/peak|Tracks:/);
+    expect(
+      activityEvidenceLines(
+        {
+          envelope: {
+            captureCaveats: [
+              "recovered_without_meta: the recorder was killed before writing meta.json — track start offsets are unknown and assumed simultaneous",
+              "long source segments were split into bounded evidence excerpts",
+              "remote speaker labels are meeting-scoped",
+              "mic_raw_fallback_failed: session continues without a microphone track",
+            ],
+          },
+        },
+        { transcription_engine: "deepgram", transcription_model: "nova-3" },
+      ),
+    ).toEqual([
+      "Transcribed with Deepgram",
+      "Model: Nova-3",
+      "The recorder stopped before it finished saving. The two sides may be slightly out of sync.",
+      "A long stretch was split into shorter excerpts.",
+      "Speaker names apply only to this meeting.",
+      "The microphone could not be recorded.",
+    ]);
   });
 
   it("names a reviewed conversation without the claim id", () => {

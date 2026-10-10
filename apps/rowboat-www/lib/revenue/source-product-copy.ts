@@ -634,7 +634,62 @@ function activityCaveatLine(value: string): string | null {
     const people = total === 1 ? "person" : "people";
     return `${String(n)} of ${String(total)} ${people} had not accepted.`;
   }
+  const guardian = /^capture guardian: [a-z0-9_]+ — (.+)$/.exec(text);
+  if (guardian?.[1]) return guardian[1].trim();
+  if (text === "renderer fallback: timed audio evidence was not retained") {
+    return "The timed recording was not saved with this transcript.";
+  }
+  if (text.startsWith("recovered_without_meta:")) {
+    return "The recorder stopped before it finished saving. The two sides may be slightly out of sync.";
+  }
+  if (text === "long source segments were split into bounded evidence excerpts") {
+    return "A long stretch was split into shorter excerpts.";
+  }
+  if (text === "transcript was truncated at the canonical evidence size limit") {
+    return "The transcript was shortened";
+  }
+  if (text === "remote speaker labels are meeting-scoped") {
+    return "Speaker names apply only to this meeting.";
+  }
+  if (text.startsWith("mic_voice_processing_unavailable:")) {
+    return "Echo cancellation was unavailable, so the microphone was recorded without it.";
+  }
+  if (text.startsWith("mic_voice_processing_silent:")) {
+    return "Echo cancellation was silent, so the microphone was recorded without it.";
+  }
+  if (text.startsWith("mic_raw_fallback_failed:")) {
+    return "The microphone could not be recorded.";
+  }
+  const coded = /^([a-z0-9_:-]+): (.+)$/.exec(text);
+  if (coded?.[1] && coded[2] && coded[1].includes("_")) {
+    const message = coded[2].trim();
+    if (!message || /^[a-z0-9_:-]+$/.test(message)) return null;
+    return message;
+  }
   return text;
+}
+
+/**
+ * A meeting transcript stores capture notes on the sealed envelope. The
+ * opened activity reads facts, so those notes never appeared. The same
+ * sentences as an attendance caveat are the ones to show.
+ */
+function activityPayloadCaveatLines(payload: unknown): string[] {
+  const record = activityRecord(payload);
+  if (!record) return [];
+  const envelope = activityRecord(record.envelope) ?? record;
+  const caveats = envelope.captureCaveats ?? envelope.capture_caveats;
+  if (!Array.isArray(caveats)) return [];
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const item of caveats) {
+    if (typeof item !== "string") continue;
+    const line = activityCaveatLine(item);
+    if (!line || seen.has(line)) continue;
+    seen.add(line);
+    lines.push(line);
+  }
+  return lines;
 }
 
 /**
@@ -1262,7 +1317,10 @@ export function activityEvidenceLines(
   facts?: Record<string, unknown> | null,
 ): string[] {
   const fromPayload = linesFromActivity(payload);
-  const lines = fromPayload.length > 0 ? fromPayload : linesFromActivity(facts);
+  const lines = fromPayload.length > 0 ? [...fromPayload] : linesFromActivity(facts);
+  for (const line of activityPayloadCaveatLines(payload)) {
+    if (!lines.includes(line)) lines.push(line);
+  }
   if (activityRecord(facts)?.meetingLinked === true) lines.push("Marked as a meeting note.");
   if (lines.length === 0) return ["Nothing else was saved with this activity."];
   return lines;
