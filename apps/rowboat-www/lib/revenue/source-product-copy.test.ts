@@ -477,5 +477,28 @@ describe("source product copy", () => {
       "Nothing else was saved with this activity.",
     ]);
     expect(activityLinesBesideSummary(["Left this company"], "Left this company")).toEqual([]);
+    expect(
+      activityEvidenceLines(null, {
+        departure_kind: "recipient_unknown",
+        departure_evidence: "The mailbox rejected the harbor packet.",
+      }),
+    ).toEqual([
+      "Address was not recognized",
+      "The bounce said: The mailbox rejected the harbor packet.",
+    ]);
+    expect(activityEvidenceLines(null, { departure_evidence: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(
+      activityLinesBesideSummary(
+        ["The bounce said: The mailbox rejected the harbor packet."],
+        "The mailbox rejected the harbor packet.",
+      ),
+    ).toEqual([]);
+    expect(
+      activityEvidenceLines(null, {
+        departure_evidence: "The mailbox rejected the harbor packet.",
+      }).join("\n"),
+    ).not.toMatch(/Departure Evidence/);
   });
 });

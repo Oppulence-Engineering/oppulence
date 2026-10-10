@@ -13237,11 +13237,11 @@ func relationshipSheetActivityDepartureKindMatch(needle string) predicate.Relati
 	}
 }
 
-// relationshipSheetActivityDepartureEvidenceMatch is "Departure Evidence: …"
+// relationshipSheetActivityDepartureEvidenceMatch is "The bounce said: …"
 // on an opened activity. The mailbox sentence stays visible when it differs
 // from the row summary.
 func relationshipSheetActivityDepartureEvidenceMatch(needle string) predicate.Relationship {
-	return relationshipSheetActivityFactMatch(needle, "departure evidence: ", "departure_evidence")
+	return relationshipSheetActivityFactMatch(needle, "the bounce said: ", "departure_evidence")
 }
 
 func observationFactDepartureKind(kind, printed string) predicate.RelationshipObservation {

@@ -441,6 +441,13 @@ function activityDepartureKindLine(value: unknown): string | null {
   }
 }
 
+/** The bounce stores the mail system's sentence. The activity quotes it. */
+function activityDepartureEvidenceLine(value: unknown): string | null {
+  const text = activityScalar(value);
+  if (!text || text === "local-user" || text === "meeting-counterparty") return null;
+  return `The bounce said: ${text}`;
+}
+
 /**
  * Calendar attendance stores the invite beside the event id. The opened
  * activity says who was invited. The event id stays hidden.
@@ -700,6 +707,11 @@ function linesFromActivity(value: unknown): string[] {
     if (key === "departure_kind") {
       const departure = activityDepartureKindLine(item);
       if (departure) lines.push(departure);
+      continue;
+    }
+    if (key === "departure_evidence") {
+      const evidence = activityDepartureEvidenceLine(item);
+      if (evidence) lines.push(evidence);
       continue;
     }
     if (key === "reply_state") {
