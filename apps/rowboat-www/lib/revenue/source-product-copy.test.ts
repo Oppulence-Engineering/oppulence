@@ -431,6 +431,55 @@ describe("source product copy", () => {
     ]);
   });
 
+  it("names a reviewed conversation without the claim id", () => {
+    const lines = activityEvidenceLines(null, {
+      conversation_claims: [
+        {
+          id: "claim:risk",
+          kind: "risk",
+          value: "Security review may slip",
+          exactQuote: "Security review may slip",
+          speakerId: "speaker_2",
+          confidence: 0.4,
+        },
+        {
+          id: "claim:objection",
+          kind: "objection",
+          value: "The price is too high",
+          exactQuote: "The price is too high",
+        },
+        {
+          id: "claim:lifecycle",
+          kind: "lifecycle",
+          value: "former_customer",
+          exactQuote: "They are a former customer now.",
+        },
+        {
+          id: "claim:sentiment",
+          kind: "sentiment",
+          value: "negative",
+          exactQuote: "We are concerned about the renewal timing.",
+        },
+        { id: "claim:decision", kind: "decision", value: "We decided to renew." },
+        { id: "claim:promise", kind: "commitment", value: "I will send the proposal." },
+        { id: "claim:review", kind: "claim", value: "one", confidence: 0.2 },
+        { id: "claim:again", kind: "risk", value: "Security review may slip" },
+      ],
+    });
+    expect(lines).toEqual([
+      "Risk raised in a conversation: Security review may slip",
+      "Unresolved objection: The price is too high",
+      "Lifecycle: Former customer",
+      "Sentiment: Negative",
+      "Decision: We decided to renew.",
+      "Promise: I will send the proposal.",
+    ]);
+    expect(lines.join("\n")).not.toMatch(/claim:|speaker_2|former_customer|\bone\b/);
+    expect(activityEvidenceLines(null, { conversation_claims: [{ kind: "risk", value: "local-user" }] })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+  });
+
   it("names message counts without the mail row's sentence", () => {
     expect(
       activityEvidenceLines(null, {

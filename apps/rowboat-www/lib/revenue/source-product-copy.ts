@@ -552,6 +552,72 @@ function activityAttendanceLines(key: string, value: unknown): string[] | null {
   }
 }
 
+/**
+ * A reviewed conversation stores each material claim on the activity. The
+ * suggestion card already names a risk and an objection. The opened activity
+ * uses those titles. Lifecycle and sentiment use the company sheet's words.
+ * A review id and a speaker id stay hidden.
+ */
+function activityConversationClaimLines(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    const line = activityConversationClaimLine(item);
+    if (!line || seen.has(line)) continue;
+    seen.add(line);
+    lines.push(line);
+  }
+  return lines;
+}
+
+function activityConversationClaimLine(item: unknown): string | null {
+  if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+  const claim = item as Record<string, unknown>;
+  const kind = typeof claim.kind === "string" ? claim.kind.trim() : "";
+  const title = activityClaimTitle(kind);
+  if (!title) return null;
+  const stored = typeof claim.value === "string" ? claim.value.trim() : "";
+  const quote = typeof claim.exactQuote === "string" ? claim.exactQuote.trim() : "";
+  const raw = stored || quote;
+  if (!raw || raw === "local-user" || raw === "meeting-counterparty") return null;
+  const shown = activityClaimValue(kind, raw);
+  if (!shown) return null;
+  return `${title}: ${shown}`;
+}
+
+function activityClaimTitle(kind: string): string | null {
+  switch (kind) {
+    case "risk":
+      return "Risk raised in a conversation";
+    case "objection":
+      return "Unresolved objection";
+    case "decision":
+      return "Decision";
+    case "milestone":
+      return "Milestone";
+    case "stakeholder":
+      return "Stakeholder";
+    case "commitment":
+      return "Promise";
+    case "lifecycle":
+      return "Lifecycle";
+    case "sentiment":
+      return "Sentiment";
+    default:
+      return null;
+  }
+}
+
+function activityClaimValue(kind: string, value: string): string | null {
+  if (kind === "lifecycle" || kind === "sentiment") {
+    if (/^[a-z0-9_]+$/.test(value)) return SHEET_STATE_LABELS[value] ?? enumLabel(value);
+    return value;
+  }
+  if (/^[a-z0-9_:-]+$/.test(value)) return null;
+  return value;
+}
+
 function activityPeopleCount(value: unknown, one: string, many: string): string[] {
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0) return [];
   return [value === 1 ? `1 ${one}` : `${String(value)} ${many}`];
@@ -779,6 +845,10 @@ function linesFromActivity(value: unknown): string[] {
     const transcript = activityTranscriptLines(key, item);
     if (transcript !== null) {
       lines.push(...transcript);
+      continue;
+    }
+    if (key === "conversation_claims") {
+      lines.push(...activityConversationClaimLines(item));
       continue;
     }
     if (
