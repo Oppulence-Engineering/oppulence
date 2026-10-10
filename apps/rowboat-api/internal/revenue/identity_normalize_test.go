@@ -5218,6 +5218,13 @@ func TestRelationshipSearchFindsTheActivityHeading(t *testing.T) {
 	}
 	writeObservation(note, "user", "note", "harbor-note")
 	writeObservation(mail, "gmail", "thread.updated", "harbor-mail")
+	exchange, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Exchange",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeObservation(exchange, "gmail", "email_exchanged", "harbor-exchange")
 	writeObservation(attend, "calendar", "meeting_attendance_recorded", "harbor-attend")
 
 	assertCompanyQuery := func(query string, want ...string) {
@@ -5239,8 +5246,9 @@ func TestRelationshipSearchFindsTheActivityHeading(t *testing.T) {
 	assertCompanyQuery("Note saved", "Harbor Note")
 	assertCompanyQuery("Added by you · Note saved", "Harbor Note")
 	assertCompanyQuery("Mail updated", "Harbor Mail")
+	assertCompanyQuery("Mail", "Harbor Exchange", "Harbor Mail")
 	assertCompanyQuery("Gmail · Mail updated", "Harbor Mail")
-	assertCompanyQuery("Gmail", "Harbor Mail")
+	assertCompanyQuery("Gmail", "Harbor Mail", "Harbor Exchange")
 	assertCompanyQuery("Added by you", "Harbor Note")
 	assertCompanyQuery("Attendance", "Harbor Attend")
 	assertCompanyQuery("Calendar · Attendance", "Harbor Attend")

@@ -2478,6 +2478,7 @@ var activityEventSearchLabels = []struct {
 	{"mail updated", "thread.updated"},
 	{"mail", "thread"},
 	{"mail", "thread.snapshot"},
+	{"mail", "email_exchanged"},
 	{"message", "message.posted"},
 	{"message", "message.snapshot"},
 	{"message", "message.created"},

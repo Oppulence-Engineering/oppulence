@@ -367,6 +367,9 @@ func TestGraphSourceLabelUsesTheProductTitle(t *testing.T) {
 	if got := graphEventLabel("thread.updated"); got != "Mail updated" {
 		t.Fatalf("thread.updated label = %q", got)
 	}
+	if got := graphEventLabel("email_exchanged"); got != "Mail" {
+		t.Fatalf("email_exchanged label = %q", got)
+	}
 	if got := graphEventLabel("custom.event_name"); got != "Custom Event Name" {
 		t.Fatalf("unknown event label = %q", got)
 	}

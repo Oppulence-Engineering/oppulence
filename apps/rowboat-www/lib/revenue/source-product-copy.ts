@@ -91,6 +91,7 @@ const ACTIVITY_EVENT_LABELS: Record<string, string> = {
   "thread.updated": "Mail updated",
   thread: "Mail",
   "thread.snapshot": "Mail",
+  email_exchanged: "Mail",
   "message.posted": "Message",
   "message.snapshot": "Message",
   "message.created": "Message",

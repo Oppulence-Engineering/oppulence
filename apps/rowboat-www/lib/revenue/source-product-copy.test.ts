@@ -215,6 +215,7 @@ describe("source product copy", () => {
 
   it("names an activity with the product title", () => {
     expect(activityHeading("gmail", "thread.updated")).toBe("Gmail · Mail updated");
+    expect(activityHeading("gmail", "email_exchanged")).toBe("Gmail · Mail");
     expect(activityHeading("desktop_note", "note")).toBe("A note · Note saved");
     expect(activityHeading("hubspot", "company.updated")).toBe("HubSpot · Company updated");
     expect(activityHeading("custom_feed", "custom.event_name")).toBe(
