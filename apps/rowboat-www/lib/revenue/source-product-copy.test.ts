@@ -524,6 +524,15 @@ describe("source product copy", () => {
               "long source segments were split into bounded evidence excerpts",
               "remote speaker labels are meeting-scoped",
               "mic_raw_fallback_failed: session continues without a microphone track",
+              "system_tap_denied: process tap creation failed (OSStatus -10877) — grant System Settings › Privacy & Security › Screen & System Audio Recording",
+              "system_ioproc_failed: IO proc creation failed (OSStatus -50)",
+              "system_aggregate_failed: aggregate device creation failed (OSStatus -1)",
+              "mic_permission_denied: microphone access denied — enable Oppulence in System Settings › Privacy & Security › Microphone",
+              "mic_format_unsupported: unsupported mic format <AVAudioFormat 0x1: 2 ch, 48000 Hz, Float32>",
+              "mic_engine_start_failed: mic engine start failed: The operation couldn’t be completed — check System Settings › Privacy & Security › Microphone",
+              "system_writer_failed: output file failed: No space left on device",
+              "mic_writer_failed: output file failed: permission denied",
+              "standby_promote_failed: could not open any track for writing — still standing by",
             ],
           },
         },
@@ -536,7 +545,30 @@ describe("source product copy", () => {
       "A long stretch was split into shorter excerpts.",
       "Speaker names apply only to this meeting.",
       "The microphone could not be recorded.",
+      "The other side could not be recorded. Allow screen and system audio recording in System Settings.",
+      "The other side could not be recorded.",
+      "The microphone is blocked. Allow microphone access in System Settings.",
+      "The microphone could not be started.",
+      "The other side could not be saved.",
+      "The microphone recording could not be saved.",
+      "The recording could not be saved.",
     ]);
+    expect(
+      activityEvidenceLines(
+        {
+          envelope: {
+            captureCaveats: [
+              "system_tap_format: could not read tap stream format (OSStatus -50)",
+              "system_device_start_failed: aggregate device start failed (OSStatus -1)",
+              "standby_flush_failed: Error Domain=NSPOSIXErrorDomain Code=28",
+            ],
+          },
+        },
+        null,
+      ).join("\n"),
+    ).toBe(
+      ["The other side could not be recorded.", "The recording could not be saved."].join("\n"),
+    );
   });
 
   it("names a reviewed conversation without the claim id", () => {

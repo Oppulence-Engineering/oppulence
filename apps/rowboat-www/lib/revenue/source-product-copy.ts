@@ -661,12 +661,48 @@ function activityCaveatLine(value: string): string | null {
     return "The microphone could not be recorded.";
   }
   const coded = /^([a-z0-9_:-]+): (.+)$/.exec(text);
-  if (coded?.[1] && coded[2] && coded[1].includes("_")) {
-    const message = coded[2].trim();
-    if (!message || /^[a-z0-9_:-]+$/.test(message)) return null;
-    return message;
+  if (coded?.[1] && coded[2]) {
+    const recorder = activityRecorderFailureLine(coded[1]);
+    if (recorder) return recorder;
+    if (coded[1].includes("_")) {
+      const message = coded[2].trim();
+      if (!message || /^[a-z0-9_:-]+$/.test(message)) return null;
+      return message;
+    }
   }
   return text;
+}
+
+/**
+ * A failed recorder stores a machine code and a host sentence that names
+ * OSStatus, process taps, and aggregate devices. The opened activity says
+ * which side failed. The code and the status number stay off the sheet.
+ */
+function activityRecorderFailureLine(code: string): string | null {
+  switch (code) {
+    case "system_tap_denied":
+      return "The other side could not be recorded. Allow screen and system audio recording in System Settings.";
+    case "system_tap_format":
+    case "system_aggregate_failed":
+    case "system_ioproc_failed":
+    case "system_device_start_failed":
+      return "The other side could not be recorded.";
+    case "system_writer_failed":
+      return "The other side could not be saved.";
+    case "mic_permission_denied":
+      return "The microphone is blocked. Allow microphone access in System Settings.";
+    case "mic_engine_start_failed":
+      return "The microphone could not be started.";
+    case "mic_format_unsupported":
+      return "The microphone could not be recorded.";
+    case "mic_writer_failed":
+      return "The microphone recording could not be saved.";
+    case "standby_flush_failed":
+    case "standby_promote_failed":
+      return "The recording could not be saved.";
+    default:
+      return null;
+  }
 }
 
 /**
