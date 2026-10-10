@@ -441,6 +441,11 @@ describe("source product copy", () => {
       transcription_engine: "whisper.cpp",
       transcription_model: "ggml-base.en",
       audio_retention: "untilTranscribed",
+      tracks: [
+        { id: "mic", silent: true, peak: 0 },
+        { id: "system", silent: false, peak: 0.4 },
+        { id: "room", silent: true, peak: 0 },
+      ],
     });
     expect(lines).toEqual([
       "Meeting: Q3 review",
@@ -449,6 +454,7 @@ describe("source product copy", () => {
       "Transcribed with whisper.cpp",
       "Model: ggml-base.en",
       "The recording is removed after transcription",
+      "The microphone was silent",
     ]);
     expect(lines.join("\n")).not.toMatch(/sess-18|fp-18|untilTranscribed|Session Id/);
     expect(activityEvidenceLines(null, { audio_retention: "always", transcript_payload_truncated: false })).toEqual([
@@ -460,6 +466,15 @@ describe("source product copy", () => {
     expect(activityEvidenceLines(null, { transcription_engine: "local-user" })).toEqual([
       "Nothing else was saved with this activity.",
     ]);
+    expect(
+      activityEvidenceLines(null, {
+        tracks: [
+          { id: "system", silent: true, peak: 0 },
+          { id: "mic", silent: true, peak: 0 },
+        ],
+      }),
+    ).toEqual(["The other side was silent", "The microphone was silent"]);
+    expect(lines.join("\n")).not.toMatch(/peak|Tracks:/);
   });
 
   it("names a reviewed conversation without the claim id", () => {

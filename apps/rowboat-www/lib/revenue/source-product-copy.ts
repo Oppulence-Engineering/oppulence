@@ -792,9 +792,37 @@ function activityTranscriptLines(key: string, value: unknown): string[] | null {
         default:
           return [];
       }
+    case "tracks":
+      return activityTrackLines(value);
     default:
       return null;
   }
+}
+
+/**
+ * A meeting stores whether the microphone and the other side were silent.
+ * A peak level stays off the activity. A track that had sound needs no line.
+ */
+function activityTrackLines(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const track = item as Record<string, unknown>;
+    if (track.silent !== true) continue;
+    const id = typeof track.id === "string" ? track.id.trim() : "";
+    const line =
+      id === "mic"
+        ? "The microphone was silent"
+        : id === "system"
+          ? "The other side was silent"
+          : "";
+    if (!line || seen.has(line)) continue;
+    seen.add(line);
+    lines.push(line);
+  }
+  return lines;
 }
 
 /**
