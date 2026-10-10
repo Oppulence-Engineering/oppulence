@@ -710,6 +710,42 @@ function activityRecorderFailureLine(code: string): string | null {
  * opened activity reads facts, so those notes never appeared. The same
  * sentences as an attendance caveat are the ones to show.
  */
+/**
+ * A meeting transcript stores what was said on the sealed envelope. The
+ * opened activity used to show the line count and skip the words. Speaker
+ * ids, confidence, and timestamps stay on the envelope.
+ */
+function activityEnvelopeLines(payload: unknown): string[] {
+  const record = activityRecord(payload);
+  const envelope = record ? activityRecord(record.envelope) : null;
+  if (!envelope) return [];
+  const lines: string[] = [];
+  const title = activityScalar(envelope.title);
+  if (title && title !== "local-user" && !/^[a-z0-9_:-]+$/.test(title)) {
+    lines.push(`Meeting: ${title}`);
+  }
+  const segments = envelope.segments;
+  if (!Array.isArray(segments)) return lines;
+  const seen = new Set<string>();
+  for (const item of segments) {
+    const line = activityTranscriptSegmentLine(item);
+    if (!line || seen.has(line)) continue;
+    seen.add(line);
+    lines.push(line);
+  }
+  return lines;
+}
+
+function activityTranscriptSegmentLine(item: unknown): string | null {
+  if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+  const segment = item as Record<string, unknown>;
+  const text = typeof segment.text === "string" ? segment.text.trim() : "";
+  if (!text || text === "local-user" || text === "meeting-counterparty") return null;
+  if (/^[a-z0-9_:-]+$/.test(text)) return null;
+  const speaker = activityClaimSpeaker(segment.speakerLabel);
+  return speaker ? `${speaker}: ${text}` : text;
+}
+
 function activityPayloadCaveatLines(payload: unknown): string[] {
   const record = activityRecord(payload);
   if (!record) return [];
@@ -1354,6 +1390,9 @@ export function activityEvidenceLines(
 ): string[] {
   const fromPayload = linesFromActivity(payload);
   const lines = fromPayload.length > 0 ? [...fromPayload] : linesFromActivity(facts);
+  for (const line of activityEnvelopeLines(payload)) {
+    if (!lines.includes(line)) lines.push(line);
+  }
   for (const line of activityPayloadCaveatLines(payload)) {
     if (!lines.includes(line)) lines.push(line);
   }

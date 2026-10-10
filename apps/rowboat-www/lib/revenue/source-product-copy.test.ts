@@ -569,6 +569,53 @@ describe("source product copy", () => {
     ).toBe(
       ["The other side could not be recorded.", "The recording could not be saved."].join("\n"),
     );
+    const spoken = activityEvidenceLines(
+      {
+        envelope: {
+          sourceRecordId: "sess-18",
+          fingerprint: "fp-18",
+          title: "Q3 review",
+          segments: [
+            {
+              id: "seg-1",
+              speakerId: "local-user",
+              speakerLabel: "You",
+              speakerConfidence: 1,
+              startMs: 0,
+              endMs: 1200,
+              text: "I will send the proposal.",
+            },
+            {
+              id: "seg-2",
+              speakerId: "meeting-participant:avery",
+              speakerLabel: "Avery",
+              speakerConfidence: 0.9,
+              startMs: 1200,
+              endMs: 2400,
+              text: "Security review may slip.",
+            },
+            {
+              id: "seg-3",
+              speakerId: "speaker_2",
+              speakerLabel: "Speaker 2",
+              speakerConfidence: 0.4,
+              startMs: 2400,
+              endMs: 3000,
+              text: "We should look at the renewal.",
+            },
+          ],
+        },
+      },
+      { meeting_title: "Q3 review", transcription_engine: "deepgram" },
+    );
+    expect(spoken).toEqual([
+      "Meeting: Q3 review",
+      "Transcribed with Deepgram",
+      "You: I will send the proposal.",
+      "Avery: Security review may slip.",
+      "We should look at the renewal.",
+    ]);
+    expect(spoken.join("\n")).not.toMatch(/sess-18|fp-18|speaker_2|local-user|speakerConfidence|startMs/);
   });
 
   it("names a reviewed conversation without the claim id", () => {
