@@ -452,7 +452,7 @@ describe("source product copy", () => {
       "Meeting: Q3 review",
       "12 lines in the transcript",
       "The transcript was shortened",
-      "Transcribed with whisper.cpp",
+      "Transcribed with Whisper",
       "Model: ggml-base.en",
       "The recording is removed after transcription",
       "The microphone was silent",
@@ -465,6 +465,15 @@ describe("source product copy", () => {
       "The recording is not kept",
     ]);
     expect(activityEvidenceLines(null, { transcription_engine: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "parakeet" })).toEqual([
+      "Transcribed with Parakeet",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "whisper" })).toEqual([
+      "Transcribed with Whisper",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "speaker_2" })).toEqual([
       "Nothing else was saved with this activity.",
     ]);
     expect(

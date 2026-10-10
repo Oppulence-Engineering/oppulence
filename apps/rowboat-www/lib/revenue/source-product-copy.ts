@@ -914,11 +914,8 @@ function activityTranscriptLines(key: string, value: unknown): string[] | null {
       return activityPeopleCount(value, "line in the transcript", "lines in the transcript");
     case "transcript_payload_truncated":
       return value === true ? ["The transcript was shortened"] : [];
-    case "transcription_engine": {
-      const engine = activityScalar(value);
-      if (!engine || engine === "local-user" || /^[a-z0-9_:-]+$/.test(engine)) return [];
-      return [`Transcribed with ${engine}`];
-    }
+    case "transcription_engine":
+      return activityTranscriptionEngineLines(value);
     case "transcription_model": {
       const model = activityScalar(value);
       if (!model || model === "local-user") return [];
@@ -940,6 +937,26 @@ function activityTranscriptLines(key: string, value: unknown): string[] | null {
       return activityTrackLines(value);
     default:
       return null;
+  }
+}
+
+/**
+ * Settings name the on-device engines Whisper and Parakeet. A Parakeet
+ * transcript stores the bare token, which the activity used to drop. A
+ * speaker id stays hidden.
+ */
+function activityTranscriptionEngineLines(value: unknown): string[] {
+  const engine = activityScalar(value);
+  if (!engine || engine === "local-user" || engine === "meeting-counterparty") return [];
+  switch (engine.trim().toLowerCase()) {
+    case "parakeet":
+      return ["Transcribed with Parakeet"];
+    case "whisper":
+    case "whisper.cpp":
+      return ["Transcribed with Whisper"];
+    default:
+      if (/^[a-z0-9_:-]+$/.test(engine)) return [];
+      return [`Transcribed with ${engine}`];
   }
 }
 
