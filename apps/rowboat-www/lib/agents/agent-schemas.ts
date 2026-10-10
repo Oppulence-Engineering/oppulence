@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
+import { scopeProductLabel } from "@/lib/connectors/connector-product-copy";
 
 const NonEmptyStringSchema = z.string().trim().min(1);
 
@@ -175,6 +176,54 @@ export function agentSlugTitle(slug: string): string {
   const words = slug.replace(/[._-]+/g, " ").trim();
   if (!words) return slug;
   return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+const AGENT_PROVIDER_LABELS: Record<string, string> = {
+  openai: "OpenAI",
+  openrouter: "OpenRouter",
+  anthropic: "Anthropic",
+  google: "Google",
+};
+
+/**
+ * Required connections store a catalog slug or a scope. The agents page uses
+ * the same names as the connections page. The stored value stays on the agent.
+ */
+const AGENT_CONNECTION_LABELS: Record<string, string> = {
+  google: "Google",
+  gmail: "Gmail",
+  calendar: "Calendar",
+  slack: "Slack",
+  canvas: "Canvas",
+  corinthian: "Corinthian",
+  cadence: "Cadence",
+  conduit: "Conduit",
+  eigen: "Eigen",
+  wispr: "Wispr Flow",
+  hubspot: "HubSpot",
+  github: "GitHub",
+  linear: "Linear",
+  notion: "Notion",
+  stripe: "Stripe",
+};
+
+export function agentConnectionLabel(name?: string | null): string {
+  const trimmed = name?.trim() ?? "";
+  if (!trimmed) return "";
+  const known = AGENT_CONNECTION_LABELS[trimmed.toLowerCase()];
+  if (known) return known;
+  const words = trimmed.replace(/[:._-]+/g, " ").replace(/\s+/g, " ").trim();
+  const fallback = words ? words.charAt(0).toUpperCase() + words.slice(1) : trimmed;
+  return scopeProductLabel(trimmed.toLowerCase(), fallback);
+}
+
+/** The agents page names the provider. The stored slug stays on the agent. */
+export function agentProviderLabel(provider?: string | null): string {
+  const trimmed = provider?.trim() ?? "";
+  if (!trimmed) return "Workspace default";
+  const known = AGENT_PROVIDER_LABELS[trimmed.toLowerCase()];
+  if (known) return known;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
 
 /** The API stores a source enum. The agents page badge is a product label. */

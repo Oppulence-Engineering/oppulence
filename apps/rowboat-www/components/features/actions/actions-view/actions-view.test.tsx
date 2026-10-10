@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { actionKindLabel, actionParamsLines } from "@/lib/actions/actions";
 import {
   approvalListFailureCopy,
   approvalRefreshFailureCopy,
@@ -38,6 +39,16 @@ describe("ActionsView", () => {
     expect(source).toContain("actionFailure(e, \"Could not reject the action.\")");
     expect(source).toContain("return friendlyRevenueError(errMessage(error, fallback))");
     expect(source).toContain("actionStatusLabel(status)");
+    expect(actionKindLabel("conduit.dunning.advance")).toBe("Advance dunning");
+    expect(actionKindLabel("send_invoice")).toBe("Send Invoice");
+    expect(actionKindLabel("")).toBe("Action");
+    expect(actionParamsLines('{"amount":100,"step":2}')).toEqual(["Amount: 100", "Step: 2"]);
+    expect(actionParamsLines("not json")).toEqual(["not json"]);
+    expect(actionParamsLines("")).toEqual([]);
+    expect(source).toContain("<Ref>{actionKindLabel(p.kind)}</Ref>");
+    expect(source).not.toContain("<Ref>{p.kind}</Ref>");
+    expect(source).toContain("actionParamsLines(p.paramsJson)");
+    expect(source).not.toContain("JSON.stringify(JSON.parse(raw)");
     expect(source).not.toContain("scoped token");
     expect(source).not.toContain("Act seam");
     expect(source).not.toContain("Closed-loop");

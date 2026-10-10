@@ -12,6 +12,8 @@ describe("ActionAuditSheet", () => {
 
   it("names a proposal status the same way the approval queue does", () => {
     expect(source).toContain("actionStatusLabel(p.status)");
+    expect(source).toContain("{actionKindLabel(p.kind)}");
+    expect(source).not.toContain(">{p.kind}<");
     expect(source).toContain(
       'setError(friendlyRevenueError(errMessage(e, "Could not load the audit trail.")))',
     );

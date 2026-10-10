@@ -12,6 +12,8 @@ import {
   communicationPreviewLabel,
   companyDomainHref,
   companyDomainLabel,
+  companyEnrichmentColumnLabel,
+  companyEnrichmentSheetValue,
   companyName,
   evidenceExcerptLabel,
   companyDirectoryCount,
@@ -38,6 +40,7 @@ import {
   recommendationPriorityLabel,
   companyEmailDetail,
   companyEmailHref,
+  companyFactSourceLabel,
   companyNextActionCopy,
   companyStateAnswer,
   missionControlChangeAnswer,
@@ -77,9 +80,14 @@ import {
   earlierEvidenceLabel,
   mailThreadSubjectLabel,
   mailThreadPartyLabel,
+  mailThreadActivityLabel,
   mailMessageCountLabel,
   mailReplyLabel,
   reviewEvidenceKindLabel,
+  reviewItemLabelCopy,
+  focusedReviewIntro,
+  reviewCaveatCopy,
+  reviewCaveatLines,
   acceptedPromiseLabel,
   mutualPlanCreateLabel,
   mutualPlanEmptyCopy,
@@ -130,6 +138,7 @@ import {
   duplicateInboxLabel,
   identitySupportLabel,
   liveCueCopy,
+  uncertainClaimCopy,
   liveCueVisible,
 } from "@/components/features/revenue/relationships-view/relationships-view";
 
@@ -351,6 +360,69 @@ describe("RelationshipsView", () => {
     expect(activitySummaryLabel("Action outcome observed: meeting booked.")).toBe("Meeting booked");
     expect(activitySummaryLabel("Action outcome observed: bad recommendation.")).toBe(
       "Not a good suggestion",
+    );
+    expect(activitySummaryLabel("Commitment marked fulfilled: Send the proposal")).toBe(
+      "This promise was kept: Send the proposal",
+    );
+    expect(activitySummaryLabel("Commitment marked cancelled: Send the proposal")).toBe(
+      "This promise was called off: Send the proposal",
+    );
+    expect(activitySummaryLabel("Commitment marked open: Send the proposal")).toBe(
+      "This promise is still open: Send the proposal",
+    );
+    expect(activitySummaryLabel("We committed to: Send the proposal")).toBe(
+      "We made this promise: Send the proposal",
+    );
+    expect(activitySummaryLabel("Avery committed to: Send the proposal")).toBe(
+      "Avery made this promise: Send the proposal",
+    );
+    expect(activitySummaryLabel("speaker 2 committed to: Send the proposal")).toBe(
+      "They made this promise: Send the proposal",
+    );
+    expect(activitySummaryLabel('2 external participant(s) on "Q3 review"')).toBe(
+      "2 people from outside the company on Q3 review",
+    );
+    expect(activitySummaryLabel('1 external participant(s) on "Q3 review"')).toBe(
+      "1 person from outside the company on Q3 review",
+    );
+    expect(activitySummaryLabel('0 external participant(s) on "Q3 review"')).toBe(
+      "No one from outside the company on Q3 review",
+    );
+    expect(activitySummaryLabel("Q3 review · 12 segments · 3 material claims")).toBe(
+      "Q3 review · 12 lines in the transcript · 3 claims",
+    );
+    expect(activitySummaryLabel("Q3 review · 1 segments · 1 material claims")).toBe(
+      "Q3 review · 1 line in the transcript · 1 claim",
+    );
+    expect(activitySummaryLabel("4-message thread with acme.com")).toBe("4 messages with acme.com");
+    expect(activitySummaryLabel("1-message thread with an external contact")).toBe(
+      "1 message with someone outside the company",
+    );
+    expect(activitySummaryLabel("Gmail thread observed: Kickoff notes")).toBe("Mail: Kickoff notes");
+    expect(activitySummaryLabel("Gmail thread observed: local-user")).toBe("Mail");
+    expect(activitySummaryLabel("Calendar meeting observed with ada@acme.example")).toBe(
+      "Meeting with ada@acme.example",
+    );
+    expect(activitySummaryLabel("Calendar meeting observed with local-user")).toBe("Meeting");
+    expect(activitySummaryLabel("HubSpot company snapshot: Acme")).toBe("Company from HubSpot: Acme");
+    expect(activitySummaryLabel("HubSpot company snapshot: HubSpot company 123")).toBe(
+      "Company from HubSpot",
+    );
+    expect(activitySummaryLabel("Slack message observed in #general")).toBe("Message in #general");
+    expect(activitySummaryLabel("Slack message observed in #Slack channel C123")).toBe(
+      "Message in Slack",
+    );
+    expect(activitySummaryLabel("User corrected reviewed conversation evidence.")).toBe(
+      "You corrected what was said.",
+    );
+    expect(activitySummaryLabel("User resolved a typed relationship contradiction.")).toBe(
+      "You chose which detail is current.",
+    );
+    expect(activitySummaryLabel("User decided a proposed conversation change.")).toBe(
+      "You decided a suggested change.",
+    );
+    expect(activitySummaryLabel("Counterparty responded to a shared mutual action plan.")).toBe(
+      "They responded to the shared plan.",
     );
     expect(communicationPreviewLabel("   ")).toBe("No message preview");
     expect(communicationPreviewLabel("Invoice packet")).toBe("Invoice packet");
@@ -946,12 +1018,65 @@ describe("RelationshipsView", () => {
     expect(source).toContain("mailThreadSubjectLabel(thread.subject)");
     expect(source).toContain("mailThreadPartyLabel(thread.counterpartyEmail)");
     expect(source).toContain("mailMessageCountLabel(thread.messageCount)");
+    expect(mailThreadActivityLabel(null)).toBe("Not known");
+    expect(mailThreadActivityLabel("")).toBe("Not known");
+    expect(mailThreadActivityLabel("not-a-date")).toBe("Not known");
+    expect(mailThreadActivityLabel("2026-08-04T12:00:00Z")).not.toBe("Not known");
+    expect(source).toContain("mailThreadActivityLabel(thread.lastActivityAt)");
+    expect(source).not.toContain("Unknown date");
     expect(source).not.toContain('thread.subject || "Email conversation"');
     expect(mailReplyLabel("needs_reply")).toBe("Needs a reply");
     expect(mailReplyLabel("awaiting_reply")).toBe("Waiting on them");
     expect(mailReplyLabel("quiet")).toBe("Quiet");
     expect(reviewEvidenceKindLabel("speaker")).toBe("Who said it");
     expect(reviewEvidenceKindLabel("claim")).toBe("What was said");
+    expect(reviewItemLabelCopy("Low-confidence material claim")).toBe("Look at this quote again.");
+    expect(reviewItemLabelCopy("Resolve the speaker for a material statement")).toBe(
+      "Name who said this.",
+    );
+    expect(reviewItemLabelCopy("Confirm the low-confidence wording")).toBe("Confirm these words.");
+    expect(reviewItemLabelCopy("Confirm the stakeholder identity or role")).toBe(
+      "Confirm who this person is.",
+    );
+    expect(reviewItemLabelCopy("Review proposed promise")).toBe("A suggested promise is waiting.");
+    expect(reviewItemLabelCopy("Review proposed commitment")).toBe("A suggested promise is waiting.");
+    expect(reviewItemLabelCopy("Review proposed next_action")).toBe(
+      "A suggested next step is waiting.",
+    );
+    expect(reviewItemLabelCopy("Review proposed local-user")).toBe("A suggestion is waiting.");
+    expect(reviewItemLabelCopy("Review proposed ")).toBe("A suggestion is waiting.");
+    expect(reviewItemLabelCopy("Send the harbor note")).toBe("Send the harbor note");
+    expect(focusedReviewIntro()).toBe(
+      "Approve, correct, reject, or defer each one before it changes this company.",
+    );
+    expect(reviewCaveatCopy("speaker assignment requires review")).toBe(
+      "Who spoke is not confirmed.",
+    );
+    expect(reviewCaveatCopy("commitment acceptance requires review")).toBe(
+      "Who accepted this promise is not confirmed.",
+    );
+    expect(reviewCaveatCopy("deterministic fallback candidate requires review")).toBe(
+      "This came from a rule. Check it before saving.",
+    );
+    expect(reviewCaveatCopy("transcript payload was truncated")).toBeNull();
+    expect(reviewCaveatCopy("local-user")).toBeNull();
+    expect(
+      reviewCaveatLines([
+        "speaker assignment requires review",
+        "speaker assignment requires review",
+        "Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined.",
+        "deterministic fallback candidate requires review",
+      ]),
+    ).toEqual([
+      "Who spoke is not confirmed.",
+      "This came from a rule. Check it before saving.",
+    ]);
+    expect(reviewCaveatLines(undefined)).toEqual([]);
+    expect(source).toContain("reviewItemLabelCopy(item.label)");
+    expect(source).toContain("focusedReviewIntro()");
+    expect(source).toContain("reviewCaveatLines(item.caveats)");
+    expect(source).not.toContain("proposed material change");
+    expect(source).not.toContain("{item.label}");
     expect(mutualPlanStatusLabel("internally_approved")).toBe("Approved in this workspace");
     expect(mutualPlanHeading("draft", 1)).toBe("Draft · Version 1");
     expect(mutualPlanHeading("internally_approved", 2)).toBe(
@@ -1015,6 +1140,8 @@ describe("RelationshipsView", () => {
     );
     expect(source).toContain("contradictionSourceLabel(side.source)");
     expect(source).toContain("contradictionReasonCopy(item.reason)");
+    expect(source).toContain("projectionReasonCopy(change.reason)");
+    expect(source).toContain("projectionReasonCopy(data.intelligence.delta.recommendationReason)");
     expect(source).toContain("relationshipChangeLabel(change.dimension)");
     expect(source).toContain("relationshipDeltaValue(side.value)");
     expect(source).not.toContain("(side) => side.source)");
@@ -1150,6 +1277,27 @@ describe("RelationshipsView", () => {
     expect(
       detailEvidenceCopy({ supported: true, reason: "Confirmed in the last meeting." }),
     ).toBe("Confirmed in the last meeting.");
+    expect(
+      detailEvidenceCopy({
+        supported: true,
+        reason: "User corrected conversation evidence during focused review.",
+      }),
+    ).toBe("You corrected what was said.");
+    expect(
+      detailEvidenceCopy({
+        supported: true,
+        reason: "User decided a proposed conversation change.",
+      }),
+    ).toBe("You decided a suggested change.");
+    expect(
+      detailEvidenceCopy({
+        supported: true,
+        reason: "User selected the current value from a focused contradiction case.",
+      }),
+    ).toBe("You chose the current value.");
+    expect(
+      detailEvidenceCopy({ supported: true, reason: "HubSpot company lifecycle stage." }),
+    ).toBe("Taken from HubSpot.");
     expect(source).toContain("detailEvidenceCopy(item)");
     expect(source).not.toContain("{item.reason || item.missingReason}");
     expect(
@@ -1182,9 +1330,43 @@ describe("RelationshipsView", () => {
       title: "Two details disagree",
       detail: "Which Next action should be the current one?",
     });
+    expect(
+      liveCueCopy({
+        kind: "renewal_context",
+        title: "Renewal context",
+        detail: "The renewal is in June.",
+      }),
+    ).toEqual({
+      title: "Up for renewal",
+      detail: "The renewal is in June.",
+    });
+    expect(
+      liveCueCopy({
+        kind: "renewal_context",
+        title: "Renewal context",
+        detail: "  ",
+      }),
+    ).toEqual({
+      title: "Up for renewal",
+      detail: "Decide what happens before this renewal.",
+    });
+    expect(
+      liveCueCopy({
+        kind: "renewal_context",
+        title: "Renewal context",
+        detail: "local-user",
+      }),
+    ).toEqual({
+      title: "Up for renewal",
+      detail: "Decide what happens before this renewal.",
+    });
     expect(liveCueVisible({ kind: "missing_next_step" }, "prospect")).toBe(false);
     expect(liveCueVisible({ kind: "missing_next_step" }, "evaluation")).toBe(true);
     expect(liveCueVisible({ kind: "overdue_commitment" }, "prospect")).toBe(true);
+    expect(uncertainClaimCopy(1)).toBe("1 conversation detail still needs a check.");
+    expect(uncertainClaimCopy(2)).toBe("2 conversation details still need a check.");
+    expect(source).toContain("uncertainClaimCopy(data.intelligence.delta.uncertainClaimIds.length)");
+    expect(source).not.toContain("queued for focused review");
     expect(source).toContain("liveCueVisible(cue, data?.relationship.lifecycle ?? \"\")");
     expect(source).toContain("Suggestions (");
     expect(source).not.toContain("Live cue cards");
@@ -1200,6 +1382,9 @@ describe("RelationshipsView", () => {
     expect(companyEmailHref("ada@acme.com?bcc=evil@example.com")).toBeNull();
     expect(companyEmailHref("javascript:alert(1)")).toBeNull();
     expect(companyEmailHref("")).toBeNull();
+    expect(companyFactSourceLabel()).toBe("Check the source");
+    expect(source.match(/\{companyFactSourceLabel\(\)\}/g)).toHaveLength(2);
+    expect(source).not.toContain("\n                                source\n");
     expect(companyEmailDetail("")).toEqual({ text: "Not filled in" });
     expect(companyEmailDetail("ada@acme.com")).toEqual({
       text: "ada@acme.com",
@@ -1242,6 +1427,31 @@ describe("RelationshipsView", () => {
     expect(companyNextActionCopy({ nextAction: "Send the packet" })).toBe("Send the packet");
     expect(companyNextActionCopy({ openActions: 1 })).toBe("1 open action");
     expect(companyNextActionCopy({ openActions: 2 })).toBe("2 open actions");
+    expect(companyEnrichmentColumnLabel(undefined, "No headquarters recorded")).toBe(
+      "No headquarters recorded",
+    );
+    expect(companyEnrichmentColumnLabel("   ", "No headquarters recorded")).toBe(
+      "No headquarters recorded",
+    );
+    expect(companyEnrichmentColumnLabel("Austin", "No headquarters recorded")).toBe("Austin");
+    expect(companyEnrichmentSheetValue("headquarters", "   ")).toBe("No headquarters recorded");
+    expect(companyEnrichmentSheetValue("employee_range", "")).toBe("No employee range recorded");
+    expect(companyEnrichmentSheetValue("funding_summary", "   ")).toBe("No funding recorded");
+    expect(companyEnrichmentSheetValue("revenue_range", " ")).toBe("No revenue recorded");
+    expect(companyEnrichmentSheetValue("growth_signals", "")).toBe("No growth signals recorded");
+    expect(companyEnrichmentSheetValue("headquarters", "Austin")).toBe("Austin");
+    expect(companyEnrichmentSheetValue("founded_year", "   ")).toBeNull();
+    expect(companyEnrichmentSheetValue("founded_year", "2014")).toBe("2014");
+    expect(source).toContain("companyEnrichmentSheetValue(field, value)");
+    expect(source).toContain(
+      'companyEnrichmentColumnLabel(\n                            relationship.companyEnrichmentData?.headquarters,\n                            "No headquarters recorded",\n                          )',
+    );
+    expect(source).toContain('"No employee range recorded"');
+    expect(source).toContain('"No funding recorded"');
+    expect(source).toContain('"No revenue recorded"');
+    expect(source).toContain('"No growth signals recorded"');
+    expect(source).not.toContain('companyEnrichmentData?.headquarters || "—"');
+    expect(source).not.toContain('companyEnrichmentData?.employee_range || "—"');
     expect(source).toContain("companyDescriptionCopy(data.relationship)");
     expect(source).toContain("companyNextActionCopy(relationship)");
     expect(source).toContain("commitmentPreviewRemainder(hiddenCommitments)");
@@ -1395,6 +1605,8 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("${participant.role}");
     expect(source).toContain("personEvidenceLabel(attribute.dimension)");
     expect(source).toContain("verifySourceLabel(index)");
+    expect(source).toContain("personResearchConfidenceLabel(attribute.confidence)");
+    expect(source).not.toContain("${Math.round(attribute.confidence * 100)}% confidence");
     expect(source).not.toContain("citation.title");
     expect(source).not.toContain("{action.policyStatus}");
     expect(source).not.toContain("{action.approvalStatus}");

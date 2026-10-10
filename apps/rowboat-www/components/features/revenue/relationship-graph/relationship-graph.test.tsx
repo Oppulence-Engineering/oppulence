@@ -170,6 +170,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphPromiseDirection("local-user")).toBeUndefined();
     expect(graphPromiseDirection("")).toBeUndefined();
     expect(source).toContain("graphPromiseDirection(node.metadata.direction)");
+    expect(source).toContain("personResearchConfidenceLabel(node.confidence)");
+    expect(source).not.toContain('node.confidence === undefined ? "" : `${Math.round(node.confidence * 100)}%`');
     expect(source).toContain("promiseDueDay(node.dueAt)");
     expect(source).not.toContain("node.dueAt ? new Date(node.dueAt).toLocaleDateString()");
     expect(graphNodeFieldLabel("action", "status", "open")).toBe("Held");
@@ -555,8 +557,62 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphEvidenceChipLabel({ label: "  The harbor sentence.  ", source: "gmail" })).toBe(
       "The harbor sentence.",
     );
+    expect(
+      graphEvidenceChipLabel({
+        label: '2 external participant(s) on "Q3 review"',
+        source: "calendar",
+      }),
+    ).toBe("2 people from outside the company on Q3 review");
+    expect(
+      graphEvidenceChipLabel({
+        label: "Q3 review · 12 segments · 3 material claims",
+        source: "meeting",
+      }),
+    ).toBe("Q3 review · 12 lines in the transcript · 3 claims");
+    expect(
+      graphEvidenceChipLabel({ label: "4-message thread with acme.com", source: "gmail" }),
+    ).toBe("4 messages with acme.com");
+    expect(
+      graphEvidenceChipLabel({ label: "Gmail thread observed: Kickoff notes", source: "gmail" }),
+    ).toBe("Mail: Kickoff notes");
+    expect(
+      graphEvidenceChipLabel({
+        label: "Calendar meeting observed with ada@acme.example",
+        source: "calendar",
+      }),
+    ).toBe("Meeting with ada@acme.example");
+    expect(
+      graphEvidenceChipLabel({ label: "HubSpot company snapshot: Acme", source: "hubspot" }),
+    ).toBe("Company from HubSpot: Acme");
+    expect(
+      graphEvidenceChipLabel({ label: "Slack message observed in #general", source: "slack" }),
+    ).toBe("Message in #general");
+    expect(
+      graphEvidenceChipLabel({
+        label: "User decided a proposed conversation change.",
+        source: "user",
+      }),
+    ).toBe("You decided a suggested change.");
+    expect(
+      graphEvidenceChipLabel({
+        label: "Counterparty responded to a shared mutual action plan.",
+        source: "browser",
+      }),
+    ).toBe("They responded to the shared plan.");
+    expect(
+      graphEvidenceChipLabel({
+        label: "Commitment marked fulfilled: Send the proposal",
+        source: "meeting",
+      }),
+    ).toBe("This promise was kept: Send the proposal");
+    expect(graphEvidenceChipLabel({ label: "Promise confirmed", source: "meeting" })).toBe(
+      "Promise confirmed",
+    );
     expect(graphEvidenceChipLabel({ label: "   ", source: "gmail" })).toBe("Gmail");
     expect(graphEvidenceChipLabel({ label: "", source: "" })).toBe("Detail");
+    expect(source).toContain("activityRowSummary(node.label)");
+    expect(source).toContain("activityRowSummary(node.summary");
+    expect(source).toContain('node.kind === "evidence"');
     const confirmation = {
       id: "evidence:obs",
       kind: "evidence",
@@ -576,6 +632,18 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphInspectorSummary({ label: "Promise confirmed", summary: "Send the quay echo" })).toBe(
       "Send the quay echo",
     );
+    expect(
+      graphInspectorSummary({
+        label: "Promise confirmed",
+        summary: "We committed to: Send the proposal",
+      }),
+    ).toBe("We made this promise: Send the proposal");
+    expect(
+      graphInspectorSummary({
+        label: "Promise confirmed",
+        summary: "Avery committed to: Send the proposal",
+      }),
+    ).toBe("Avery made this promise: Send the proposal");
     expect(graphInspectorSummary({ label: "Send the quay echo", summary: "   " })).toBeUndefined();
     expect(source).toContain("graphInspectorSummary(node)");
     expect(source).toContain("{inspectorSummary}");

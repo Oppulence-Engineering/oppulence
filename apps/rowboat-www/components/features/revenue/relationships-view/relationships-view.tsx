@@ -214,6 +214,7 @@ export { companyName };
 import {
   personEvidenceLabel,
   personFactValue,
+  personResearchConfidenceLabel,
   personSeniorityLabel,
   verifySourceLabel,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
@@ -221,13 +222,14 @@ import {
   activityEvidenceLines,
   activityLinesBesideSummary,
   activityHeading,
-  activityOutcomeSummary,
+  activityRowSummary,
   activitySourceLabel,
   enumLabel as humanize,
   participantRoleLabel,
   sourceConnectionLabel,
   mailAccessReason,
   missingScopeLabels,
+  projectionReasonCopy,
   relationshipDeltaValue,
   removePersonConfirmCopy,
   sourceProductCopy,
@@ -309,6 +311,38 @@ export function companyDomainHref(domain: string | null | undefined): string | n
 /** The domain column and the sheet share one label. Spaces are not a domain. */
 export function companyDomainLabel(domain: string | null | undefined): string {
   return domain?.trim() || "Not filled in";
+}
+
+/**
+ * A research column stays blank until that fact is saved. An em dash looked
+ * like a missing number. The cell names the fact that was never recorded.
+ * Spaces are not a fact.
+ */
+export function companyEnrichmentColumnLabel(
+  value: string | null | undefined,
+  empty: string,
+): string {
+  return value?.trim() || empty;
+}
+
+const COMPANY_ENRICHMENT_EMPTY: Record<string, string> = {
+  headquarters: "No headquarters recorded",
+  employee_range: "No employee range recorded",
+  funding_summary: "No funding recorded",
+  revenue_range: "No revenue recorded",
+  growth_signals: "No growth signals recorded",
+};
+
+/**
+ * The directory names a research fact that was never recorded. The company
+ * sheet used to print the stored spaces, so Headquarters showed a blank line.
+ * Any other blank fact is left off the sheet.
+ */
+export function companyEnrichmentSheetValue(field: string, value: unknown): string | null {
+  const text = typeof value === "string" ? value.trim() : "";
+  const empty = COMPANY_ENRICHMENT_EMPTY[field];
+  if (empty) return companyEnrichmentColumnLabel(text, empty);
+  return text || null;
 }
 
 /**
@@ -1613,27 +1647,42 @@ export function RelationshipsView({
                       ) : null}
                       {optionalColumns.includes("headquarters") ? (
                         <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
-                          {relationship.companyEnrichmentData?.headquarters || "—"}
+                          {companyEnrichmentColumnLabel(
+                            relationship.companyEnrichmentData?.headquarters,
+                            "No headquarters recorded",
+                          )}
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("employees") ? (
                         <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
-                          {relationship.companyEnrichmentData?.employee_range || "—"}
+                          {companyEnrichmentColumnLabel(
+                            relationship.companyEnrichmentData?.employee_range,
+                            "No employee range recorded",
+                          )}
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("funding") ? (
                         <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
-                          {relationship.companyEnrichmentData?.funding_summary || "—"}
+                          {companyEnrichmentColumnLabel(
+                            relationship.companyEnrichmentData?.funding_summary,
+                            "No funding recorded",
+                          )}
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("revenue") ? (
                         <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
-                          {relationship.companyEnrichmentData?.revenue_range || "—"}
+                          {companyEnrichmentColumnLabel(
+                            relationship.companyEnrichmentData?.revenue_range,
+                            "No revenue recorded",
+                          )}
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("signals") ? (
                         <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
-                          {relationship.companyEnrichmentData?.growth_signals || "—"}
+                          {companyEnrichmentColumnLabel(
+                            relationship.companyEnrichmentData?.growth_signals,
+                            "No growth signals recorded",
+                          )}
                         </TableCell>
                       ) : null}
                     </TableRow>
@@ -2520,6 +2569,11 @@ export function companyEmailDetail(email: string | null | undefined): {
   return href ? { text: trimmed, href } : { text: trimmed };
 }
 
+/** Profile facts and the Source row open the same kind of page. */
+export function companyFactSourceLabel(): string {
+  return "Check the source";
+}
+
 /** Record badges sit together. The dimension has to travel with the value. */
 export function recordDetailBadge(label: string, value: string): string {
   return `${label} · ${companyRecordLabel(value)}`;
@@ -2583,10 +2637,7 @@ export function communicationPreviewLabel(subject?: string | null): string {
 
 /** Activity history uses this when an observation has no summary. */
 export function activitySummaryLabel(summary?: string | null): string {
-  const trimmed = summary?.trim() ?? "";
-  const outcome = activityOutcomeSummary(trimmed);
-  if (outcome) return outcome;
-  return trimmed || "Open the source";
+  return activityRowSummary(summary ?? "") || "Open the source";
 }
 
 /** A blank quote is the same sentence as a missing one. */
@@ -2605,6 +2656,12 @@ export function mailThreadPartyLabel(email?: string | null): string {
 export function mailMessageCountLabel(count: number): string {
   const n = Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
   return n === 1 ? "1 message" : `${String(n)} messages`;
+}
+
+/** A thread with no saved time uses the same words as a missing person date. */
+export function mailThreadActivityLabel(iso?: string | null): string {
+  const label = iso ? relativeTime(iso) : "";
+  return label || "Not known";
 }
 
 /** A Gmail thread stores who spoke last. The company sheet says what that means. */
@@ -2635,6 +2692,78 @@ export function reviewEvidenceKindLabel(kind: string): string {
     default:
       return humanize(kind);
   }
+}
+
+const REVIEW_ITEM_LABELS: Record<string, string> = {
+  "Low-confidence material claim": "Look at this quote again.",
+  "Resolve the speaker for a material statement": "Name who said this.",
+  "Confirm the low-confidence wording": "Confirm these words.",
+  "Confirm the stakeholder identity or role": "Confirm who this person is.",
+};
+
+const PROPOSED_REVIEW_KINDS: Record<string, string> = {
+  promise: "promise",
+  commitment: "promise",
+  risk: "risk",
+  objection: "objection",
+  stakeholder: "person",
+  next_action: "next step",
+  fact: "detail",
+};
+
+/**
+ * Focused review stores a model label on the card. The card says what to
+ * check. A proposed kind such as next_action stays off the card. The stored
+ * label stays on the API.
+ */
+export function reviewItemLabelCopy(label: string): string {
+  const raw = label.trim();
+  const known = REVIEW_ITEM_LABELS[raw];
+  if (known) return known;
+  const proposed = /^Review proposed\s*(.*)$/.exec(raw);
+  if (!proposed) return raw;
+  const kind = (proposed[1] ?? "").trim();
+  if (!kind || kind === "local-user" || kind === "meeting-counterparty") {
+    return "A suggestion is waiting.";
+  }
+  if (/^[a-z0-9_:-]+$/.test(kind)) {
+    const named = PROPOSED_REVIEW_KINDS[kind];
+    return named ? `A suggested ${named} is waiting.` : "A suggestion is waiting.";
+  }
+  return `A suggested ${kind} is waiting.`;
+}
+
+/** The review section names the buttons. It does not talk about model state. */
+export function focusedReviewIntro(): string {
+  return "Approve, correct, reject, or defer each one before it changes this company.";
+}
+
+const REVIEW_CAVEAT_COPY: Record<string, string> = {
+  "speaker assignment requires review": "Who spoke is not confirmed.",
+  "commitment acceptance requires review": "Who accepted this promise is not confirmed.",
+  "deterministic fallback candidate requires review": "This came from a rule. Check it before saving.",
+};
+
+/**
+ * A suggested change stores why it is still waiting. The card says that in
+ * words. A capture note already lives on the opened activity, so it stays
+ * off this card. The stored caveat stays on the API.
+ */
+export function reviewCaveatCopy(caveat: string): string | null {
+  return REVIEW_CAVEAT_COPY[caveat.trim()] ?? null;
+}
+
+export function reviewCaveatLines(caveats: readonly string[] | null | undefined): string[] {
+  if (!caveats) return [];
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const caveat of caveats) {
+    const line = reviewCaveatCopy(caveat);
+    if (!line || seen.has(line)) continue;
+    seen.add(line);
+    lines.push(line);
+  }
+  return lines;
 }
 
 /** A shared plan stores an internal status. The heading says where it stands. */
@@ -3236,19 +3365,55 @@ export function liveCueCopy(cue: { kind: string; title: string; detail: string }
       : cue.detail.replace(/value should be current\?$/, "should be the current one?");
     return { title: "Two details disagree", detail };
   }
+  if (cue.kind === "renewal_context") {
+    const detail = cue.detail.trim();
+    const usable =
+      Boolean(detail) &&
+      detail !== "local-user" &&
+      detail !== "meeting-counterparty" &&
+      !/^[a-z0-9_:-]+$/.test(detail);
+    return {
+      title: "Up for renewal",
+      detail: usable ? detail : "Decide what happens before this renewal.",
+    };
+  }
   return { title: cue.title, detail: cue.detail };
 }
 
 /**
- * Missing-detail text is stored for the model. The sheet says what the person
- * can do about it. A supported detail keeps the reason that was recorded.
+ * What changed counts claims that are still unsure. The sentence says what
+ * to check. Search uses the same words.
  */
+export function uncertainClaimCopy(count: number): string {
+  const n = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  if (n === 1) return "1 conversation detail still needs a check.";
+  return `${n} conversation details still need a check.`;
+}
+
+/**
+ * Missing-detail text is stored for the model. The sheet says what the person
+ * can do about it. A review reason that still says "User", and a HubSpot
+ * lifecycle stage, are rewritten. Any other supported detail keeps the reason
+ * that was recorded.
+ */
+const DETAIL_REASON_COPY: Record<string, string> = {
+  "User corrected focused conversation evidence.": "You corrected what was said.",
+  "User corrected conversation evidence during focused review.": "You corrected what was said.",
+  "User decided a proposed conversation change.": "You decided a suggested change.",
+  "User selected the current value from a focused contradiction case.":
+    "You chose the current value.",
+  "HubSpot company lifecycle stage.": "Taken from HubSpot.",
+};
+
 export function detailEvidenceCopy(item: {
   supported: boolean;
   reason?: string;
   missingReason?: string;
 }): string {
-  if (item.supported) return item.reason?.trim() || "";
+  if (item.supported) {
+    const reason = item.reason?.trim() ?? "";
+    return DETAIL_REASON_COPY[reason] ?? reason;
+  }
   const missing = item.missingReason?.trim() ?? "";
   if (missing === "" || missing.includes("asOf boundary")) {
     return "Nothing connected has filled this in.";
@@ -4214,7 +4379,7 @@ export function RelationshipSheet({
                           rel="noreferrer"
                           target="_blank"
                         >
-                          Check the source
+                          {companyFactSourceLabel()}
                         </a>
                       </dd>
                     </>
@@ -4229,6 +4394,8 @@ export function RelationshipSheet({
                         ].includes(field),
                     )
                     .map(([field, value]) => {
+                      const shown = companyEnrichmentSheetValue(field, value);
+                      if (!shown) return null;
                       const source = (data.relationship.companyEnrichmentRefs?.[field] ?? [])
                         .map(safeResearchCitationURL)
                         .find((url): url is string => Boolean(url));
@@ -4238,7 +4405,7 @@ export function RelationshipSheet({
                             {COMPANY_FIELD_LABELS[field] ?? humanize(field)}
                           </dt>
                           <dd className="text-primary/75">
-                            {value}
+                            {shown}
                             {source ? (
                               <a
                                 className="ml-2 text-[11px] text-primary/40 underline-offset-2 hover:underline"
@@ -4246,7 +4413,7 @@ export function RelationshipSheet({
                                 rel="noreferrer"
                                 target="_blank"
                               >
-                                source
+                                {companyFactSourceLabel()}
                               </a>
                             ) : null}
                           </dd>
@@ -4420,9 +4587,7 @@ export function RelationshipSheet({
                               {mailReplyLabel(thread.replyState)}
                             </p>
                             <p className="mt-1 text-[11px] text-primary/35">
-                              {thread.lastActivityAt
-                                ? relativeTime(thread.lastActivityAt)
-                                : "Unknown date"}
+                              {mailThreadActivityLabel(thread.lastActivityAt)}
                             </p>
                           </div>
                         </li>
@@ -4868,7 +5033,7 @@ export function RelationshipSheet({
                                             {personEvidenceLabel(attribute.dimension)}
                                           </Badge>
                                           : {personFactValue(attribute.dimension, attribute.value)}
-                                          {` · ${Math.round(attribute.confidence * 100)}% confidence`}
+                                          {` · ${personResearchConfidenceLabel(attribute.confidence)}`}
                                           {(attribute.citations ?? [])
                                             .map((citation) => safeResearchCitationURL(citation.url))
                                             .filter((url): url is string => Boolean(url))
@@ -5109,7 +5274,9 @@ export function RelationshipSheet({
                             {relationshipDeltaValue(change.before)} → {relationshipDeltaValue(change.after)}
                           </p>
                           {change.reason ? (
-                            <p className="mt-1 text-[11px] text-primary/40">{change.reason}</p>
+                            <p className="mt-1 text-[11px] text-primary/40">
+                              {projectionReasonCopy(change.reason)}
+                            </p>
                           ) : null}
                         </li>
                       ))}
@@ -5157,11 +5324,7 @@ export function RelationshipSheet({
                   ) : null}
                   {data.intelligence?.delta.uncertainClaimIds.length ? (
                     <p className="mb-3 text-xs text-primary/50">
-                      {data.intelligence.delta.uncertainClaimIds.length} material claim
-                      {data.intelligence.delta.uncertainClaimIds.length === 1
-                        ? " remains"
-                        : "s remain"}{" "}
-                      uncertain and queued for focused review.
+                      {uncertainClaimCopy(data.intelligence.delta.uncertainClaimIds.length)}
                     </p>
                   ) : null}
                   {data.intelligence?.delta.recommendationReason ? (
@@ -5169,7 +5332,7 @@ export function RelationshipSheet({
                       <Label className="font-medium text-primary">
                         Why the recommendation changed:
                       </Label>{" "}
-                      {data.intelligence.delta.recommendationReason}
+                      {projectionReasonCopy(data.intelligence.delta.recommendationReason)}
                     </p>
                   ) : null}
                   <SheetPaneStatus
@@ -5423,7 +5586,7 @@ function CorrectionReview({
       <p className="mb-3 text-xs text-primary/55">
         {items.length === 0
           ? "Older conversations may still need review."
-          : "Approve, correct, reject, or defer each proposed material change before it affects state."}
+          : focusedReviewIntro()}
       </p>
       <ul className="flex flex-col gap-3">
         {items.map((item) => {
@@ -5431,7 +5594,7 @@ function CorrectionReview({
           return (
             <li key={item.id} className="rounded-none border border-border bg-background p-3">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-primary">{item.label}</p>
+                <p className="text-xs font-medium text-primary">{reviewItemLabelCopy(item.label)}</p>
                 <Badge className="text-[11px] font-normal text-primary/40" variant="secondary">
                   {Math.round(item.confidence * 100)}% · {reviewEvidenceKindLabel(item.kind)}
                 </Badge>
@@ -5441,6 +5604,11 @@ function CorrectionReview({
                   “{item.exactQuote}”
                 </blockquote>
               ) : null}
+              {reviewCaveatLines(item.caveats).map((line) => (
+                <p key={line} className="mb-2 text-xs text-primary/55">
+                  {line}
+                </p>
+              ))}
               <div className="flex gap-2">
                 <Input
                   value={draft}

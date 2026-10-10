@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 
+import { ACTION_TYPE_LABELS } from "./revenue";
 import {
   activityEvidenceLines,
+  activityPromiseUpdateSummary,
   activityLinesBesideSummary,
   activityHeading,
   activityOutcomeSummary,
   enumLabel,
   mailAccessReason,
   missingScopeLabels,
+  projectionReasonCopy,
   relationshipDeltaValue,
   removePersonConfirmCopy,
   scopeLabel,
@@ -59,7 +62,14 @@ describe("source product copy", () => {
 
   it("reads a state change as words", () => {
     expect(relationshipDeltaValue("prospect")).toBe("Prospect");
-    expect(relationshipDeltaValue("needs_attention")).toBe("Needs Attention");
+    expect(relationshipDeltaValue("needs_attention")).toBe("Needs attention");
+    expect(relationshipDeltaValue("unknown")).toBe("Not known");
+    expect(relationshipDeltaValue("active_customer")).toBe("Active customer");
+    expect(relationshipDeltaValue("former_customer")).toBe("Former customer");
+    expect(relationshipDeltaValue("historical_unknown")).toBe("Not recorded for this date");
+    expect(relationshipDeltaValue("review_required")).toBe("Needs review");
+    expect(relationshipDeltaValue("at_risk")).toBe("At risk");
+    expect(relationshipDeltaValue("stale")).toBe("Out of date");
     expect(relationshipDeltaValue(null)).toBe("Unknown");
     expect(relationshipDeltaValue("")).toBe("Unknown");
     expect(relationshipDeltaValue("Call them Friday")).toBe("Call them Friday");
@@ -67,6 +77,33 @@ describe("source product copy", () => {
     expect(relationshipDeltaValue([])).toBe("None");
     expect(relationshipDeltaValue({ value: "healthy" })).toBe("Healthy");
     expect(relationshipDeltaValue({ other: true })).toBe("Unknown");
+    expect(projectionReasonCopy("No active next action assertion at evaluation time.")).toBe(
+      "No next step is recorded.",
+    );
+    expect(projectionReasonCopy("No active health assertion at evaluation time.")).toBe(
+      "Health is not recorded.",
+    );
+    expect(projectionReasonCopy("No active risk assertion at evaluation time.")).toBe(
+      "No risk is recorded.",
+    );
+    expect(projectionReasonCopy("No active milestone assertion at evaluation time.")).toBe(
+      "No milestone is recorded.",
+    );
+    expect(projectionReasonCopy("No active engagement assertion at evaluation time.")).toBe(
+      "Engagement is not recorded.",
+    );
+    expect(projectionReasonCopy("No active sentiment assertion at evaluation time.")).toBe(
+      "Sentiment is not recorded.",
+    );
+    expect(projectionReasonCopy("No active summary assertion at evaluation time.")).toBe(
+      "No summary is recorded.",
+    );
+    expect(
+      projectionReasonCopy(
+        "Supporting evidence changed. No active lifecycle assertion at evaluation time.",
+      ),
+    ).toBe("Supporting evidence changed. Lifecycle is not recorded.");
+    expect(projectionReasonCopy("The account is healthy.")).toBe("The account is healthy.");
   });
 
   it("reads a saved note instead of the empty payload", () => {
@@ -156,10 +193,57 @@ describe("source product copy", () => {
         counterparty_participant_ref: "buyer@acme.example",
       }),
     ).toEqual(["From: Avery Chen", "To: buyer@acme.example"]);
+    expect(
+      activityEvidenceLines(null, {
+        commitment_text: "Send the proposal",
+        commitment_owner: "me",
+        commitment_status: "open",
+        commitment_due_phrase: "by Friday",
+        commitment_direction: "promised_by_me",
+      }),
+    ).toEqual([
+      "Promise: Send the proposal",
+      "We made this promise",
+      "This promise is still open",
+      "They said: by Friday",
+      "Direction: We owe them",
+    ]);
+    expect(activityEvidenceLines(null, { commitment_owner: "them", commitment_status: "dropped" })).toEqual([
+      "They made this promise",
+      "This promise was dropped",
+    ]);
+    expect(activityEvidenceLines(null, { commitment_owner: "local-user", commitment_status: "fulfilled" })).toEqual([
+      "We made this promise",
+      "This promise was kept",
+    ]);
+    expect(activityEvidenceLines(null, { commitment_status: "done" })).toEqual(["This promise is done"]);
+    expect(activityEvidenceLines(null, { commitment_status: "cancelled" })).toEqual([
+      "This promise was called off",
+    ]);
+    expect(activityEvidenceLines(null, { commitment_status: "missed" })).toEqual(["This promise was missed"]);
+    expect(activityEvidenceLines(null, { commitment_status: "waived" })).toEqual(["This promise was waived"]);
+    expect(activityEvidenceLines(null, { commitment_status: "superseded" })).toEqual([
+      "This promise was replaced",
+    ]);
+    expect(
+      activityEvidenceLines(null, {
+        commitment_owner: "speaker_2",
+        commitment_status: "local-user",
+        commitment_due_phrase: "local-user",
+      }),
+    ).toEqual(["Nothing else was saved with this activity."]);
+    expect(
+      activityEvidenceLines(null, {
+        commitment_owner: "me",
+        commitment_status: "open",
+        commitment_due_phrase: "by Friday",
+      }).join("\n"),
+    ).not.toMatch(/Commitment Owner|Commitment Status|Commitment Due Phrase|\bme\b|local-user/);
   });
 
   it("names an activity with the product title", () => {
     expect(activityHeading("gmail", "thread.updated")).toBe("Gmail · Mail updated");
+    expect(activityHeading("gmail", "email_exchanged")).toBe("Gmail · Mail");
     expect(activityHeading("desktop_note", "note")).toBe("A note · Note saved");
     expect(activityHeading("hubspot", "company.updated")).toBe("HubSpot · Company updated");
     expect(activityHeading("custom_feed", "custom.event_name")).toBe(
@@ -226,13 +310,21 @@ describe("source product copy", () => {
         is_first_contact: false,
         subject_present: true,
       }),
-    ).toEqual([
-      "Has Attachments: true",
-      "Is First Contact: false",
-      "Subject Present: true",
-    ]);
+    ).toEqual(["Includes an attachment", "Not the first email", "Subject is filled in"]);
+    expect(
+      activityEvidenceLines(null, {
+        has_attachments: false,
+        is_first_contact: true,
+        subject_present: false,
+      }),
+    ).toEqual(["No attachments", "First email in this thread", "Subject was left blank"]);
     expect(activityEvidenceLines(null, { has_attachments: 1 })).toEqual(["Has Attachments: 1"]);
-    expect(activityLinesBesideSummary(["Has Attachments: true"], "true")).toEqual([]);
+    expect(activityLinesBesideSummary(["Includes an attachment"], "Includes an attachment")).toEqual(
+      [],
+    );
+    expect(activityLinesBesideSummary(["Includes an attachment"], "true")).toEqual([
+      "Includes an attachment",
+    ]);
   });
 
   it("names the first and last message by the UTC day", () => {
@@ -258,12 +350,510 @@ describe("source product copy", () => {
       external_participant_count: 2,
     });
     expect(lines).toEqual([
-      "Attachment Count: 1",
-      "Participant Count: 3",
-      "External Participant Count: 2",
+      "1 file attached to this activity",
+      "3 people on this activity",
+      "2 people outside the company",
     ]);
-    expect(lines.join("\n")).not.toMatch(/18abc|18def|Thread Id|Message Id/);
-    expect(activityLinesBesideSummary(["Attachment Count: 1"], "1")).toEqual([]);
+    expect(lines.join("\n")).not.toMatch(/18abc|18def|Thread Id|Message Id|Attachment Count/);
+    expect(activityEvidenceLines(null, { attachment_count: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(
+      activityLinesBesideSummary(
+        ["1 file attached to this activity"],
+        "1 file attached to this activity",
+      ),
+    ).toEqual([]);
+    expect(activityLinesBesideSummary(["1 file attached to this activity"], "1")).toEqual([
+      "1 file attached to this activity",
+    ]);
+  });
+
+  it("names calendar attendance without the event id", () => {
+    expect(activityHeading("calendar", "meeting_attendance_recorded")).toBe(
+      "Calendar · Attendance",
+    );
+    expect(
+      activityEvidenceLines(null, {
+        calendar_event_id: "evt_18",
+        meeting_title: "Q3 review",
+        attendance_source: "calendar_invite",
+        recorded: false,
+        meeting_size: "small_group",
+        invitee_count: 3,
+        external_count: 2,
+        declined_count: 1,
+        external_domains: [
+          { domain: "acme.com", count: 2 },
+          { domain: "birch.example", count: 1 },
+          { domain: "local-user", count: 1 },
+        ],
+        organizer_email: "ada@acme.com",
+        attendance_confidence: {
+          "ada@acme.com": 0.9,
+          "sam@acme.com": 0.6,
+          "local-user": 0.9,
+          "speaker_2": 0.6,
+        },
+        capture_caveats: [
+          "Attendance comes from the invite alone.",
+          "Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined.",
+          "2 participants shared one audio channel; no per-speaker attribution was attempted.",
+          "1 invitee(s) excluded as rooms, resources, or notetaker bots.",
+          "2 invitee(s) excluded as rooms, resources, or notetaker bots.",
+          "1 of 3 invitee(s) had not accepted at capture time.",
+          "1 invitee(s) declined and are not recorded as participants.",
+          "Invitees span 2 organization domains (acme.com, birch.example).",
+          "transcript payload was truncated",
+          "This meeting was not recorded; attendance comes from the invite alone.",
+          "remote speaker was resolved from the 1:1 calendar attendee; the system track may still contain other voices and no persistent voiceprint was created",
+          "speaker assignment requires review",
+          "renderer fallback: timed audio evidence was not retained",
+          "capture guardian: microphone_missing — Your side of the conversation is not being captured.",
+          "mic_voice_processing_unavailable: echo cancellation unavailable — recording raw mic",
+        ],
+      }),
+    ).toEqual([
+      "Meeting: Q3 review",
+      "Taken from the invite",
+      "No recording was saved",
+      "A small group was on the invite",
+      "3 people invited",
+      "2 people from outside the company",
+      "1 person declined",
+      "Outside domains: acme.com, birch.example",
+      "Organizer: ada@acme.com",
+      "Accepted the invite: ada@acme.com",
+      "Had not accepted: sam@acme.com",
+      "Attendance comes from the invite alone.",
+      "Someone on the invite may not have joined.",
+      "2 people shared one audio channel.",
+      "1 room or bot was left off.",
+      "2 rooms or bots were left off.",
+      "1 of 3 people had not accepted.",
+      "The other person was named from the guest list.",
+      "Who spoke is not confirmed.",
+      "The timed recording was not saved with this transcript.",
+      "Your side of the conversation is not being captured.",
+      "Echo cancellation was unavailable, so the microphone was recorded without it.",
+    ]);
+    expect(
+      activityEvidenceLines(null, {
+        capture_caveats: [
+          "2 participants shared one audio channel; no per-speaker attribution was attempted.",
+        ],
+      }).join("\n"),
+    ).not.toMatch(/invitee\(s\)|transcript payload|per-speaker|not recorded/);
+    expect(activityEvidenceLines(null, { calendar_event_id: "evt_18", recorded: 0 })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(activityEvidenceLines(null, { meeting_size: "solo" })).toEqual([
+      "No one else was on the invite",
+    ]);
+    expect(activityEvidenceLines(null, { meeting_size: "one_to_one" })).toEqual([
+      "One other person was on the invite",
+    ]);
+    expect(activityEvidenceLines(null, { meeting_size: "large_group" })).toEqual([
+      "A large group was on the invite",
+    ]);
+    expect(activityEvidenceLines(null, { meeting_size: 4 })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(
+      activityEvidenceLines(null, {
+        attendance_confidence: { "local-user": 0.9, speaker_2: 0.6, "ada@acme.com": 0.4 },
+      }),
+    ).toEqual(["Nothing else was saved with this activity."]);
+  });
+
+  it("names a meeting transcript without the session id", () => {
+    const lines = activityEvidenceLines(null, {
+      session_id: "sess-18",
+      dedupe_fingerprint: "fp-18",
+      meeting_title: "Q3 review",
+      transcript_segments: 12,
+      transcript_payload_truncated: true,
+      transcription_engine: "whisper.cpp",
+      transcription_model: "ggml-base.en",
+      audio_retention: "untilTranscribed",
+      tracks: [
+        { id: "mic", silent: true, peak: 0 },
+        { id: "system", silent: false, peak: 0.4 },
+        { id: "room", silent: true, peak: 0 },
+      ],
+    });
+    expect(lines).toEqual([
+      "Meeting: Q3 review",
+      "12 lines in the transcript",
+      "The transcript was shortened",
+      "Transcribed with Whisper",
+      "Model: ggml-base.en",
+      "The recording is removed after transcription",
+      "The microphone was silent",
+    ]);
+    expect(lines.join("\n")).not.toMatch(/sess-18|fp-18|untilTranscribed|Session Id/);
+    expect(activityEvidenceLines(null, { audio_retention: "always", transcript_payload_truncated: false })).toEqual([
+      "The recording is kept",
+    ]);
+    expect(activityEvidenceLines(null, { audio_retention: "never" })).toEqual([
+      "The recording is not kept",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "parakeet" })).toEqual([
+      "Transcribed with Parakeet",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "whisper" })).toEqual([
+      "Transcribed with Whisper",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "speaker_2" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "deepgram" })).toEqual([
+      "Transcribed with Deepgram",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "solomon" })).toEqual([
+      "Transcribed with Oppulence Cloud (Deepgram)",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "whisper-local" })).toEqual([
+      "Transcribed with Whisper",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_model: "base.en-q5_1" })).toEqual([
+      "Model: Base · English (recommended)",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_model: "nova-3" })).toEqual([
+      "Model: Nova-3",
+    ]);
+    expect(
+      activityEvidenceLines(null, { transcription_model: "parakeet-tdt-0.6b-v3-coreml" }),
+    ).toEqual(["Model: Parakeet v3"]);
+    expect(activityEvidenceLines(null, { transcription_model: "parakeet-tdt-0.6b-v2" })).toEqual([
+      "Model: Parakeet v2",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_model: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(
+      activityEvidenceLines(null, {
+        tracks: [
+          { id: "system", silent: true, peak: 0 },
+          { id: "mic", silent: true, peak: 0 },
+        ],
+      }),
+    ).toEqual(["The other side was silent", "The microphone was silent"]);
+    expect(lines.join("\n")).not.toMatch(/peak|Tracks:/);
+    expect(
+      activityEvidenceLines(
+        {
+          envelope: {
+            captureCaveats: [
+              "recovered_without_meta: the recorder was killed before writing meta.json — track start offsets are unknown and assumed simultaneous",
+              "long source segments were split into bounded evidence excerpts",
+              "remote speaker labels are meeting-scoped",
+              "mic_raw_fallback_failed: session continues without a microphone track",
+              "system_tap_denied: process tap creation failed (OSStatus -10877) — grant System Settings › Privacy & Security › Screen & System Audio Recording",
+              "system_ioproc_failed: IO proc creation failed (OSStatus -50)",
+              "system_aggregate_failed: aggregate device creation failed (OSStatus -1)",
+              "mic_permission_denied: microphone access denied — enable Oppulence in System Settings › Privacy & Security › Microphone",
+              "mic_format_unsupported: unsupported mic format <AVAudioFormat 0x1: 2 ch, 48000 Hz, Float32>",
+              "mic_engine_start_failed: mic engine start failed: The operation couldn’t be completed — check System Settings › Privacy & Security › Microphone",
+              "system_writer_failed: output file failed: No space left on device",
+              "mic_writer_failed: output file failed: permission denied",
+              "standby_promote_failed: could not open any track for writing — still standing by",
+            ],
+          },
+        },
+        { transcription_engine: "deepgram", transcription_model: "nova-3" },
+      ),
+    ).toEqual([
+      "Transcribed with Deepgram",
+      "Model: Nova-3",
+      "The recorder stopped before it finished saving. The two sides may be slightly out of sync.",
+      "A long stretch was split into shorter excerpts.",
+      "Speaker names apply only to this meeting.",
+      "The microphone could not be recorded.",
+      "The other side could not be recorded. Allow screen and system audio recording in System Settings.",
+      "The other side could not be recorded.",
+      "The microphone is blocked. Allow microphone access in System Settings.",
+      "The microphone could not be started.",
+      "The other side could not be saved.",
+      "The microphone recording could not be saved.",
+      "The recording could not be saved.",
+    ]);
+    expect(
+      activityEvidenceLines(
+        {
+          envelope: {
+            captureCaveats: [
+              "system_tap_format: could not read tap stream format (OSStatus -50)",
+              "system_device_start_failed: aggregate device start failed (OSStatus -1)",
+              "standby_flush_failed: Error Domain=NSPOSIXErrorDomain Code=28",
+            ],
+          },
+        },
+        null,
+      ).join("\n"),
+    ).toBe(
+      ["The other side could not be recorded.", "The recording could not be saved."].join("\n"),
+    );
+    const spoken = activityEvidenceLines(
+      {
+        envelope: {
+          sourceRecordId: "sess-18",
+          fingerprint: "fp-18",
+          title: "Q3 review",
+          segments: [
+            {
+              id: "seg-1",
+              speakerId: "local-user",
+              speakerLabel: "You",
+              speakerConfidence: 1,
+              startMs: 0,
+              endMs: 1200,
+              text: "I will send the proposal.",
+            },
+            {
+              id: "seg-2",
+              speakerId: "meeting-participant:avery",
+              speakerLabel: "Avery",
+              speakerConfidence: 0.9,
+              startMs: 1200,
+              endMs: 2400,
+              text: "Security review may slip.",
+            },
+            {
+              id: "seg-3",
+              speakerId: "speaker_2",
+              speakerLabel: "Speaker 2",
+              speakerConfidence: 0.4,
+              startMs: 2400,
+              endMs: 3000,
+              text: "We should look at the renewal.",
+            },
+          ],
+        },
+      },
+      { meeting_title: "Q3 review", transcription_engine: "deepgram" },
+    );
+    expect(spoken).toEqual([
+      "Meeting: Q3 review",
+      "Transcribed with Deepgram",
+      "You: I will send the proposal.",
+      "Avery: Security review may slip.",
+      "We should look at the renewal.",
+    ]);
+    expect(spoken.join("\n")).not.toMatch(/sess-18|fp-18|speaker_2|local-user|speakerConfidence|startMs/);
+  });
+
+  it("names a reviewed conversation without the claim id", () => {
+    const lines = activityEvidenceLines(null, {
+      conversation_claims: [
+        {
+          id: "claim:risk",
+          kind: "risk",
+          value: "Security review may slip",
+          exactQuote: "Security review may slip",
+          speakerId: "speaker_2",
+          speakerLabel: "Avery",
+          confidence: 0.4,
+        },
+        {
+          id: "claim:objection",
+          kind: "objection",
+          value: "The price is too high",
+          exactQuote: "The price is too high",
+          speakerLabel: "Speaker 1",
+        },
+        {
+          id: "claim:lifecycle",
+          kind: "lifecycle",
+          value: "former_customer",
+          exactQuote: "They are a former customer now.",
+        },
+        {
+          id: "claim:sentiment",
+          kind: "sentiment",
+          value: "negative",
+          exactQuote: "We are concerned about the renewal timing.",
+        },
+        { id: "claim:decision", kind: "decision", value: "We decided to renew." },
+        {
+          id: "claim:promise",
+          kind: "commitment",
+          value: "I will send the proposal.",
+          speakerLabel: "You",
+        },
+        { id: "claim:review", kind: "claim", value: "one", confidence: 0.2 },
+        { id: "claim:again", kind: "risk", value: "Security review may slip", speakerLabel: "Avery" },
+      ],
+      participant_resolution: [
+        {
+          speaker_id: "local-user",
+          label: "You",
+          confidence: 1,
+          resolution_source: "calendar_contact_or_provider",
+          scope: "meeting",
+          persistent_voiceprint: false,
+        },
+        {
+          speaker_id: "meeting-participant:avery",
+          label: "Avery",
+          confidence: 0.9,
+          resolution_source: "calendar_contact_or_provider",
+          scope: "meeting",
+          persistent_voiceprint: false,
+        },
+        {
+          speaker_id: "anonymous:1",
+          label: "Speaker 1",
+          confidence: 0.5,
+          resolution_source: "anonymous",
+          scope: "meeting",
+          persistent_voiceprint: false,
+        },
+      ],
+    });
+    expect(lines).toEqual([
+      "Risk raised in a conversation: Security review may slip — Avery",
+      "Unresolved objection: The price is too high",
+      "Lifecycle: Former customer",
+      "Sentiment: Negative",
+      "Decision: We decided to renew.",
+      "Promise: I will send the proposal. — You",
+      "Named from the guest list: Avery",
+      "A speaker was not named",
+    ]);
+    expect(lines.join("\n")).not.toMatch(
+      /claim:|speaker_2|Speaker 1|former_customer|\bone\b|calendar_contact|anonymous:|0\.9/,
+    );
+    expect(activityEvidenceLines(null, { conversation_claims: [{ kind: "risk", value: "local-user" }] })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+  });
+
+  it("names a proposed follow-up without the action id", () => {
+    const lines = activityEvidenceLines(null, {
+      action_pack: [
+        {
+          id: "action:email",
+          actionType: "meeting_recap",
+          channel: "email",
+          reason: "Send a recap grounded in the material statements from this conversation.",
+          proposedSubject: "Recap: Q3 review",
+          proposedMessage:
+            "Thanks for the conversation. Here is my understanding:\n\n- risk: Security review may slip\n\nPlease reply with any corrections.",
+          evidenceClaimIds: ["claim:risk"],
+          confidence: 0.84,
+        },
+        {
+          id: "action:task",
+          actionType: "follow_up_task",
+          channel: "task",
+          reason: "Track a spoken commitment until it is fulfilled or renegotiated.",
+          proposedMessage: "I will send the proposal.",
+          dueAt: "2026-08-01T17:00:00.000Z",
+          evidenceClaimIds: ["claim:promise"],
+          confidence: 0.9,
+        },
+        {
+          id: "action:hold",
+          actionType: "calendar_hold",
+          channel: "calendar",
+          reason: "Protect time before the spoken commitment is due.",
+          proposedMessage: "Prepare and complete: I will send the proposal.",
+          dueAt: "2026-08-01T17:00:00.000Z",
+        },
+        {
+          actionType: "crm_update",
+          channel: "crm",
+          reason: "Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.",
+          proposedMessage: "- lifecycle: renewal",
+        },
+        { actionType: "local-user", reason: "This is not a known follow-up." },
+      ],
+      legacy_shadow_action_pack: [
+        {
+          actionType: "meeting_recap",
+          reason: "This shadow recap should stay off the activity.",
+        },
+      ],
+    });
+    expect(lines).toEqual([
+      `${ACTION_TYPE_LABELS.meeting_recap}: Send a recap grounded in the material statements from this conversation.`,
+      `${ACTION_TYPE_LABELS.follow_up_task}: Track a spoken commitment until it is fulfilled or renegotiated.`,
+      "Due: Aug 1, 2026",
+      `${ACTION_TYPE_LABELS.calendar_hold}: Protect time before the spoken commitment is due.`,
+      `${ACTION_TYPE_LABELS.crm_update}: Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.`,
+    ]);
+    expect(lines.join("\n")).not.toMatch(
+      /action:email|claim:risk|- risk:|0\.84|Recap: Q3|shadow recap|local-user/,
+    );
+    expect(activityEvidenceLines(null, { action_pack: [] })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+  });
+
+  it("names a promise status change without the stored token", () => {
+    expect(activityPromiseUpdateSummary("Commitment marked fulfilled: Send the proposal")).toBe(
+      "This promise was kept: Send the proposal",
+    );
+    expect(activityPromiseUpdateSummary("Commitment marked cancelled: Send the proposal")).toBe(
+      "This promise was called off: Send the proposal",
+    );
+    expect(activityPromiseUpdateSummary("The harbor packet arrived")).toBeNull();
+    const lines = activityEvidenceLines(null, {
+      session_id: "session-1",
+      user_confirmed: true,
+      commitment_updates: [
+        {
+          commitmentId: "session-1:0-2000",
+          status: "fulfilled",
+          text: "Send the proposal",
+          dueAt: "2026-08-01T17:00:00.000Z",
+        },
+        {
+          commitmentId: "session-1:2-4000",
+          status: "cancelled",
+          text: "Send the appendix",
+        },
+      ],
+    });
+    expect(lines).toEqual([
+      "This promise was kept: Send the proposal",
+      "Due: Aug 1, 2026",
+      "This promise was called off: Send the appendix",
+    ]);
+    expect(lines.join("\n")).not.toMatch(/fulfilled|cancelled|session-1|Commitment Updates/);
+    expect(
+      activityEvidenceLines(null, {
+        commitment_updates: [{ commitmentId: "only-an-id", status: "local-user", text: "local-user" }],
+      }),
+    ).toEqual(["Nothing else was saved with this activity."]);
+  });
+
+  it("names message counts without the mail row's sentence", () => {
+    expect(
+      activityEvidenceLines(null, {
+        message_count: 4,
+        outbound_count: 2,
+        inbound_count: 1,
+      }),
+    ).toEqual([
+      "4 messages in this activity",
+      "2 messages sent from this mailbox",
+      "1 message received from them",
+    ]);
+    expect(activityEvidenceLines(null, { message_count: 0, outbound_count: 1 })).toEqual([
+      "0 messages in this activity",
+      "1 message sent from this mailbox",
+    ]);
+    expect(activityEvidenceLines(null, { message_count: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(
+      activityLinesBesideSummary(["4 messages in this activity"], "4 messages in this activity"),
+    ).toEqual([]);
   });
 
   it("names a provider and a mail direction the way the heading does", () => {
@@ -284,5 +874,59 @@ describe("source product copy", () => {
     expect(activityLinesBesideSummary(["Provider: Gmail", "Direction: Outbound"], "Gmail")).toEqual([
       "Direction: Outbound",
     ]);
+  });
+
+  it("names who speaks next without the stored reply token", () => {
+    expect(activityEvidenceLines(null, { reply_state: "awaiting_reply" })).toEqual([
+      "Their reply has not arrived",
+    ]);
+    expect(activityEvidenceLines(null, { reply_state: "needs_reply" })).toEqual([
+      "We have not answered this thread",
+    ]);
+    expect(activityEvidenceLines(null, { reply_state: "quiet" })).toEqual([
+      "No reply is outstanding",
+    ]);
+    expect(activityEvidenceLines(null, { reply_state: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(
+      activityLinesBesideSummary(["Their reply has not arrived"], "Their reply has not arrived"),
+    ).toEqual([]);
+  });
+
+  it("names a bounce without the stored departure token", () => {
+    expect(activityEvidenceLines(null, { departure_kind: "left_organization" })).toEqual([
+      "Left this company",
+    ]);
+    expect(activityEvidenceLines(null, { departure_kind: "recipient_unknown" })).toEqual([
+      "Address was not recognized",
+    ]);
+    expect(activityEvidenceLines(null, { departure_kind: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(activityLinesBesideSummary(["Left this company"], "Left this company")).toEqual([]);
+    expect(
+      activityEvidenceLines(null, {
+        departure_kind: "recipient_unknown",
+        departure_evidence: "The mailbox rejected the harbor packet.",
+      }),
+    ).toEqual([
+      "Address was not recognized",
+      "The bounce said: The mailbox rejected the harbor packet.",
+    ]);
+    expect(activityEvidenceLines(null, { departure_evidence: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(
+      activityLinesBesideSummary(
+        ["The bounce said: The mailbox rejected the harbor packet."],
+        "The mailbox rejected the harbor packet.",
+      ),
+    ).toEqual([]);
+    expect(
+      activityEvidenceLines(null, {
+        departure_evidence: "The mailbox rejected the harbor packet.",
+      }).join("\n"),
+    ).not.toMatch(/Departure Evidence/);
   });
 });

@@ -15,9 +15,11 @@ import {
   consoleResourceRows,
   fetchConsoleResources,
 } from "@/hooks/queries/utils/fetch-console";
+import { personResearchConfidenceLabel } from "@/components/features/revenue/workspace-records/workspace-records-view";
 import { companyName, promiseDirectionLabel, promiseDueDay } from "@/lib/revenue/revenue-records";
 import { getRelationshipGraph } from "@/lib/revenue/revenue";
 import {
+  activityRowSummary,
   activitySourceLabel,
   enumLabel,
   participantRoleLabel,
@@ -237,7 +239,7 @@ function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
         : "",
     node.approvalStatus ? graphNodeFieldLabel(node.kind, "approval", node.approvalStatus) : "",
     node.freshness ? graphNodeFieldLabel(node.kind, "freshness", node.freshness) : "",
-    node.confidence === undefined ? "" : `${Math.round(node.confidence * 100)}%`,
+    node.confidence === undefined ? "" : personResearchConfidenceLabel(node.confidence),
   ].filter(Boolean);
 
   return (
@@ -1118,7 +1120,7 @@ export function graphEvidenceChipLabel(evidence: {
   label?: string | null;
   source?: string | null;
 }): string {
-  const label = evidence.label?.trim() ?? "";
+  const label = activityRowSummary(evidence.label ?? "");
   if (label) return label;
   const source = evidence.source?.trim() ?? "";
   if (source) return activitySourceLabel(source);
@@ -1175,8 +1177,9 @@ export function graphInspectorSummary(node: {
   label?: string | null;
   summary?: string | null;
 }): string | undefined {
-  const summary = node.summary?.trim() ?? "";
-  if (!summary || summary === (node.label?.trim() ?? "")) return undefined;
+  const summary = activityRowSummary(node.summary ?? "");
+  const label = activityRowSummary(node.label ?? "");
+  if (!summary || summary === label) return undefined;
   return summary;
 }
 
@@ -1765,6 +1768,12 @@ export function RelationshipGraphWorkspace({
       observationHasMore:
         evidenceHasMore ?? companyPages.some((page) => page.observationHasMore),
       nodes: visible.nodes.map((node) => {
+        if (node.kind === "evidence") {
+          const label = activityRowSummary(node.label);
+          const summary = node.summary ? activityRowSummary(node.summary) : node.summary;
+          if (label === node.label && summary === node.summary) return node;
+          return { ...node, label: label || node.label, summary };
+        }
         if (node.kind !== "relationship" || !node.relationshipId) return node;
         const title = titles.get(node.relationshipId);
         return title ? { ...node, label: title } : node;

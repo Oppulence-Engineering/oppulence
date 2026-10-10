@@ -16,7 +16,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
-import { actionStatusLabel, getAudit } from "@/lib/actions/actions";
+import { actionKindLabel, actionStatusLabel, getAudit } from "@/lib/actions/actions";
 import { errMessage } from "@/components/features/revenue/shared/shared";
 import { friendlyRevenueError } from "@/lib/revenue/revenue";
 import type { AuditChain, AuditEntry } from "@/lib/actions/types";
@@ -83,9 +83,9 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
   return (
     <Card className="gap-3 py-3">
       <CardHeader className="flex-row items-center gap-2 px-3 pb-0">
-        <code className="rounded-[2px] bg-background-200 px-1.5 py-0.5 font-mono text-xs text-primary/70 dark:bg-background-100">
-          {p.kind}
-        </code>
+        <Badge className="font-normal" variant="outline">
+          {actionKindLabel(p.kind)}
+        </Badge>
         <Badge variant="outline">{actionStatusLabel(p.status)}</Badge>
         <Badge className="ml-auto text-xs font-normal text-primary/45" variant="secondary">
           {new Date(p.createdAt).toLocaleString()}

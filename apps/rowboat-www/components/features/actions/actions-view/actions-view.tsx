@@ -32,7 +32,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePendingActionProposals } from "@/hooks/queries/use-action-proposals";
 import { actionProposalKeys } from "@/hooks/queries/utils/action-proposal-keys";
 import { capture, ActionEvents } from "@/lib/analytics/analytics";
-import { ActionAPIError, actionStatusLabel, approve, execute, reject } from "@/lib/actions/actions";
+import {
+  ActionAPIError,
+  actionKindLabel,
+  actionParamsLines,
+  actionStatusLabel,
+  approve,
+  execute,
+  reject,
+} from "@/lib/actions/actions";
 import { DashboardRequestError } from "@/lib/api/request-json";
 import {
   errMessage,
@@ -287,7 +295,7 @@ export function ActionsView() {
                 <Card className="gap-3 rounded-[2px] border-border bg-background py-4 shadow-none dark:bg-background-50">
                   <CardContent className="flex flex-col gap-3 px-4 pt-0 pb-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Ref>{p.kind}</Ref>
+                      <Ref>{actionKindLabel(p.kind)}</Ref>
                       {p.financial ? (
                         <Badge
                           variant="outline"
@@ -309,14 +317,16 @@ export function ActionsView() {
 
                     {p.rationale ? <p className="text-sm text-primary/70">{p.rationale}</p> : null}
 
-                    {p.paramsJson ? (
+                    {p.paramsJson && actionParamsLines(p.paramsJson).length > 0 ? (
                       <details className="text-xs">
                         <summary className="cursor-pointer select-none text-primary/50 hover:text-primary/70">
                           Parameters
                         </summary>
-                        <pre className="mt-1 overflow-x-auto rounded-[2px] bg-background-200 p-2 font-mono text-[11px] text-primary/70 dark:bg-background-100">
-                          {prettyParams(p.paramsJson)}
-                        </pre>
+                        <ul className="mt-1 flex flex-col gap-1 rounded-[2px] bg-background-200 p-2 text-[11px] text-primary/70 dark:bg-background-100">
+                          {actionParamsLines(p.paramsJson).map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </ul>
                       </details>
                     ) : null}
 
@@ -481,10 +491,3 @@ function RejectDialog({
   );
 }
 
-function prettyParams(raw: string): string {
-  try {
-    return JSON.stringify(JSON.parse(raw), null, 2);
-  } catch {
-    return raw;
-  }
-}

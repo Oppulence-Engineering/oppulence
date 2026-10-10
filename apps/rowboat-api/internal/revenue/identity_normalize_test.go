@@ -20,6 +20,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 
@@ -1164,9 +1165,10 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
 		Kind: "company", DisplayName: "Lumen Packet",
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
@@ -1250,8 +1252,15 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 			}
 		}
 	}
+	// Health unknown also reads "Not known". These companies are healthy so
+	// the undated thread is the only "Not known" on Harbor Ledger.
+	for _, row := range []*ent.Relationship{quiet, lumen, harbor, waiting, addressed} {
+		if _, err := f.client.Relationship.UpdateOneID(row.ID).SetHealth("healthy").Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
 	assertCompanyQuery("No Gmail threads linked yet", "Lumen Packet")
-	assertCompanyQuery("Unknown date", "Harbor Ledger")
+	assertCompanyQuery("Not known", "Harbor Ledger")
 	assertCompanyQuery("Email conversation", "Harbor Ledger")
 	assertCompanyQuery("Needs a reply", "Harbor Ledger")
 	assertCompanyQuery("Waiting on them", "Northwind Ledger")
@@ -3013,10 +3022,13 @@ func TestRelationshipSearchFindsTheActivityReplyState(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Reply State: Awaiting Reply", "Quill Packet", "Cedar Mark")
-	assertCompanyQuery("which activity says reply state: Awaiting Reply", "Quill Packet", "Cedar Mark")
-	assertCompanyQuery("Reply State: Needs Reply", "Birch Slide", "Cedar Locked")
-	assertCompanyQuery("Reply State: quiet", "Cedar Mine")
+	assertCompanyQuery("Their reply has not arrived", "Quill Packet", "Cedar Mark", "Cedar Echo")
+	assertCompanyQuery("which activity says their reply has not arrived", "Quill Packet", "Cedar Mark", "Cedar Echo")
+	assertCompanyQuery("We have not answered this thread", "Birch Slide", "Cedar Locked")
+	assertCompanyQuery("No reply is outstanding", "Cedar Mine")
+	assertCompanyQuery("Reply State: Awaiting Reply")
+	assertCompanyQuery("Reply State: Needs Reply")
+	assertCompanyQuery("Reply State: quiet")
 	assertCompanyQuery("Reply State: local-user")
 	assertCompanyQuery("awaiting reply")
 	assertCompanyQuery("reply state")
@@ -3081,11 +3093,13 @@ func TestRelationshipSearchFindsTheActivityDeparture(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Departure Kind: Left Organization", "Quill Packet")
-	assertCompanyQuery("which activity says departure kind: Left Organization", "Quill Packet")
-	assertCompanyQuery("Departure Kind: Recipient Unknown", "Cedar Locked")
+	assertCompanyQuery("Left this company", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("which activity says left this company", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("Address was not recognized", "Cedar Locked")
+	assertCompanyQuery("Departure Kind: Left Organization")
 	assertCompanyQuery("Departure Kind: local-user")
-	assertCompanyQuery("Departure Evidence: The mailbox rejected the harbor packet.", "Birch Slide")
+	assertCompanyQuery("The bounce said: The mailbox rejected the harbor packet.", "Birch Slide")
+	assertCompanyQuery("Departure Evidence: The mailbox rejected the harbor packet.")
 	assertCompanyQuery("left organization")
 	assertCompanyQuery(evidence)
 	assertCompanyQuery("departure")
@@ -3211,10 +3225,13 @@ func TestRelationshipSearchFindsTheActivityCounts(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Message Count: 4", "Quill Packet")
-	assertCompanyQuery("which activity says message count: 4", "Quill Packet")
-	assertCompanyQuery("Outbound Count: 2", "Birch Slide")
-	assertCompanyQuery("Inbound Count: 1", "Cedar Quiet")
+	assertCompanyQuery("4 messages in this activity", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("which activity says 4 messages in this activity", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("2 messages sent from this mailbox", "Birch Slide")
+	assertCompanyQuery("1 message received from them", "Cedar Quiet")
+	assertCompanyQuery("Message Count: 4")
+	assertCompanyQuery("Outbound Count: 2")
+	assertCompanyQuery("Inbound Count: 1")
 	assertCompanyQuery("Message Count: local-user")
 	assertCompanyQuery("4 messages")
 	assertCompanyQuery("message count")
@@ -3274,11 +3291,13 @@ func TestRelationshipSearchFindsTheActivityFlags(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Has Attachments: true", "Quill Packet")
-	assertCompanyQuery("which activity says has attachments: true", "Quill Packet")
-	assertCompanyQuery("Has Attachments: false", "Birch Slide")
-	assertCompanyQuery("Is First Contact: true", "Cedar Quiet")
-	assertCompanyQuery("Subject Present: false", "Cedar Mine")
+	assertCompanyQuery("Includes an attachment", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("which activity says includes an attachment", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("No attachments", "Birch Slide")
+	assertCompanyQuery("First email in this thread", "Cedar Quiet")
+	assertCompanyQuery("Subject was left blank", "Cedar Mine")
+	assertCompanyQuery("Has Attachments: true")
+	assertCompanyQuery("Has Attachments: false")
 	assertCompanyQuery("Has Attachments: 1", "Cedar Mark")
 	assertCompanyQuery("Has Attachments: local-user")
 	assertCompanyQuery("has attachments")
@@ -3401,12 +3420,13 @@ func TestRelationshipSearchFindsTheActivityRoster(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Attachment Count: 1", "Quill Packet")
-	assertCompanyQuery("which activity says attachment count: 1", "Quill Packet")
-	assertCompanyQuery("Participant Count: 3", "Birch Slide")
-	assertCompanyQuery("External Participant Count: 2", "Cedar Quiet")
-	assertCompanyQuery("Participant Count: 2", "Cedar Mark")
-	assertCompanyQuery("participant count: 2 external participant count: 4", "Cedar Mark")
+	assertCompanyQuery("1 file attached to this activity", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("which activity says 1 file attached to this activity", "Quill Packet", "Cedar Echo")
+	assertCompanyQuery("3 people on this activity", "Birch Slide")
+	assertCompanyQuery("2 people outside the company", "Cedar Quiet")
+	assertCompanyQuery("2 people on this activity", "Cedar Mark")
+	assertCompanyQuery("2 people on this activity and 4 people outside the company", "Cedar Mark")
+	assertCompanyQuery("Attachment Count: 1")
 	assertCompanyQuery("Attachment Count: local-user")
 	assertCompanyQuery("Thread Id: 18abc")
 	assertCompanyQuery("Message Id: 18def")
@@ -5190,8 +5210,22 @@ func TestRelationshipSearchFindsTheActivityHeading(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	attend, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Attend",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	writeObservation(note, "user", "note", "harbor-note")
 	writeObservation(mail, "gmail", "thread.updated", "harbor-mail")
+	exchange, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Exchange",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeObservation(exchange, "gmail", "email_exchanged", "harbor-exchange")
+	writeObservation(attend, "calendar", "meeting_attendance_recorded", "harbor-attend")
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -5212,9 +5246,244 @@ func TestRelationshipSearchFindsTheActivityHeading(t *testing.T) {
 	assertCompanyQuery("Note saved", "Harbor Note")
 	assertCompanyQuery("Added by you · Note saved", "Harbor Note")
 	assertCompanyQuery("Mail updated", "Harbor Mail")
+	assertCompanyQuery("Mail", "Harbor Exchange", "Harbor Mail")
 	assertCompanyQuery("Gmail · Mail updated", "Harbor Mail")
-	assertCompanyQuery("Gmail", "Harbor Mail")
+	assertCompanyQuery("Gmail", "Harbor Mail", "Harbor Exchange")
 	assertCompanyQuery("Added by you", "Harbor Note")
+	assertCompanyQuery("Attendance", "Harbor Attend")
+	assertCompanyQuery("Calendar · Attendance", "Harbor Attend")
+}
+
+func TestRelationshipSearchFindsTheActivityAttendance(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("calendar").SetExternalID(name).SetEventType("meeting_attendance_recorded").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Quill Packet", "2 external participant(s) on \"Q3 review\"", `{
+		"calendar_event_id":"evt_18",
+		"meeting_title":"Q3 review",
+		"attendance_source":"calendar_invite",
+		"recorded":false,
+		"meeting_size":"small_group",
+		"invitee_count":3,
+		"external_count":2,
+		"declined_count":1,
+		"organizer_email":"ada@acme.com"
+	}`)
+	saveNote("Cedar Echo", "No recording was saved", `{"recorded":false}`)
+	saveNote("Cedar Size", "A small group was on the invite", `{"meeting_size":"small_group"}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Taken from the invite", "Quill Packet")
+	assertCompanyQuery("No recording was saved", "Quill Packet")
+	assertCompanyQuery("A small group was on the invite", "Quill Packet")
+	assertCompanyQuery("4 people on the invite")
+	assertCompanyQuery("3 people invited", "Quill Packet")
+	assertCompanyQuery("2 people from outside the company", "Quill Packet")
+	assertCompanyQuery("1 person declined", "Quill Packet")
+	assertCompanyQuery("Meeting: Q3 review", "Quill Packet")
+	assertCompanyQuery("Organizer: ada@acme.com", "Quill Packet")
+	assertCompanyQuery("Recorded: false")
+	assertCompanyQuery("evt_18")
+}
+
+func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Quill Packet", "Q3 review", `{
+		"session_id":"sess-18",
+		"dedupe_fingerprint":"fp-18",
+		"transcript_segments":12,
+		"transcript_payload_truncated":true,
+		"transcription_engine":"whisper.cpp",
+		"transcription_model":"ggml-base.en",
+		"audio_retention":"untilTranscribed"
+	}`)
+	saveNote("Cedar Echo", "The transcript was shortened", `{"transcript_payload_truncated":true}`)
+	saveNote("Birch Slide", "A saved note", `{"audio_retention":"always"}`)
+	saveNote("Cedar Mine", "A saved note", `{"audio_retention":"never"}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("12 lines in the transcript", "Quill Packet")
+	assertCompanyQuery("The transcript was shortened", "Quill Packet")
+	assertCompanyQuery("Transcribed with whisper.cpp", "Quill Packet")
+	assertCompanyQuery("Model: ggml-base.en", "Quill Packet")
+	assertCompanyQuery("The recording is removed after transcription", "Quill Packet")
+	assertCompanyQuery("The recording is kept", "Birch Slide")
+	assertCompanyQuery("The recording is not kept", "Cedar Mine")
+	assertCompanyQuery("Session Id: sess-18")
+	assertCompanyQuery("untilTranscribed")
+	assertCompanyQuery("sess-18")
+}
+
+func TestRelationshipSearchFindsTheActivityPromiseState(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("commitment_confirmed").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Quill Packet", "Q3 review", `{
+		"commitment_owner":"me",
+		"commitment_status":"open",
+		"commitment_due_phrase":"by Friday"
+	}`)
+	saveNote("Cedar Echo", "This promise is still open", `{"commitment_status":"open"}`)
+	saveNote("Birch Slide", "A saved note", `{
+		"commitment_owner":"them",
+		"commitment_status":"dropped"
+	}`)
+	saveNote("Cedar Mine", "A saved note", `{
+		"commitment_owner":"local-user",
+		"commitment_status":"fulfilled"
+	}`)
+	saveNote("Harbor Off", "A saved note", `{"commitment_status":"cancelled"}`)
+	saveNote("Lumen Done", "A saved note", `{"commitment_status":"done"}`)
+	saveNote("North Miss", "A saved note", `{"commitment_status":"missed"}`)
+	saveNote("West Wave", "A saved note", `{"commitment_status":"waived"}`)
+	saveNote("East Replace", "A saved note", `{"commitment_status":"superseded"}`)
+	saveNote("Harbor Mark", "Commitment marked fulfilled: Send the proposal", `{
+		"commitment_updates":[{"status":"fulfilled","text":"Send the proposal"}]
+	}`)
+	saveNote("Cedar Update", "This promise was kept", `{
+		"commitment_updates":[{"status":"fulfilled","text":"Send the proposal"}]
+	}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("We made this promise", "Quill Packet", "Cedar Mine")
+	assertCompanyQuery("They made this promise", "Birch Slide")
+	assertCompanyQuery("This promise is still open", "Quill Packet")
+	assertCompanyQuery("They said: by Friday", "Quill Packet")
+	assertCompanyQuery("This promise was dropped", "Birch Slide")
+	assertCompanyQuery("This promise was kept", "Cedar Mine", "Harbor Mark")
+	assertCompanyQuery("This promise was called off", "Harbor Off")
+	assertCompanyQuery("This promise is done", "Lumen Done")
+	assertCompanyQuery("This promise was missed", "North Miss")
+	assertCompanyQuery("This promise was waived", "West Wave")
+	assertCompanyQuery("This promise was replaced", "East Replace")
+	assertCompanyQuery("Commitment Owner: me")
+	assertCompanyQuery("Commitment Status: open")
+	assertCompanyQuery("Commitment Due Phrase: by Friday")
 }
 
 func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {
@@ -7722,7 +7991,11 @@ func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := f.client.Relationship.UpdateOneID(austin.ID).
-		SetCompanyEnrichmentData(map[string]string{"headquarters": "Austin"}).
+		SetCompanyEnrichmentData(map[string]string{
+			"headquarters":   "Austin",
+			"employee_range": "11-50",
+		}).
+		SetCompanyEnrichmentRefs(map[string][]string{"headquarters": {"https://acme.example/team"}}).
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -7744,6 +8017,56 @@ func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
 	if got := namesOf(found.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
 		t.Fatalf("Austin = %v", got)
 	}
+	cited, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Check the source"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(cited.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("Check the source = %v", got)
+	}
+	fragment, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "source"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(fragment.Relationships); len(got) != 0 {
+		t.Fatalf("source = %v", got)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Northwind Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	blank, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Birch Slide",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(blank.ID).
+		SetCompanyEnrichmentData(map[string]string{"headquarters": "  ", "employee_range": "  "}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	assertEnrichment := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertEnrichment("No headquarters recorded", "Birch Slide", "Northwind Quiet")
+	assertEnrichment("No employee range recorded", "Birch Slide", "Lumen Packet", "Northwind Quiet")
+	assertEnrichment("No funding recorded", "Birch Slide", "Lumen Packet", "Northwind Quiet", "Quill Atelier")
+	assertEnrichment("funding")
 }
 
 func TestRelationshipSearchFindsTheDirectoryColumns(t *testing.T) {
@@ -8647,15 +8970,15 @@ func TestRelationshipSearchFindsUncertainClaims(t *testing.T) {
 		}
 	}
 	assertCompanyQuery(
-		"1 material claim remains uncertain and queued for focused review.",
+		"1 conversation detail still needs a check.",
 		"Claim One", "Claim Speaker", "Claim Omitted", "Claim Half",
 	)
 	assertCompanyQuery(
-		"2 material claims remain uncertain and queued for focused review.",
+		"2 conversation details still need a check.",
 		"Claim Two",
 	)
-	assertCompanyQuery("1 material claims remain uncertain and queued for focused review.")
-	assertCompanyQuery("0 material claims remain uncertain and queued for focused review.")
+	assertCompanyQuery("1 conversation details still need a check.")
+	assertCompanyQuery("0 conversation details still need a check.")
 }
 
 func TestRelationshipSearchFindsTheIntelligencePlanSentence(t *testing.T) {
@@ -8918,11 +9241,12 @@ func TestRelationshipSearchFindsFocusedReview(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Low-confidence material claim", "Quill Atelier", "Cedar Mill")
-	assertCompanyQuery("Confirm the low-confidence wording", "Quill Atelier")
+	assertCompanyQuery("Look at this quote again.", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("Confirm these words.", "Quill Atelier")
 	assertCompanyQuery("The wording", "Quill Atelier")
-	assertCompanyQuery("Resolve the speaker for a material statement", "Cedar Mill")
+	assertCompanyQuery("Name who said this.", "Cedar Mill")
 	assertCompanyQuery("Who said it", "Cedar Mill")
+	assertCompanyQuery("Confirm who this person is.", "Lumen Packet")
 	assertCompanyQuery("Who this is", "Lumen Packet")
 	assertCompanyQuery("Focused evidence review", "Quill Atelier", "Cedar Mill", "Lumen Packet")
 	assertCompanyQuery("Focused evidence review (2)", "Quill Atelier", "Cedar Mill")
@@ -9047,7 +9371,7 @@ func TestRelationshipSearchFindsOlderUnreviewedConversations(t *testing.T) {
 	}
 	assertCompanyQuery("Older conversations may still need review.", "Quill North", "Birch Quiet", "Maple Kept")
 	assertCompanyQuery("which companies have older conversations may still need review", "Quill North", "Birch Quiet", "Maple Kept")
-	assertCompanyQuery("Low-confidence material claim", "Aspen Ledger")
+	assertCompanyQuery("Look at this quote again.", "Aspen Ledger")
 	assertCompanyQuery("older")
 	assertCompanyQuery("conversations")
 	assertCompanyQuery("review")
@@ -9529,6 +9853,12 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 	two := makeCompany("Quay Two")
 	twoPerson := addPerson(two, "Riley Chen")
 	addAttribute(twoPerson, "external_research", "active", "research-two-a", "Engineer")
+	if _, err := f.client.PersonAttribute.Update().
+		Where(personattribute.DedupeKeyEQ("research-two-a")).
+		SetCitationsJSON(`[{"url":"https://example.com/bio"},{"url":"https://example.com/team"}]`).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 	addAttribute(twoPerson, "external_research", "superseded", "research-two-b", "Director")
 	retracted := makeCompany("Quay Retracted")
 	addAttribute(addPerson(retracted, "Jules Pike"), "external_research", "retracted", "research-retracted", "Engineer")
@@ -9557,6 +9887,16 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 	assertCompanyQuery("which companies have public research · 2 details", "Quay Two")
 	assertCompanyQuery("Public research · 1 details")
 	assertCompanyQuery("Public research · 2 detail")
+	assertCompanyQuery("80% confidence", "Quay One", "Quay Two")
+	assertCompanyQuery("the title is 80% confidence", "Quay One", "Quay Two")
+	assertCompanyQuery("confidence")
+	assertCompanyQuery("80%")
+	assertCompanyQuery("Verify source", "Quay One", "Quay Two")
+	assertCompanyQuery("Verify source 1", "Quay One", "Quay Two")
+	assertCompanyQuery("Verify source 2", "Quay Two")
+	assertCompanyQuery("Verify source 3")
+	assertCompanyQuery("source")
+	assertCompanyQuery("verify")
 }
 
 func TestRelationshipSearchFindsTheDuplicateLines(t *testing.T) {
