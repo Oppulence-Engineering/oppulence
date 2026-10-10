@@ -938,9 +938,9 @@ function activityTranscriptLines(key: string, value: unknown): string[] | null {
 }
 
 /**
- * Settings name the on-device engines Whisper and Parakeet. A Parakeet
- * transcript stores the bare token, which the activity used to drop. A
- * speaker id stays hidden.
+ * Settings name the on-device engines Whisper and Parakeet, and the cloud
+ * route Deepgram. A cloud transcript stores deepgram or solomon, which the
+ * activity used to drop. A speaker id stays hidden.
  */
 function activityTranscriptionEngineLines(value: unknown): string[] {
   const engine = activityScalar(value);
@@ -950,7 +950,12 @@ function activityTranscriptionEngineLines(value: unknown): string[] {
       return ["Transcribed with Parakeet"];
     case "whisper":
     case "whisper.cpp":
+    case "whisper-local":
       return ["Transcribed with Whisper"];
+    case "deepgram":
+      return ["Transcribed with Deepgram"];
+    case "solomon":
+      return ["Transcribed with Oppulence Cloud (Deepgram)"];
     default:
       if (/^[a-z0-9_:-]+$/.test(engine)) return [];
       return [`Transcribed with ${engine}`];
@@ -958,8 +963,9 @@ function activityTranscriptionEngineLines(value: unknown): string[] {
 }
 
 /**
- * Settings name the downloaded model. A Parakeet meeting stores the
- * checkpoint filename. An unknown file name stays as written.
+ * Settings name the downloaded model, and a cloud meeting stores Nova-3.
+ * A Parakeet meeting stores the checkpoint filename. An unknown file name
+ * stays as written.
  */
 const TRANSCRIPTION_MODEL_LABELS: Record<string, string> = {
   "tiny.en-q5_1": "Tiny · English",
@@ -973,6 +979,7 @@ const TRANSCRIPTION_MODEL_LABELS: Record<string, string> = {
   "parakeet-tdt-0.6b-v3-coreml": "Parakeet v3",
   "parakeet-tdt-0.6b-v2": "Parakeet v2",
   "parakeet-tdt-0.6b-v2-coreml": "Parakeet v2",
+  "nova-3": "Nova-3",
 };
 
 function activityTranscriptionModelLines(value: unknown): string[] {

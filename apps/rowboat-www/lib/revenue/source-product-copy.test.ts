@@ -476,8 +476,20 @@ describe("source product copy", () => {
     expect(activityEvidenceLines(null, { transcription_engine: "speaker_2" })).toEqual([
       "Nothing else was saved with this activity.",
     ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "deepgram" })).toEqual([
+      "Transcribed with Deepgram",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "solomon" })).toEqual([
+      "Transcribed with Oppulence Cloud (Deepgram)",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "whisper-local" })).toEqual([
+      "Transcribed with Whisper",
+    ]);
     expect(activityEvidenceLines(null, { transcription_model: "base.en-q5_1" })).toEqual([
       "Model: Base · English (recommended)",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_model: "nova-3" })).toEqual([
+      "Model: Nova-3",
     ]);
     expect(
       activityEvidenceLines(null, { transcription_model: "parakeet-tdt-0.6b-v3-coreml" }),
