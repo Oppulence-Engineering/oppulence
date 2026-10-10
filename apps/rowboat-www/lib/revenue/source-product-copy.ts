@@ -412,6 +412,23 @@ export function activityAttendanceSummary(summary: string): string | null {
   return `${people} on ${title}`;
 }
 
+/**
+ * A reviewed conversation stores "Q3 review · 12 segments · 3 material claims".
+ * The row uses the same line count as the opened transcript.
+ */
+export function activityConversationSummary(summary: string): string | null {
+  const match = /^(.+) · (\d+) segments · (\d+) material claims$/.exec(summary.trim());
+  if (!match?.[1] || !match[2] || !match[3]) return null;
+  const title = match[1].trim();
+  const lines = Number(match[2]);
+  const claims = Number(match[3]);
+  if (!title || title === "local-user") return null;
+  if (!Number.isInteger(lines) || lines < 0 || !Number.isInteger(claims) || claims < 0) return null;
+  const lineLabel = lines === 1 ? "1 line in the transcript" : `${String(lines)} lines in the transcript`;
+  const claimLabel = claims === 1 ? "1 claim" : `${String(claims)} claims`;
+  return `${title} · ${lineLabel} · ${claimLabel}`;
+}
+
 /** A status change stores the promise and the new state together. */
 function activityCommitmentUpdateLines(value: unknown): string[] {
   if (!Array.isArray(value)) return [];

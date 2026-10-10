@@ -374,6 +374,12 @@ describe("RelationshipsView", () => {
     expect(activitySummaryLabel('0 external participant(s) on "Q3 review"')).toBe(
       "No one from outside the company on Q3 review",
     );
+    expect(activitySummaryLabel("Q3 review · 12 segments · 3 material claims")).toBe(
+      "Q3 review · 12 lines in the transcript · 3 claims",
+    );
+    expect(activitySummaryLabel("Q3 review · 1 segments · 1 material claims")).toBe(
+      "Q3 review · 1 line in the transcript · 1 claim",
+    );
     expect(communicationPreviewLabel("   ")).toBe("No message preview");
     expect(communicationPreviewLabel("Invoice packet")).toBe("Invoice packet");
     expect(evidenceExcerptLabel("   ")).toBe("Evidence excerpt unavailable");
