@@ -383,6 +383,11 @@ const HIDDEN_ACTIVITY_KEYS = new Set([
   "thread_ts",
   "author_ref",
   "adapter",
+  // A projected mail stores its id beside the direction. The heading already
+  // names mail or a meeting.
+  "interactionId",
+  "interactionType",
+  "communicationId",
   // Meeting ids. The title, the transcript, and who attended are the activity.
   "session_id",
   "dedupe_fingerprint",
@@ -1423,6 +1428,83 @@ function activityHubSpotStage(value: unknown): string | null {
   return named ? `HubSpot stage: ${named}` : null;
 }
 
+/** A projected mail stores who can see it. The activity says that in words. */
+function activityVisibilityLine(value: unknown): string {
+  switch (activityScalar(value)) {
+    case "private":
+      return "Only you can see this";
+    case "metadata":
+      return "Only the subject and people are saved";
+    case "full":
+      return "The message is saved";
+    default:
+      return "";
+  }
+}
+
+/** Provider metadata keeps the preview. Thread ids and label tokens stay stored. */
+function activityMetadataPreview(value: unknown): string {
+  const record = activityRecord(value);
+  if (!record) return "";
+  const snippet = activityScalar(record.snippet);
+  if (!snippet || activityMachineToken(snippet)) return "";
+  return `Preview: ${snippet}`;
+}
+
+/** A shared-plan reply stores ids beside what they said. The activity names the reply. */
+function activityPlanResponseLines(value: unknown): string[] {
+  const record = activityRecord(value);
+  if (!record) return [];
+  const lines: string[] = [];
+  switch (activityScalar(record.kind).toLowerCase()) {
+    case "confirm":
+      lines.push("They confirmed the plan");
+      break;
+    case "correct":
+      lines.push("They suggested a change");
+      break;
+    case "blocked":
+      lines.push("They said this is blocked");
+      break;
+    case "completed":
+      lines.push("They marked this done");
+      break;
+    case "comment":
+      lines.push("They left a comment");
+      break;
+    default:
+      break;
+  }
+  const proposed = activityScalar(record.proposed_value);
+  if (proposed && !activityMachineToken(proposed)) lines.push(`Suggested: ${proposed}`);
+  const comment = activityScalar(record.comment);
+  if (comment && !activityMachineToken(comment)) lines.push(comment);
+  return lines;
+}
+
+/** A correction stores the new words beside review ids. The activity quotes the new words. */
+function activityReviewCorrectionLines(value: unknown): string[] {
+  const record = activityRecord(value);
+  if (!record) return [];
+  const lines: string[] = [];
+  const corrected = activityScalar(record.corrected_value);
+  if (corrected && !activityMachineToken(corrected)) lines.push(`Corrected to: ${corrected}`);
+  const reason = activityScalar(record.reason);
+  if (
+    reason &&
+    reason !== "User corrected focused conversation evidence." &&
+    reason !== "User corrected conversation evidence during focused review." &&
+    !activityMachineToken(reason)
+  ) {
+    lines.push(reason);
+  }
+  return lines;
+}
+
+function activityMachineToken(value: string): boolean {
+  return value === "local-user" || value === "meeting-counterparty" || /^[a-z0-9_:-]+$/.test(value);
+}
+
 function activityReadableToken(value: string): string {
   const text = value.trim();
   if (!text || text === "local-user" || text === "meeting-counterparty") return "";
@@ -1557,6 +1639,24 @@ function linesFromActivity(value: unknown): string[] {
     ) {
       const participant = activityParticipantLine(key, item);
       if (participant) lines.push(participant);
+      continue;
+    }
+    if (key === "visibility") {
+      const visibility = activityVisibilityLine(item);
+      if (visibility) lines.push(visibility);
+      continue;
+    }
+    if (key === "metadata") {
+      const preview = activityMetadataPreview(item);
+      if (preview) lines.push(preview);
+      continue;
+    }
+    if (key === "mutual_action_plan_response") {
+      lines.push(...activityPlanResponseLines(item));
+      continue;
+    }
+    if (key === "review_correction") {
+      lines.push(...activityReviewCorrectionLines(item));
       continue;
     }
     if (key.startsWith("hs_") && key !== "hs_lastmodifieddate") continue;

@@ -501,6 +501,85 @@ describe("source product copy", () => {
     ]);
   });
 
+  it("names a saved mail and a plan reply without their ids", () => {
+    const mail = activityEvidenceLines(
+      {
+        interactionId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+        interactionType: "email",
+        direction: "outbound",
+        visibility: "metadata",
+        metadata: {
+          threadId: "thread-1",
+          rfc822MessageId: "<m@example>",
+          labels: ["SENT"],
+          snippet: "The harbor quote is attached.",
+          sizeBytes: 1200,
+        },
+      },
+      null,
+    );
+    expect(mail).toEqual([
+      "Direction: Outbound",
+      "Only the subject and people are saved",
+      "Preview: The harbor quote is attached.",
+    ]);
+    expect(mail.join("\n")).not.toMatch(/9c8dfa9b|thread-1|SENT|InteractionType|sizeBytes/);
+    expect(activityEvidenceLines({ visibility: "private" }, null)).toEqual(["Only you can see this"]);
+    expect(activityEvidenceLines({ visibility: "full" }, null)).toEqual(["The message is saved"]);
+    const reply = activityEvidenceLines(null, {
+      mutual_action_plan_response: {
+        response_id: "resp-1",
+        plan_id: "plan-1",
+        revision_id: "rev-1",
+        revision_hash: "abc",
+        kind: "correct",
+        item_id: "item-1",
+        proposed_value: "Send the quote Friday",
+        comment: "Friday works better.",
+      },
+    });
+    expect(reply).toEqual([
+      "They suggested a change",
+      "Suggested: Send the quote Friday",
+      "Friday works better.",
+    ]);
+    expect(reply.join("\n")).not.toMatch(/resp-1|plan-1|rev-1|item-1/);
+    expect(
+      activityEvidenceLines(null, {
+        review_correction: {
+          review_item_id: "item-1",
+          kind: "claim",
+          corrected_value: "Security review is complete",
+          reason: "User corrected focused conversation evidence.",
+          claim_id: "claim-1",
+          observation_id: "obs-1",
+        },
+      }),
+    ).toEqual(["Corrected to: Security review is complete"]);
+    expect(
+      activityEvidenceLines(null, {
+        review_correction: {
+          corrected_value: "Avery",
+          reason: "Calendar attendee confirmed the speaker.",
+        },
+      }),
+    ).toEqual(["Corrected to: Avery", "Calendar attendee confirmed the speaker."]);
+    expect(activityEvidenceLines(null, { mutual_action_plan_response: { kind: "confirm" } })).toEqual([
+      "They confirmed the plan",
+    ]);
+    expect(activityEvidenceLines(null, { mutual_action_plan_response: { kind: "blocked" } })).toEqual([
+      "They said this is blocked",
+    ]);
+    expect(activityEvidenceLines(null, { mutual_action_plan_response: { kind: "completed" } })).toEqual([
+      "They marked this done",
+    ]);
+    expect(
+      activityEvidenceLines(null, {
+        mutual_action_plan_response: { kind: "comment", comment: "Looks right." },
+      }),
+    ).toEqual(["They left a comment", "Looks right."]);
+  });
+
   it("names calendar attendance without the event id", () => {
     expect(activityHeading("calendar", "meeting_attendance_recorded")).toBe(
       "Calendar · Attendance",
