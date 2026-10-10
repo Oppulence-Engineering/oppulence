@@ -3650,8 +3650,9 @@ func relationshipSheetActivityRosterMatch(needle string) predicate.Relationship 
 }
 
 // relationshipSheetActivityAttendanceMatch is the opened calendar attendance
-// activity. The heading is "Calendar · Attendance". The invite counts and the
-// recording are sentences. The calendar event id is not printed.
+// activity. The heading is "Calendar · Attendance". The meeting size, the
+// invite counts, and the recording are sentences. The calendar event id is
+// not printed. Outside domains are named on the activity and are not searched.
 func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	if strings.Contains(needle, "taken from the invite") {
@@ -3669,8 +3670,19 @@ func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relations
 			observationFactFlagSentence("recorded", "true", "a recording was saved"),
 		))
 	}
+	for _, sentence := range []struct{ phrase, token string }{
+		{"no one else was on the invite", "solo"},
+		{"one other person was on the invite", "one_to_one"},
+		{"a small group was on the invite", "small_group"},
+		{"a large group was on the invite", "large_group"},
+	} {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, relationship.HasObservationsWith(
+				observationFactExact("meeting_size", sentence.token, sentence.phrase),
+			))
+		}
+	}
 	if counts := activityCountSentenceMatch(needle, []activityCountPhrase{
-		{"person on the invite", "people on the invite", "meeting_size"},
 		{"person invited", "people invited", "invitee_count"},
 		{"person from outside the company", "people from outside the company", "external_count"},
 		{"person declined", "people declined", "declined_count"},

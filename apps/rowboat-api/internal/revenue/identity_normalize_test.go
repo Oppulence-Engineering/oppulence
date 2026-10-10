@@ -5281,13 +5281,14 @@ func TestRelationshipSearchFindsTheActivityAttendance(t *testing.T) {
 		"meeting_title":"Q3 review",
 		"attendance_source":"calendar_invite",
 		"recorded":false,
-		"meeting_size":4,
+		"meeting_size":"small_group",
 		"invitee_count":3,
 		"external_count":2,
 		"declined_count":1,
 		"organizer_email":"ada@acme.com"
 	}`)
 	saveNote("Cedar Echo", "No recording was saved", `{"recorded":false}`)
+	saveNote("Cedar Size", "A small group was on the invite", `{"meeting_size":"small_group"}`)
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -5307,7 +5308,8 @@ func TestRelationshipSearchFindsTheActivityAttendance(t *testing.T) {
 	}
 	assertCompanyQuery("Taken from the invite", "Quill Packet")
 	assertCompanyQuery("No recording was saved", "Quill Packet")
-	assertCompanyQuery("4 people on the invite", "Quill Packet")
+	assertCompanyQuery("A small group was on the invite", "Quill Packet")
+	assertCompanyQuery("4 people on the invite")
 	assertCompanyQuery("3 people invited", "Quill Packet")
 	assertCompanyQuery("2 people from outside the company", "Quill Packet")
 	assertCompanyQuery("1 person declined", "Quill Packet")

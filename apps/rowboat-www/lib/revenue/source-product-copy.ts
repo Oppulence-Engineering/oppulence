@@ -558,7 +558,7 @@ function activityAttendanceLines(key: string, value: unknown): string[] | null {
       if (typeof value !== "boolean") return [];
       return [value ? "A recording was saved" : "No recording was saved"];
     case "meeting_size":
-      return activityPeopleCount(value, "person on the invite", "people on the invite");
+      return activityMeetingSizeLines(value);
     case "invitee_count":
       return activityPeopleCount(value, "person invited", "people invited");
     case "external_count":
@@ -569,14 +569,8 @@ function activityAttendanceLines(key: string, value: unknown): string[] | null {
       );
     case "declined_count":
       return activityPeopleCount(value, "person declined", "people declined");
-    case "external_domains": {
-      const domains = Array.isArray(value)
-        ? value
-            .filter((item): item is string => typeof item === "string" && item.trim() !== "")
-            .map((item) => item.trim())
-        : [];
-      return domains.length > 0 ? [`Outside domains: ${domains.join(", ")}`] : [];
-    }
+    case "external_domains":
+      return activityOutsideDomainLines(value);
     case "organizer_email": {
       const email = activityScalar(value);
       if (!email || email === "local-user" || /^[a-z0-9_:-]+$/.test(email)) return [];
@@ -712,6 +706,53 @@ function activityAttendanceConfidenceLines(value: unknown): string[] {
     lines.push(line);
   }
   return lines;
+}
+
+/**
+ * The invite stores how large the meeting was: solo, one to one, a small
+ * group, or a large group. A headcount is not what was saved.
+ */
+function activityMeetingSizeLines(value: unknown): string[] {
+  if (typeof value !== "string") return [];
+  switch (value.trim()) {
+    case "solo":
+      return ["No one else was on the invite"];
+    case "one_to_one":
+      return ["One other person was on the invite"];
+    case "small_group":
+      return ["A small group was on the invite"];
+    case "large_group":
+      return ["A large group was on the invite"];
+    default:
+      return [];
+  }
+}
+
+/** Outside companies are stored as domain and count. The activity names the domain. */
+function activityOutsideDomainLines(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const domains: string[] = [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    const domain = activityOutsideDomain(item);
+    if (!domain || seen.has(domain)) continue;
+    seen.add(domain);
+    domains.push(domain);
+  }
+  return domains.length > 0 ? [`Outside domains: ${domains.join(", ")}`] : [];
+}
+
+function activityOutsideDomain(item: unknown): string | null {
+  const raw =
+    typeof item === "string"
+      ? item
+      : item && typeof item === "object" && !Array.isArray(item) && typeof (item as { domain?: unknown }).domain === "string"
+        ? (item as { domain: string }).domain
+        : "";
+  const domain = raw.trim();
+  if (!domain || domain === "local-user" || domain === "meeting-counterparty") return null;
+  if (/^[a-z0-9_:-]+$/.test(domain)) return null;
+  return domain;
 }
 
 function activityPeopleCount(value: unknown, one: string, many: string): string[] {

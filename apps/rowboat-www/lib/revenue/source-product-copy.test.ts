@@ -350,11 +350,15 @@ describe("source product copy", () => {
         meeting_title: "Q3 review",
         attendance_source: "calendar_invite",
         recorded: false,
-        meeting_size: 4,
+        meeting_size: "small_group",
         invitee_count: 3,
         external_count: 2,
         declined_count: 1,
-        external_domains: ["acme.com"],
+        external_domains: [
+          { domain: "acme.com", count: 2 },
+          { domain: "birch.example", count: 1 },
+          { domain: "local-user", count: 1 },
+        ],
         organizer_email: "ada@acme.com",
         attendance_confidence: {
           "ada@acme.com": 0.9,
@@ -381,11 +385,11 @@ describe("source product copy", () => {
       "Meeting: Q3 review",
       "Taken from the invite",
       "No recording was saved",
-      "4 people on the invite",
+      "A small group was on the invite",
       "3 people invited",
       "2 people from outside the company",
       "1 person declined",
-      "Outside domains: acme.com",
+      "Outside domains: acme.com, birch.example",
       "Organizer: ada@acme.com",
       "Accepted the invite: ada@acme.com",
       "Had not accepted: sam@acme.com",
@@ -406,6 +410,18 @@ describe("source product copy", () => {
       }).join("\n"),
     ).not.toMatch(/invitee\(s\)|transcript payload|per-speaker|not recorded/);
     expect(activityEvidenceLines(null, { calendar_event_id: "evt_18", recorded: 0 })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(activityEvidenceLines(null, { meeting_size: "solo" })).toEqual([
+      "No one else was on the invite",
+    ]);
+    expect(activityEvidenceLines(null, { meeting_size: "one_to_one" })).toEqual([
+      "One other person was on the invite",
+    ]);
+    expect(activityEvidenceLines(null, { meeting_size: "large_group" })).toEqual([
+      "A large group was on the invite",
+    ]);
+    expect(activityEvidenceLines(null, { meeting_size: 4 })).toEqual([
       "Nothing else was saved with this activity.",
     ]);
     expect(
