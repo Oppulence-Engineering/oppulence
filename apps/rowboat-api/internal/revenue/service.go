@@ -6578,16 +6578,16 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	if labelPhraseMatches("show earlier evidence", needle) {
 		preds = append(preds, relationshipHasEarlierEvidence())
 	}
-	if sheetPhraseMatches("low-confidence material claim", needle) || sheetPhraseMatches("what was said", needle) {
+	if sheetPhraseMatches("look at this quote again", needle) || sheetPhraseMatches("what was said", needle) {
 		preds = append(preds, relationshipHasReviewClaim("claim"))
 	}
-	if sheetPhraseMatches("resolve the speaker for a material statement", needle) || sheetPhraseMatches("who said it", needle) {
+	if sheetPhraseMatches("name who said this", needle) || sheetPhraseMatches("who said it", needle) {
 		preds = append(preds, relationshipHasReviewClaim("speaker"))
 	}
-	if sheetPhraseMatches("confirm the low-confidence wording", needle) || sheetPhraseMatches("the wording", needle) {
+	if sheetPhraseMatches("confirm these words", needle) || sheetPhraseMatches("the wording", needle) {
 		preds = append(preds, relationshipHasReviewClaim("word"))
 	}
-	if sheetPhraseMatches("confirm the stakeholder identity or role", needle) || sheetPhraseMatches("who this is", needle) {
+	if sheetPhraseMatches("confirm who this person is", needle) || sheetPhraseMatches("who this is", needle) {
 		preds = append(preds, relationshipHasReviewClaim("entity"))
 	}
 	// The focused-review section says this only when the newest page has no
@@ -11635,7 +11635,7 @@ func sheetPhraseMatches(phrase, needle string) bool {
 	}
 	// The search box folds hyphens, underscores, and periods into spaces
 	// before this comparison. The printed sentence has to fold the same way,
-	// or "Low-confidence material claim" never matches the words on the card.
+	// or "Look at this quote again." never matches the words on the card.
 	phrase = normalizePersonSearch(phrase)
 	if needle == phrase {
 		return true

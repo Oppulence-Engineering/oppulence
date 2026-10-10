@@ -2694,6 +2694,50 @@ export function reviewEvidenceKindLabel(kind: string): string {
   }
 }
 
+const REVIEW_ITEM_LABELS: Record<string, string> = {
+  "Low-confidence material claim": "Look at this quote again.",
+  "Resolve the speaker for a material statement": "Name who said this.",
+  "Confirm the low-confidence wording": "Confirm these words.",
+  "Confirm the stakeholder identity or role": "Confirm who this person is.",
+};
+
+const PROPOSED_REVIEW_KINDS: Record<string, string> = {
+  promise: "promise",
+  commitment: "promise",
+  risk: "risk",
+  objection: "objection",
+  stakeholder: "person",
+  next_action: "next step",
+  fact: "detail",
+};
+
+/**
+ * Focused review stores a model label on the card. The card says what to
+ * check. A proposed kind such as next_action stays off the card. The stored
+ * label stays on the API.
+ */
+export function reviewItemLabelCopy(label: string): string {
+  const raw = label.trim();
+  const known = REVIEW_ITEM_LABELS[raw];
+  if (known) return known;
+  const proposed = /^Review proposed\s*(.*)$/.exec(raw);
+  if (!proposed) return raw;
+  const kind = (proposed[1] ?? "").trim();
+  if (!kind || kind === "local-user" || kind === "meeting-counterparty") {
+    return "A suggestion is waiting.";
+  }
+  if (/^[a-z0-9_:-]+$/.test(kind)) {
+    const named = PROPOSED_REVIEW_KINDS[kind];
+    return named ? `A suggested ${named} is waiting.` : "A suggestion is waiting.";
+  }
+  return `A suggested ${kind} is waiting.`;
+}
+
+/** The review section names the buttons. It does not talk about model state. */
+export function focusedReviewIntro(): string {
+  return "Approve, correct, reject, or defer each one before it changes this company.";
+}
+
 /** A shared plan stores an internal status. The heading says where it stands. */
 export function mutualPlanStatusLabel(status: string): string {
   switch (status) {
@@ -5514,7 +5558,7 @@ function CorrectionReview({
       <p className="mb-3 text-xs text-primary/55">
         {items.length === 0
           ? "Older conversations may still need review."
-          : "Approve, correct, reject, or defer each proposed material change before it affects state."}
+          : focusedReviewIntro()}
       </p>
       <ul className="flex flex-col gap-3">
         {items.map((item) => {
@@ -5522,7 +5566,7 @@ function CorrectionReview({
           return (
             <li key={item.id} className="rounded-none border border-border bg-background p-3">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-primary">{item.label}</p>
+                <p className="text-xs font-medium text-primary">{reviewItemLabelCopy(item.label)}</p>
                 <Badge className="text-[11px] font-normal text-primary/40" variant="secondary">
                   {Math.round(item.confidence * 100)}% · {reviewEvidenceKindLabel(item.kind)}
                 </Badge>

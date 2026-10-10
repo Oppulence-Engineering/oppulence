@@ -9241,11 +9241,12 @@ func TestRelationshipSearchFindsFocusedReview(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Low-confidence material claim", "Quill Atelier", "Cedar Mill")
-	assertCompanyQuery("Confirm the low-confidence wording", "Quill Atelier")
+	assertCompanyQuery("Look at this quote again.", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("Confirm these words.", "Quill Atelier")
 	assertCompanyQuery("The wording", "Quill Atelier")
-	assertCompanyQuery("Resolve the speaker for a material statement", "Cedar Mill")
+	assertCompanyQuery("Name who said this.", "Cedar Mill")
 	assertCompanyQuery("Who said it", "Cedar Mill")
+	assertCompanyQuery("Confirm who this person is.", "Lumen Packet")
 	assertCompanyQuery("Who this is", "Lumen Packet")
 	assertCompanyQuery("Focused evidence review", "Quill Atelier", "Cedar Mill", "Lumen Packet")
 	assertCompanyQuery("Focused evidence review (2)", "Quill Atelier", "Cedar Mill")
@@ -9370,7 +9371,7 @@ func TestRelationshipSearchFindsOlderUnreviewedConversations(t *testing.T) {
 	}
 	assertCompanyQuery("Older conversations may still need review.", "Quill North", "Birch Quiet", "Maple Kept")
 	assertCompanyQuery("which companies have older conversations may still need review", "Quill North", "Birch Quiet", "Maple Kept")
-	assertCompanyQuery("Low-confidence material claim", "Aspen Ledger")
+	assertCompanyQuery("Look at this quote again.", "Aspen Ledger")
 	assertCompanyQuery("older")
 	assertCompanyQuery("conversations")
 	assertCompanyQuery("review")

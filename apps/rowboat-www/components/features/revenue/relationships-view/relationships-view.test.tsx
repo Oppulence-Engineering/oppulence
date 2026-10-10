@@ -84,6 +84,8 @@ import {
   mailMessageCountLabel,
   mailReplyLabel,
   reviewEvidenceKindLabel,
+  reviewItemLabelCopy,
+  focusedReviewIntro,
   acceptedPromiseLabel,
   mutualPlanCreateLabel,
   mutualPlanEmptyCopy,
@@ -1026,6 +1028,29 @@ describe("RelationshipsView", () => {
     expect(mailReplyLabel("quiet")).toBe("Quiet");
     expect(reviewEvidenceKindLabel("speaker")).toBe("Who said it");
     expect(reviewEvidenceKindLabel("claim")).toBe("What was said");
+    expect(reviewItemLabelCopy("Low-confidence material claim")).toBe("Look at this quote again.");
+    expect(reviewItemLabelCopy("Resolve the speaker for a material statement")).toBe(
+      "Name who said this.",
+    );
+    expect(reviewItemLabelCopy("Confirm the low-confidence wording")).toBe("Confirm these words.");
+    expect(reviewItemLabelCopy("Confirm the stakeholder identity or role")).toBe(
+      "Confirm who this person is.",
+    );
+    expect(reviewItemLabelCopy("Review proposed promise")).toBe("A suggested promise is waiting.");
+    expect(reviewItemLabelCopy("Review proposed commitment")).toBe("A suggested promise is waiting.");
+    expect(reviewItemLabelCopy("Review proposed next_action")).toBe(
+      "A suggested next step is waiting.",
+    );
+    expect(reviewItemLabelCopy("Review proposed local-user")).toBe("A suggestion is waiting.");
+    expect(reviewItemLabelCopy("Review proposed ")).toBe("A suggestion is waiting.");
+    expect(reviewItemLabelCopy("Send the harbor note")).toBe("Send the harbor note");
+    expect(focusedReviewIntro()).toBe(
+      "Approve, correct, reject, or defer each one before it changes this company.",
+    );
+    expect(source).toContain("reviewItemLabelCopy(item.label)");
+    expect(source).toContain("focusedReviewIntro()");
+    expect(source).not.toContain("proposed material change");
+    expect(source).not.toContain("{item.label}");
     expect(mutualPlanStatusLabel("internally_approved")).toBe("Approved in this workspace");
     expect(mutualPlanHeading("draft", 1)).toBe("Draft · Version 1");
     expect(mutualPlanHeading("internally_approved", 2)).toBe(
