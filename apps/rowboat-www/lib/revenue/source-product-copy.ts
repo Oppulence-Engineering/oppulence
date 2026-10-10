@@ -509,8 +509,24 @@ export function activityRowSummary(summary: string): string {
     activityConversationSummary(trimmed) ??
     activityMailThreadSummary(trimmed) ??
     activitySourceSnapshotSummary(trimmed) ??
+    activityDecisionSummary(trimmed) ??
     trimmed
   );
+}
+
+const ACTIVITY_DECISION_SUMMARIES: Record<string, string> = {
+  "User corrected reviewed conversation evidence.": "You corrected what was said.",
+  "User resolved a typed relationship contradiction.": "You chose which detail is current.",
+  "User decided a proposed conversation change.": "You decided a suggested change.",
+  "Counterparty responded to a shared mutual action plan.": "They responded to the shared plan.",
+};
+
+/**
+ * A review, a contradiction, and a shared-plan reply store a model sentence.
+ * The activity row says what the person did. The stored summary stays put.
+ */
+export function activityDecisionSummary(summary: string): string | null {
+  return ACTIVITY_DECISION_SUMMARIES[summary.trim()] ?? null;
 }
 
 /**

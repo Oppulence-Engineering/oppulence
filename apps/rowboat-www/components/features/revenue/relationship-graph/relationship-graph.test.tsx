@@ -589,6 +589,18 @@ describe("RelationshipGraphWorkspace", () => {
     ).toBe("Message in #general");
     expect(
       graphEvidenceChipLabel({
+        label: "User decided a proposed conversation change.",
+        source: "user",
+      }),
+    ).toBe("You decided a suggested change.");
+    expect(
+      graphEvidenceChipLabel({
+        label: "Counterparty responded to a shared mutual action plan.",
+        source: "browser",
+      }),
+    ).toBe("They responded to the shared plan.");
+    expect(
+      graphEvidenceChipLabel({
         label: "Commitment marked fulfilled: Send the proposal",
         source: "meeting",
       }),

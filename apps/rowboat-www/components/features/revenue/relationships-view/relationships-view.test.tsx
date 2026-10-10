@@ -407,6 +407,18 @@ describe("RelationshipsView", () => {
     expect(activitySummaryLabel("Slack message observed in #Slack channel C123")).toBe(
       "Message in Slack",
     );
+    expect(activitySummaryLabel("User corrected reviewed conversation evidence.")).toBe(
+      "You corrected what was said.",
+    );
+    expect(activitySummaryLabel("User resolved a typed relationship contradiction.")).toBe(
+      "You chose which detail is current.",
+    );
+    expect(activitySummaryLabel("User decided a proposed conversation change.")).toBe(
+      "You decided a suggested change.",
+    );
+    expect(activitySummaryLabel("Counterparty responded to a shared mutual action plan.")).toBe(
+      "They responded to the shared plan.",
+    );
     expect(communicationPreviewLabel("   ")).toBe("No message preview");
     expect(communicationPreviewLabel("Invoice packet")).toBe("Invoice packet");
     expect(evidenceExcerptLabel("   ")).toBe("Evidence excerpt unavailable");
@@ -1213,6 +1225,24 @@ describe("RelationshipsView", () => {
     expect(
       detailEvidenceCopy({ supported: true, reason: "Confirmed in the last meeting." }),
     ).toBe("Confirmed in the last meeting.");
+    expect(
+      detailEvidenceCopy({
+        supported: true,
+        reason: "User corrected conversation evidence during focused review.",
+      }),
+    ).toBe("You corrected what was said.");
+    expect(
+      detailEvidenceCopy({
+        supported: true,
+        reason: "User decided a proposed conversation change.",
+      }),
+    ).toBe("You decided a suggested change.");
+    expect(
+      detailEvidenceCopy({
+        supported: true,
+        reason: "User selected the current value from a focused contradiction case.",
+      }),
+    ).toBe("You chose the current value.");
     expect(source).toContain("detailEvidenceCopy(item)");
     expect(source).not.toContain("{item.reason || item.missingReason}");
     expect(

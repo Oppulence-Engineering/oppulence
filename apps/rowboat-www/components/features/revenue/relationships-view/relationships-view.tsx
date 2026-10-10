@@ -3298,14 +3298,26 @@ export function liveCueCopy(cue: { kind: string; title: string; detail: string }
 
 /**
  * Missing-detail text is stored for the model. The sheet says what the person
- * can do about it. A supported detail keeps the reason that was recorded.
+ * can do about it. A review reason that still says "User" is rewritten. Any
+ * other supported detail keeps the reason that was recorded.
  */
+const DETAIL_REASON_COPY: Record<string, string> = {
+  "User corrected focused conversation evidence.": "You corrected what was said.",
+  "User corrected conversation evidence during focused review.": "You corrected what was said.",
+  "User decided a proposed conversation change.": "You decided a suggested change.",
+  "User selected the current value from a focused contradiction case.":
+    "You chose the current value.",
+};
+
 export function detailEvidenceCopy(item: {
   supported: boolean;
   reason?: string;
   missingReason?: string;
 }): string {
-  if (item.supported) return item.reason?.trim() || "";
+  if (item.supported) {
+    const reason = item.reason?.trim() ?? "";
+    return DETAIL_REASON_COPY[reason] ?? reason;
+  }
   const missing = item.missingReason?.trim() ?? "";
   if (missing === "" || missing.includes("asOf boundary")) {
     return "Nothing connected has filled this in.";
