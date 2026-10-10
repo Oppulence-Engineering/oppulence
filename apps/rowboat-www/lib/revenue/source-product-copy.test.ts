@@ -518,6 +518,32 @@ describe("source product copy", () => {
         { id: "claim:review", kind: "claim", value: "one", confidence: 0.2 },
         { id: "claim:again", kind: "risk", value: "Security review may slip", speakerLabel: "Avery" },
       ],
+      participant_resolution: [
+        {
+          speaker_id: "local-user",
+          label: "You",
+          confidence: 1,
+          resolution_source: "calendar_contact_or_provider",
+          scope: "meeting",
+          persistent_voiceprint: false,
+        },
+        {
+          speaker_id: "meeting-participant:avery",
+          label: "Avery",
+          confidence: 0.9,
+          resolution_source: "calendar_contact_or_provider",
+          scope: "meeting",
+          persistent_voiceprint: false,
+        },
+        {
+          speaker_id: "anonymous:1",
+          label: "Speaker 1",
+          confidence: 0.5,
+          resolution_source: "anonymous",
+          scope: "meeting",
+          persistent_voiceprint: false,
+        },
+      ],
     });
     expect(lines).toEqual([
       "Risk raised in a conversation: Security review may slip — Avery",
@@ -526,8 +552,12 @@ describe("source product copy", () => {
       "Sentiment: Negative",
       "Decision: We decided to renew.",
       "Promise: I will send the proposal. — You",
+      "Named from the guest list: Avery",
+      "A speaker was not named",
     ]);
-    expect(lines.join("\n")).not.toMatch(/claim:|speaker_2|Speaker 1|former_customer|\bone\b/);
+    expect(lines.join("\n")).not.toMatch(
+      /claim:|speaker_2|Speaker 1|former_customer|\bone\b|calendar_contact|anonymous:|0\.9/,
+    );
     expect(activityEvidenceLines(null, { conversation_claims: [{ kind: "risk", value: "local-user" }] })).toEqual([
       "Nothing else was saved with this activity.",
     ]);

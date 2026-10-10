@@ -624,6 +624,42 @@ function activityConversationClaimLine(item: unknown): string | null {
   return speaker ? `${title}: ${shown} — ${speaker}` : `${title}: ${shown}`;
 }
 
+/**
+ * A reviewed conversation stores who each voice was resolved to. A named
+ * guest is the activity. The local user, a speaker id, and an anonymous
+ * label stay hidden.
+ */
+function activityParticipantResolutionLines(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  let unnamed = false;
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const row = item as Record<string, unknown>;
+    const label = typeof row.label === "string" ? row.label.trim() : "";
+    const source = typeof row.resolution_source === "string" ? row.resolution_source.trim() : "";
+    const anonymous =
+      source === "anonymous" ||
+      !label ||
+      label === "Other" ||
+      label === "Unknown speaker" ||
+      /^speaker\s+\d+$/i.test(label);
+    if (anonymous) {
+      unnamed = true;
+      continue;
+    }
+    if (label === "You" || label === "local-user" || label === "meeting-counterparty") continue;
+    if (/^[a-z0-9_:-]+$/.test(label)) continue;
+    const line = `Named from the guest list: ${label}`;
+    if (seen.has(line)) continue;
+    seen.add(line);
+    lines.push(line);
+  }
+  if (unnamed) lines.push("A speaker was not named");
+  return lines;
+}
+
 /** A claim stores who spoke. A speaker id and an anonymous label stay hidden. */
 function activityClaimSpeaker(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -1029,6 +1065,10 @@ function linesFromActivity(value: unknown): string[] {
     }
     if (key === "conversation_claims") {
       lines.push(...activityConversationClaimLines(item));
+      continue;
+    }
+    if (key === "participant_resolution") {
+      lines.push(...activityParticipantResolutionLines(item));
       continue;
     }
     if (key === "legacy_shadow_action_pack") continue;
