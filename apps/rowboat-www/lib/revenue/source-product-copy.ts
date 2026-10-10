@@ -449,6 +449,57 @@ function activityDepartureEvidenceLine(value: unknown): string | null {
 }
 
 /**
+ * Roster caveats are stored as capture notes. The opened activity uses the
+ * same sentences as the invite counts. A note that only repeats those counts
+ * stays off the activity.
+ */
+function activityCaveatLine(value: string): string | null {
+  const text = value.trim();
+  if (!text) return null;
+  if (
+    text === "transcript payload was truncated" ||
+    text === "This meeting was not recorded; attendance comes from the invite alone." ||
+    /^\d+ invitee\(s\) declined and are not recorded as participants\.$/.test(text) ||
+    /^Invitees span \d+ organization domains \(.*\)\.$/.test(text)
+  ) {
+    return null;
+  }
+  if (
+    text ===
+    "Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined."
+  ) {
+    return "Someone on the invite may not have joined.";
+  }
+  if (text.startsWith("remote speaker was resolved from the 1:1 calendar attendee")) {
+    return "The other person was named from the guest list.";
+  }
+  if (text === "speaker assignment requires review") return "Who spoke is not confirmed.";
+  const shared =
+    /^(\d+) participants shared one audio channel; no per-speaker attribution was attempted\.$/.exec(
+      text,
+    );
+  if (shared) {
+    const n = Number(shared[1]);
+    return n === 1
+      ? "1 person shared one audio channel."
+      : `${String(n)} people shared one audio channel.`;
+  }
+  const rooms = /^(\d+) invitee\(s\) excluded as rooms, resources, or notetaker bots\.$/.exec(text);
+  if (rooms) {
+    const n = Number(rooms[1]);
+    return n === 1 ? "1 room or bot was left off." : `${String(n)} rooms or bots were left off.`;
+  }
+  const pending = /^(\d+) of (\d+) invitee\(s\) had not accepted at capture time\.$/.exec(text);
+  if (pending) {
+    const n = Number(pending[1]);
+    const total = Number(pending[2]);
+    const people = total === 1 ? "person" : "people";
+    return `${String(n)} of ${String(total)} ${people} had not accepted.`;
+  }
+  return text;
+}
+
+/**
  * Calendar attendance stores the invite beside the event id. The opened
  * activity says who was invited. The event id stays hidden.
  */
@@ -493,8 +544,9 @@ function activityAttendanceLines(key: string, value: unknown): string[] | null {
     case "capture_caveats":
       if (!Array.isArray(value)) return [];
       return value
-        .filter((item): item is string => typeof item === "string" && item.trim() !== "")
-        .map((item) => item.trim());
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => activityCaveatLine(item))
+        .filter((item): item is string => Boolean(item));
     default:
       return null;
   }

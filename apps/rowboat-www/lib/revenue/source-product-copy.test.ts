@@ -354,7 +354,20 @@ describe("source product copy", () => {
         declined_count: 1,
         external_domains: ["acme.com"],
         organizer_email: "ada@acme.com",
-        capture_caveats: ["Attendance comes from the invite alone."],
+        capture_caveats: [
+          "Attendance comes from the invite alone.",
+          "Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined.",
+          "2 participants shared one audio channel; no per-speaker attribution was attempted.",
+          "1 invitee(s) excluded as rooms, resources, or notetaker bots.",
+          "2 invitee(s) excluded as rooms, resources, or notetaker bots.",
+          "1 of 3 invitee(s) had not accepted at capture time.",
+          "1 invitee(s) declined and are not recorded as participants.",
+          "Invitees span 2 organization domains (acme.com, birch.example).",
+          "transcript payload was truncated",
+          "This meeting was not recorded; attendance comes from the invite alone.",
+          "remote speaker was resolved from the 1:1 calendar attendee; the system track may still contain other voices and no persistent voiceprint was created",
+          "speaker assignment requires review",
+        ],
       }),
     ).toEqual([
       "Meeting: Q3 review",
@@ -367,7 +380,21 @@ describe("source product copy", () => {
       "Outside domains: acme.com",
       "Organizer: ada@acme.com",
       "Attendance comes from the invite alone.",
+      "Someone on the invite may not have joined.",
+      "2 people shared one audio channel.",
+      "1 room or bot was left off.",
+      "2 rooms or bots were left off.",
+      "1 of 3 people had not accepted.",
+      "The other person was named from the guest list.",
+      "Who spoke is not confirmed.",
     ]);
+    expect(
+      activityEvidenceLines(null, {
+        capture_caveats: [
+          "2 participants shared one audio channel; no per-speaker attribution was attempted.",
+        ],
+      }).join("\n"),
+    ).not.toMatch(/invitee\(s\)|transcript payload|per-speaker|not recorded/);
     expect(activityEvidenceLines(null, { calendar_event_id: "evt_18", recorded: 0 })).toEqual([
       "Nothing else was saved with this activity.",
     ]);
