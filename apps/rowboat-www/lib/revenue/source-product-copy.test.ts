@@ -356,6 +356,12 @@ describe("source product copy", () => {
         declined_count: 1,
         external_domains: ["acme.com"],
         organizer_email: "ada@acme.com",
+        attendance_confidence: {
+          "ada@acme.com": 0.9,
+          "sam@acme.com": 0.6,
+          "local-user": 0.9,
+          "speaker_2": 0.6,
+        },
         capture_caveats: [
           "Attendance comes from the invite alone.",
           "Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined.",
@@ -381,6 +387,8 @@ describe("source product copy", () => {
       "1 person declined",
       "Outside domains: acme.com",
       "Organizer: ada@acme.com",
+      "Accepted the invite: ada@acme.com",
+      "Had not accepted: sam@acme.com",
       "Attendance comes from the invite alone.",
       "Someone on the invite may not have joined.",
       "2 people shared one audio channel.",
@@ -400,6 +408,11 @@ describe("source product copy", () => {
     expect(activityEvidenceLines(null, { calendar_event_id: "evt_18", recorded: 0 })).toEqual([
       "Nothing else was saved with this activity.",
     ]);
+    expect(
+      activityEvidenceLines(null, {
+        attendance_confidence: { "local-user": 0.9, speaker_2: 0.6, "ada@acme.com": 0.4 },
+      }),
+    ).toEqual(["Nothing else was saved with this activity."]);
   });
 
   it("names a meeting transcript without the session id", () => {

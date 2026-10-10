@@ -582,6 +582,8 @@ function activityAttendanceLines(key: string, value: unknown): string[] | null {
       if (!email || email === "local-user" || /^[a-z0-9_:-]+$/.test(email)) return [];
       return [`Organizer: ${email}`];
     }
+    case "attendance_confidence":
+      return activityAttendanceConfidenceLines(value);
     case "capture_caveats":
       if (!Array.isArray(value)) return [];
       return value
@@ -685,6 +687,29 @@ function activityActionPackLines(value: unknown): string[] {
     else push(label);
     const due = activityDueLine(action.dueAt);
     if (due) push(due);
+  }
+  return lines;
+}
+
+/**
+ * Attendance stores how sure the invite is for each person. Accepted is 0.9.
+ * Invited and not declined, but never confirmed, is 0.6. A speaker id stays hidden.
+ */
+function activityAttendanceConfidenceLines(value: unknown): string[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const [rawWho, rawScore] of Object.entries(value)) {
+    const who = rawWho.trim();
+    if (!who || who === "local-user" || who === "meeting-counterparty") continue;
+    if (/^[a-z0-9_:-]+$/.test(who)) continue;
+    if (typeof rawScore !== "number" || !Number.isFinite(rawScore)) continue;
+    let line = "";
+    if (Math.abs(rawScore - 0.9) < 0.001) line = `Accepted the invite: ${who}`;
+    else if (Math.abs(rawScore - 0.6) < 0.001) line = `Had not accepted: ${who}`;
+    if (!line || seen.has(line)) continue;
+    seen.add(line);
+    lines.push(line);
   }
   return lines;
 }
