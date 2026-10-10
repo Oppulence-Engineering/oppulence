@@ -486,6 +486,7 @@ describe("source product copy", () => {
           value: "Security review may slip",
           exactQuote: "Security review may slip",
           speakerId: "speaker_2",
+          speakerLabel: "Avery",
           confidence: 0.4,
         },
         {
@@ -493,6 +494,7 @@ describe("source product copy", () => {
           kind: "objection",
           value: "The price is too high",
           exactQuote: "The price is too high",
+          speakerLabel: "Speaker 1",
         },
         {
           id: "claim:lifecycle",
@@ -507,20 +509,25 @@ describe("source product copy", () => {
           exactQuote: "We are concerned about the renewal timing.",
         },
         { id: "claim:decision", kind: "decision", value: "We decided to renew." },
-        { id: "claim:promise", kind: "commitment", value: "I will send the proposal." },
+        {
+          id: "claim:promise",
+          kind: "commitment",
+          value: "I will send the proposal.",
+          speakerLabel: "You",
+        },
         { id: "claim:review", kind: "claim", value: "one", confidence: 0.2 },
-        { id: "claim:again", kind: "risk", value: "Security review may slip" },
+        { id: "claim:again", kind: "risk", value: "Security review may slip", speakerLabel: "Avery" },
       ],
     });
     expect(lines).toEqual([
-      "Risk raised in a conversation: Security review may slip",
+      "Risk raised in a conversation: Security review may slip — Avery",
       "Unresolved objection: The price is too high",
       "Lifecycle: Former customer",
       "Sentiment: Negative",
       "Decision: We decided to renew.",
-      "Promise: I will send the proposal.",
+      "Promise: I will send the proposal. — You",
     ]);
-    expect(lines.join("\n")).not.toMatch(/claim:|speaker_2|former_customer|\bone\b/);
+    expect(lines.join("\n")).not.toMatch(/claim:|speaker_2|Speaker 1|former_customer|\bone\b/);
     expect(activityEvidenceLines(null, { conversation_claims: [{ kind: "risk", value: "local-user" }] })).toEqual([
       "Nothing else was saved with this activity.",
     ]);

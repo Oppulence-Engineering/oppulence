@@ -620,7 +620,18 @@ function activityConversationClaimLine(item: unknown): string | null {
   if (!raw || raw === "local-user" || raw === "meeting-counterparty") return null;
   const shown = activityClaimValue(kind, raw);
   if (!shown) return null;
-  return `${title}: ${shown}`;
+  const speaker = activityClaimSpeaker(claim.speakerLabel);
+  return speaker ? `${title}: ${shown} — ${speaker}` : `${title}: ${shown}`;
+}
+
+/** A claim stores who spoke. A speaker id and an anonymous label stay hidden. */
+function activityClaimSpeaker(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const label = value.trim();
+  if (!label || label === "local-user" || label === "meeting-counterparty") return null;
+  if (label === "Other" || label === "Unknown speaker" || /^speaker\s+\d+$/i.test(label)) return null;
+  if (/^[a-z0-9_:-]+$/.test(label)) return null;
+  return label;
 }
 
 function activityClaimTitle(kind: string): string | null {
