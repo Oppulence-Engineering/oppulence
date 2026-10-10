@@ -5437,6 +5437,12 @@ func TestRelationshipSearchFindsTheActivityPromiseState(t *testing.T) {
 	saveNote("North Miss", "A saved note", `{"commitment_status":"missed"}`)
 	saveNote("West Wave", "A saved note", `{"commitment_status":"waived"}`)
 	saveNote("East Replace", "A saved note", `{"commitment_status":"superseded"}`)
+	saveNote("Harbor Mark", "Commitment marked fulfilled: Send the proposal", `{
+		"commitment_updates":[{"status":"fulfilled","text":"Send the proposal"}]
+	}`)
+	saveNote("Cedar Update", "This promise was kept", `{
+		"commitment_updates":[{"status":"fulfilled","text":"Send the proposal"}]
+	}`)
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -5459,7 +5465,7 @@ func TestRelationshipSearchFindsTheActivityPromiseState(t *testing.T) {
 	assertCompanyQuery("This promise is still open", "Quill Packet")
 	assertCompanyQuery("They said: by Friday", "Quill Packet")
 	assertCompanyQuery("This promise was dropped", "Birch Slide")
-	assertCompanyQuery("This promise was kept", "Cedar Mine")
+	assertCompanyQuery("This promise was kept", "Cedar Mine", "Harbor Mark")
 	assertCompanyQuery("This promise was called off", "Harbor Off")
 	assertCompanyQuery("This promise is done", "Lumen Done")
 	assertCompanyQuery("This promise was missed", "North Miss")

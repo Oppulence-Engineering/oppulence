@@ -223,6 +223,7 @@ import {
   activityLinesBesideSummary,
   activityHeading,
   activityOutcomeSummary,
+  activityPromiseUpdateSummary,
   activitySourceLabel,
   enumLabel as humanize,
   participantRoleLabel,
@@ -2639,6 +2640,8 @@ export function activitySummaryLabel(summary?: string | null): string {
   const trimmed = summary?.trim() ?? "";
   const outcome = activityOutcomeSummary(trimmed);
   if (outcome) return outcome;
+  const updated = activityPromiseUpdateSummary(trimmed);
+  if (updated) return updated;
   return trimmed || "Open the source";
 }
 

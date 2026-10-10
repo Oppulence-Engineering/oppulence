@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ACTION_TYPE_LABELS } from "./revenue";
 import {
   activityEvidenceLines,
+  activityPromiseUpdateSummary,
   activityLinesBesideSummary,
   activityHeading,
   activityOutcomeSummary,
@@ -541,6 +542,44 @@ describe("source product copy", () => {
     expect(activityEvidenceLines(null, { action_pack: [] })).toEqual([
       "Nothing else was saved with this activity.",
     ]);
+  });
+
+  it("names a promise status change without the stored token", () => {
+    expect(activityPromiseUpdateSummary("Commitment marked fulfilled: Send the proposal")).toBe(
+      "This promise was kept: Send the proposal",
+    );
+    expect(activityPromiseUpdateSummary("Commitment marked cancelled: Send the proposal")).toBe(
+      "This promise was called off: Send the proposal",
+    );
+    expect(activityPromiseUpdateSummary("The harbor packet arrived")).toBeNull();
+    const lines = activityEvidenceLines(null, {
+      session_id: "session-1",
+      user_confirmed: true,
+      commitment_updates: [
+        {
+          commitmentId: "session-1:0-2000",
+          status: "fulfilled",
+          text: "Send the proposal",
+          dueAt: "2026-08-01T17:00:00.000Z",
+        },
+        {
+          commitmentId: "session-1:2-4000",
+          status: "cancelled",
+          text: "Send the appendix",
+        },
+      ],
+    });
+    expect(lines).toEqual([
+      "This promise was kept: Send the proposal",
+      "Due: Aug 1, 2026",
+      "This promise was called off: Send the appendix",
+    ]);
+    expect(lines.join("\n")).not.toMatch(/fulfilled|cancelled|session-1|Commitment Updates/);
+    expect(
+      activityEvidenceLines(null, {
+        commitment_updates: [{ commitmentId: "only-an-id", status: "local-user", text: "local-user" }],
+      }),
+    ).toEqual(["Nothing else was saved with this activity."]);
   });
 
   it("names message counts without the mail row's sentence", () => {

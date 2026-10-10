@@ -380,6 +380,45 @@ function activityPromiseStatusLine(value: unknown): string | null {
   }
 }
 
+/**
+ * A status change stores "Commitment marked fulfilled: …". The activity row
+ * uses the same sentence as an opened promise.
+ */
+export function activityPromiseUpdateSummary(summary: string): string | null {
+  const match = /^Commitment marked (fulfilled|cancelled|open): (.+)$/.exec(summary.trim());
+  if (!match?.[1] || !match[2]) return null;
+  const status = activityPromiseStatusLine(match[1]);
+  const text = match[2].trim();
+  if (!status || !text || text === "local-user") return status;
+  return `${status}: ${text}`;
+}
+
+/** A status change stores the promise and the new state together. */
+function activityCommitmentUpdateLines(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  const push = (line: string) => {
+    if (!line || seen.has(line)) return;
+    seen.add(line);
+    lines.push(line);
+  };
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const update = item as Record<string, unknown>;
+    const status = activityPromiseStatusLine(update.status);
+    const text = typeof update.text === "string" ? update.text.trim() : "";
+    if (status && text && text !== "local-user" && !/^[a-z0-9_:-]+$/.test(text)) {
+      push(`${status}: ${text}`);
+    } else if (status) {
+      push(status);
+    }
+    const due = activityDueLine(update.dueAt);
+    if (due) push(due);
+  }
+  return lines;
+}
+
 /** The due phrase is the deadline as it was said. The activity quotes it. */
 function activityPromiseDuePhraseLine(value: unknown): string | null {
   const phrase = activityScalar(value);
@@ -813,6 +852,10 @@ function linesFromActivity(value: unknown): string[] {
     if (key === "commitment_status") {
       const status = activityPromiseStatusLine(item);
       if (status) lines.push(status);
+      continue;
+    }
+    if (key === "commitment_updates") {
+      lines.push(...activityCommitmentUpdateLines(item));
       continue;
     }
     if (key === "commitment_due_phrase") {

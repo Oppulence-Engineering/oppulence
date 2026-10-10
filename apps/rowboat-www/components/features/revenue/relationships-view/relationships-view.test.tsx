@@ -356,6 +356,15 @@ describe("RelationshipsView", () => {
     expect(activitySummaryLabel("Action outcome observed: bad recommendation.")).toBe(
       "Not a good suggestion",
     );
+    expect(activitySummaryLabel("Commitment marked fulfilled: Send the proposal")).toBe(
+      "This promise was kept: Send the proposal",
+    );
+    expect(activitySummaryLabel("Commitment marked cancelled: Send the proposal")).toBe(
+      "This promise was called off: Send the proposal",
+    );
+    expect(activitySummaryLabel("Commitment marked open: Send the proposal")).toBe(
+      "This promise is still open: Send the proposal",
+    );
     expect(communicationPreviewLabel("   ")).toBe("No message preview");
     expect(communicationPreviewLabel("Invoice packet")).toBe("Invoice packet");
     expect(evidenceExcerptLabel("   ")).toBe("Evidence excerpt unavailable");

@@ -3715,6 +3715,11 @@ func relationshipSheetActivityPromiseStateMatch(needle string) predicate.Relatio
 			preds = append(preds, relationship.HasObservationsWith(
 				observationFactExact(sentence.key, sentence.token, sentence.phrase),
 			))
+			if sentence.key == "commitment_status" && commitmentUpdateStores(sentence.token) {
+				preds = append(preds, relationship.HasObservationsWith(
+					observationFactUpdateStatus(sentence.token, sentence.phrase),
+				))
+			}
 		}
 	}
 	if said := relationshipSheetActivityFactMatch(needle, "they said: ", "commitment_due_phrase"); said != nil {
@@ -3770,6 +3775,53 @@ func relationshipSheetActivityTranscriptMatch(needle string) predicate.Relations
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// A status change stores open, fulfilled, or cancelled inside commitment_updates.
+// The opened activity uses the same sentence as commitment_status.
+func commitmentUpdateStores(token string) bool {
+	switch token {
+	case "open", "fulfilled", "cancelled":
+		return true
+	default:
+		return false
+	}
+}
+
+func observationFactUpdateStatus(token, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'commitment_updates') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'commitment_updates') AS upd WHERE upd->>'status' = ")
+			} else {
+				b.WriteString("json_valid(")
+				b.WriteString(facts)
+				b.WriteString(") AND json_type(")
+				b.WriteString(facts)
+				b.WriteString(", '$.commitment_updates') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
+				b.WriteString(facts)
+				b.WriteString(", '$.commitment_updates') AS upd WHERE json_extract(upd.value, '$.status') = ")
+			}
+			b.Arg(token)
+			b.WriteString(") AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+			} else {
+				b.WriteString("lower(trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
 }
 
 func observationFactExact(key, token, printed string) predicate.RelationshipObservation {
