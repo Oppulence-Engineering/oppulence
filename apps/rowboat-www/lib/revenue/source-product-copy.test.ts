@@ -15,6 +15,7 @@ import {
   removePersonConfirmCopy,
   scopeLabel,
   sourceConnectionLabel,
+  sourceLastErrorCopy,
   sourceProductCopy,
 } from "./source-product-copy";
 
@@ -295,6 +296,40 @@ describe("source product copy", () => {
       sourceConnectionLabel({ source: "desktop_note", status: "stale", completeness: "stale" }),
     ).toBe("Out of date");
     expect(sourceConnectionLabel({ source: "user", status: "stale" })).toBe("Out of date");
+    expect(sourceLastErrorCopy("Required provider permission is missing.")).toBe(
+      "A needed permission is missing. Reconnect to grant it.",
+    );
+    expect(sourceLastErrorCopy("Provider authorization expired; reconnect is required.")).toBe(
+      "The connection expired. Reconnect to keep reading.",
+    );
+    expect(sourceLastErrorCopy("Provider access was revoked; reconnect is required.")).toBe(
+      "Access was turned off. Reconnect to keep reading.",
+    );
+    expect(sourceLastErrorCopy("Provider rate limit delayed synchronization.")).toBe(
+      "The source is busy. Reading will continue shortly.",
+    );
+    expect(sourceLastErrorCopy("Provider is temporarily unavailable.")).toBe(
+      "The source is temporarily unavailable.",
+    );
+    expect(
+      sourceLastErrorCopy("This provider is not configured on the synchronization worker."),
+    ).toBe("This source is not set up to read yet.");
+    expect(sourceLastErrorCopy("The provider cursor was lost; a rebuild is required.")).toBe(
+      "Reading lost its place. Start the sync again.",
+    );
+    expect(sourceLastErrorCopy("Provider authorization was canceled.")).toBe(
+      "The connection was canceled.",
+    );
+    expect(sourceLastErrorCopy("Provider authorization failed; reconnect is required.")).toBe(
+      "The connection failed. Reconnect to try again.",
+    );
+    expect(sourceLastErrorCopy("cursor_lost")).toBe("Reading stopped. Reconnect or try again.");
+    expect(sourceLastErrorCopy("   ")).toBe("");
+    expect(
+      sourceLastErrorCopy(
+        "Account monitoring is paused for this workspace.",
+      ),
+    ).toBe("Account monitoring is paused for this workspace.");
     expect(sourceConnectionLabel({ source: "google", status: "not_connected" })).toBe(
       "Not connected",
     );

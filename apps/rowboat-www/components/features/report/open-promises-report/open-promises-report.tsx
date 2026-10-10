@@ -52,6 +52,7 @@ import {
   startScan,
 } from "@/lib/revenue/revenue";
 import { promiseDirectionLabel, promiseDueLabel } from "@/lib/revenue/revenue-records";
+import { sourceLastErrorCopy } from "@/lib/revenue/source-product-copy";
 import type { OpenPromisesReport, RelationshipSourceStatus } from "@/lib/revenue/types";
 
 export function OpenPromisesReportClient() {
@@ -419,7 +420,8 @@ function GoogleEvidenceSyncState({
       </p>
       <p className="mt-1 text-[12px] text-primary/55">
         {failed
-          ? source.lastError || "Reading stopped. Reconnect Google or try again."
+          ? sourceLastErrorCopy(source.lastError) ||
+            "Reading stopped. Reconnect Google or try again."
           : active && total > 0
             ? `${String(completed)} of ${String(total)} conversations read.`
             : active

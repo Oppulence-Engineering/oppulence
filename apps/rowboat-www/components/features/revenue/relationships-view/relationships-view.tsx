@@ -232,6 +232,7 @@ import {
   projectionReasonCopy,
   relationshipDeltaValue,
   removePersonConfirmCopy,
+  sourceLastErrorCopy,
   sourceProductCopy,
 } from "@/lib/revenue/source-product-copy";
 import { cn } from "@/lib/utils";
@@ -1758,7 +1759,7 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
         <Badge
           key={`${source.source}:${source.sourceAccountId}`}
           variant="outline"
-          title={source.lastError || source.lastObservationAt || undefined}
+          title={sourceLastErrorCopy(source.lastError) || source.lastObservationAt || undefined}
           className={`rounded-none font-normal ${
             source.status === "live"
               ? "border-emerald-500/30"
@@ -1942,6 +1943,7 @@ function SourceConnectionCards({
               ? Math.round((account.backfillCompleted / account.backfillTotal) * 100)
               : null;
           const lag = account ? sourceLagLabel(account.lagSeconds) : "";
+          const sourceError = account ? sourceLastErrorCopy(account.lastError) : "";
           return (
             <article
               key={item.source}
@@ -1982,9 +1984,7 @@ function SourceConnectionCards({
                       Missing: {missingScopeLabels(account.missingScopes)}
                     </p>
                   ) : null}
-                  {account.lastError ? (
-                    <p className="text-destructive">{account.lastError}</p>
-                  ) : null}
+                  {sourceError ? <p className="text-destructive">{sourceError}</p> : null}
                 </div>
               ) : null}
               <div className="flex flex-wrap gap-2">

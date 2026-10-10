@@ -158,6 +158,39 @@ export function sourceConnectionLabel(source: {
   return enumLabel(source.status);
 }
 
+const SOURCE_LAST_ERRORS: Record<string, string> = {
+  "Required provider permission is missing.":
+    "A needed permission is missing. Reconnect to grant it.",
+  "Provider authorization expired; reconnect is required.":
+    "The connection expired. Reconnect to keep reading.",
+  "Provider access was revoked; reconnect is required.":
+    "Access was turned off. Reconnect to keep reading.",
+  "Provider rate limit delayed synchronization.":
+    "The source is busy. Reading will continue shortly.",
+  "Provider is temporarily unavailable.": "The source is temporarily unavailable.",
+  "This provider is not configured on the synchronization worker.":
+    "This source is not set up to read yet.",
+  "The provider cursor was lost; a rebuild is required.":
+    "Reading lost its place. Start the sync again.",
+  "Provider authorization was canceled.": "The connection was canceled.",
+  "Provider authorization failed; reconnect is required.":
+    "The connection failed. Reconnect to try again.",
+};
+
+/**
+ * A source stores a safe error that still names the worker, the cursor, or
+ * the provider. The card says what stopped and what to do. A research
+ * sentence that is already plain stays. The stored error stays on the API.
+ */
+export function sourceLastErrorCopy(error: string | null | undefined): string {
+  const raw = error?.trim() ?? "";
+  if (!raw) return "";
+  const known = SOURCE_LAST_ERRORS[raw];
+  if (known) return known;
+  if (/^[a-z0-9_:-]+$/.test(raw)) return "Reading stopped. Reconnect or try again.";
+  return raw;
+}
+
 /** A stored connector slug becomes the name a person already sees elsewhere. */
 export function activitySourceLabel(source: string): string {
   const key = source.trim().toLowerCase();

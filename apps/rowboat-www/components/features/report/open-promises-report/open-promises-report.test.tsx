@@ -68,6 +68,8 @@ describe("OpenPromisesReportClient", () => {
     expect(source).toContain(
       'title={reconnect ? "Reconnect Google" : "Connect Gmail and Calendar"}',
     );
+    expect(source).toContain("sourceLastErrorCopy(source.lastError)");
+    expect(source).not.toContain("source.lastError ||");
     expect(source).toContain('title="Find promises in your mail"');
     expect(source).not.toContain('title="Open promises"');
     expect(source).toContain("See the message each promise came from");
