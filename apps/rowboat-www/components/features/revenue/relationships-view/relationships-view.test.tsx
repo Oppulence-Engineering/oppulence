@@ -1062,6 +1062,8 @@ describe("RelationshipsView", () => {
     );
     expect(source).toContain("contradictionSourceLabel(side.source)");
     expect(source).toContain("contradictionReasonCopy(item.reason)");
+    expect(source).toContain("projectionReasonCopy(change.reason)");
+    expect(source).toContain("projectionReasonCopy(data.intelligence.delta.recommendationReason)");
     expect(source).toContain("relationshipChangeLabel(change.dimension)");
     expect(source).toContain("relationshipDeltaValue(side.value)");
     expect(source).not.toContain("(side) => side.source)");

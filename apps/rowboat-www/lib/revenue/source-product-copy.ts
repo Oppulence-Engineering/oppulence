@@ -292,6 +292,28 @@ export function relationshipDeltaValue(value: unknown): string {
   return "Unknown";
 }
 
+/**
+ * A projection with nothing selected stores "No active next action assertion
+ * at evaluation time." What changed and the recommendation reason say which
+ * field is missing. The stored sentence stays on the record.
+ */
+const PROJECTION_GAP_REASONS: Record<string, string> = {
+  "next action": "No next step is recorded.",
+  health: "Health is not recorded.",
+  lifecycle: "Lifecycle is not recorded.",
+  engagement: "Engagement is not recorded.",
+  sentiment: "Sentiment is not recorded.",
+  summary: "No summary is recorded.",
+  risk: "No risk is recorded.",
+  milestone: "No milestone is recorded.",
+};
+
+export function projectionReasonCopy(reason: string): string {
+  return reason.replace(/No active ([a-z][a-z ]*) assertion at evaluation time\./g, (full, key: string) => {
+    return PROJECTION_GAP_REASONS[key] ?? full;
+  });
+}
+
 const HIDDEN_ACTIVITY_KEYS = new Set([
   "noteId",
   "content",

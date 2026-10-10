@@ -10,6 +10,7 @@ import {
   enumLabel,
   mailAccessReason,
   missingScopeLabels,
+  projectionReasonCopy,
   relationshipDeltaValue,
   removePersonConfirmCopy,
   scopeLabel,
@@ -76,6 +77,33 @@ describe("source product copy", () => {
     expect(relationshipDeltaValue([])).toBe("None");
     expect(relationshipDeltaValue({ value: "healthy" })).toBe("Healthy");
     expect(relationshipDeltaValue({ other: true })).toBe("Unknown");
+    expect(projectionReasonCopy("No active next action assertion at evaluation time.")).toBe(
+      "No next step is recorded.",
+    );
+    expect(projectionReasonCopy("No active health assertion at evaluation time.")).toBe(
+      "Health is not recorded.",
+    );
+    expect(projectionReasonCopy("No active risk assertion at evaluation time.")).toBe(
+      "No risk is recorded.",
+    );
+    expect(projectionReasonCopy("No active milestone assertion at evaluation time.")).toBe(
+      "No milestone is recorded.",
+    );
+    expect(projectionReasonCopy("No active engagement assertion at evaluation time.")).toBe(
+      "Engagement is not recorded.",
+    );
+    expect(projectionReasonCopy("No active sentiment assertion at evaluation time.")).toBe(
+      "Sentiment is not recorded.",
+    );
+    expect(projectionReasonCopy("No active summary assertion at evaluation time.")).toBe(
+      "No summary is recorded.",
+    );
+    expect(
+      projectionReasonCopy(
+        "Supporting evidence changed. No active lifecycle assertion at evaluation time.",
+      ),
+    ).toBe("Supporting evidence changed. Lifecycle is not recorded.");
+    expect(projectionReasonCopy("The account is healthy.")).toBe("The account is healthy.");
   });
 
   it("reads a saved note instead of the empty payload", () => {

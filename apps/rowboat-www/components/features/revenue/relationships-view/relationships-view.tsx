@@ -229,6 +229,7 @@ import {
   sourceConnectionLabel,
   mailAccessReason,
   missingScopeLabels,
+  projectionReasonCopy,
   relationshipDeltaValue,
   removePersonConfirmCopy,
   sourceProductCopy,
@@ -5165,7 +5166,9 @@ export function RelationshipSheet({
                             {relationshipDeltaValue(change.before)} → {relationshipDeltaValue(change.after)}
                           </p>
                           {change.reason ? (
-                            <p className="mt-1 text-[11px] text-primary/40">{change.reason}</p>
+                            <p className="mt-1 text-[11px] text-primary/40">
+                              {projectionReasonCopy(change.reason)}
+                            </p>
                           ) : null}
                         </li>
                       ))}
@@ -5225,7 +5228,7 @@ export function RelationshipSheet({
                       <Label className="font-medium text-primary">
                         Why the recommendation changed:
                       </Label>{" "}
-                      {data.intelligence.delta.recommendationReason}
+                      {projectionReasonCopy(data.intelligence.delta.recommendationReason)}
                     </p>
                   ) : null}
                   <SheetPaneStatus
