@@ -393,6 +393,20 @@ describe("RelationshipsView", () => {
     expect(activitySummaryLabel("1-message thread with an external contact")).toBe(
       "1 message with someone outside the company",
     );
+    expect(activitySummaryLabel("Gmail thread observed: Kickoff notes")).toBe("Mail: Kickoff notes");
+    expect(activitySummaryLabel("Gmail thread observed: local-user")).toBe("Mail");
+    expect(activitySummaryLabel("Calendar meeting observed with ada@acme.example")).toBe(
+      "Meeting with ada@acme.example",
+    );
+    expect(activitySummaryLabel("Calendar meeting observed with local-user")).toBe("Meeting");
+    expect(activitySummaryLabel("HubSpot company snapshot: Acme")).toBe("Company from HubSpot: Acme");
+    expect(activitySummaryLabel("HubSpot company snapshot: HubSpot company 123")).toBe(
+      "Company from HubSpot",
+    );
+    expect(activitySummaryLabel("Slack message observed in #general")).toBe("Message in #general");
+    expect(activitySummaryLabel("Slack message observed in #Slack channel C123")).toBe(
+      "Message in Slack",
+    );
     expect(communicationPreviewLabel("   ")).toBe("No message preview");
     expect(communicationPreviewLabel("Invoice packet")).toBe("Invoice packet");
     expect(evidenceExcerptLabel("   ")).toBe("Evidence excerpt unavailable");

@@ -573,6 +573,21 @@ describe("RelationshipGraphWorkspace", () => {
       graphEvidenceChipLabel({ label: "4-message thread with acme.com", source: "gmail" }),
     ).toBe("4 messages with acme.com");
     expect(
+      graphEvidenceChipLabel({ label: "Gmail thread observed: Kickoff notes", source: "gmail" }),
+    ).toBe("Mail: Kickoff notes");
+    expect(
+      graphEvidenceChipLabel({
+        label: "Calendar meeting observed with ada@acme.example",
+        source: "calendar",
+      }),
+    ).toBe("Meeting with ada@acme.example");
+    expect(
+      graphEvidenceChipLabel({ label: "HubSpot company snapshot: Acme", source: "hubspot" }),
+    ).toBe("Company from HubSpot: Acme");
+    expect(
+      graphEvidenceChipLabel({ label: "Slack message observed in #general", source: "slack" }),
+    ).toBe("Message in #general");
+    expect(
       graphEvidenceChipLabel({
         label: "Commitment marked fulfilled: Send the proposal",
         source: "meeting",

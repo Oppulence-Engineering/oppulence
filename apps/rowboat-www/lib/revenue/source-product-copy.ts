@@ -508,8 +508,45 @@ export function activityRowSummary(summary: string): string {
     activityAttendanceSummary(trimmed) ??
     activityConversationSummary(trimmed) ??
     activityMailThreadSummary(trimmed) ??
+    activitySourceSnapshotSummary(trimmed) ??
     trimmed
   );
+}
+
+/**
+ * A synced source stores "Gmail thread observed: …", "Calendar meeting
+ * observed with …", "HubSpot company snapshot: …", or "Slack message
+ * observed in #…". The activity row names the mail, the meeting, or the
+ * record. A placeholder name and a speaker id stay off the row.
+ */
+export function activitySourceSnapshotSummary(summary: string): string | null {
+  const gmail = /^Gmail thread observed: ?(.*)$/.exec(summary.trim());
+  if (gmail) {
+    const subject = (gmail[1] ?? "").trim();
+    if (!subject || subject === "local-user" || subject === "meeting-counterparty") return "Mail";
+    return `Mail: ${subject}`;
+  }
+  const calendar = /^Calendar meeting observed with (.+)$/.exec(summary.trim());
+  if (calendar?.[1]) {
+    const who = calendar[1].trim();
+    if (!who || who === "local-user" || who === "meeting-counterparty" || /^[a-z0-9_:-]+$/.test(who)) {
+      return "Meeting";
+    }
+    return `Meeting with ${who}`;
+  }
+  const hubspot = /^HubSpot company snapshot: ?(.*)$/.exec(summary.trim());
+  if (hubspot) {
+    const name = (hubspot[1] ?? "").trim();
+    if (!name || name === "local-user" || /^HubSpot company /.test(name)) return "Company from HubSpot";
+    return `Company from HubSpot: ${name}`;
+  }
+  const slack = /^Slack message observed in #(.+)$/.exec(summary.trim());
+  if (slack?.[1]) {
+    const channel = slack[1].trim();
+    if (!channel || channel === "local-user" || /^Slack channel /.test(channel)) return "Message in Slack";
+    return `Message in #${channel}`;
+  }
+  return null;
 }
 
 /** A status change stores the promise and the new state together. */
