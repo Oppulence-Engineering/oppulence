@@ -1150,6 +1150,10 @@ func (s *Service) ListRelationshipsFiltered(
 			parts = append(parts, transcript)
 		}
 
+		if promiseState := relationshipSheetActivityPromiseStateMatch(needle); promiseState != nil {
+			parts = append(parts, promiseState)
+		}
+
 		if provider := relationshipSheetActivityProviderMatch(needle); provider != nil {
 			parts = append(parts, provider)
 		}
@@ -3678,6 +3682,43 @@ func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relations
 	}
 	if organizer := relationshipSheetActivityFactMatch(needle, "organizer: ", "organizer_email"); organizer != nil {
 		preds = append(preds, organizer)
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+// relationshipSheetActivityPromiseStateMatch is who made a confirmed promise,
+// whether it is still open, and the deadline as it was said. The register
+// badges stay their own words.
+func relationshipSheetActivityPromiseStateMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	for _, sentence := range []struct{ phrase, key, token string }{
+		{"we made this promise", "commitment_owner", "me"},
+		{"we made this promise", "commitment_owner", "local-user"},
+		{"they made this promise", "commitment_owner", "them"},
+		{"this promise is still open", "commitment_status", "open"},
+		{"this promise is done", "commitment_status", "done"},
+		{"this promise was dropped", "commitment_status", "dropped"},
+		{"this promise was kept", "commitment_status", "fulfilled"},
+		{"this promise was called off", "commitment_status", "cancelled"},
+		{"this promise was missed", "commitment_status", "missed"},
+		{"this promise was waived", "commitment_status", "waived"},
+		{"this promise was replaced", "commitment_status", "superseded"},
+	} {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, relationship.HasObservationsWith(
+				observationFactExact(sentence.key, sentence.token, sentence.phrase),
+			))
+		}
+	}
+	if said := relationshipSheetActivityFactMatch(needle, "they said: ", "commitment_due_phrase"); said != nil {
+		preds = append(preds, said)
 	}
 	switch len(preds) {
 	case 0:

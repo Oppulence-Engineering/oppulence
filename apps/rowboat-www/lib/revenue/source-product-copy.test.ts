@@ -163,6 +163,52 @@ describe("source product copy", () => {
         counterparty_participant_ref: "buyer@acme.example",
       }),
     ).toEqual(["From: Avery Chen", "To: buyer@acme.example"]);
+    expect(
+      activityEvidenceLines(null, {
+        commitment_text: "Send the proposal",
+        commitment_owner: "me",
+        commitment_status: "open",
+        commitment_due_phrase: "by Friday",
+        commitment_direction: "promised_by_me",
+      }),
+    ).toEqual([
+      "Promise: Send the proposal",
+      "We made this promise",
+      "This promise is still open",
+      "They said: by Friday",
+      "Direction: We owe them",
+    ]);
+    expect(activityEvidenceLines(null, { commitment_owner: "them", commitment_status: "dropped" })).toEqual([
+      "They made this promise",
+      "This promise was dropped",
+    ]);
+    expect(activityEvidenceLines(null, { commitment_owner: "local-user", commitment_status: "fulfilled" })).toEqual([
+      "We made this promise",
+      "This promise was kept",
+    ]);
+    expect(activityEvidenceLines(null, { commitment_status: "done" })).toEqual(["This promise is done"]);
+    expect(activityEvidenceLines(null, { commitment_status: "cancelled" })).toEqual([
+      "This promise was called off",
+    ]);
+    expect(activityEvidenceLines(null, { commitment_status: "missed" })).toEqual(["This promise was missed"]);
+    expect(activityEvidenceLines(null, { commitment_status: "waived" })).toEqual(["This promise was waived"]);
+    expect(activityEvidenceLines(null, { commitment_status: "superseded" })).toEqual([
+      "This promise was replaced",
+    ]);
+    expect(
+      activityEvidenceLines(null, {
+        commitment_owner: "speaker_2",
+        commitment_status: "local-user",
+        commitment_due_phrase: "local-user",
+      }),
+    ).toEqual(["Nothing else was saved with this activity."]);
+    expect(
+      activityEvidenceLines(null, {
+        commitment_owner: "me",
+        commitment_status: "open",
+        commitment_due_phrase: "by Friday",
+      }).join("\n"),
+    ).not.toMatch(/Commitment Owner|Commitment Status|Commitment Due Phrase|\bme\b|local-user/);
   });
 
   it("names an activity with the product title", () => {

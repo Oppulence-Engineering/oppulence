@@ -5387,6 +5387,88 @@ func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	assertCompanyQuery("sess-18")
 }
 
+func TestRelationshipSearchFindsTheActivityPromiseState(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("commitment_confirmed").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Quill Packet", "Q3 review", `{
+		"commitment_owner":"me",
+		"commitment_status":"open",
+		"commitment_due_phrase":"by Friday"
+	}`)
+	saveNote("Cedar Echo", "This promise is still open", `{"commitment_status":"open"}`)
+	saveNote("Birch Slide", "A saved note", `{
+		"commitment_owner":"them",
+		"commitment_status":"dropped"
+	}`)
+	saveNote("Cedar Mine", "A saved note", `{
+		"commitment_owner":"local-user",
+		"commitment_status":"fulfilled"
+	}`)
+	saveNote("Harbor Off", "A saved note", `{"commitment_status":"cancelled"}`)
+	saveNote("Lumen Done", "A saved note", `{"commitment_status":"done"}`)
+	saveNote("North Miss", "A saved note", `{"commitment_status":"missed"}`)
+	saveNote("West Wave", "A saved note", `{"commitment_status":"waived"}`)
+	saveNote("East Replace", "A saved note", `{"commitment_status":"superseded"}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("We made this promise", "Quill Packet", "Cedar Mine")
+	assertCompanyQuery("They made this promise", "Birch Slide")
+	assertCompanyQuery("This promise is still open", "Quill Packet")
+	assertCompanyQuery("They said: by Friday", "Quill Packet")
+	assertCompanyQuery("This promise was dropped", "Birch Slide")
+	assertCompanyQuery("This promise was kept", "Cedar Mine")
+	assertCompanyQuery("This promise was called off", "Harbor Off")
+	assertCompanyQuery("This promise is done", "Lumen Done")
+	assertCompanyQuery("This promise was missed", "North Miss")
+	assertCompanyQuery("This promise was waived", "West Wave")
+	assertCompanyQuery("This promise was replaced", "East Replace")
+	assertCompanyQuery("Commitment Owner: me")
+	assertCompanyQuery("Commitment Status: open")
+	assertCompanyQuery("Commitment Due Phrase: by Friday")
+}
+
 func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

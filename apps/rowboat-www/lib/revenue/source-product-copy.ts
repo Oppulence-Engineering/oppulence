@@ -333,6 +333,58 @@ const ACTIVITY_FACT_LABELS: Record<string, string> = {
   evidence_quote: "Quote",
 };
 
+/**
+ * A confirmed meeting stores who spoke the promise. The activity says which
+ * side. A speaker id stays on the observation.
+ */
+function activityPromiseOwnerLine(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  switch (value.trim()) {
+    case "me":
+    case "local-user":
+      return "We made this promise";
+    case "them":
+      return "They made this promise";
+    default:
+      return null;
+  }
+}
+
+/**
+ * A confirmed meeting stores whether the promise is still open. The activity
+ * says that in words. The register's Kept and Open badges stay their own words.
+ */
+function activityPromiseStatusLine(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  switch (value.trim()) {
+    case "open":
+      return "This promise is still open";
+    case "done":
+      return "This promise is done";
+    case "dropped":
+      return "This promise was dropped";
+    case "fulfilled":
+      return "This promise was kept";
+    case "cancelled":
+      return "This promise was called off";
+    case "missed":
+      return "This promise was missed";
+    case "waived":
+      return "This promise was waived";
+    case "superseded":
+      return "This promise was replaced";
+    default:
+      return null;
+  }
+}
+
+/** The due phrase is the deadline as it was said. The activity quotes it. */
+function activityPromiseDuePhraseLine(value: unknown): string | null {
+  const phrase = activityScalar(value);
+  if (!phrase || phrase === "local-user" || phrase === "meeting-counterparty") return null;
+  return `They said: ${phrase}`;
+}
+
 /** A confirmed meeting stores who owes the promise. The activity says which side. */
 function activityDirectionLine(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -594,6 +646,21 @@ function linesFromActivity(value: unknown): string[] {
     if (key === "commitment_direction") {
       const direction = activityDirectionLine(item);
       if (direction) lines.push(direction);
+      continue;
+    }
+    if (key === "commitment_owner") {
+      const owner = activityPromiseOwnerLine(item);
+      if (owner) lines.push(owner);
+      continue;
+    }
+    if (key === "commitment_status") {
+      const status = activityPromiseStatusLine(item);
+      if (status) lines.push(status);
+      continue;
+    }
+    if (key === "commitment_due_phrase") {
+      const phrase = activityPromiseDuePhraseLine(item);
+      if (phrase) lines.push(phrase);
       continue;
     }
     if (key === "provider") {
