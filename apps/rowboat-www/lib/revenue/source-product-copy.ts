@@ -372,6 +372,17 @@ const HIDDEN_ACTIVITY_KEYS = new Set([
   // Gmail ids. The attachment and participant counts are the activity.
   "thread_id",
   "message_id",
+  // Snapshot ids. The subject, the meeting, and the company name are the activity.
+  "threadId",
+  "lastMessageId",
+  "eventId",
+  "iCalUID",
+  "company_id",
+  "channel_id",
+  "message_ts",
+  "thread_ts",
+  "author_ref",
+  "adapter",
   // Meeting ids. The title, the transcript, and who attended are the activity.
   "session_id",
   "dedupe_fingerprint",
@@ -1263,8 +1274,10 @@ function activityCountLine(key: string, value: unknown): string | null {
     case "message_count":
       return unit("message in this activity", "messages in this activity");
     case "outbound_count":
+    case "outboundCount":
       return unit("message sent from this mailbox", "messages sent from this mailbox");
     case "inbound_count":
+    case "inboundCount":
       return unit("message received from them", "messages received from them");
     case "attachment_count":
       return unit("file attached to this activity", "files attached to this activity");
@@ -1346,6 +1359,75 @@ function activityScalar(value: unknown): string {
     })
     .filter(Boolean)
     .join(" ");
+}
+
+/**
+ * A synced snapshot stores ids beside a few facts a person can read. The
+ * opened activity names the fact. The id, the Slack clock, and a HubSpot
+ * internal property stay on the record.
+ */
+function activitySnapshotLine(key: string, value: unknown): string | null {
+  if (key === "lastOutbound") {
+    if (value === true) return "The last message was sent from this mailbox";
+    if (value === false) return "The last message came from them";
+    return "";
+  }
+  if (key === "responseStatus") return activityInviteReply(value) ?? "";
+  if (key === "startsAt" || key === "endsAt") {
+    return activityMessageDayLine(key === "startsAt" ? "Starts" : "Ends", value) ?? "";
+  }
+  if (key === "last_modified_at" || key === "hs_lastmodifieddate") {
+    return activityMessageDayLine("Last change", value) ?? "";
+  }
+  if (key === "lifecycle_stage" || key === "lifecyclestage") return activityHubSpotStage(value) ?? "";
+  if (key === "industry") {
+    const shown = activityReadableToken(activityScalar(value));
+    return shown ? `Industry: ${shown}` : "";
+  }
+  if (key === "channel_name") {
+    const name = activityScalar(value);
+    if (!name || name === "local-user" || name.startsWith("Slack channel ")) return "";
+    return `Channel: ${name.startsWith("#") ? name : `#${name}`}`;
+  }
+  return null;
+}
+
+function activityInviteReply(value: unknown): string | null {
+  switch (activityScalar(value).toLowerCase().replaceAll("_", "")) {
+    case "accepted":
+      return "They accepted the invite";
+    case "declined":
+      return "They declined the invite";
+    case "tentative":
+      return "They replied maybe";
+    case "needsaction":
+      return "They have not answered the invite";
+    default:
+      return null;
+  }
+}
+
+function activityHubSpotStage(value: unknown): string | null {
+  const stages: Record<string, string> = {
+    subscriber: "Subscriber",
+    lead: "Lead",
+    marketingqualifiedlead: "Marketing qualified lead",
+    salesqualifiedlead: "Sales qualified lead",
+    opportunity: "Opportunity",
+    customer: "Customer",
+    evangelist: "Evangelist",
+    other: "Other",
+    formercustomer: "Former customer",
+  };
+  const named = stages[activityScalar(value).toLowerCase().replaceAll("_", "")];
+  return named ? `HubSpot stage: ${named}` : null;
+}
+
+function activityReadableToken(value: string): string {
+  const text = value.trim();
+  if (!text || text === "local-user" || text === "meeting-counterparty") return "";
+  if (/^[A-Z0-9_]+$/.test(text) && text.includes("_")) return enumLabel(text.toLowerCase());
+  return text;
 }
 
 function linesFromActivity(value: unknown): string[] {
@@ -1457,7 +1539,9 @@ function linesFromActivity(value: unknown): string[] {
     if (
       key === "message_count" ||
       key === "outbound_count" ||
+      key === "outboundCount" ||
       key === "inbound_count" ||
+      key === "inboundCount" ||
       key === "attachment_count" ||
       key === "participant_count" ||
       key === "external_participant_count"
@@ -1473,6 +1557,12 @@ function linesFromActivity(value: unknown): string[] {
     ) {
       const participant = activityParticipantLine(key, item);
       if (participant) lines.push(participant);
+      continue;
+    }
+    if (key.startsWith("hs_") && key !== "hs_lastmodifieddate") continue;
+    const snapshot = activitySnapshotLine(key, item);
+    if (snapshot !== null) {
+      if (snapshot) lines.push(snapshot);
       continue;
     }
     const text = activityScalar(item);

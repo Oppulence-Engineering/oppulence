@@ -404,6 +404,103 @@ describe("source product copy", () => {
     ]);
   });
 
+  it("names a synced snapshot without its ids", () => {
+    const gmail = activityEvidenceLines(
+      {
+        threadId: "18abc",
+        subject: "Harbor quote",
+        lastMessageId: "18def",
+        lastOutbound: true,
+        outboundCount: 2,
+        inboundCount: 1,
+      },
+      null,
+    );
+    expect(gmail).toEqual([
+      "Subject: Harbor quote",
+      "The last message was sent from this mailbox",
+      "2 messages sent from this mailbox",
+      "1 message received from them",
+    ]);
+    expect(gmail.join("\n")).not.toMatch(/18abc|18def|ThreadId|LastMessageId/);
+    expect(activityEvidenceLines({ lastOutbound: false }, null)).toEqual([
+      "The last message came from them",
+    ]);
+    const meeting = activityEvidenceLines(
+      {
+        eventId: "evt_1",
+        iCalUID: "uid@google",
+        startsAt: "2026-10-04T15:04:05.123Z",
+        endsAt: "2026-10-04T16:00:00Z",
+        organizer: "ada@acme.com",
+        summary: "Q3 review",
+        responseStatus: "needsAction",
+      },
+      null,
+    );
+    expect(meeting).toEqual([
+      "Starts: Oct 4, 2026",
+      "Ends: Oct 4, 2026",
+      "Organizer: ada@acme.com",
+      "Summary: Q3 review",
+      "They have not answered the invite",
+    ]);
+    expect(meeting.join("\n")).not.toMatch(/evt_1|uid@google|needsAction/);
+    expect(activityEvidenceLines({ responseStatus: "accepted" }, null)).toEqual([
+      "They accepted the invite",
+    ]);
+    expect(activityEvidenceLines({ responseStatus: "declined" }, null)).toEqual([
+      "They declined the invite",
+    ]);
+    expect(activityEvidenceLines({ responseStatus: "tentative" }, null)).toEqual([
+      "They replied maybe",
+    ]);
+    const company = activityEvidenceLines(
+      {
+        name: "Acme",
+        domain: "acme.example",
+        industry: "COMPUTER_SOFTWARE",
+        lifecyclestage: "marketingqualifiedlead",
+        hs_lastmodifieddate: "2026-07-31T12:00:00Z",
+        hs_object_id: "company-1",
+      },
+      null,
+    );
+    expect(company).toEqual([
+      "Name: Acme",
+      "Domain: acme.example",
+      "Industry: Computer Software",
+      "HubSpot stage: Marketing qualified lead",
+      "Last change: Jul 31, 2026",
+    ]);
+    expect(company.join("\n")).not.toContain("company-1");
+    expect(activityEvidenceLines({ lifecyclestage: "customer" }, null)).toEqual([
+      "HubSpot stage: Customer",
+    ]);
+    expect(activityEvidenceLines({ lifecycle_stage: "former_customer" }, null)).toEqual([
+      "HubSpot stage: Former customer",
+    ]);
+    expect(
+      activityEvidenceLines(null, {
+        channel_id: "C1",
+        channel_name: "general",
+        message_ts: "1710000000.000100",
+        thread_ts: "1710000000.000100",
+        author_ref: "U1",
+        adapter: "slack",
+      }).join("\n"),
+    ).toBe("Channel: #general");
+    expect(
+      activityEvidenceLines(
+        { text: "The quay quote is ready.", message: { channel_id: "C1", message_ts: "1" } },
+        { channel_id: "C1" },
+      ),
+    ).toEqual(["Text: The quay quote is ready."]);
+    expect(activityEvidenceLines(null, { channel_name: "Slack channel C1" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+  });
+
   it("names calendar attendance without the event id", () => {
     expect(activityHeading("calendar", "meeting_attendance_recorded")).toBe(
       "Calendar · Attendance",
