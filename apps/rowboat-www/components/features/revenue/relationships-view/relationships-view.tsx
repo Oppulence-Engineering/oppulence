@@ -224,6 +224,7 @@ import {
   activityHeading,
   activityAttendanceSummary,
   activityConversationSummary,
+  activityMailThreadSummary,
   activityOutcomeSummary,
   activityPromiseUpdateSummary,
   activitySourceLabel,
@@ -2648,6 +2649,8 @@ export function activitySummaryLabel(summary?: string | null): string {
   if (attendance) return attendance;
   const conversation = activityConversationSummary(trimmed);
   if (conversation) return conversation;
+  const mail = activityMailThreadSummary(trimmed);
+  if (mail) return mail;
   return trimmed || "Open the source";
 }
 

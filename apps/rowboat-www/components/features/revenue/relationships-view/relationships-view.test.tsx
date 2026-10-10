@@ -380,6 +380,10 @@ describe("RelationshipsView", () => {
     expect(activitySummaryLabel("Q3 review · 1 segments · 1 material claims")).toBe(
       "Q3 review · 1 line in the transcript · 1 claim",
     );
+    expect(activitySummaryLabel("4-message thread with acme.com")).toBe("4 messages with acme.com");
+    expect(activitySummaryLabel("1-message thread with an external contact")).toBe(
+      "1 message with someone outside the company",
+    );
     expect(communicationPreviewLabel("   ")).toBe("No message preview");
     expect(communicationPreviewLabel("Invoice packet")).toBe("Invoice packet");
     expect(evidenceExcerptLabel("   ")).toBe("Evidence excerpt unavailable");
