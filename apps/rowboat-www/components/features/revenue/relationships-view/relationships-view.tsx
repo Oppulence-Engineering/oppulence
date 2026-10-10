@@ -2738,6 +2738,34 @@ export function focusedReviewIntro(): string {
   return "Approve, correct, reject, or defer each one before it changes this company.";
 }
 
+const REVIEW_CAVEAT_COPY: Record<string, string> = {
+  "speaker assignment requires review": "Who spoke is not confirmed.",
+  "commitment acceptance requires review": "Who accepted this promise is not confirmed.",
+  "deterministic fallback candidate requires review": "This came from a rule. Check it before saving.",
+};
+
+/**
+ * A suggested change stores why it is still waiting. The card says that in
+ * words. A capture note already lives on the opened activity, so it stays
+ * off this card. The stored caveat stays on the API.
+ */
+export function reviewCaveatCopy(caveat: string): string | null {
+  return REVIEW_CAVEAT_COPY[caveat.trim()] ?? null;
+}
+
+export function reviewCaveatLines(caveats: readonly string[] | null | undefined): string[] {
+  if (!caveats) return [];
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const caveat of caveats) {
+    const line = reviewCaveatCopy(caveat);
+    if (!line || seen.has(line)) continue;
+    seen.add(line);
+    lines.push(line);
+  }
+  return lines;
+}
+
 /** A shared plan stores an internal status. The heading says where it stands. */
 export function mutualPlanStatusLabel(status: string): string {
   switch (status) {
@@ -5576,6 +5604,11 @@ function CorrectionReview({
                   “{item.exactQuote}”
                 </blockquote>
               ) : null}
+              {reviewCaveatLines(item.caveats).map((line) => (
+                <p key={line} className="mb-2 text-xs text-primary/55">
+                  {line}
+                </p>
+              ))}
               <div className="flex gap-2">
                 <Input
                   value={draft}

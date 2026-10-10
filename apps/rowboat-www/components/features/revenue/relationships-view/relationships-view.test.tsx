@@ -86,6 +86,8 @@ import {
   reviewEvidenceKindLabel,
   reviewItemLabelCopy,
   focusedReviewIntro,
+  reviewCaveatCopy,
+  reviewCaveatLines,
   acceptedPromiseLabel,
   mutualPlanCreateLabel,
   mutualPlanEmptyCopy,
@@ -1047,8 +1049,32 @@ describe("RelationshipsView", () => {
     expect(focusedReviewIntro()).toBe(
       "Approve, correct, reject, or defer each one before it changes this company.",
     );
+    expect(reviewCaveatCopy("speaker assignment requires review")).toBe(
+      "Who spoke is not confirmed.",
+    );
+    expect(reviewCaveatCopy("commitment acceptance requires review")).toBe(
+      "Who accepted this promise is not confirmed.",
+    );
+    expect(reviewCaveatCopy("deterministic fallback candidate requires review")).toBe(
+      "This came from a rule. Check it before saving.",
+    );
+    expect(reviewCaveatCopy("transcript payload was truncated")).toBeNull();
+    expect(reviewCaveatCopy("local-user")).toBeNull();
+    expect(
+      reviewCaveatLines([
+        "speaker assignment requires review",
+        "speaker assignment requires review",
+        "Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined.",
+        "deterministic fallback candidate requires review",
+      ]),
+    ).toEqual([
+      "Who spoke is not confirmed.",
+      "This came from a rule. Check it before saving.",
+    ]);
+    expect(reviewCaveatLines(undefined)).toEqual([]);
     expect(source).toContain("reviewItemLabelCopy(item.label)");
     expect(source).toContain("focusedReviewIntro()");
+    expect(source).toContain("reviewCaveatLines(item.caveats)");
     expect(source).not.toContain("proposed material change");
     expect(source).not.toContain("{item.label}");
     expect(mutualPlanStatusLabel("internally_approved")).toBe("Approved in this workspace");
