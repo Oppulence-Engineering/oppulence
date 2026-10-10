@@ -3293,6 +3293,18 @@ export function liveCueCopy(cue: { kind: string; title: string; detail: string }
       : cue.detail.replace(/value should be current\?$/, "should be the current one?");
     return { title: "Two details disagree", detail };
   }
+  if (cue.kind === "renewal_context") {
+    const detail = cue.detail.trim();
+    const usable =
+      Boolean(detail) &&
+      detail !== "local-user" &&
+      detail !== "meeting-counterparty" &&
+      !/^[a-z0-9_:-]+$/.test(detail);
+    return {
+      title: "Up for renewal",
+      detail: usable ? detail : "Decide what happens before this renewal.",
+    };
+  }
   return { title: cue.title, detail: cue.detail };
 }
 

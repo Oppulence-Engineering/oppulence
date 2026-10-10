@@ -1278,6 +1278,36 @@ describe("RelationshipsView", () => {
       title: "Two details disagree",
       detail: "Which Next action should be the current one?",
     });
+    expect(
+      liveCueCopy({
+        kind: "renewal_context",
+        title: "Renewal context",
+        detail: "The renewal is in June.",
+      }),
+    ).toEqual({
+      title: "Up for renewal",
+      detail: "The renewal is in June.",
+    });
+    expect(
+      liveCueCopy({
+        kind: "renewal_context",
+        title: "Renewal context",
+        detail: "  ",
+      }),
+    ).toEqual({
+      title: "Up for renewal",
+      detail: "Decide what happens before this renewal.",
+    });
+    expect(
+      liveCueCopy({
+        kind: "renewal_context",
+        title: "Renewal context",
+        detail: "local-user",
+      }),
+    ).toEqual({
+      title: "Up for renewal",
+      detail: "Decide what happens before this renewal.",
+    });
     expect(liveCueVisible({ kind: "missing_next_step" }, "prospect")).toBe(false);
     expect(liveCueVisible({ kind: "missing_next_step" }, "evaluation")).toBe(true);
     expect(liveCueVisible({ kind: "overdue_commitment" }, "prospect")).toBe(true);
