@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { ACTION_TYPE_LABELS } from "./revenue";
 import {
   activityEvidenceLines,
   activityLinesBesideSummary,
@@ -476,6 +477,68 @@ describe("source product copy", () => {
     ]);
     expect(lines.join("\n")).not.toMatch(/claim:|speaker_2|former_customer|\bone\b/);
     expect(activityEvidenceLines(null, { conversation_claims: [{ kind: "risk", value: "local-user" }] })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+  });
+
+  it("names a proposed follow-up without the action id", () => {
+    const lines = activityEvidenceLines(null, {
+      action_pack: [
+        {
+          id: "action:email",
+          actionType: "meeting_recap",
+          channel: "email",
+          reason: "Send a recap grounded in the material statements from this conversation.",
+          proposedSubject: "Recap: Q3 review",
+          proposedMessage:
+            "Thanks for the conversation. Here is my understanding:\n\n- risk: Security review may slip\n\nPlease reply with any corrections.",
+          evidenceClaimIds: ["claim:risk"],
+          confidence: 0.84,
+        },
+        {
+          id: "action:task",
+          actionType: "follow_up_task",
+          channel: "task",
+          reason: "Track a spoken commitment until it is fulfilled or renegotiated.",
+          proposedMessage: "I will send the proposal.",
+          dueAt: "2026-08-01T17:00:00.000Z",
+          evidenceClaimIds: ["claim:promise"],
+          confidence: 0.9,
+        },
+        {
+          id: "action:hold",
+          actionType: "calendar_hold",
+          channel: "calendar",
+          reason: "Protect time before the spoken commitment is due.",
+          proposedMessage: "Prepare and complete: I will send the proposal.",
+          dueAt: "2026-08-01T17:00:00.000Z",
+        },
+        {
+          actionType: "crm_update",
+          channel: "crm",
+          reason: "Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.",
+          proposedMessage: "- lifecycle: renewal",
+        },
+        { actionType: "local-user", reason: "This is not a known follow-up." },
+      ],
+      legacy_shadow_action_pack: [
+        {
+          actionType: "meeting_recap",
+          reason: "This shadow recap should stay off the activity.",
+        },
+      ],
+    });
+    expect(lines).toEqual([
+      `${ACTION_TYPE_LABELS.meeting_recap}: Send a recap grounded in the material statements from this conversation.`,
+      `${ACTION_TYPE_LABELS.follow_up_task}: Track a spoken commitment until it is fulfilled or renegotiated.`,
+      "Due: Aug 1, 2026",
+      `${ACTION_TYPE_LABELS.calendar_hold}: Protect time before the spoken commitment is due.`,
+      `${ACTION_TYPE_LABELS.crm_update}: Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.`,
+    ]);
+    expect(lines.join("\n")).not.toMatch(
+      /action:email|claim:risk|- risk:|0\.84|Recap: Q3|shadow recap|local-user/,
+    );
+    expect(activityEvidenceLines(null, { action_pack: [] })).toEqual([
       "Nothing else was saved with this activity.",
     ]);
   });

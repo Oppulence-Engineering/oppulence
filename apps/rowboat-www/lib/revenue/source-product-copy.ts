@@ -1,3 +1,5 @@
+import { ACTION_TYPE_LABELS, actionReasonCopy } from "./revenue";
+
 /**
  * Evidence-source cards used to print the API's scope explanation and the
  * raw OAuth scope list. The stored text is the contract; the card says what
@@ -618,6 +620,36 @@ function activityClaimValue(kind: string, value: string): string | null {
   return value;
 }
 
+/**
+ * A reviewed conversation stores the follow-ups it proposed. The
+ * recommendation card already names the type. The opened activity uses that
+ * label and the reason. The draft, the channel, and the action id stay hidden.
+ * A shadow pack is not a proposal someone can approve.
+ */
+function activityActionPackLines(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  const push = (line: string) => {
+    if (!line || seen.has(line)) return;
+    seen.add(line);
+    lines.push(line);
+  };
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const action = item as Record<string, unknown>;
+    const type = typeof action.actionType === "string" ? action.actionType.trim() : "";
+    const label = ACTION_TYPE_LABELS[type];
+    if (!label) continue;
+    const reason = actionReasonCopy(typeof action.reason === "string" ? action.reason : "");
+    if (reason && !/^[a-z0-9_:-]+$/.test(reason)) push(`${label}: ${reason}`);
+    else push(label);
+    const due = activityDueLine(action.dueAt);
+    if (due) push(due);
+  }
+  return lines;
+}
+
 function activityPeopleCount(value: unknown, one: string, many: string): string[] {
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0) return [];
   return [value === 1 ? `1 ${one}` : `${String(value)} ${many}`];
@@ -849,6 +881,11 @@ function linesFromActivity(value: unknown): string[] {
     }
     if (key === "conversation_claims") {
       lines.push(...activityConversationClaimLines(item));
+      continue;
+    }
+    if (key === "legacy_shadow_action_pack") continue;
+    if (key === "action_pack") {
+      lines.push(...activityActionPackLines(item));
       continue;
     }
     if (
