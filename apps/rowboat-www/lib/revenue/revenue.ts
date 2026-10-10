@@ -1061,20 +1061,20 @@ export const RELATIONSHIP_KIND_LABELS: Record<string, string> = {
 };
 
 export const OUTCOME_LABELS: Record<string, string> = {
-  sent: "Sent",
+  sent: "Message sent",
   delivered: "Delivered",
   bounced: "Bounced",
-  replied: "Replied",
+  replied: "They replied",
   meeting_booked: "Meeting booked",
   won: "Won",
   lost: "Lost",
   dismissed: "Dismissed",
-  bad_recommendation: "Bad recommendation",
+  bad_recommendation: "Not a good suggestion",
   deal_advanced: "Deal moved forward",
   onboarding_progressed: "Onboarding moved forward",
   renewed: "Renewed",
   escalated: "Escalated",
-  churned: "Churned",
+  churned: "They left",
   corrected: "Corrected",
 };
 
@@ -1084,7 +1084,7 @@ export const MANUAL_OUTCOMES: { value: RecordOutcomeInput["kind"]; label: string
   { value: "meeting_booked", label: "Meeting booked" },
   { value: "won", label: "Won" },
   { value: "lost", label: "Lost" },
-  { value: "bad_recommendation", label: "Bad recommendation" },
+  { value: "bad_recommendation", label: "Not a good suggestion" },
 ];
 
 export const QUEUE_FILTERS: { value: string; label: string }[] = [

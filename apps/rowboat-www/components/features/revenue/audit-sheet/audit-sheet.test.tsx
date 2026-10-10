@@ -11,6 +11,7 @@ import {
   revisionActionLabel,
   revisionChannelLabel,
 } from "@/components/features/revenue/audit-sheet/audit-sheet";
+import { MANUAL_OUTCOMES } from "@/lib/revenue/revenue";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "audit-sheet.tsx"), "utf8");
 
@@ -22,6 +23,14 @@ describe("AuditSheet", () => {
   it("names an outcome and where it was seen", () => {
     expect(outcomeKindLabel("deal_advanced")).toBe("Deal moved forward");
     expect(outcomeKindLabel("onboarding_progressed")).toBe("Onboarding moved forward");
+    expect(outcomeKindLabel("replied")).toBe("They replied");
+    expect(outcomeKindLabel("sent")).toBe("Message sent");
+    expect(outcomeKindLabel("bad_recommendation")).toBe("Not a good suggestion");
+    expect(outcomeKindLabel("churned")).toBe("They left");
+    expect(MANUAL_OUTCOMES.find((item) => item.value === "replied")?.label).toBe("They replied");
+    expect(MANUAL_OUTCOMES.find((item) => item.value === "bad_recommendation")?.label).toBe(
+      "Not a good suggestion",
+    );
     expect(outcomeSourceLabel("user")).toBe("Logged by you");
     expect(outcomeSourceLabel("gmail")).toBe("Gmail");
     expect(outcomeSourceLabel("outbound")).toBe("Sent from here");
