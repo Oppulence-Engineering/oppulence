@@ -445,6 +445,22 @@ export function activityMailThreadSummary(summary: string): string | null {
   return `${messages} with ${party}`;
 }
 
+/**
+ * The activity row and the company graph share one sentence. A stored
+ * summary that is already company language stays as written.
+ */
+export function activityRowSummary(summary: string): string {
+  const trimmed = summary.trim();
+  return (
+    activityOutcomeSummary(trimmed) ??
+    activityPromiseUpdateSummary(trimmed) ??
+    activityAttendanceSummary(trimmed) ??
+    activityConversationSummary(trimmed) ??
+    activityMailThreadSummary(trimmed) ??
+    trimmed
+  );
+}
+
 /** A status change stores the promise and the new state together. */
 function activityCommitmentUpdateLines(value: unknown): string[] {
   if (!Array.isArray(value)) return [];

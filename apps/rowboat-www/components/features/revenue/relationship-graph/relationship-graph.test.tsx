@@ -557,8 +557,34 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphEvidenceChipLabel({ label: "  The harbor sentence.  ", source: "gmail" })).toBe(
       "The harbor sentence.",
     );
+    expect(
+      graphEvidenceChipLabel({
+        label: '2 external participant(s) on "Q3 review"',
+        source: "calendar",
+      }),
+    ).toBe("2 people from outside the company on Q3 review");
+    expect(
+      graphEvidenceChipLabel({
+        label: "Q3 review · 12 segments · 3 material claims",
+        source: "meeting",
+      }),
+    ).toBe("Q3 review · 12 lines in the transcript · 3 claims");
+    expect(
+      graphEvidenceChipLabel({ label: "4-message thread with acme.com", source: "gmail" }),
+    ).toBe("4 messages with acme.com");
+    expect(
+      graphEvidenceChipLabel({
+        label: "Commitment marked fulfilled: Send the proposal",
+        source: "meeting",
+      }),
+    ).toBe("This promise was kept: Send the proposal");
+    expect(graphEvidenceChipLabel({ label: "Promise confirmed", source: "meeting" })).toBe(
+      "Promise confirmed",
+    );
     expect(graphEvidenceChipLabel({ label: "   ", source: "gmail" })).toBe("Gmail");
     expect(graphEvidenceChipLabel({ label: "", source: "" })).toBe("Detail");
+    expect(source).toContain("activityRowSummary(node.label)");
+    expect(source).toContain('node.kind === "evidence"');
     const confirmation = {
       id: "evidence:obs",
       kind: "evidence",

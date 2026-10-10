@@ -19,6 +19,7 @@ import { personResearchConfidenceLabel } from "@/components/features/revenue/wor
 import { companyName, promiseDirectionLabel, promiseDueDay } from "@/lib/revenue/revenue-records";
 import { getRelationshipGraph } from "@/lib/revenue/revenue";
 import {
+  activityRowSummary,
   activitySourceLabel,
   enumLabel,
   participantRoleLabel,
@@ -1119,7 +1120,7 @@ export function graphEvidenceChipLabel(evidence: {
   label?: string | null;
   source?: string | null;
 }): string {
-  const label = evidence.label?.trim() ?? "";
+  const label = activityRowSummary(evidence.label ?? "");
   if (label) return label;
   const source = evidence.source?.trim() ?? "";
   if (source) return activitySourceLabel(source);
@@ -1766,6 +1767,10 @@ export function RelationshipGraphWorkspace({
       observationHasMore:
         evidenceHasMore ?? companyPages.some((page) => page.observationHasMore),
       nodes: visible.nodes.map((node) => {
+        if (node.kind === "evidence") {
+          const label = activityRowSummary(node.label);
+          return label && label !== node.label ? { ...node, label } : node;
+        }
         if (node.kind !== "relationship" || !node.relationshipId) return node;
         const title = titles.get(node.relationshipId);
         return title ? { ...node, label: title } : node;

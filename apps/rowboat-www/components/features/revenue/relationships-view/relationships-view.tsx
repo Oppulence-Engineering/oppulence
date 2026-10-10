@@ -222,11 +222,7 @@ import {
   activityEvidenceLines,
   activityLinesBesideSummary,
   activityHeading,
-  activityAttendanceSummary,
-  activityConversationSummary,
-  activityMailThreadSummary,
-  activityOutcomeSummary,
-  activityPromiseUpdateSummary,
+  activityRowSummary,
   activitySourceLabel,
   enumLabel as humanize,
   participantRoleLabel,
@@ -2640,18 +2636,7 @@ export function communicationPreviewLabel(subject?: string | null): string {
 
 /** Activity history uses this when an observation has no summary. */
 export function activitySummaryLabel(summary?: string | null): string {
-  const trimmed = summary?.trim() ?? "";
-  const outcome = activityOutcomeSummary(trimmed);
-  if (outcome) return outcome;
-  const updated = activityPromiseUpdateSummary(trimmed);
-  if (updated) return updated;
-  const attendance = activityAttendanceSummary(trimmed);
-  if (attendance) return attendance;
-  const conversation = activityConversationSummary(trimmed);
-  if (conversation) return conversation;
-  const mail = activityMailThreadSummary(trimmed);
-  if (mail) return mail;
-  return trimmed || "Open the source";
+  return activityRowSummary(summary ?? "") || "Open the source";
 }
 
 /** A blank quote is the same sentence as a missing one. */
