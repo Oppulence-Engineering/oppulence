@@ -5316,6 +5316,77 @@ func TestRelationshipSearchFindsTheActivityAttendance(t *testing.T) {
 	assertCompanyQuery("evt_18")
 }
 
+func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Quill Packet", "Q3 review", `{
+		"session_id":"sess-18",
+		"dedupe_fingerprint":"fp-18",
+		"transcript_segments":12,
+		"transcript_payload_truncated":true,
+		"transcription_engine":"whisper.cpp",
+		"transcription_model":"ggml-base.en",
+		"audio_retention":"untilTranscribed"
+	}`)
+	saveNote("Cedar Echo", "The transcript was shortened", `{"transcript_payload_truncated":true}`)
+	saveNote("Birch Slide", "A saved note", `{"audio_retention":"always"}`)
+	saveNote("Cedar Mine", "A saved note", `{"audio_retention":"never"}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("12 lines in the transcript", "Quill Packet")
+	assertCompanyQuery("The transcript was shortened", "Quill Packet")
+	assertCompanyQuery("Transcribed with whisper.cpp", "Quill Packet")
+	assertCompanyQuery("Model: ggml-base.en", "Quill Packet")
+	assertCompanyQuery("The recording is removed after transcription", "Quill Packet")
+	assertCompanyQuery("The recording is kept", "Birch Slide")
+	assertCompanyQuery("The recording is not kept", "Cedar Mine")
+	assertCompanyQuery("Session Id: sess-18")
+	assertCompanyQuery("untilTranscribed")
+	assertCompanyQuery("sess-18")
+}
+
 func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

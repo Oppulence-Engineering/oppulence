@@ -1146,6 +1146,10 @@ func (s *Service) ListRelationshipsFiltered(
 			parts = append(parts, attendance)
 		}
 
+		if transcript := relationshipSheetActivityTranscriptMatch(needle); transcript != nil {
+			parts = append(parts, transcript)
+		}
+
 		if provider := relationshipSheetActivityProviderMatch(needle); provider != nil {
 			parts = append(parts, provider)
 		}
@@ -3674,6 +3678,48 @@ func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relations
 	}
 	if organizer := relationshipSheetActivityFactMatch(needle, "organizer: ", "organizer_email"); organizer != nil {
 		preds = append(preds, organizer)
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+// relationshipSheetActivityTranscriptMatch is the opened meeting transcript.
+// The segment count, the engine, the model, and whether the recording is
+// kept are sentences. The session id and the dedupe fingerprint stay hidden.
+func relationshipSheetActivityTranscriptMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if strings.Contains(needle, "the transcript was shortened") {
+		preds = append(preds, relationship.HasObservationsWith(
+			observationFactFlagSentence("transcript_payload_truncated", "true", "the transcript was shortened"),
+		))
+	}
+	for _, sentence := range []struct{ phrase, token string }{
+		{"the recording is removed after transcription", "untilTranscribed"},
+		{"the recording is kept", "always"},
+		{"the recording is not kept", "never"},
+	} {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, relationship.HasObservationsWith(
+				observationFactExact("audio_retention", sentence.token, sentence.phrase),
+			))
+		}
+	}
+	if counts := activityCountSentenceMatch(needle, []activityCountPhrase{
+		{"line in the transcript", "lines in the transcript", "transcript_segments"},
+	}); counts != nil {
+		preds = append(preds, counts)
+	}
+	if engine := relationshipSheetActivityFactMatch(needle, "transcribed with ", "transcription_engine"); engine != nil {
+		preds = append(preds, engine)
+	}
+	if model := relationshipSheetActivityFactMatch(needle, "model: ", "transcription_model"); model != nil {
+		preds = append(preds, model)
 	}
 	switch len(preds) {
 	case 0:

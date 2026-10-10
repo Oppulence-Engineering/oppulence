@@ -314,6 +314,9 @@ const HIDDEN_ACTIVITY_KEYS = new Set([
   // Gmail ids. The attachment and participant counts are the activity.
   "thread_id",
   "message_id",
+  // Meeting ids. The title, the transcript, and who attended are the activity.
+  "session_id",
+  "dedupe_fingerprint",
 ]);
 
 const ACTIVITY_FACT_LABELS: Record<string, string> = {
@@ -441,6 +444,43 @@ function activityAttendanceLines(key: string, value: unknown): string[] | null {
 function activityPeopleCount(value: unknown, one: string, many: string): string[] {
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0) return [];
   return [value === 1 ? `1 ${one}` : `${String(value)} ${many}`];
+}
+
+/**
+ * A meeting stores how the transcript was made and whether the recording
+ * stays. The opened activity says that in words. Session ids stay hidden.
+ */
+function activityTranscriptLines(key: string, value: unknown): string[] | null {
+  switch (key) {
+    case "transcript_segments":
+      return activityPeopleCount(value, "line in the transcript", "lines in the transcript");
+    case "transcript_payload_truncated":
+      return value === true ? ["The transcript was shortened"] : [];
+    case "transcription_engine": {
+      const engine = activityScalar(value);
+      if (!engine || engine === "local-user" || /^[a-z0-9_:-]+$/.test(engine)) return [];
+      return [`Transcribed with ${engine}`];
+    }
+    case "transcription_model": {
+      const model = activityScalar(value);
+      if (!model || model === "local-user") return [];
+      return [`Model: ${model}`];
+    }
+    case "audio_retention":
+      if (typeof value !== "string") return [];
+      switch (value.trim()) {
+        case "untilTranscribed":
+          return ["The recording is removed after transcription"];
+        case "always":
+          return ["The recording is kept"];
+        case "never":
+          return ["The recording is not kept"];
+        default:
+          return [];
+      }
+    default:
+      return null;
+  }
 }
 
 /**
@@ -603,6 +643,11 @@ function linesFromActivity(value: unknown): string[] {
     const attendance = activityAttendanceLines(key, item);
     if (attendance !== null) {
       lines.push(...attendance);
+      continue;
+    }
+    const transcript = activityTranscriptLines(key, item);
+    if (transcript !== null) {
+      lines.push(...transcript);
       continue;
     }
     if (

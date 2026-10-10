@@ -327,6 +327,37 @@ describe("source product copy", () => {
     ]);
   });
 
+  it("names a meeting transcript without the session id", () => {
+    const lines = activityEvidenceLines(null, {
+      session_id: "sess-18",
+      dedupe_fingerprint: "fp-18",
+      meeting_title: "Q3 review",
+      transcript_segments: 12,
+      transcript_payload_truncated: true,
+      transcription_engine: "whisper.cpp",
+      transcription_model: "ggml-base.en",
+      audio_retention: "untilTranscribed",
+    });
+    expect(lines).toEqual([
+      "Meeting: Q3 review",
+      "12 lines in the transcript",
+      "The transcript was shortened",
+      "Transcribed with whisper.cpp",
+      "Model: ggml-base.en",
+      "The recording is removed after transcription",
+    ]);
+    expect(lines.join("\n")).not.toMatch(/sess-18|fp-18|untilTranscribed|Session Id/);
+    expect(activityEvidenceLines(null, { audio_retention: "always", transcript_payload_truncated: false })).toEqual([
+      "The recording is kept",
+    ]);
+    expect(activityEvidenceLines(null, { audio_retention: "never" })).toEqual([
+      "The recording is not kept",
+    ]);
+    expect(activityEvidenceLines(null, { transcription_engine: "local-user" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+  });
+
   it("names message counts without the mail row's sentence", () => {
     expect(
       activityEvidenceLines(null, {
