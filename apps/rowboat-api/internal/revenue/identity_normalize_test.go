@@ -8970,15 +8970,15 @@ func TestRelationshipSearchFindsUncertainClaims(t *testing.T) {
 		}
 	}
 	assertCompanyQuery(
-		"1 material claim remains uncertain and queued for focused review.",
+		"1 conversation detail still needs a check.",
 		"Claim One", "Claim Speaker", "Claim Omitted", "Claim Half",
 	)
 	assertCompanyQuery(
-		"2 material claims remain uncertain and queued for focused review.",
+		"2 conversation details still need a check.",
 		"Claim Two",
 	)
-	assertCompanyQuery("1 material claims remain uncertain and queued for focused review.")
-	assertCompanyQuery("0 material claims remain uncertain and queued for focused review.")
+	assertCompanyQuery("1 conversation details still need a check.")
+	assertCompanyQuery("0 conversation details still need a check.")
 }
 
 func TestRelationshipSearchFindsTheIntelligencePlanSentence(t *testing.T) {

@@ -3309,6 +3309,16 @@ export function liveCueCopy(cue: { kind: string; title: string; detail: string }
 }
 
 /**
+ * What changed counts claims that are still unsure. The sentence says what
+ * to check. Search uses the same words.
+ */
+export function uncertainClaimCopy(count: number): string {
+  const n = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  if (n === 1) return "1 conversation detail still needs a check.";
+  return `${n} conversation details still need a check.`;
+}
+
+/**
  * Missing-detail text is stored for the model. The sheet says what the person
  * can do about it. A review reason that still says "User", and a HubSpot
  * lifecycle stage, are rewritten. Any other supported detail keeps the reason
@@ -5242,11 +5252,7 @@ export function RelationshipSheet({
                   ) : null}
                   {data.intelligence?.delta.uncertainClaimIds.length ? (
                     <p className="mb-3 text-xs text-primary/50">
-                      {data.intelligence.delta.uncertainClaimIds.length} material claim
-                      {data.intelligence.delta.uncertainClaimIds.length === 1
-                        ? " remains"
-                        : "s remain"}{" "}
-                      uncertain and queued for focused review.
+                      {uncertainClaimCopy(data.intelligence.delta.uncertainClaimIds.length)}
                     </p>
                   ) : null}
                   {data.intelligence?.delta.recommendationReason ? (

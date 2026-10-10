@@ -6243,11 +6243,11 @@ func relationshipSheetUncertainClaimMatch(needle string) predicate.Relationship 
 }
 
 func uncertainClaimCount(needle string) (int, bool) {
-	const singular = "1 material claim remains uncertain and queued for focused review"
+	const singular = "1 conversation detail still needs a check"
 	if needle == singular {
 		return 1, true
 	}
-	const tail = " material claims remain uncertain and queued for focused review"
+	const tail = " conversation details still need a check"
 	if !strings.HasSuffix(needle, tail) {
 		return 0, false
 	}
