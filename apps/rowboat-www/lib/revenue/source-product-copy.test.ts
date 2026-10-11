@@ -580,6 +580,82 @@ describe("source product copy", () => {
     ).toEqual(["They left a comment", "Looks right."]);
   });
 
+  it("names a review decision and a promise check without their ids", () => {
+    const rejected = activityEvidenceLines(null, {
+      review_decision: {
+        item_id: "item-1",
+        batch_id: "batch-1",
+        kind: "reject",
+        corrected_value: "",
+        reason: "User decided a proposed conversation change.",
+        baseline_version: 4,
+        candidate_id: "claim-1",
+        observation_id: "obs-1",
+        decided_at: "2026-10-04T15:04:05.123Z",
+      },
+    });
+    expect(rejected).toEqual(["You rejected this"]);
+    expect(rejected.join("\n")).not.toMatch(/item-1|batch-1|claim-1|obs-1|User decided/);
+    expect(
+      activityEvidenceLines(null, {
+        review_decision: {
+          kind: "correct",
+          corrected_value: "Security review is complete",
+          reason: "The customer stated this directly.",
+        },
+      }),
+    ).toEqual(["Corrected to: Security review is complete", "The customer stated this directly."]);
+    expect(
+      activityEvidenceLines(null, {
+        review_decision: { kind: "approve", reason: "User decided a proposed conversation change." },
+      }),
+    ).toEqual(["You approved this"]);
+    expect(
+      activityEvidenceLines(null, {
+        review_decision: { kind: "defer", defer_until: "2026-10-04T15:04:05.123Z" },
+      }),
+    ).toEqual(["You set this aside until Oct 4, 2026"]);
+    const contradiction = activityEvidenceLines(null, {
+      contradiction_resolution: {
+        caseId: "case-1",
+        relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+        dimension: "health",
+        status: "user_resolved",
+        reason: "User selected the current value from a focused contradiction case.",
+        sides: [
+          {
+            assertionId: "a-1",
+            sourceType: "source_fact",
+            value: { value: "needs_attention" },
+          },
+          { assertionId: "a-2", sourceType: "ai_inference", value: { value: "healthy" } },
+        ],
+        resolutionAssertionId: "a-3",
+      },
+    });
+    expect(contradiction).toEqual(["Health: Needs attention", "Health: Healthy"]);
+    expect(contradiction.join("\n")).not.toMatch(/case-1|9c8dfa9b|assertionId|user_resolved/);
+    const evidence = activityEvidenceLines(null, {
+      commitment_recovery_evidence: [
+        {
+          commitmentId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+          kind: "explicit_fulfilled",
+          evidenceRef: "gmail-message:proof-1",
+        },
+      ],
+    });
+    expect(evidence).toEqual(["A newer source shows this promise was kept."]);
+    expect(evidence.join("\n")).not.toMatch(/9c8dfa9b|gmail-message|explicit_fulfilled/);
+    expect(
+      activityEvidenceLines(null, {
+        commitment_recovery_evidence: [{ kind: "likely_fulfilled" }, { kind: "blocked" }],
+      }),
+    ).toEqual([
+      "A newer source suggests this promise was kept. Review it before closing it.",
+      "This promise is blocked. Review it before acting.",
+    ]);
+  });
+
   it("names calendar attendance without the event id", () => {
     expect(activityHeading("calendar", "meeting_attendance_recorded")).toBe(
       "Calendar · Attendance",

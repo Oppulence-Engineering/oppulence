@@ -1501,6 +1501,129 @@ function activityReviewCorrectionLines(value: unknown): string[] {
   return lines;
 }
 
+/** A review decision stores ids beside approve, reject, correct, or defer. */
+function activityReviewDecisionLines(value: unknown): string[] {
+  const record = activityRecord(value);
+  if (!record) return [];
+  const lines: string[] = [];
+  const corrected = activityScalar(record.corrected_value);
+  switch (activityScalar(record.kind).toLowerCase()) {
+    case "approve":
+      lines.push("You approved this");
+      break;
+    case "reject":
+      lines.push("You rejected this");
+      break;
+    case "correct":
+      lines.push(
+        corrected && !activityMachineToken(corrected)
+          ? `Corrected to: ${corrected}`
+          : "You corrected this",
+      );
+      break;
+    case "defer": {
+      const day = activityUtcDay(record.defer_until);
+      lines.push(day ? `You set this aside until ${day}` : "You set this aside");
+      break;
+    }
+    default:
+      break;
+  }
+  const reason = activityScalar(record.reason);
+  if (
+    reason &&
+    reason !== "User decided a proposed conversation change." &&
+    !activityMachineToken(reason)
+  ) {
+    lines.push(reason);
+  }
+  return lines;
+}
+
+const ACTIVITY_DIMENSION_LABELS: Record<string, string> = {
+  lifecycle: "Lifecycle",
+  engagement: "Engagement",
+  sentiment: "Sentiment",
+  health: "Health",
+  summary: "Summary",
+  next_action: "Next action",
+  risk: "Risk",
+  milestone: "Milestone",
+};
+
+/** A resolved contradiction stores both readings beside case ids. The activity names the field. */
+function activityContradictionLines(value: unknown): string[] {
+  const record = activityRecord(value);
+  if (!record) return [];
+  const lines: string[] = [];
+  const dimension = activityScalar(record.dimension);
+  const label = ACTIVITY_DIMENSION_LABELS[dimension] ?? (dimension ? enumLabel(dimension) : "Detail");
+  const sides = Array.isArray(record.sides) ? record.sides : [];
+  for (const side of sides) {
+    const reading = activitySideReading(side);
+    if (!reading) continue;
+    const shown = /^[a-z0-9_]+$/.test(reading)
+      ? (SHEET_STATE_LABELS[reading] ?? enumLabel(reading))
+      : reading;
+    lines.push(`${label}: ${shown}`);
+  }
+  const reason = activityScalar(record.reason);
+  if (
+    reason &&
+    reason !== "User selected the current value from a focused contradiction case." &&
+    !activityMachineToken(reason)
+  ) {
+    lines.push(reason);
+  }
+  return lines;
+}
+
+function activitySideReading(side: unknown): string {
+  const record = activityRecord(side);
+  if (!record) return "";
+  const wrapped = activityRecord(record.value);
+  const reading = wrapped ? activityScalar(wrapped.value) : activityScalar(record.value);
+  if (!reading || reading === "local-user" || reading === "meeting-counterparty") return "";
+  if (/^[0-9a-f-]{36}$/i.test(reading)) return "";
+  return reading;
+}
+
+/**
+ * Promise evidence stores a classification token and an evidence id. The
+ * activity uses the same sentence the promise check already shows.
+ */
+function activityRecoveryEvidenceLines(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    const record = activityRecord(item);
+    if (!record) continue;
+    const line = activityRecoveryKind(activityScalar(record.kind));
+    if (!line || seen.has(line)) continue;
+    seen.add(line);
+    lines.push(line);
+  }
+  return lines;
+}
+
+function activityRecoveryKind(kind: string): string {
+  switch (kind) {
+    case "explicit_fulfilled":
+      return "A newer source shows this promise was kept.";
+    case "likely_fulfilled":
+      return "A newer source suggests this promise was kept. Review it before closing it.";
+    case "superseded":
+      return "A later promise replaced this one.";
+    case "renegotiated":
+      return "This promise was renegotiated. Review the new terms.";
+    case "blocked":
+      return "This promise is blocked. Review it before acting.";
+    default:
+      return "";
+  }
+}
+
 function activityMachineToken(value: string): boolean {
   return value === "local-user" || value === "meeting-counterparty" || /^[a-z0-9_:-]+$/.test(value);
 }
@@ -1657,6 +1780,18 @@ function linesFromActivity(value: unknown): string[] {
     }
     if (key === "review_correction") {
       lines.push(...activityReviewCorrectionLines(item));
+      continue;
+    }
+    if (key === "review_decision") {
+      lines.push(...activityReviewDecisionLines(item));
+      continue;
+    }
+    if (key === "contradiction_resolution") {
+      lines.push(...activityContradictionLines(item));
+      continue;
+    }
+    if (key === "commitment_recovery_evidence") {
+      lines.push(...activityRecoveryEvidenceLines(item));
       continue;
     }
     if (key.startsWith("hs_") && key !== "hs_lastmodifieddate") continue;
