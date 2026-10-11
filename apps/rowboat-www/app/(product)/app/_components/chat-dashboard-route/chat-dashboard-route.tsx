@@ -35,7 +35,7 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
-import type { AgentHistoryItem } from "@/lib/agents/agent-history";
+import { approvalDecisionCopy, type AgentHistoryItem } from "@/lib/agents/agent-history";
 import { agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
 import { requestDueCommitments } from "@/lib/dashboard/commitment-due-request";
 import { recoveryOpenCount } from "@/lib/revenue/revenue-records";
@@ -328,8 +328,8 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                         </Button>
                       </div>
                     ) : (
-                      <AlertDescription className="col-start-2 mt-3 text-xs capitalize text-primary/60">
-                        {item.status === "resolving" ? "Submitting decision…" : item.status}
+                      <AlertDescription className="col-start-2 mt-3 text-xs text-primary/60">
+                        {approvalDecisionCopy(item.status)}
                       </AlertDescription>
                     )}
                   </Alert>

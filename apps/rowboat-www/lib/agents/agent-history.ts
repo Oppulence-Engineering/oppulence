@@ -67,6 +67,20 @@ const BARE_AGENT_STATUS = new RegExp(
     ")$",
 );
 
+/** The stored decision is granted or denied. The chat says what the person did. */
+export function approvalDecisionCopy(status: ApprovalRequest["status"]): string {
+  switch (status) {
+    case "granted":
+      return "Approved";
+    case "denied":
+      return "Denied";
+    case "resolving":
+      return "Submitting decision…";
+    default:
+      return "";
+  }
+}
+
 /**
  * A chat action should keep a specific failure. A status code with no sentence
  * is replaced by the action's own fallback. A rejected key, a rate limit, and

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  approvalDecisionCopy,
   conversationFromAgentEvents,
   friendlyAgentError,
   parseAgentSessionEventsResponse,
@@ -49,6 +50,9 @@ it("hides model and workflow details from agent failures", () => {
   expect(friendlyAgentError("Agent stream failed (429)")).toBe(
     "Too many requests were sent from this workspace. Wait a moment, then try again.",
   );
+  expect(approvalDecisionCopy("granted")).toBe("Approved");
+  expect(approvalDecisionCopy("denied")).toBe("Denied");
+  expect(approvalDecisionCopy("resolving")).toBe("Submitting decision…");
 });
 
 describe("shownAgentError", () => {
