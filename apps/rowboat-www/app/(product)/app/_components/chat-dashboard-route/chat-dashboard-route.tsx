@@ -35,7 +35,13 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
-import type { AgentHistoryItem } from "@/lib/agents/agent-history";
+import {
+  approvalDecisionCopy,
+  toolArgumentsVisible,
+  toolFailureCopy,
+  toolResultCopy,
+  type AgentHistoryItem,
+} from "@/lib/agents/agent-history";
 import { agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
 import { requestDueCommitments } from "@/lib/dashboard/commitment-due-request";
 import { recoveryOpenCount } from "@/lib/revenue/revenue-records";
@@ -131,6 +137,20 @@ export function pulseLoadFailureCopy(): string {
 
 export function pulseRefreshFailureCopy(): string {
   return "Could not refresh workspace counts. Try again.";
+}
+
+/**
+ * A read-only workflow or run used to send the person to the API.
+ * The record is already on this page. Changing a workflow happens in Workflows.
+ */
+export function artifactReadOnlyCopy(kind: string): string {
+  if (kind === "agent") {
+    return "This managed agent can be viewed here but cannot be changed from the workspace.";
+  }
+  if (kind === "task") {
+    return "This workflow can be read here. Change it from Workflows.";
+  }
+  return "This run can be read here. Open Workflows to start another one.";
 }
 
 function PulseFigure({ state, value }: { state: "loading" | "failed" | "ready"; value: number }) {
@@ -255,6 +275,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                     completed: "output-available",
                     error: "output-error",
                   };
+                  const finished = toolResultCopy(item.result);
                   return (
                     <div className="mb-2" key={item.id}>
                       <Tool>
@@ -264,12 +285,21 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                           type="tool-call"
                         />
                         <ToolContent>
-                          <ToolInput input={item.input} />
+                          {toolArgumentsVisible(item.input) ? <ToolInput input={item.input} /> : null}
                           {item.result != null ? (
-                            <ToolOutput
-                              errorText={undefined}
-                              output={renderToolOutput(item.result)}
-                            />
+                            item.status === "error" ? (
+                              <ToolOutput
+                                errorText={toolFailureCopy(item.result)}
+                                output={undefined}
+                              />
+                            ) : finished ? (
+                              <p className="px-4 pb-4 text-xs text-muted-foreground">{finished}</p>
+                            ) : (
+                              <ToolOutput
+                                errorText={undefined}
+                                output={renderToolOutput(item.result)}
+                              />
+                            )
                           ) : null}
                         </ToolContent>
                       </Tool>
@@ -314,8 +344,8 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                         </Button>
                       </div>
                     ) : (
-                      <AlertDescription className="col-start-2 mt-3 text-xs capitalize text-primary/60">
-                        {item.status === "resolving" ? "Submitting decision…" : item.status}
+                      <AlertDescription className="col-start-2 mt-3 text-xs text-primary/60">
+                        {approvalDecisionCopy(item.status)}
                       </AlertDescription>
                     )}
                   </Alert>
@@ -427,9 +457,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                   )}
                   {chat.artifact.readOnly ? (
                     <CardDescription className="text-xs text-muted-foreground">
-                      {chat.artifact.resource.kind === "agent"
-                        ? "This managed agent can be viewed here but cannot be changed from the workspace."
-                        : "Runs are read-only; use the API to replay or inspect in detail."}
+                      {artifactReadOnlyCopy(chat.artifact.resource.kind)}
                     </CardDescription>
                   ) : null}
                 </div>

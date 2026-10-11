@@ -9,10 +9,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQuery } from "@/quality/test-support/render-query";
 
 import type { Connector } from "@/lib/api/generated/client/model";
+import { localMomentLabel } from "@/lib/revenue/revenue-records";
 import { fetchRelationshipSourceStatuses } from "@/hooks/queries/utils/fetch-relationship-sources";
 import type { RelationshipSourceStatus } from "@/lib/revenue/types";
 
 import {
+  connectionKeyFailureCopy,
+  connectionProblemDetail,
   ConnectorSettings,
   googleAccessConfirmCopy,
   googleConnectionPresentation,
@@ -306,6 +309,7 @@ describe("hosted connector settings", () => {
     expect(within(row).getByRole("button", { name: "Connect Google" })).toBeDisabled();
     const reason = within(row).getByText("This connection is not set up for this workspace yet.");
     expect(reason).toBeVisible();
+    expect(within(row).getByText("Turned off")).toBeVisible();
     expect(reason).not.toHaveClass("font-mono");
     expect(within(row).queryByText("provider_configuration_missing")).toBeNull();
   });
@@ -334,6 +338,9 @@ describe("hosted connector settings", () => {
     expect(within(row).getByText("Active")).toBeVisible();
     expect(within(row).getByText("Healthy")).toBeVisible();
     expect(within(row).getByText("Permissions: Read email evidence")).toBeVisible();
+    expect(
+      within(row).getByText(`Connected ${localMomentLabel("2026-08-28T01:00:00Z")}`),
+    ).toBeVisible();
     expect(window.location.search).toBe("?settings=connections");
   });
 });
@@ -536,5 +543,91 @@ describe("Google grant claimed in the web app", () => {
     expect(await screen.findByText("Could not refresh connections. Try again.")).toBeVisible();
     expect(screen.getAllByText("Google").length).toBeGreaterThan(0);
     expect(screen.queryByText("Could not load connections.")).not.toBeInTheDocument();
+  });
+});
+
+describe("connection key failures", () => {
+  it("names a rejected HubSpot token and keeps the handler phrase off the card", () => {
+    expect(connectionProblemDetail({ detail: "HubSpot rejected the private app token" })).toBe(
+      "HubSpot rejected the private app token",
+    );
+    expect(connectionProblemDetail({ message: "missing apiKey" })).toBe("missing apiKey");
+    expect(connectionProblemDetail({})).toBe("");
+    expect(connectionKeyFailureCopy("HubSpot rejected the private app token")).toBe(
+      "HubSpot did not accept that token.",
+    );
+    expect(connectionKeyFailureCopy("HubSpot could not verify the private app token")).toBe(
+      "HubSpot could not be reached. Try again.",
+    );
+    expect(connectionKeyFailureCopy("missing apiKey")).toBe("Enter the token.");
+    expect(connectionKeyFailureCopy("connector entitlement denied")).toBe(
+      "This workspace cannot use this connection.",
+    );
+    expect(
+      connectionKeyFailureCopy(
+        "connection was disconnected while the credential update was in progress; retry",
+      ),
+    ).toBe("This connection changed while it was saving. Try again.");
+    expect(connectionKeyFailureCopy("could not persist connection")).toBe(
+      "This connection could not be saved. Try again.",
+    );
+    expect(connectionKeyFailureCopy("unauthenticated")).toBeNull();
+  });
+
+  it("shows the token sentence when HubSpot rejects the private app token", async () => {
+    const hubspot = connector({
+      audience: "hubspot",
+      authType: "api_key",
+      description: "HubSpot records.",
+      displayName: "HubSpot",
+      mcpUrl: "https://connectors.example/hubspot",
+      name: "hubspot",
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (init?.method === "POST" && url.includes("/api-key")) {
+          return new Response(
+            JSON.stringify({
+              detail: "HubSpot rejected the private app token",
+              status: 400,
+              title: "Bad Request",
+            }),
+            { status: 400, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        if (url.includes("/google-oauth")) {
+          return new Response(JSON.stringify({ connected: false, accounts: [] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        if (url.includes("/composio/")) {
+          return new Response(JSON.stringify({ toolkits: [], connections: [] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        if (url.includes("/relationship-sources")) {
+          return new Response(JSON.stringify({ sources: [] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ connectors: [hubspot] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }),
+    );
+    renderWithQuery(<ConnectorSettings />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Connect HubSpot" }));
+    await userEvent.type(screen.getByLabelText("HubSpot private app token"), "pat-test");
+    await userEvent.click(screen.getByRole("button", { name: /^Connect$/ }));
+
+    expect(await screen.findByText("HubSpot did not accept that token.")).toBeVisible();
+    expect(screen.queryByText("HubSpot rejected the private app token")).not.toBeInTheDocument();
   });
 });

@@ -14,25 +14,13 @@ import {
   startComposioConnection,
   type ComposioConnection,
 } from "@/lib/api/composio/client";
+import { composioConnectionStatusLabel, connectionNoticeName } from "@/lib/connectors/hosted-oauth";
 import { explainedRevenueError, shownRequestError } from "@/lib/revenue/revenue";
 
-/**
- * Composio returns connection enums. A teammate should see the same kind of
- * status the native cards use, not `active` or `expired`.
- */
-const CONNECTION_STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "Connected",
-  INITIATED: "Waiting to finish",
-  EXPIRED: "Expired",
-};
-
-function connectionStatusLabel(status: string): string {
-  const key = status.trim().toUpperCase();
-  if (!key) return "Not connected";
-  const known = CONNECTION_STATUS_LABELS[key];
-  if (known) return known;
-  const words = key.toLowerCase().replace(/[_-]+/g, " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
+/** A stored product name wins. A slug such as gmail is not the name on the card. */
+function composioProductName(name: string | undefined, slug: string): string {
+  const stored = name?.trim();
+  return stored || connectionNoticeName(slug);
 }
 
 /** An active connection wins; otherwise the most recently created one does. */
@@ -190,17 +178,19 @@ export function ComposioConnections({
             return (
               <div className="flex items-center justify-between gap-3 p-4" key={toolkit.slug}>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-primary">{toolkit.name || toolkit.slug}</p>
+                  <p className="text-sm font-medium text-primary">
+                    {composioProductName(toolkit.name, toolkit.slug)}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {connection ? connectionStatusLabel(connection.status) : "Not connected"}
+                    {connection ? composioConnectionStatusLabel(connection.status) : "Not connected"}
                   </p>
                 </div>
                 {connection ? (
                   <Button
                     aria-label={
                       busy === toolkit.slug
-                        ? `Working on ${toolkit.name || toolkit.slug}`
-                        : `Disconnect ${toolkit.name || toolkit.slug}`
+                        ? `Working on ${composioProductName(toolkit.name, toolkit.slug)}`
+                        : `Disconnect ${composioProductName(toolkit.name, toolkit.slug)}`
                     }
                     disabled={busy === toolkit.slug}
                     onClick={() => void disconnect(connection)}
@@ -213,8 +203,8 @@ export function ComposioConnections({
                   <Button
                     aria-label={
                       busy === toolkit.slug
-                        ? `Opening ${toolkit.name || toolkit.slug}`
-                        : `Connect ${toolkit.name || toolkit.slug}`
+                        ? `Opening ${composioProductName(toolkit.name, toolkit.slug)}`
+                        : `Connect ${composioProductName(toolkit.name, toolkit.slug)}`
                     }
                     disabled={busy === toolkit.slug}
                     onClick={() => void connect(toolkit.slug)}
@@ -229,16 +219,18 @@ export function ComposioConnections({
           {orphans.map((connection) => (
             <div className="flex items-center justify-between gap-3 p-4" key={connection.id}>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-primary">{connection.toolkit}</p>
+                <p className="text-sm font-medium text-primary">
+                  {connectionNoticeName(connection.toolkit)}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {connectionStatusLabel(connection.status)} · no longer offered here
+                  {composioConnectionStatusLabel(connection.status)} · no longer offered here
                 </p>
               </div>
               <Button
                 aria-label={
                   busy === connection.toolkit
-                    ? `Working on ${connection.toolkit}`
-                    : `Disconnect ${connection.toolkit}`
+                    ? `Working on ${connectionNoticeName(connection.toolkit)}`
+                    : `Disconnect ${connectionNoticeName(connection.toolkit)}`
                 }
                 disabled={busy === connection.toolkit}
                 onClick={() => void disconnect(connection)}

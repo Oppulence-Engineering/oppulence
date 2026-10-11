@@ -142,7 +142,7 @@ describe("sidebar source status", () => {
       "Too many requests were sent from this workspace. Wait a moment, then try again.",
     );
     expect(sidebarQueryError(new Error("Request failed (503)"), "Could not load runs")).toBe(
-      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+      "Oppulence is temporarily unavailable. Try again in a moment.",
     );
     expect(sidebarQueryError(new Error("Request failed (500)"), "Could not load agents")).toBe(
       "Could not load agents",

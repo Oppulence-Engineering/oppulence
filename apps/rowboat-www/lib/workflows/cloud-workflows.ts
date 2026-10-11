@@ -11,6 +11,7 @@ import {
 } from "@/hooks/queries/utils/fetch-workflows";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 import { friendlyAgentError } from "@/lib/agents/agent-history";
+import { schemaMismatchCopy } from "@/lib/api/request-json";
 import { workflowProductDescription } from "@/lib/workflows/workflow-product-copy";
 
 export const CloudTaskSchema = z.object({
@@ -240,14 +241,44 @@ export function scheduleHealthLabel(value: string): string {
 }
 
 /**
- * Transcript types are dotted tokens such as temporal.failed and
- * runtime.tool_call_started. The prefix is the emitter, not something a
- * person needs in the heading.
+ * Transcript types are dotted tokens. The prefix is the emitter. A result is
+ * not an artifact, and a question to the person is not an "ask human" event.
  */
+const RUN_EVENT_LABELS: Record<string, string> = {
+  llm_call_started: "Model call started",
+  llm_call_completed: "Model call finished",
+  llm_stream_event: "Model stream",
+  tool_call_started: "Tool call started",
+  tool_call_completed: "Tool call finished",
+  tool_approval_requested: "Waiting for approval",
+  tool_approval_resolved: "Approval recorded",
+  tool_denied: "Tool not allowed",
+  limit_exceeded: "Run limit reached",
+  artifact_updated: "Result updated",
+  final_artifact_ready: "Result ready",
+  dead_lettered: "Could not start",
+  cancel_requested: "Cancellation requested",
+  retry_requested: "Retry requested",
+  run_processing_start: "Run started",
+  run_processing_end: "Run finished",
+  spawn_subflow: "Started a related run",
+  tool_invocation: "Tool called",
+  tool_result: "Tool result",
+  tool_output_stream: "Tool output",
+  ask_human_request: "Asked for a decision",
+  ask_human_response: "Decision recorded",
+  tool_permission_request: "Permission requested",
+  tool_permission_response: "Permission recorded",
+  code_run_event: "Code ran",
+  code_run_permission_request: "Code permission requested",
+  tool_permission_auto_decision: "Permission decided automatically",
+  run_stopped: "Run stopped",
+};
+
 export function runEventLabel(type: string): string {
   const stripped = type.trim().replace(/^(temporal|runtime|desktop)\./, "");
-  if (stripped === "llm_call_started") return "Model call started";
-  if (stripped === "llm_stream_event") return "Model stream";
+  const known = RUN_EVENT_LABELS[stripped];
+  if (known) return known;
   const body = stripped.replaceAll("_", " ");
   if (!body) return type;
   const withAcronyms = body.replace(/\bllm\b/g, "model");
@@ -442,6 +473,69 @@ export function transcriptNextEventsLabel(): string {
   return "Show the next events";
 }
 
+/**
+ * A problem document stores the sentence in detail. message is the older
+ * field. Reading only message dropped "revision conflict" and the page said
+ * the operation failed.
+ */
+export function workflowProblemDetail(body: unknown): string {
+  if (!body || typeof body !== "object") return "";
+  const record = body as { detail?: unknown; message?: unknown };
+  if (typeof record.detail === "string" && record.detail.trim()) return record.detail.trim();
+  if (typeof record.message === "string" && record.message.trim()) return record.message.trim();
+  return "";
+}
+
+/** A stale revision comes back as the stored detail "revision conflict". */
+export function workflowConflictCopy(action: "save" | "remove"): string {
+  return action === "remove"
+    ? "This workflow changed. Open it again, then remove it."
+    : "This workflow changed. Open it again, then save.";
+}
+
+/** A missing workflows route is not a missing workflow. */
+export function workflowsUnavailableCopy(): string {
+  return "Workflows are not available in this workspace yet.";
+}
+
+/**
+ * Stored problem details are handler phrases. The workflows page says what
+ * happened. Unknown details stay off the page so an internal token does not
+ * replace the action's own fallback.
+ */
+export function workflowFailureCopy(detail: string): string | null {
+  switch (detail) {
+    case "background task not found":
+      return "This workflow could not be found.";
+    case "background task run not found":
+      return "This run could not be found.";
+    case "background task template not found":
+      return "This template could not be found.";
+    case "background task already exists":
+      return "A workflow with that short name already exists.";
+    case "name cannot be empty":
+      return "Enter a name.";
+    case "instructions cannot be empty":
+      return "Enter what this workflow should do.";
+    case "first-party workflows can be disabled but not deleted":
+      return "Oppulence maintains this workflow. You can pause it, but you cannot remove it.";
+    case "first-party workflow definitions are managed by Oppulence; only active can be changed":
+      return "Oppulence keeps this workflow. You can pause it.";
+    case "only failed or stopped runs can be retried":
+      return "Only a failed or stopped run can be tried again.";
+    case "a retry for this run is already in progress":
+      return "A retry for this run is already going.";
+    case "only api-target runs can be retried by the API worker":
+      return "This run can be tried again from the desktop app.";
+    case "temporal is not configured":
+      return "Workflows cannot be started right now. Try again later.";
+    case "run is not temporal-backed":
+      return "This run cannot be stopped from here.";
+    default:
+      return null;
+  }
+}
+
 async function workflowRequest<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -457,11 +551,17 @@ async function workflowRequest<T>(
   });
   const body = await response.json().catch(() => null);
   if (!response.ok) {
+    const detail = workflowProblemDetail(body);
+    if (response.status === 409 && detail === "revision conflict") {
+      throw new Error(workflowConflictCopy("save"));
+    }
+    const known = workflowFailureCopy(detail);
+    if (known) throw new Error(known);
     const message =
       body && typeof body === "object" && "message" in body && typeof body.message === "string"
         ? body.message
         : response.status === 404
-          ? "Cloud workflows aren’t available in this environment."
+          ? workflowsUnavailableCopy()
           : `Workflow request failed (${response.status})`;
     throw new Error(message);
   }
@@ -470,9 +570,7 @@ async function workflowRequest<T>(
     // The zod issue list is a developer artifact. Printed verbatim it put
     // `[{"expected":"array","code":"invalid_type",…}]` on the workflows page.
     console.error(`Unexpected response from ${path}`, parsed.error);
-    throw new Error(
-      "The workflows response did not match what this app expects. The app and the API are probably running different versions.",
-    );
+    throw new Error(schemaMismatchCopy());
   }
   return parsed.data;
 }
@@ -574,13 +672,16 @@ export async function deleteCloudTask(task: Pick<CloudTask, "slug" | "revision">
   );
   if (response.status === 204) return;
   const body = await response.json().catch(() => null);
+  const detail = workflowProblemDetail(body);
+  if (response.status === 409 && detail === "revision conflict") {
+    throw new Error(workflowConflictCopy("remove"));
+  }
+  const known = workflowFailureCopy(detail);
+  if (known) throw new Error(known);
   const message =
     body && typeof body === "object" && "message" in body && typeof body.message === "string"
       ? body.message
       : "";
-  if (response.status === 409 && message === "revision conflict") {
-    throw new Error("This workflow changed. Open it again, then remove it.");
-  }
   throw new Error(message || `Could not remove the workflow (${response.status}).`);
 }
 

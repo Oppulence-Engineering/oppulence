@@ -7,9 +7,11 @@ import {
   outcomeKindLabel,
   outcomeSourceLabel,
   policyReasonLabel,
+  policySnapshotLines,
   revisionActionLabel,
   revisionChannelLabel,
 } from "@/components/features/revenue/audit-sheet/audit-sheet";
+import { MANUAL_OUTCOMES } from "@/lib/revenue/revenue";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "audit-sheet.tsx"), "utf8");
 
@@ -21,6 +23,14 @@ describe("AuditSheet", () => {
   it("names an outcome and where it was seen", () => {
     expect(outcomeKindLabel("deal_advanced")).toBe("Deal moved forward");
     expect(outcomeKindLabel("onboarding_progressed")).toBe("Onboarding moved forward");
+    expect(outcomeKindLabel("replied")).toBe("They replied");
+    expect(outcomeKindLabel("sent")).toBe("Message sent");
+    expect(outcomeKindLabel("bad_recommendation")).toBe("Not a good suggestion");
+    expect(outcomeKindLabel("churned")).toBe("They left");
+    expect(MANUAL_OUTCOMES.find((item) => item.value === "replied")?.label).toBe("They replied");
+    expect(MANUAL_OUTCOMES.find((item) => item.value === "bad_recommendation")?.label).toBe(
+      "Not a good suggestion",
+    );
     expect(outcomeSourceLabel("user")).toBe("Logged by you");
     expect(outcomeSourceLabel("gmail")).toBe("Gmail");
     expect(outcomeSourceLabel("outbound")).toBe("Sent from here");
@@ -47,6 +57,24 @@ describe("AuditSheet", () => {
     expect(policyReasonLabel("verification.mailbox_mismatch")).toBe(
       "Verification Mailbox Mismatch",
     );
+    expect(
+      policySnapshotLines({
+        status: "passed",
+        mailbox: "avery@acme.com",
+        checkedAt: "2026-07-12T12:00:00Z",
+      }),
+    ).toEqual([
+      "Status: Cleared",
+      "Mailbox: avery@acme.com",
+      "Checked At: 2026-07-12T12:00:00Z",
+    ]);
+    expect(policySnapshotLines({ reason: "review_required", optedOut: false })).toEqual([
+      "Reason: Review required",
+      "Opted Out: No",
+    ]);
+    expect(policySnapshotLines({ note: "  ", skipped: null })).toEqual([]);
+    expect(source).toContain("policySnapshotLines(value)");
+    expect(source).not.toContain("JSON.stringify(v, null, 2)");
     expect(source).toContain("policyReasonLabel(code)");
     expect(source).not.toContain("font-mono text-[10px]");
     expect(source).toContain("setSheetError(message)");

@@ -559,6 +559,15 @@ export function verifySourceLabel(index: number): string {
   return `Verify source ${shown + 1}`;
 }
 
+/**
+ * A researched fact prints how sure it is. The person sheet and the company
+ * people card use the same words, so 80% is not a bare number on one of them.
+ */
+export function personResearchConfidenceLabel(confidence: number): string {
+  const percent = Number.isFinite(confidence) ? Math.round(confidence * 100) : 0;
+  return `${percent}% confidence`;
+}
+
 /** Stored person facts use dimension tokens. The sheet names the fact. */
 export function personEvidenceLabel(dimension: string): string {
   const labels: Record<string, string> = {
@@ -1062,9 +1071,9 @@ function CreatePersonDialog({
             onChange={(event) => setName(event.target.value)}
           />
           <Input
-            aria-label="Email address"
+            aria-label="Email"
             type="email"
-            placeholder="Email address (optional)"
+            placeholder="Email (optional)"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
@@ -1233,7 +1242,7 @@ function PersonSheet({
                       {personEvidenceLabel(attribute.dimension)}
                     </Label>
                     <Badge className="rounded-none font-normal text-primary/40" variant="outline">
-                      {Math.round(attribute.confidence * 100)}%
+                      {personResearchConfidenceLabel(attribute.confidence)}
                     </Badge>
                   </div>
                   <p className="mt-1 text-sm text-primary/65">

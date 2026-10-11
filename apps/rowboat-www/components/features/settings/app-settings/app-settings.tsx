@@ -43,6 +43,7 @@ import {
   type ConsolePreferencesPatch,
 } from "@/lib/console/console";
 import { startCheckout } from "@/lib/revenue/revenue";
+import { localDayLabel } from "@/lib/revenue/revenue-records";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { CardDescription, CardTitle } from "@oppulence/ui/components/card";
@@ -380,15 +381,85 @@ export function sessionWorkspaceCopy(organizationId: string | undefined): {
   };
 }
 
+const SESSION_ROLE_LABELS: Record<string, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Member",
+};
+
+const SESSION_PERMISSION_LABELS: Record<string, string> = {
+  "billing:read": "View billing",
+  "billing:write": "Change billing",
+  "workspace:read": "View the workspace",
+  "workspace:write": "Change the workspace",
+};
+
+function sessionWords(value: string): string {
+  const words = value.replaceAll(/[_-]+/g, " ").trim();
+  if (!words) return "";
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/**
+ * A permission arrives as resource:action. The security page names what that
+ * lets this session do.
+ */
+export function sessionPermissionLabel(permission: string): string {
+  const raw = permission.trim();
+  if (!raw) return "";
+  const known = SESSION_PERMISSION_LABELS[raw.toLowerCase()];
+  if (known) return known;
+  const [resource, action, extra] = raw.split(":");
+  if (resource && action && extra === undefined) {
+    const verbs: Record<string, string> = {
+      read: "View",
+      write: "Change",
+      delete: "Remove",
+      manage: "Manage",
+    };
+    const verb = verbs[action.toLowerCase()] ?? sessionWords(action);
+    const thing = sessionWords(resource).toLowerCase();
+    if (verb && thing) return `${verb} ${thing}`;
+  }
+  return sessionWords(raw.replaceAll(":", " "));
+}
+
+/** No listed permission is ordinary access, not a blank line. */
+export function sessionPermissionsCopy(permissions: readonly string[]): string {
+  const labels = permissions.map(sessionPermissionLabel).filter(Boolean);
+  if (labels.length === 0) return "Standard workspace access";
+  return labels.join(", ");
+}
+
+/**
+ * A stored role is a lowercase slug. The account row and the permissions
+ * page share this name. A blank role stays blank so the empty sentence shows.
+ */
+export function sessionRoleLabel(role?: string | null): string {
+  const named = role?.trim() ?? "";
+  if (!named) return "";
+  return SESSION_ROLE_LABELS[named.toLowerCase()] ?? sessionWords(named);
+}
+
 /**
  * A blank session role is not the Member role. The line names a role only
- * when the session actually has one.
+ * when the session actually has one, and it names access in the same words
+ * as the security page.
  */
 export function sessionRoleCopy(role: string | undefined, permissions: readonly string[]): string {
-  const named = role?.trim() ?? "";
-  const access = permissions.length ? permissions.join(", ") : "Standard workspace access";
+  const named = sessionRoleLabel(role);
+  const access = sessionPermissionsCopy(permissions);
   if (!named) return `No role is attached to this session. ${access}`;
   return `${named} · ${access}`;
+}
+
+/**
+ * Connect is a status, not the support card. The organization id stays on
+ * Account, where it can be copied. This sentence does not paste it.
+ */
+export function sessionOrganizationNotice(organizationId?: string | null): string {
+  if (organizationId?.trim()) return "This session is connected to an organization.";
+  return "No organization is attached to this session.";
 }
 
 /**
@@ -895,9 +966,9 @@ export function PlanSection({ session }: { session: SessionShape }) {
         <div className="flex items-center justify-between gap-6 p-4">
           <div>
             <p className="text-lg font-medium text-primary">{planLabel(billing?.plan) || "Free"}</p>
-            {billing?.trialExpiresAt ? (
+            {localDayLabel(billing?.trialExpiresAt) ? (
               <p className="text-xs font-medium text-oppulence-orange">
-                Trial ends {new Date(billing.trialExpiresAt).toLocaleDateString()}
+                Trial ends {localDayLabel(billing?.trialExpiresAt)}
               </p>
             ) : null}
           </div>
@@ -1090,9 +1161,7 @@ function ConnectSection({
         title="Oppulence Connect"
       />
       <div className="settings-inline-notice">
-        {organizationId
-          ? `Connected to ${organizationId}.`
-          : "No organization is attached to this session."}
+        {sessionOrganizationNotice(organizationId)}
       </div>
       <Button onClick={() => onNavigate("connections")} type="button" variant="outline">
         Open connections
@@ -1145,9 +1214,7 @@ function SecuritySection({ session }: { session: SessionShape }) {
           <div className="settings-row-copy">
             <p className="settings-row-label">What you can do</p>
             <p className="settings-row-description">
-              {session.user.permissions.length > 0
-                ? session.user.permissions.join(", ")
-                : "Standard workspace access"}
+              {sessionPermissionsCopy(session.user.permissions)}
             </p>
           </div>
           <ShieldCheck className="size-4 text-[var(--settings-success)]" />
@@ -1323,7 +1390,7 @@ function AccountSection({ session }: { session: SessionShape }) {
           <ValueRow
             empty="No role is attached to this session."
             label="Role"
-            value={session.user.role}
+            value={sessionRoleLabel(session.user.role)}
           />
         </div>
       </SettingsRow>

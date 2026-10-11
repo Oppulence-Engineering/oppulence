@@ -296,10 +296,165 @@ func personSheetEvidenceMatch(needle string) predicate.Person {
 	if sheetPhraseMatches("recorded in this workspace", needle) {
 		preds = append(preds, personEvidenceRecordedHere())
 	}
+	// The evidence row says "80% confidence". The word alone is not that badge.
+	if percent, ok := printedConfidencePercent(needle); ok {
+		preds = append(preds, personPrintsEvidenceConfidence(percent))
+	}
+	// A saved http(s) citation is "Verify source 1". The word "source" is not that link.
+	if count, ok := verifySourceMinimum(needle); ok {
+		preds = append(preds, personPrintsVerifySource(count))
+	}
 	if len(preds) == 0 {
 		return nil
 	}
 	return person.Or(preds...)
+}
+
+// printedConfidencePercent reads the badge "N% confidence". A fragment such
+// as "confidence" or "80%" is not the badge. The number is the rounded percent.
+func printedConfidencePercent(needle string) (int, bool) {
+	text := normalizePersonSearch(needle)
+	const marker = "% confidence"
+	index := strings.Index(text, marker)
+	if index <= 0 {
+		return 0, false
+	}
+	end := index + len(marker)
+	if end < len(text) {
+		switch text[end] {
+		case ' ', '.', ',', ';', '?', ':':
+		default:
+			return 0, false
+		}
+	}
+	start := index
+	for start > 0 && text[start-1] >= '0' && text[start-1] <= '9' {
+		start--
+	}
+	if start == index {
+		return 0, false
+	}
+	if start > 0 && text[start-1] != ' ' {
+		return 0, false
+	}
+	raw := text[start:index]
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 0 || n > 100 || raw != strconv.Itoa(n) {
+		return 0, false
+	}
+	return n, true
+}
+
+func personAttributeConfidencePercent(percent int) predicate.PersonAttribute {
+	return predicate.PersonAttribute(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(personattribute.FieldConfidence)
+			// The badge is Math.round(confidence * 100). Postgres round() takes
+			// numeric; SQLite round() takes the stored real.
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf("CAST(ROUND((%s)::numeric * 100) AS INTEGER) = ", column))
+			} else {
+				b.WriteString(fmt.Sprintf("CAST(ROUND(%s * 100) AS INTEGER) = ", column))
+			}
+			b.Arg(percent)
+		}))
+	})
+}
+
+// personPrintsEvidenceConfidence matches a fact the person sheet lists.
+// The name and aliases are not that list, and a retracted fact is gone.
+func personPrintsEvidenceConfidence(percent int) predicate.Person {
+	return person.HasAttributesWith(append(
+		visiblePersonEvidence(),
+		personAttributeConfidencePercent(percent),
+	)...)
+}
+
+// personPrintsResearchConfidence matches the percent on a company people card.
+// That card lists public research that has not been retracted.
+func personPrintsResearchConfidence(percent int) predicate.Person {
+	return person.HasAttributesWith(
+		personattribute.SourceTypeEQ("external_research"),
+		personattribute.StatusNEQ("retracted"),
+		personAttributeConfidencePercent(percent),
+	)
+}
+
+// verifySourceMinimum reads "Verify source" and "Verify source N". The first
+// link is always Verify source 1. A fragment such as "source" is not the link.
+func verifySourceMinimum(needle string) (int, bool) {
+	text := normalizePersonSearch(needle)
+	const phrase = "verify source"
+	index := strings.Index(text, phrase)
+	if index < 0 {
+		return 0, false
+	}
+	if index > 0 && text[index-1] != ' ' {
+		return 0, false
+	}
+	rest := text[index+len(phrase):]
+	if rest == "" {
+		return 1, true
+	}
+	switch rest[0] {
+	case ' ', '.', ',', ';', '?', ':':
+	default:
+		return 0, false
+	}
+	rest = strings.TrimLeft(rest, " .,;?:")
+	if rest == "" {
+		return 1, true
+	}
+	word := strings.TrimRight(strings.Fields(rest)[0], ".,;:?")
+	n, err := strconv.Atoi(word)
+	if err != nil {
+		return 1, true
+	}
+	if n < 1 || n > 20 || word != strconv.Itoa(n) {
+		return 0, false
+	}
+	return n, true
+}
+
+func personAttributeWebCitationCountAtLeast(min int) predicate.PersonAttribute {
+	return predicate.PersonAttribute(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(personattribute.FieldCitationsJSON)
+			text := column
+			if s.Dialect() == dialect.Postgres {
+				text = fmt.Sprintf("lower(%s::text)", column)
+			} else {
+				text = fmt.Sprintf("lower(coalesce(%s, ''))", column)
+			}
+			// https:// does not contain http://, so both schemes are counted.
+			b.WriteString("((")
+			b.WriteString(fmt.Sprintf("(length(%s) - length(replace(%s, 'https://', ''))) / 8", text, text))
+			b.WriteString(" + ")
+			b.WriteString(fmt.Sprintf("(length(%s) - length(replace(%s, 'http://', ''))) / 7", text, text))
+			b.WriteString(") >= ")
+			b.Arg(min)
+			b.WriteString(")")
+		}))
+	})
+}
+
+// personPrintsVerifySource matches a citation the person sheet can open.
+// The name and aliases are not that list, and a retracted fact is gone.
+func personPrintsVerifySource(min int) predicate.Person {
+	return person.HasAttributesWith(append(
+		visiblePersonEvidence(),
+		personAttributeWebCitationCountAtLeast(min),
+	)...)
+}
+
+// personPrintsResearchVerifySource matches the citation on a company people card.
+// That card lists public research that has not been retracted.
+func personPrintsResearchVerifySource(min int) predicate.Person {
+	return person.HasAttributesWith(
+		personattribute.SourceTypeEQ("external_research"),
+		personattribute.StatusNEQ("retracted"),
+		personAttributeWebCitationCountAtLeast(min),
+	)
 }
 
 func visiblePersonEvidence(extra ...predicate.PersonAttribute) []predicate.PersonAttribute {

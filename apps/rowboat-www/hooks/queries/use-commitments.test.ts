@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { keptRegisterPage, registerLoadNotice } from "@/hooks/queries/use-commitments";
+import { keptRegisterPage, promisesUnavailableCopy, registerLoadNotice } from "@/hooks/queries/use-commitments";
+import { RevenueAPIError } from "@/lib/revenue/revenue";
 
 describe("keptRegisterPage", () => {
   it("keeps a loaded page when the next fetch fails", () => {
@@ -42,5 +43,9 @@ describe("registerLoadNotice", () => {
     expect(registerLoadNotice(new Error("Request failed (429)"), true)).toBe(
       "Too many requests were sent from this workspace. Wait a moment, then try again.",
     );
+    expect(registerLoadNotice(new RevenueAPIError("not found", 404), false)).toBe(
+      promisesUnavailableCopy(),
+    );
+    expect(promisesUnavailableCopy()).toBe("Promises are not available in this workspace yet.");
   });
 });

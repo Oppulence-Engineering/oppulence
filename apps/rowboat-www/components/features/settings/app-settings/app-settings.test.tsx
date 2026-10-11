@@ -9,7 +9,10 @@ import {
   mailPrivacySectionCopy,
   preferenceFormIsHidden,
   preferenceRefreshCopy,
+  sessionOrganizationNotice,
+  sessionPermissionsCopy,
   sessionRoleCopy,
+  sessionRoleLabel,
   serviceAccessDetail,
   sessionWorkspaceCopy,
 } from "@/components/features/settings/app-settings/app-settings";
@@ -142,17 +145,33 @@ describe("SettingsView", () => {
     expect(source).not.toContain("authorized services");
     expect(source).toContain('empty="No role is attached to this session."');
     expect(source).toContain("sessionRoleCopy(session.user.role, session.user.permissions)");
+    expect(source).toContain("sessionPermissionsCopy(session.user.permissions)");
+    expect(source).not.toContain("session.user.permissions.join");
     expect(source).not.toContain('empty="Member"');
     expect(source).not.toContain('session.user.role || "Member"');
+    expect(sessionPermissionsCopy([])).toBe("Standard workspace access");
+    expect(sessionPermissionsCopy(["billing:read", "workspace:write"])).toBe(
+      "View billing, Change the workspace",
+    );
     expect(sessionRoleCopy(undefined, [])).toBe(
       "No role is attached to this session. Standard workspace access",
     );
     expect(sessionRoleCopy("  ", ["billing:read"])).toBe(
-      "No role is attached to this session. billing:read",
+      "No role is attached to this session. View billing",
     );
-    expect(sessionRoleCopy("owner", [])).toBe("owner · Standard workspace access");
+    expect(sessionRoleLabel("owner")).toBe("Owner");
+    expect(sessionRoleLabel("  ")).toBe("");
+    expect(source).toContain("value={sessionRoleLabel(session.user.role)}");
+    expect(source).not.toContain("value={session.user.role}");
+    expect(sessionOrganizationNotice("org_01")).toBe(
+      "This session is connected to an organization.",
+    );
+    expect(sessionOrganizationNotice("")).toBe("No organization is attached to this session.");
+    expect(source).toContain("sessionOrganizationNotice(organizationId)");
+    expect(source).not.toContain("Connected to ${organizationId}");
+    expect(sessionRoleCopy("owner", [])).toBe("Owner · Standard workspace access");
     expect(sessionRoleCopy("admin", ["billing:read", "workspace:write"])).toBe(
-      "admin · billing:read, workspace:write",
+      "Admin · View billing, Change the workspace",
     );
     expect(source).toContain("getReadyz({");
     expect(source).toContain("Check again");
@@ -179,6 +198,8 @@ describe("SettingsView", () => {
     expect(source).toContain("the next time you start a chat.");
     expect(source).toContain('title="Chat defaults"');
     expect(source).toContain('title="Current plan"');
+    expect(source).toContain("Trial ends {localDayLabel(billing?.trialExpiresAt)}");
+    expect(source).not.toContain("trialExpiresAt).toLocaleDateString()");
     expect(source).toContain("billingStatusLabel(billing.status)");
     expect(source).toContain("planLabel(billing?.plan)");
     expect(source).not.toContain('{billing?.plan || "Free"}');

@@ -201,7 +201,7 @@ describe("Composio connections", () => {
     });
   });
 
-  it("names a connection that is still waiting, and an unfamiliar status", async () => {
+  it("names a connection that is still waiting, and one that did not connect", async () => {
     mocks.listComposioConnections.mockResolvedValue([
       { id: "ca_wait", toolkit: "jira", status: "INITIATED", createdAt: "2026-09-16T09:00:00Z" },
       { id: "ca_fail", toolkit: "asana", status: "FAILED", createdAt: "2026-09-16T09:00:00Z" },
@@ -209,7 +209,7 @@ describe("Composio connections", () => {
     renderWithQuery(<ComposioConnections />);
 
     expect(await screen.findByText("Waiting to finish")).toBeInTheDocument();
-    expect(screen.getByText("Failed")).toBeInTheDocument();
+    expect(screen.getByText("Could not connect")).toBeInTheDocument();
   });
 
   it("says so when the products cannot be loaded", async () => {
@@ -248,9 +248,10 @@ describe("Composio connections for products no longer offered", () => {
     mocks.disconnectComposio.mockResolvedValue(undefined);
     renderWithQuery(<ComposioConnections />);
 
-    expect(await screen.findByText("gmail")).toBeInTheDocument();
+    expect(await screen.findByText("Gmail")).toBeInTheDocument();
+    expect(screen.queryByText("gmail")).not.toBeInTheDocument();
     expect(screen.getByText("Connected · no longer offered here")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Disconnect gmail" }));
+    await userEvent.click(screen.getByRole("button", { name: "Disconnect Gmail" }));
 
     expect(mocks.disconnectComposio).toHaveBeenCalledWith("ca_1");
   });

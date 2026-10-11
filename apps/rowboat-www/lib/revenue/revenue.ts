@@ -89,7 +89,11 @@ import { fetchSnoozeRevenueAction } from "@/hooks/queries/utils/mutate-snooze-re
 import { fetchStartRevenueLeakScan } from "@/hooks/queries/utils/mutate-start-revenue-leak-scan";
 import type { RelationshipListScope } from "@/hooks/queries/utils/relationship-keys";
 import { RELATIONSHIP_SOURCE_STATUS_QUERY_KEY } from "@/hooks/queries/utils/relationship-source-keys";
-import { DashboardRequestError } from "@/lib/api/request-json";
+import {
+  DashboardRequestError,
+  schemaMismatchCopy,
+  signedInProblemCopy,
+} from "@/lib/api/request-json";
 import {
   dashboardRequest,
   redirectBrowserIfUnauthorized,
@@ -169,11 +173,7 @@ function parsed<T>(schema: { parse: (value: unknown) => T }, value: unknown, sub
     return schema.parse(value);
   } catch (error) {
     console.error(`Unexpected ${subject} response`, error);
-    throw new RevenueAPIError(
-      `The ${subject} response did not match what this app expects. The app and the API are probably running different versions.`,
-      0,
-      "schema_mismatch",
-    );
+    throw new RevenueAPIError(schemaMismatchCopy(), 0, "schema_mismatch");
   }
 }
 
@@ -212,6 +212,15 @@ export function shownRequestError(error: unknown, fallback: string): string {
   return message;
 }
 
+/** A missed connection is not a local setup step. The page says to try again. */
+export function serviceUnreachableCopy(): string {
+  return "Oppulence could not be reached. Try again in a moment.";
+}
+
+export function serviceUnavailableCopy(): string {
+  return "Oppulence is temporarily unavailable. Try again in a moment.";
+}
+
 export function friendlyRevenueError(message: string) {
   if (/gmail.*(?:returned 429|user-rate limit exceeded)/i.test(message)) {
     return "Google is temporarily limiting Gmail reads for this account. Please try the audit again in about 15 minutes.";
@@ -223,10 +232,10 @@ export function friendlyRevenueError(message: string) {
     return "Your session could not be refreshed. Sign out and sign in again.";
   }
   if (/rowboat-api is unreachable|upstream_unavailable/i.test(message)) {
-    return "The Oppulence API is not reachable. In local dev, start rowboat-api on port 18080, then reload.";
+    return serviceUnreachableCopy();
   }
   if (/\(503\)/.test(message) && /\bfailed\b|unreachable|unavailable/i.test(message)) {
-    return "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.";
+    return serviceUnavailableCopy();
   }
   return message;
 }
@@ -265,7 +274,16 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     let code: string | undefined;
     try {
       const body = await res.json();
-      detail = body.detail || body.title || detail;
+      const raw =
+        body && typeof body.detail === "string"
+          ? body.detail
+          : body && typeof body.title === "string"
+            ? body.title
+            : detail;
+      detail = signedInProblemCopy(raw) ?? raw;
+      if (detail === "internal error" || detail === "authentication required") {
+        detail = `Request failed (${res.status})`;
+      }
       code = body.code;
     } catch {
       // non-JSON error body; keep the status-based message
@@ -1061,20 +1079,20 @@ export const RELATIONSHIP_KIND_LABELS: Record<string, string> = {
 };
 
 export const OUTCOME_LABELS: Record<string, string> = {
-  sent: "Sent",
+  sent: "Message sent",
   delivered: "Delivered",
   bounced: "Bounced",
-  replied: "Replied",
+  replied: "They replied",
   meeting_booked: "Meeting booked",
   won: "Won",
   lost: "Lost",
   dismissed: "Dismissed",
-  bad_recommendation: "Bad recommendation",
+  bad_recommendation: "Not a good suggestion",
   deal_advanced: "Deal moved forward",
   onboarding_progressed: "Onboarding moved forward",
   renewed: "Renewed",
   escalated: "Escalated",
-  churned: "Churned",
+  churned: "They left",
   corrected: "Corrected",
 };
 
@@ -1084,7 +1102,7 @@ export const MANUAL_OUTCOMES: { value: RecordOutcomeInput["kind"]; label: string
   { value: "meeting_booked", label: "Meeting booked" },
   { value: "won", label: "Won" },
   { value: "lost", label: "Lost" },
-  { value: "bad_recommendation", label: "Bad recommendation" },
+  { value: "bad_recommendation", label: "Not a good suggestion" },
 ];
 
 export const QUEUE_FILTERS: { value: string; label: string }[] = [

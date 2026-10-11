@@ -396,7 +396,7 @@ describe("explainedRevenueError", () => {
         "Additional products are temporarily unavailable.",
       ),
     ).toBe(
-      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+      "Oppulence is temporarily unavailable. Try again in a moment.",
     );
   });
 });
@@ -437,10 +437,7 @@ describe("shownRequestError", () => {
       "Too many requests were sent from this workspace. Wait a moment, then try again.",
     );
     expect(shownRequestError(new Error("Request failed (503)"), company)).toBe(
-      [
-        "The Oppulence API returned an error (503).",
-        "Confirm rowboat-api is running on port 18080, then reload.",
-      ].join(" "),
+      "Oppulence is temporarily unavailable. Try again in a moment.",
     );
     expect(shownRequestError("nope", "Could not save mailbox policy.")).toBe(
       "Could not save mailbox policy.",
@@ -461,14 +458,17 @@ describe("friendlyRevenueError", () => {
     expect(friendlyRevenueError("Report export failed (429)")).toBe(
       "Too many requests were sent from this workspace. Wait a moment, then try again.",
     );
+    expect(friendlyRevenueError("rowboat-api is unreachable")).toBe(
+      "Oppulence could not be reached. Try again in a moment.",
+    );
     expect(friendlyRevenueError("Request failed (503)")).toBe(
-      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+      "Oppulence is temporarily unavailable. Try again in a moment.",
     );
     expect(friendlyRevenueError("Report export failed (503)")).toBe(
-      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+      "Oppulence is temporarily unavailable. Try again in a moment.",
     );
     expect(friendlyRevenueError("Export failed (503)")).toBe(
-      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+      "Oppulence is temporarily unavailable. Try again in a moment.",
     );
   });
 
@@ -599,6 +599,8 @@ it("names a shared plan without the stored hash or a redacted owner", () => {
   );
   expect(page).toContain("sharedPlanVersionLabel(plan.currentRevision.version)");
   expect(page).toContain("sharedPlanOwnerLabel(item.ownerParticipantRef)");
+  expect(page).toContain("localDayLabel(item.dueAt)");
+  expect(page).not.toContain("new Date(item.dueAt).toLocaleDateString()");
   expect(page).toContain("planResponseToken(window.location.hash, rememberedToken.current)");
   expect(page).not.toContain("plan.currentRevision.revisionHash");
   expect(page).not.toContain("Owner: {item.ownerParticipantRef}");

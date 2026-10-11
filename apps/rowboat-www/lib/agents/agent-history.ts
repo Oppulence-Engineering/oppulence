@@ -15,9 +15,22 @@ export type AgentSessionSummary = Pick<
   "sessionId" | "agent" | "title" | "createdAt" | "lastActivityAt"
 >;
 
+export function modelOutageCopy(): string {
+  return "Oppulence cannot reach the model right now. Your workspace credits were not charged. Try again later.";
+}
+
+export function modelKeyRejectedCopy(): string {
+  return "The model rejected the API key for this workspace. Nothing was charged.";
+}
+
+/** Shown when a connected source cannot refresh because the model is unreachable. */
+export function refreshPausedModelCopy(): string {
+  return "Automatic refresh is paused because Oppulence cannot reach the model right now. The source is still connected; reconnecting will not fix it.";
+}
+
 export function friendlyAgentError(message: string, subject: "agent" | "run" = "agent"): string {
   if (/openrouter_credits|upstream_credits_exhausted|upstream provider account/i.test(message)) {
-    return "Oppulence's AI provider is temporarily unavailable. Your workspace credits were not charged. Try again later.";
+    return modelOutageCopy();
   }
   if (
     /status 402|requires more credits|insufficient_credits|credits_exhausted|out of (?:AI )?credits/i.test(
@@ -30,7 +43,7 @@ export function friendlyAgentError(message: string, subject: "agent" | "run" = "
   // error. Match it before the generic activity rewrite, or dogfooding looks
   // like a random failure instead of a credential problem.
   if (/status 401|missing authentication header|invalid api key|invalid_api_key/i.test(message)) {
-    return "The AI provider rejected the API key for this workspace. Nothing was charged.";
+    return modelKeyRejectedCopy();
   }
   if (/\brate limit\b|too many requests|\(429\)/i.test(message)) {
     return "Too many requests were sent from this workspace. Wait a moment, then try again.";
@@ -53,6 +66,70 @@ const BARE_AGENT_STATUS = new RegExp(
     ].join("|") +
     ")$",
 );
+
+/** The stored decision is granted or denied. The chat says what the person did. */
+export function approvalDecisionCopy(status: ApprovalRequest["status"]): string {
+  switch (status) {
+    case "granted":
+      return "Approved";
+    case "denied":
+      return "Denied";
+    case "resolving":
+      return "Submitting decision…";
+    default:
+      return "";
+  }
+}
+
+/**
+ * A denied tool stores a worker reason. The chat says whether the tool can be used.
+ * A code with no sentence is not shown as the result.
+ */
+export function toolFailureCopy(result: unknown): string {
+  const raw = typeof result === "string" ? result.trim() : "";
+  switch (raw) {
+    case "not on the allowlist for this session":
+    case "not on the allowlist for this run":
+      return "This tool is not available in this chat.";
+    case "subagents disabled":
+      return "Related agents are turned off for this chat.";
+    case "tool requires approval but HITL is disabled":
+      return "This tool needs approval, and approval is turned off.";
+    case "denied by registry":
+    case "Denied by policy":
+      return "This tool is not allowed.";
+    default:
+      if (!raw || /^[a-z0-9_:-]+$/.test(raw)) return "This tool could not finish.";
+      return raw;
+  }
+}
+
+/**
+ * A finished tool stores only how many bytes came back. The chat says it finished.
+ * Empty arguments are not a parameter list.
+ */
+export function toolResultCopy(result: unknown): string | null {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return null;
+  const keys = Object.keys(result);
+  if (keys.length === 1 && keys[0] === "resultBytes") return "Finished.";
+  return null;
+}
+
+export function toolArgumentsVisible(input: unknown): boolean {
+  if (input == null || input === "") return false;
+  if (typeof input === "object" && !Array.isArray(input) && Object.keys(input).length === 0) {
+    return false;
+  }
+  return true;
+}
+
+export function runLimitCopy(): string {
+  return "This run reached its limit.";
+}
+
+export function runFailedCopy(): string {
+  return "This run could not finish.";
+}
 
 /**
  * A chat action should keep a specific failure. A status code with no sentence

@@ -8,6 +8,8 @@ import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import {
   applyAgentEvent,
   friendlyAgentError,
+  runFailedCopy,
+  runLimitCopy,
   shownAgentError,
   type ApprovalRequest,
   type ConversationItem,
@@ -126,8 +128,8 @@ export function useAgentRun(selectedAgent: string) {
           event.data.error
             ? friendlyAgentError(event.data.error)
             : event.type === "agent.limit_exceeded"
-              ? "This run reached its configured limit."
-              : "The agent run failed.",
+              ? runLimitCopy()
+              : runFailedCopy(),
         );
         setProcessing(false);
         setStatus("error");

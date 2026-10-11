@@ -51,7 +51,13 @@ import {
   shownRequestError,
   startScan,
 } from "@/lib/revenue/revenue";
-import { promiseDirectionLabel, promiseDueLabel } from "@/lib/revenue/revenue-records";
+import {
+  localDayLabel,
+  localMomentLabel,
+  promiseDirectionLabel,
+  promiseDueLabel,
+} from "@/lib/revenue/revenue-records";
+import { sourceLastErrorCopy } from "@/lib/revenue/source-product-copy";
 import type { OpenPromisesReport, RelationshipSourceStatus } from "@/lib/revenue/types";
 
 export function OpenPromisesReportClient() {
@@ -255,9 +261,7 @@ function ReportBody() {
               {scansQuery.data?.map((scan) => (
                 <option key={scan.id} value={scan.id}>
                   {auditHistoryLabel(scan.status)} ·{" "}
-                  {scan.completedAt || scan.startedAt
-                    ? new Date(scan.completedAt ?? scan.startedAt ?? "").toLocaleDateString()
-                    : scan.id}
+                  {localDayLabel(scan.completedAt || scan.startedAt) || scan.id}
                 </option>
               ))}
             </select>
@@ -419,7 +423,8 @@ function GoogleEvidenceSyncState({
       </p>
       <p className="mt-1 text-[12px] text-primary/55">
         {failed
-          ? source.lastError || "Reading stopped. Reconnect Google or try again."
+          ? sourceLastErrorCopy(source.lastError) ||
+            "Reading stopped. Reconnect Google or try again."
           : active && total > 0
             ? `${String(completed)} of ${String(total)} conversations read.`
             : active
@@ -696,7 +701,7 @@ export function Report({ report, scanId }: { report: OpenPromisesReport; scanId:
               {item.occurredAt || safeResearchCitationURL(item.sourceUri ?? "") ? (
                 <p className="mt-2 text-[12px] text-primary/45">
                   {item.occurredAt
-                    ? `Source observed ${new Date(item.occurredAt).toLocaleString()}`
+                    ? `Source observed ${localMomentLabel(item.occurredAt)}`
                     : "Source"}
                   {safeResearchCitationURL(item.sourceUri ?? "") ? (
                     <>

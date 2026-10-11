@@ -36,8 +36,9 @@ describe("a response that does not match its contract", () => {
     const message = (error as Error).message;
     expect(message).not.toContain("{");
     expect(message).not.toContain("invalid_type");
-    expect(message).toContain("commitments");
-    expect(message).toContain("different versions");
+    expect(message).not.toContain("commitments");
+    expect(message).not.toContain("different versions");
+    expect(message).toBe("This page could not read the latest data. Refresh and try again.");
   });
 
   it("still returns the rows when the contract is met", async () => {

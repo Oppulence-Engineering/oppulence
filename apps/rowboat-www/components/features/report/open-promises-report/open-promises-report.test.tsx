@@ -68,6 +68,8 @@ describe("OpenPromisesReportClient", () => {
     expect(source).toContain(
       'title={reconnect ? "Reconnect Google" : "Connect Gmail and Calendar"}',
     );
+    expect(source).toContain("sourceLastErrorCopy(source.lastError)");
+    expect(source).not.toContain("source.lastError ||");
     expect(source).toContain('title="Find promises in your mail"');
     expect(source).not.toContain('title="Open promises"');
     expect(source).toContain("See the message each promise came from");
@@ -99,6 +101,8 @@ describe("OpenPromisesReportClient", () => {
 
   it("names a past audit in the picker", () => {
     expect(source).toContain("auditHistoryLabel(scan.status)");
+    expect(source).toContain("localDayLabel(scan.completedAt || scan.startedAt)");
+    expect(source).not.toContain("toLocaleDateString()");
     expect(source).toContain("Show earlier audits");
     expect(source).toContain("earlierAuditsError");
     expect(source).not.toContain('scan.status === "completed" ? "Completed" : scan.status');
@@ -115,6 +119,8 @@ describe("OpenPromisesReportClient", () => {
   it("prints a promise due date on the reader's calendar", () => {
     expect(source).toContain("{promiseDueLabel(item.dueAt)}");
     expect(source).not.toContain("item.dueAt.slice(0, 10)");
+    expect(source).toContain("localMomentLabel(item.occurredAt)");
+    expect(source).not.toContain("new Date(item.occurredAt).toLocaleString()");
   });
 
   it("opens Promises when the report cannot show every promise", () => {

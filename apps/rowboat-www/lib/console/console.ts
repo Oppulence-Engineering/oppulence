@@ -4,6 +4,7 @@ import "client-only";
 
 import { z } from "zod";
 
+import { schemaMismatchCopy } from "@/lib/api/request-json";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 import {
   CreateConsoleResource201Response,
@@ -34,6 +35,33 @@ export {
   type ConsoleResource,
   type ConsoleResourceKind,
 };
+/** A missing console route is not a deployment instruction. */
+export function consoleUnavailableCopy(): string {
+  return "Saving is not available in this workspace yet.";
+}
+
+/** Stored console details are handler phrases. The page says what happened. */
+export function consoleFailureCopy(detail: string): string | null {
+  switch (detail) {
+    case "console resource not found":
+      return "This could not be found.";
+    case "console resource already exists":
+      return "This is already saved.";
+    case "console access forbidden":
+    case "user actor required":
+      return "You do not have access to this.";
+    case "invalid JSON body":
+    case "request body must contain exactly one JSON document":
+    case "Content-Type must be application/json":
+    case "console operation failed":
+      return "This could not be saved. Try again.";
+    case "request body exceeds 262144 bytes":
+      return "This is too large to save.";
+    default:
+      return null;
+  }
+}
+
 export type ConsoleResourceCreate = z.infer<typeof CreateConsoleResourceBody>;
 export type ConsoleResourcePatch = z.infer<typeof PatchConsoleResourceBody>;
 
@@ -47,14 +75,14 @@ async function errorFromResponse(response: Response): Promise<ConsoleAPIError> {
   const fallback = `Console request failed (${response.status}).`;
   try {
     const body = ConsoleErrorBodySchema.parse(await response.json());
-    const message =
+    const raw =
       typeof body.detail === "string"
         ? body.detail
         : typeof body.title === "string"
           ? body.title
-          : fallback;
+          : "";
     return new ConsoleAPIError(
-      message,
+      consoleFailureCopy(raw) ?? (raw || fallback),
       response.status,
       typeof body.code === "string" ? body.code : undefined,
     );
@@ -81,9 +109,15 @@ async function request<T>(
     },
   });
   if (!response.ok) throw await errorFromResponse(response);
-  // eslint-disable-next-line oppulence-web/no-unvalidated-json -- the generic runtime schema parses this unknown value on the next line.
-  const body: unknown = await response.json();
-  return schema.parse(body);
+  let body: unknown;
+  try {
+    // eslint-disable-next-line oppulence-web/no-unvalidated-json -- the generic runtime schema parses this unknown value on the next line.
+    body = await response.json();
+    return schema.parse(body);
+  } catch (error) {
+    console.error(`Unexpected ${path} response`, error);
+    throw new ConsoleAPIError(schemaMismatchCopy(), response.status, "schema_mismatch");
+  }
 }
 
 export const getConsolePreferences = (signal?: AbortSignal) => fetchConsolePreferences(signal);
@@ -107,11 +141,7 @@ export const createConsoleResource = async (input: ConsoleResourceCreate, signal
     });
   } catch (error) {
     if (isConsoleRouteUnavailable(error)) {
-      throw new ConsoleAPIError(
-        "Favorites and templates need a rowboat-api build that includes /v1/console.",
-        404,
-        "console_unavailable",
-      );
+      throw new ConsoleAPIError(consoleUnavailableCopy(), 404, "console_unavailable");
     }
     throw error;
   }

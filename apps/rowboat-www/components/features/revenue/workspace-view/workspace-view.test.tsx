@@ -175,7 +175,7 @@ describe("WorkspaceView", () => {
 
   it.each([
     ["workspace credits", "insufficient_credits", /out of AI credits.*still connected/i],
-    ["provider credits", "upstream_credits_exhausted", /AI provider.*still connected/i],
+    ["a model outage", "upstream_credits_exhausted", /cannot reach the model.*still connected/i],
   ])(
     "explains when stale automation needs %s instead of a Google reconnect",
     async (_, errorCode, message) => {

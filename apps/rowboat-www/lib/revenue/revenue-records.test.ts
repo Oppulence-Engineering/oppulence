@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 
+import { format } from "date-fns";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -10,6 +11,8 @@ import {
   mapSettledWithConcurrency,
   mergeWorkspaceNotes,
   promiseDirectionLabel,
+  localDayLabel,
+  localMomentLabel,
   promiseDueDay,
   promiseDueLabel,
   atRiskPulseCount,
@@ -217,6 +220,16 @@ describe("local due dates", () => {
     expect(promiseDueLabel(stored)).toBe(`due ${shown}`);
     expect(promiseDueLabel(undefined)).toBe("due unspecified");
     expect(promiseDueLabel("not-a-date")).toBe("due unspecified");
+    const moment = "2026-09-30T13:00:00.000Z";
+    expect(localMomentLabel(moment)).toBe(format(new Date(moment), "MMM d, yyyy 'at' h:mm a"));
+    expect(localMomentLabel(moment)).not.toMatch(/\d:\d{2}:\d{2}/);
+    expect(localDayLabel(moment)).toBe(format(new Date(moment), "MMM d, yyyy"));
+    expect(localMomentLabel(moment).startsWith(`${localDayLabel(moment)} at `)).toBe(true);
+    expect(localDayLabel("not-a-date")).toBe("");
+    expect(localDayLabel("  ")).toBe("");
+    expect(localMomentLabel("not-a-date")).toBe("not-a-date");
+    expect(localMomentLabel("  ")).toBe("");
+    expect(localMomentLabel(undefined)).toBe("");
   });
 
   it("still matches that day after 5pm Pacific rolls the UTC date", () => {

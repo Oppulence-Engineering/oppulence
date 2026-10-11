@@ -4,6 +4,13 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  workflowConflictCopy,
+  workflowFailureCopy,
+  workflowProblemDetail,
+  workflowsUnavailableCopy,
+} from "@/lib/workflows/cloud-workflows";
+
+import {
   runFailureLine,
   runRowDetail,
   runStatusFilterName,
@@ -160,7 +167,7 @@ describe("CloudWorkflowsView", () => {
         runsError: null,
         runCount: 0,
       }),
-    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
     expect(
       workflowLibraryNotice({
         tasksError: new Error("list unavailable"),
@@ -277,7 +284,7 @@ describe("CloudWorkflowsView", () => {
         errorCode: "llm_call_failed",
         status: "failed",
       }),
-    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
     expect(
       runFailureLine({
         error: "llm upstream returned status 401: missing authentication header",
@@ -301,7 +308,7 @@ describe("CloudWorkflowsView", () => {
         new Error("llm upstream returned status 401: missing authentication header"),
         "Could not create workflow",
       ),
-    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
     expect(shownWorkflowError(new Error("revision conflict"), "Could not create workflow")).toBe(
       "revision conflict",
     );
@@ -326,6 +333,12 @@ describe("CloudWorkflowsView", () => {
     expect(runEventLabel("runtime.tool_call_started")).toBe("Tool call started");
     expect(runEventLabel("runtime.llm_call_started")).toBe("Model call started");
     expect(runEventLabel("desktop.llm_stream_event")).toBe("Model stream");
+    expect(runEventLabel("runtime.final_artifact_ready")).toBe("Result ready");
+    expect(runEventLabel("temporal.artifact_updated")).toBe("Result updated");
+    expect(runEventLabel("temporal.dead_lettered")).toBe("Could not start");
+    expect(runEventLabel("desktop.ask_human_request")).toBe("Asked for a decision");
+    expect(runEventLabel("desktop.spawn_subflow")).toBe("Started a related run");
+    expect(runEventLabel("runtime.limit_exceeded")).toBe("Run limit reached");
   });
 
   it("describes a transcript row without the worker payload", () => {
@@ -368,7 +381,7 @@ describe("CloudWorkflowsView", () => {
             'llm upstream returned status 401: {"error":{"message":"Missing Authentication header"}}',
         },
       }),
-    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
     expect(
       runEventBody({ type: "runtime.unknown", event: { prompt_version: "cloud-runtime-v1" } }),
     ).toBe("Recorded an update.");
@@ -428,7 +441,7 @@ describe("CloudWorkflowsView", () => {
       "Could not refresh the schedule. Try again.",
     );
     expect(scheduleLoadNotice(new Error("status 401 missing authentication header"), true)).toBe(
-      "The AI provider rejected the API key for this workspace. Nothing was charged.",
+      "The model rejected the API key for this workspace. Nothing was charged.",
     );
     expect(source).toContain("scheduleMomentLabel(lastRunAt)");
     expect(source).toContain("scheduleNextRunLabel(schedule?.nextDueAt, scheduleMissing)");
@@ -665,7 +678,7 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("workflowLastRunReason(");
     expect(source).not.toContain("lastRunError}");
     const apiKey =
-      "The AI provider rejected the API key for this workspace. Nothing was charged.";
+      "The model rejected the API key for this workspace. Nothing was charged.";
     const denied = {
       lastRunAt: "2026-10-02T07:45:00.234Z",
       lastRunError:
@@ -874,5 +887,48 @@ describe("CloudWorkflowsView", () => {
     expect(source).not.toContain("Name, schedule, and where the workflow runs.");
     expect(source).toContain("maintainedWorkflowNotice()");
     expect(source).not.toContain("You can pause it, inspect it, and run it");
+  });
+});
+
+describe("workflow revision conflict", () => {
+  it("reads the problem detail and says the workflow changed", () => {
+    const workflowSource = fs.readFileSync(
+      path.join(process.cwd(), "lib/workflows/cloud-workflows.ts"),
+      "utf8",
+    );
+    expect(workflowProblemDetail({ detail: "revision conflict" })).toBe("revision conflict");
+    expect(workflowProblemDetail({ message: "revision conflict" })).toBe("revision conflict");
+    expect(workflowProblemDetail({ detail: "  revision conflict  " })).toBe("revision conflict");
+    expect(workflowProblemDetail({})).toBe("");
+    expect(workflowConflictCopy("remove")).toBe(
+      "This workflow changed. Open it again, then remove it.",
+    );
+    expect(workflowConflictCopy("save")).toBe(
+      "This workflow changed. Open it again, then save.",
+    );
+    expect(workflowSource).toContain('workflowConflictCopy("remove")');
+    expect(workflowSource).toContain('workflowConflictCopy("save")');
+    expect(workflowSource).toContain("workflowFailureCopy(detail)");
+    expect(workflowSource).not.toContain('message === "revision conflict"');
+    expect(workflowSource).not.toContain("this environment");
+    expect(workflowFailureCopy("background task not found")).toBe(
+      "This workflow could not be found.",
+    );
+    expect(workflowFailureCopy("background task run not found")).toBe(
+      "This run could not be found.",
+    );
+    expect(workflowFailureCopy("background task template not found")).toBe(
+      "This template could not be found.",
+    );
+    expect(workflowFailureCopy("only failed or stopped runs can be retried")).toBe(
+      "Only a failed or stopped run can be tried again.",
+    );
+    expect(workflowFailureCopy("temporal is not configured")).toBe(
+      "Workflows cannot be started right now. Try again later.",
+    );
+    expect(workflowFailureCopy("could not list runs")).toBeNull();
+    expect(workflowsUnavailableCopy()).toBe(
+      "Workflows are not available in this workspace yet.",
+    );
   });
 });

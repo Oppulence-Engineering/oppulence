@@ -1,3 +1,5 @@
+import { format } from "date-fns";
+
 import type { RelationshipObservation, RevenueRelationship } from "@/lib/revenue/types";
 
 function emailShapedCompanyName(value: string): boolean {
@@ -397,6 +399,32 @@ export function promiseDueDay(dueAt: string | null | undefined): string | undefi
     year: "numeric",
     timeZone: "UTC",
   });
+}
+
+/**
+ * The date-time picker shows "Sep 30, 2026 at 1:00 PM". A badge that used
+ * toLocaleString added seconds and a different order for the same moment.
+ */
+export function localMomentLabel(value: string | null | undefined): string {
+  const raw = value?.trim() ?? "";
+  if (!raw) return "";
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return raw;
+  return format(parsed, "MMM d, yyyy 'at' h:mm a");
+}
+
+/** The day half of the date-picker clock. A numeric locale date read as a machine stamp. */
+export function localDayLabel(value: string | null | undefined): string {
+  const raw = value?.trim() ?? "";
+  if (!raw) return "";
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return format(parsed, "MMM d, yyyy");
+}
+
+/** The graph badge sits beside the date picker, so it uses the same clock. */
+export function graphAsOfLabel(asOf: string): string {
+  return `As of ${localMomentLabel(asOf) || asOf}`;
 }
 
 /** Open promises used to print the UTC date prefix. The reader sees their own day. */

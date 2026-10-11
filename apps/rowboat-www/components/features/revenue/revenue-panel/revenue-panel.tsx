@@ -5,7 +5,7 @@ import "client-only";
 import * as React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkle, WarningCircle } from "@/lib/icons";
-import { useCommitmentRegister } from "@/hooks/queries/use-commitments";
+import { promisesUnavailableCopy, useCommitmentRegister } from "@/hooks/queries/use-commitments";
 import { useReportScan, useReportScanList } from "@/hooks/queries/use-report";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
 import { useWorkspace } from "@/hooks/queries/use-workspace";
@@ -79,7 +79,7 @@ function registerErrorMessage(reason: unknown): string {
   const status = reason instanceof RevenueAPIError ? reason.status : 0;
   const code = reason instanceof RevenueAPIError ? reason.code : undefined;
   if (status === 404) {
-    return "Promises are unavailable on this server. This usually means the app is newer than the API it is talking to.";
+    return promisesUnavailableCopy();
   }
   if (status === 403) {
     return "You do not have access to promises in this workspace.";

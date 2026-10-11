@@ -34,7 +34,10 @@ import { cn } from "@/lib/utils";
 import { ComposioConnections } from "@/components/features/connectors/composio-connections/composio-connections";
 import { dashboardFetch } from "@/lib/auth/client";
 import {
+  connectionHealthLabel,
+  connectionNoticeName,
   connectionReasonCopy,
+  connectionScopeCopy,
   hostedOAuthUnsupportedReason,
   requiredConnectorScopes,
   safeAuthorizationURL,
@@ -46,6 +49,7 @@ import {
   scopeProductLabel,
 } from "@/lib/connectors/connector-product-copy";
 import { explainedRevenueError, shownRequestError } from "@/lib/revenue/revenue";
+import { localMomentLabel } from "@/lib/revenue/revenue-records";
 
 const OUTCOME_MESSAGES: Record<HostedOAuthOutcome, string> = {
   active: "Connected.",
@@ -56,17 +60,57 @@ const OUTCOME_MESSAGES: Record<HostedOAuthOutcome, string> = {
   replay: "That connection link was already used. The existing connection was not changed.",
   restart: "The connection needs to start over. Nothing was saved.",
   retry: "The connection service is busy. Wait a moment, then try again.",
-  scope: "The provider asked for permissions this workspace cannot accept. Review them and connect again.",
+  scope: connectionScopeCopy(),
 };
 
 function proxyPath(path: string): string {
   return `/api/rowboat${path}`;
 }
 
+/** A problem document stores the sentence in detail. message is the older field. */
+export function connectionProblemDetail(body: unknown): string {
+  if (!body || typeof body !== "object") return "";
+  const record = body as { detail?: unknown; message?: unknown };
+  if (typeof record.detail === "string" && record.detail.trim()) return record.detail.trim();
+  if (typeof record.message === "string" && record.message.trim()) return record.message.trim();
+  return "";
+}
+
+/**
+ * Saving a token stores a handler phrase. The connection card says what happened.
+ * Unknown details stay off the card so an internal token does not replace the fallback.
+ */
+export function connectionKeyFailureCopy(detail: string): string | null {
+  switch (detail) {
+    case "missing apiKey":
+      return "Enter the token.";
+    case "unknown connector":
+      return "This connection is not available.";
+    case "connector does not use api key auth":
+      return "This connection does not use a token.";
+    case "connector is disabled":
+      return "This connection is turned off.";
+    case "connector entitlement denied":
+      return "This workspace cannot use this connection.";
+    case "HubSpot rejected the private app token":
+      return "HubSpot did not accept that token.";
+    case "HubSpot could not verify the private app token":
+      return "HubSpot could not be reached. Try again.";
+    case "could not persist connection":
+    case "could not persist connection audit":
+      return "This connection could not be saved. Try again.";
+    case "connection was disconnected while the credential update was in progress; retry":
+      return "This connection changed while it was saving. Try again.";
+    default:
+      return null;
+  }
+}
+
 function displayDate(value?: string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
-  return Number.isNaN(date.valueOf()) ? null : date.toLocaleString();
+  if (Number.isNaN(date.valueOf())) return null;
+  return localMomentLabel(value);
 }
 
 // The Google card used to render a bare connected/not-connected badge, so a
@@ -132,16 +176,6 @@ export function googleAccessConfirmCopy(tone: string): string {
   return tone === "bad"
     ? "This starts Google authorization to restore access."
     : "This opens Google only to switch accounts or update permissions. It does not catch mail up.";
-}
-
-function healthLabel(connector: Connector): string | null {
-  // A connector that was never linked already says "Not connected". Repeating
-  // the catalog health "disconnected" makes it look like a link that broke.
-  if (!connector.connected && connector.connectionHealth === "disconnected") return null;
-  if (connector.connected && connector.connectionHealth === "healthy") return "Healthy";
-  const raw = connector.connectionHealth.replaceAll("_", " ").trim();
-  if (!raw) return null;
-  return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 function OptionalConnectorScope({ scope }: { scope: ConnectorScope }) {
@@ -376,7 +410,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
   const unsupportedReason = hostedOAuthUnsupportedReason(connector);
   const connectedAt = displayDate(connector.connectedAt);
   const lastUsedAt = displayDate(connector.lastUsedAt);
-  const health = healthLabel(connector);
+  const health = connectionHealthLabel(connector);
   // `status` is whether the catalog offers this connector ("enabled"), not
   // whether this workspace linked it. Printing "Lifecycle: enabled" beside
   // "Not connected" reads as two opposite answers.
@@ -412,12 +446,10 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
         body: JSON.stringify({ apiKey }),
       });
       if (!response.ok) {
-        const problem = (await response.json().catch(() => null)) as { detail?: unknown } | null;
-        throw new Error(
-          typeof problem?.detail === "string"
-            ? problem.detail
-            : "Could not save that connection.",
+        const known = connectionKeyFailureCopy(
+          connectionProblemDetail(await response.json().catch(() => null)),
         );
+        throw new Error(known ?? "Could not save that connection.");
       }
       setApiKey("");
       setKeyOpen(false);
@@ -484,7 +516,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
               </Badge>
             )}
             {health ? (
-              <Badge className="shrink-0 rounded-[2px] capitalize" variant="outline">
+              <Badge className="shrink-0 rounded-[2px]" variant="outline">
                 {health}
               </Badge>
             ) : null}
@@ -687,7 +719,7 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
       ) : null}
       {notice ? (
         <div className="settings-inline-notice" role="status">
-          <strong className="capitalize">{notice.connector || "Connection"}:</strong>{" "}
+          <strong>{connectionNoticeName(notice.connector)}:</strong>{" "}
           {OUTCOME_MESSAGES[notice.outcome]}
         </div>
       ) : null}

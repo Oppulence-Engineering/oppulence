@@ -1,10 +1,16 @@
 import { z } from "zod";
 
+import { schemaMismatchCopy } from "@/lib/api/request-json";
 import {
   dashboardRequest,
   redirectBrowserIfUnauthorized,
   toDashboardAPIPath,
 } from "@/lib/auth/dashboard-fetch";
+
+/** A missing dashboard record is not a local command-line backend. */
+export function dashboardNotFoundCopy(): string {
+  return "This could not be found.";
+}
 
 const ErrorResponseSchema = z.union([
   z.string(),
@@ -79,7 +85,7 @@ export async function requestDashboardJson<T>(
       }
     }
     if (response.status === 404) {
-      throw new Error("Resource not found on the CLI backend (404)");
+      throw new Error(dashboardNotFoundCopy());
     }
     throw new Error(`Request failed: ${response.status} ${response.statusText}`);
   }
@@ -89,8 +95,13 @@ export async function requestDashboardJson<T>(
     try {
       body = JSON.parse(text);
     } catch {
-      throw new Error("Dashboard API returned malformed JSON");
+      throw new Error(schemaMismatchCopy());
     }
   }
-  return schema.parse(body);
+  try {
+    return schema.parse(body);
+  } catch (error) {
+    console.error(`Unexpected ${url} response`, error);
+    throw new Error(schemaMismatchCopy());
+  }
 }

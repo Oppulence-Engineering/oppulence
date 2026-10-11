@@ -838,6 +838,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if labels := relationshipLinkedInLabelMatch(value); labels != nil {
 			parts = append(parts, labels)
 		}
+		if source := relationshipFactSourceLabelMatch(value); source != nil {
+			parts = append(parts, source)
+		}
 		if threads := relationshipEmailThreadLabelMatch(value); threads != nil {
 			parts = append(parts, threads)
 		}
@@ -1137,6 +1140,18 @@ func (s *Service) ListRelationshipsFiltered(
 
 		if roster := relationshipSheetActivityRosterMatch(needle); roster != nil {
 			parts = append(parts, roster)
+		}
+
+		if attendance := relationshipSheetActivityAttendanceMatch(needle); attendance != nil {
+			parts = append(parts, attendance)
+		}
+
+		if transcript := relationshipSheetActivityTranscriptMatch(needle); transcript != nil {
+			parts = append(parts, transcript)
+		}
+
+		if promiseState := relationshipSheetActivityPromiseStateMatch(needle); promiseState != nil {
+			parts = append(parts, promiseState)
 		}
 
 		if provider := relationshipSheetActivityProviderMatch(needle); provider != nil {
@@ -1523,6 +1538,39 @@ func relationshipCategoryContains(term string) predicate.Relationship {
 	})
 }
 
+// relationshipEnrichmentFactBlank matches an optional research column whose
+// cell says the fact was never recorded. A missing key, a null, and spaces
+// are the same empty cell. A saved city or range is not.
+func relationshipEnrichmentFactBlank(key string) predicate.Relationship {
+	switch key {
+	case "headquarters", "employee_range", "funding_summary", "revenue_range", "growth_signals":
+	default:
+		return predicate.Relationship(func(s *sql.Selector) {
+			s.Where(sql.P(func(b *sql.Builder) {
+				b.WriteString("1 = 0")
+			}))
+		})
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationship.FieldCompanyEnrichmentData)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+				b.WriteString(column)
+				b.WriteString("::jsonb->>'")
+				b.WriteString(key)
+				b.WriteString("', '')) = ''")
+				return
+			}
+			b.WriteString("trim(coalesce(CAST(json_extract(")
+			b.WriteString(column)
+			b.WriteString(", '$.")
+			b.WriteString(key)
+			b.WriteString("') AS TEXT), '')) = ''")
+		}))
+	})
+}
+
 // relationshipEnrichmentContains matches the research facts the directory
 // can show: headquarters, employee range, funding, revenue, and growth
 // signals. They live in one JSON object, so the search reads that object as
@@ -1562,6 +1610,39 @@ func relationshipLinkedInLabelMatch(term string) predicate.Relationship {
 	default:
 		return nil
 	}
+}
+
+// relationshipFactSourceLabelMatch matches the citation on a company fact.
+// A saved http(s) research link reads "Check the source". A short fragment
+// such as "source" is not that link.
+func relationshipFactSourceLabelMatch(term string) predicate.Relationship {
+	needle := normalizePersonSearch(term)
+	if needle == "" || !labelPhraseMatches("check the source", needle) {
+		return nil
+	}
+	return relationshipHasCitationURL()
+}
+
+func relationshipHasCitationURL() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.Or(
+			companyEnrichmentRefLike(s, "%https://%"),
+			companyEnrichmentRefLike(s, "%http://%"),
+		))
+	})
+}
+
+func companyEnrichmentRefLike(s *sql.Selector, needle string) *sql.Predicate {
+	return sql.P(func(b *sql.Builder) {
+		column := s.C(relationship.FieldCompanyEnrichmentRefs)
+		if s.Dialect() == dialect.Postgres {
+			b.WriteString(fmt.Sprintf("lower(%s::text) LIKE ", column))
+		} else {
+			b.WriteString(fmt.Sprintf("lower(coalesce(%s, '')) LIKE ", column))
+		}
+		b.Arg(needle)
+		b.WriteString(" ESCAPE '!'")
+	})
 }
 
 func relationshipSavedLinkedIn() predicate.Relationship {
@@ -1670,6 +1751,24 @@ func relationshipDirectoryColumnMatch(term string, now time.Time) predicate.Rela
 	}
 	if action := relationshipOpenActionLabelMatch(needle); action != nil {
 		preds = append(preds, action)
+	}
+	// Optional research columns print "No headquarters recorded" (and the
+	// same shape for employees, funding, revenue, and growth signals) when
+	// that fact was never saved. A filled fact keeps its own words. A short
+	// fragment such as "headquarters" is the column name, not the empty cell.
+	for _, column := range []struct {
+		phrase string
+		key    string
+	}{
+		{"no headquarters recorded", "headquarters"},
+		{"no employee range recorded", "employee_range"},
+		{"no funding recorded", "funding_summary"},
+		{"no revenue recorded", "revenue_range"},
+		{"no growth signals recorded", "growth_signals"},
+	} {
+		if labelPhraseMatches(column.phrase, needle) {
+			preds = append(preds, relationshipEnrichmentFactBlank(column.key))
+		}
 	}
 	if len(preds) == 0 {
 		return nil
@@ -2196,6 +2295,18 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	if research, ok := publicResearchDetailCount(needle); ok {
 		preds = append(preds, relationshipHasPublicResearchDetailCount(research))
 	}
+	// Each public-research fact on the people card ends with "N% confidence".
+	if percent, ok := printedConfidencePercent(needle); ok {
+		preds = append(preds, relationship.HasParticipantsWith(
+			relationshipparticipant.HasPersonWith(personPrintsResearchConfidence(percent)),
+		))
+	}
+	// The same card links each saved page as "Verify source N".
+	if count, ok := verifySourceMinimum(needle); ok {
+		preds = append(preds, relationship.HasParticipantsWith(
+			relationshipparticipant.HasPersonWith(personPrintsResearchVerifySource(count)),
+		))
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -2367,6 +2478,7 @@ var activityEventSearchLabels = []struct {
 	{"mail updated", "thread.updated"},
 	{"mail", "thread"},
 	{"mail", "thread.snapshot"},
+	{"mail", "email_exchanged"},
 	{"message", "message.posted"},
 	{"message", "message.snapshot"},
 	{"message", "message.created"},
@@ -2391,6 +2503,7 @@ var activityEventSearchLabels = []struct {
 	{"engagement changed", "engagement_declined"},
 	{"engagement changed", "engagement_changed"},
 	{"contact left", "contact_departed"},
+	{"attendance", "meeting_attendance_recorded"},
 	{"conversation reviewed", "conversation_evidence_compiled"},
 	{"conversation corrected", "conversation_evidence_corrected"},
 	{"contradiction resolved", "relationship_contradiction_resolved"},
@@ -3254,26 +3367,39 @@ func writeParticipantToken(b *sql.Builder, s *sql.Selector, facts, key string) {
 	b.WriteString(" NOT GLOB '*[^a-z0-9_:-]*'")
 }
 
-// relationshipSheetActivityFlagMatch is "Has Attachments: true",
-// "Is First Contact: false", or "Subject Present: true" on an opened activity.
-// Gmail stores those as booleans. The sheet prints the words, including false.
-// SQLite json_extract turns a JSON boolean into 1 or 0, so the comparison uses
-// the word the sheet shows. A flag that repeats the row summary stays hidden.
-// A numeric 1 is not the word true. local-user is not a flag.
+// relationshipSheetActivityFlagMatch is "Includes an attachment",
+// "No attachments", "First email in this thread", "Not the first email",
+// "Subject is filled in", or "Subject was left blank" on an opened activity.
+// Gmail stores those as booleans. A numeric 1 still prints "Has Attachments: 1",
+// which is not the word true. A sentence that repeats the row summary stays
+// hidden. local-user is not a flag.
 func relationshipSheetActivityFlagMatch(needle string) predicate.Relationship {
+	sentences := []struct{ phrase, key, word string }{
+		{"includes an attachment", "has_attachments", "true"},
+		{"no attachments", "has_attachments", "false"},
+		{"first email in this thread", "is_first_contact", "true"},
+		{"not the first email", "is_first_contact", "false"},
+		{"subject is filled in", "subject_present", "true"},
+		{"subject was left blank", "subject_present", "false"},
+	}
 	flags := []struct{ marker, key string }{
 		{"has attachments: ", "has_attachments"},
 		{"is first contact: ", "is_first_contact"},
 		{"subject present: ", "subject_present"},
 	}
 	var preds []predicate.RelationshipObservation
+	for _, sentence := range sentences {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, observationFactFlagSentence(sentence.key, sentence.word, sentence.phrase))
+		}
+	}
 	for _, flag := range flags {
 		index := strings.Index(needle, flag.marker)
 		if index < 0 {
 			continue
 		}
 		value := strings.TrimSpace(needle[index+len(flag.marker):])
-		if value == "" {
+		if value == "" || value == "true" || value == "false" {
 			continue
 		}
 		preds = append(preds, observationFactFlag(flag.key, value))
@@ -3286,6 +3412,29 @@ func relationshipSheetActivityFlagMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
 	}
+}
+
+func observationFactFlagSentence(key, word, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeFlagShown(b, s, facts, key)
+			b.WriteString(" = ")
+			b.Arg(word)
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+			} else {
+				b.WriteString("lower(trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
 }
 
 func observationFactFlag(key, value string) predicate.RelationshipObservation {
@@ -3488,80 +3637,225 @@ func observationFactMessageOn(key string, start time.Time, printed string) predi
 	})
 }
 
-// relationshipSheetActivityRosterMatch is "Attachment Count: 1",
-// "Participant Count: 3", or "External Participant Count: 2" on an opened
+// relationshipSheetActivityRosterMatch is "1 file attached to this activity",
+// "3 people on this activity", or "2 people outside the company" on an opened
 // activity. Gmail stores those as numbers. The thread id and the message id
-// are not printed. "External Participant Count" contains the shorter
-// participant sentence, so that shorter sentence is a different count.
-// A count that repeats the row summary stays hidden.
+// are not printed. The mail row does not use these sentences. A sentence that
+// repeats the row summary stays hidden.
 func relationshipSheetActivityRosterMatch(needle string) predicate.Relationship {
-	roster := []struct{ marker, key, skipAfter string }{
-		{"external participant count: ", "external_participant_count", ""},
-		{"participant count: ", "participant_count", "external "},
-		{"attachment count: ", "attachment_count", ""},
+	return activityCountSentenceMatch(needle, []activityCountPhrase{
+		{"file attached to this activity", "files attached to this activity", "attachment_count"},
+		{"person outside the company", "people outside the company", "external_participant_count"},
+		{"person on this activity", "people on this activity", "participant_count"},
+	})
+}
+
+// relationshipSheetActivityAttendanceMatch is the opened calendar attendance
+// activity. The heading is "Calendar · Attendance". The meeting size, the
+// invite counts, and the recording are sentences. The calendar event id is
+// not printed. Outside domains are named on the activity and are not searched.
+func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if strings.Contains(needle, "taken from the invite") {
+		preds = append(preds, relationship.HasObservationsWith(
+			observationFactExact("attendance_source", "calendar_invite", "taken from the invite"),
+		))
 	}
-	var preds []predicate.RelationshipObservation
-	for _, item := range roster {
-		index := rosterMarkerIndex(needle, item.marker, item.skipAfter)
-		if index < 0 {
-			continue
+	if strings.Contains(needle, "no recording was saved") {
+		preds = append(preds, relationship.HasObservationsWith(
+			observationFactFlagSentence("recorded", "false", "no recording was saved"),
+		))
+	}
+	if strings.Contains(needle, "a recording was saved") {
+		preds = append(preds, relationship.HasObservationsWith(
+			observationFactFlagSentence("recorded", "true", "a recording was saved"),
+		))
+	}
+	for _, sentence := range []struct{ phrase, token string }{
+		{"no one else was on the invite", "solo"},
+		{"one other person was on the invite", "one_to_one"},
+		{"a small group was on the invite", "small_group"},
+		{"a large group was on the invite", "large_group"},
+	} {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, relationship.HasObservationsWith(
+				observationFactExact("meeting_size", sentence.token, sentence.phrase),
+			))
 		}
-		fields := strings.Fields(needle[index+len(item.marker):])
-		if len(fields) == 0 || fields[0] == "" {
-			continue
-		}
-		preds = append(preds, observationFactCount(item.key, fields[0]))
+	}
+	if counts := activityCountSentenceMatch(needle, []activityCountPhrase{
+		{"person invited", "people invited", "invitee_count"},
+		{"person from outside the company", "people from outside the company", "external_count"},
+		{"person declined", "people declined", "declined_count"},
+	}); counts != nil {
+		preds = append(preds, counts)
+	}
+	if title := relationshipSheetActivityFactMatch(needle, "meeting: ", "meeting_title"); title != nil {
+		preds = append(preds, title)
+	}
+	if organizer := relationshipSheetActivityFactMatch(needle, "organizer: ", "organizer_email"); organizer != nil {
+		preds = append(preds, organizer)
 	}
 	switch len(preds) {
 	case 0:
 		return nil
 	case 1:
-		return relationship.HasObservationsWith(preds[0])
+		return preds[0]
 	default:
-		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+		return relationship.Or(preds...)
 	}
 }
 
-func rosterMarkerIndex(needle, marker, skipAfter string) int {
-	from := 0
-	for from <= len(needle) {
-		index := strings.Index(needle[from:], marker)
-		if index < 0 {
-			return -1
+// relationshipSheetActivityPromiseStateMatch is who made a confirmed promise,
+// whether it is still open, and the deadline as it was said. The register
+// badges stay their own words.
+func relationshipSheetActivityPromiseStateMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	for _, sentence := range []struct{ phrase, key, token string }{
+		{"we made this promise", "commitment_owner", "me"},
+		{"we made this promise", "commitment_owner", "local-user"},
+		{"they made this promise", "commitment_owner", "them"},
+		{"this promise is still open", "commitment_status", "open"},
+		{"this promise is done", "commitment_status", "done"},
+		{"this promise was dropped", "commitment_status", "dropped"},
+		{"this promise was kept", "commitment_status", "fulfilled"},
+		{"this promise was called off", "commitment_status", "cancelled"},
+		{"this promise was missed", "commitment_status", "missed"},
+		{"this promise was waived", "commitment_status", "waived"},
+		{"this promise was replaced", "commitment_status", "superseded"},
+	} {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, relationship.HasObservationsWith(
+				observationFactExact(sentence.key, sentence.token, sentence.phrase),
+			))
+			if sentence.key == "commitment_status" && commitmentUpdateStores(sentence.token) {
+				preds = append(preds, relationship.HasObservationsWith(
+					observationFactUpdateStatus(sentence.token, sentence.phrase),
+				))
+			}
 		}
-		index += from
-		if skipAfter != "" && index >= len(skipAfter) && needle[index-len(skipAfter):index] == skipAfter {
-			from = index + len(marker)
-			continue
-		}
-		return index
 	}
-	return -1
+	if said := relationshipSheetActivityFactMatch(needle, "they said: ", "commitment_due_phrase"); said != nil {
+		preds = append(preds, said)
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
 }
 
-func observationFactCount(key, value string) predicate.RelationshipObservation {
+// relationshipSheetActivityTranscriptMatch is the opened meeting transcript.
+// The segment count, the engine, the model, and whether the recording is
+// kept are sentences. The session id and the dedupe fingerprint stay hidden.
+func relationshipSheetActivityTranscriptMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if strings.Contains(needle, "the transcript was shortened") {
+		preds = append(preds, relationship.HasObservationsWith(
+			observationFactFlagSentence("transcript_payload_truncated", "true", "the transcript was shortened"),
+		))
+	}
+	for _, sentence := range []struct{ phrase, token string }{
+		{"the recording is removed after transcription", "untilTranscribed"},
+		{"the recording is kept", "always"},
+		{"the recording is not kept", "never"},
+	} {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, relationship.HasObservationsWith(
+				observationFactExact("audio_retention", sentence.token, sentence.phrase),
+			))
+		}
+	}
+	if counts := activityCountSentenceMatch(needle, []activityCountPhrase{
+		{"line in the transcript", "lines in the transcript", "transcript_segments"},
+	}); counts != nil {
+		preds = append(preds, counts)
+	}
+	if engine := relationshipSheetActivityFactMatch(needle, "transcribed with ", "transcription_engine"); engine != nil {
+		preds = append(preds, engine)
+	}
+	if model := relationshipSheetActivityFactMatch(needle, "model: ", "transcription_model"); model != nil {
+		preds = append(preds, model)
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+// A status change stores open, fulfilled, or cancelled inside commitment_updates.
+// The opened activity uses the same sentence as commitment_status.
+func commitmentUpdateStores(token string) bool {
+	switch token {
+	case "open", "fulfilled", "cancelled":
+		return true
+	default:
+		return false
+	}
+}
+
+func observationFactUpdateStatus(token, printed string) predicate.RelationshipObservation {
 	return predicate.RelationshipObservation(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
 			summary := s.C(relationshipobservation.FieldSummary)
 			b.WriteString("(")
-			writeCountShown(b, s, facts, key)
-			b.WriteString(" <> '' AND ")
-			writeCountShown(b, s, facts, key)
-			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
-			writeNormalizedCount(b, s, facts, key)
-			b.WriteString(" = ")
-			b.Arg(value)
-			b.WriteString(" AND ")
-			writeCountShown(b, s, facts, key)
-			b.WriteString(" <> ")
 			if s.Dialect() == dialect.Postgres {
-				b.WriteString("btrim(coalesce(")
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'commitment_updates') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'commitment_updates') AS upd WHERE upd->>'status' = ")
 			} else {
-				b.WriteString("trim(coalesce(")
+				b.WriteString("json_valid(")
+				b.WriteString(facts)
+				b.WriteString(") AND json_type(")
+				b.WriteString(facts)
+				b.WriteString(", '$.commitment_updates') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
+				b.WriteString(facts)
+				b.WriteString(", '$.commitment_updates') AS upd WHERE json_extract(upd.value, '$.status') = ")
+			}
+			b.Arg(token)
+			b.WriteString(") AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+			} else {
+				b.WriteString("lower(trim(coalesce(")
 			}
 			b.WriteString(summary)
-			b.WriteString(", '')))")
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func observationFactExact(key, token, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeActivityFactTrim(b, s, facts, key)
+			b.WriteString(" = ")
+			b.Arg(token)
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+			} else {
+				b.WriteString("lower(trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
 		}))
 	})
 }
@@ -3582,24 +3876,81 @@ func writeCountShown(b *sql.Builder, s *sql.Selector, facts, key string) {
 	b.WriteString("') AS TEXT), ''))")
 }
 
-func writeNormalizedCount(b *sql.Builder, s *sql.Selector, facts, key string) {
-	if s.Dialect() == dialect.Postgres {
-		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
-		writeCountShown(b, s, facts, key)
-		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
-		return
+type activityCountPhrase struct {
+	one, many, key string
+}
+
+// activityCountSentenceMatch reads "N <phrase>" from a search. One message
+// uses the singular phrase. Any other count, including zero, uses the plural.
+func activityCountSentenceMatch(needle string, phrases []activityCountPhrase) predicate.Relationship {
+	var preds []predicate.RelationshipObservation
+	for _, phrase := range phrases {
+		if n, printed, ok := activityCountBefore(needle, phrase.many); ok && n != 1 {
+			preds = append(preds, observationFactCountSentence(phrase.key, strconv.Itoa(n), printed))
+		}
+		if n, printed, ok := activityCountBefore(needle, phrase.one); ok && n == 1 {
+			preds = append(preds, observationFactCountSentence(phrase.key, "1", printed))
+		}
 	}
-	b.WriteString("trim(")
-	for range 4 {
-		b.WriteString("replace(")
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
 	}
-	b.WriteString("replace(replace(replace(lower(")
-	writeCountShown(b, s, facts, key)
-	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
-	for range 4 {
-		b.WriteString(", '  ', ' ')")
+}
+
+func activityCountBefore(needle, phrase string) (int, string, bool) {
+	index := strings.Index(needle, phrase)
+	if index <= 0 || needle[index-1] != ' ' {
+		return 0, "", false
 	}
-	b.WriteString(")")
+	before := strings.TrimRight(needle[:index-1], " ")
+	end := len(before)
+	start := end
+	for start > 0 && before[start-1] >= '0' && before[start-1] <= '9' {
+		start--
+	}
+	if start == end {
+		return 0, "", false
+	}
+	if start > 0 && before[start-1] != ' ' {
+		return 0, "", false
+	}
+	raw := before[start:end]
+	if len(raw) > 1 && raw[0] == '0' {
+		return 0, "", false
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 0 {
+		return 0, "", false
+	}
+	return n, raw + " " + phrase, true
+}
+
+func observationFactCountSentence(key, number, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeCountShown(b, s, facts, key)
+			b.WriteString(" = ")
+			b.Arg(number)
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+			} else {
+				b.WriteString("lower(trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
 }
 
 // relationshipSheetActivityProviderMatch is "Provider: Gmail" or
@@ -5892,11 +6243,11 @@ func relationshipSheetUncertainClaimMatch(needle string) predicate.Relationship 
 }
 
 func uncertainClaimCount(needle string) (int, bool) {
-	const singular = "1 material claim remains uncertain and queued for focused review"
+	const singular = "1 conversation detail still needs a check"
 	if needle == singular {
 		return 1, true
 	}
-	const tail = " material claims remain uncertain and queued for focused review"
+	const tail = " conversation details still need a check"
 	if !strings.HasSuffix(needle, tail) {
 		return 0, false
 	}
@@ -6227,16 +6578,16 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	if labelPhraseMatches("show earlier evidence", needle) {
 		preds = append(preds, relationshipHasEarlierEvidence())
 	}
-	if sheetPhraseMatches("low-confidence material claim", needle) || sheetPhraseMatches("what was said", needle) {
+	if sheetPhraseMatches("look at this quote again", needle) || sheetPhraseMatches("what was said", needle) {
 		preds = append(preds, relationshipHasReviewClaim("claim"))
 	}
-	if sheetPhraseMatches("resolve the speaker for a material statement", needle) || sheetPhraseMatches("who said it", needle) {
+	if sheetPhraseMatches("name who said this", needle) || sheetPhraseMatches("who said it", needle) {
 		preds = append(preds, relationshipHasReviewClaim("speaker"))
 	}
-	if sheetPhraseMatches("confirm the low-confidence wording", needle) || sheetPhraseMatches("the wording", needle) {
+	if sheetPhraseMatches("confirm these words", needle) || sheetPhraseMatches("the wording", needle) {
 		preds = append(preds, relationshipHasReviewClaim("word"))
 	}
-	if sheetPhraseMatches("confirm the stakeholder identity or role", needle) || sheetPhraseMatches("who this is", needle) {
+	if sheetPhraseMatches("confirm who this person is", needle) || sheetPhraseMatches("who this is", needle) {
 		preds = append(preds, relationshipHasReviewClaim("entity"))
 	}
 	// The focused-review section says this only when the newest page has no
@@ -8427,7 +8778,7 @@ func writeMailThreadID(b *sql.Builder, s *sql.Selector) {
 // relationshipSheetMailMatch matches the mail section on the company sheet.
 // An empty mailbox says "No Gmail threads linked yet." A thread with no
 // subject says "Email conversation," a blank address says "Gmail," a missing
-// time says "Unknown date," and the reply state says who speaks next. The
+// time says "Not known," and the reply state says who speaks next. The
 // count line is "1 message" or "N messages." A one-word fragment of a longer
 // sentence stays out, so "gmail" finds a thread whose party line is the
 // fallback and does not mean a company with no mail.
@@ -8479,7 +8830,7 @@ func relationshipSheetMailMatch(needle string) predicate.Relationship {
 	if needleHasAddressPartyLine(needle) {
 		preds = append(preds, relationship.HasMailThreadsWith(mailThreadAddressPartyLine(needle)))
 	}
-	if sheetPhraseMatches("unknown date", needle) {
+	if sheetPhraseMatches("not known", needle) {
 		preds = append(preds, relationship.HasMailThreadsWith(mailthread.LastActivityAtIsNil()))
 	}
 	if sheetPhraseMatches("needs a reply", needle) {
@@ -11284,7 +11635,7 @@ func sheetPhraseMatches(phrase, needle string) bool {
 	}
 	// The search box folds hyphens, underscores, and periods into spaces
 	// before this comparison. The printed sentence has to fold the same way,
-	// or "Low-confidence material claim" never matches the words on the card.
+	// or "Look at this quote again." never matches the words on the card.
 	phrase = normalizePersonSearch(phrase)
 	if needle == phrase {
 		return true
@@ -12875,137 +13226,23 @@ func isValidationError(err error) bool {
 	return errors.As(err, &ve)
 }
 
-// relationshipSheetActivityReplyMatch is "Reply State: …" on an opened activity.
-// Gmail stores who speaks next as awaiting_reply or needs_reply. The sheet
-// prints those as labels. A label that repeats the row summary stays hidden.
-// The mail row's "Waiting on them" is a different sentence.
+// relationshipSheetActivityReplyMatch is "Their reply has not arrived",
+// "We have not answered this thread", or "No reply is outstanding" on an
+// opened activity. Gmail stores who speaks next as awaiting_reply,
+// needs_reply, or quiet. A sentence that repeats the row stays hidden.
+// The mail row's "Waiting on them", "Needs a reply", and "Quiet" are
+// different sentences.
 func relationshipSheetActivityReplyMatch(needle string) predicate.Relationship {
-	const marker = "reply state: "
-	index := strings.Index(needle, marker)
-	if index < 0 {
-		return nil
-	}
-	value := strings.TrimSpace(needle[index+len(marker):])
-	if value == "" {
-		return nil
-	}
-	return relationship.HasObservationsWith(observationFactReplyState(value))
-}
-
-func observationFactReplyState(value string) predicate.RelationshipObservation {
-	return predicate.RelationshipObservation(func(s *sql.Selector) {
-		s.Where(sql.P(func(b *sql.Builder) {
-			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
-			summary := s.C(relationshipobservation.FieldSummary)
-			b.WriteString("(")
-			writeActivityFactTrim(b, s, facts, "reply_state")
-			b.WriteString(" <> '' AND ")
-			writeActivityFactTrim(b, s, facts, "reply_state")
-			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
-			writeNormalizedActivityFact(b, s, facts, "reply_state")
-			b.WriteString(" = ")
-			b.Arg(value)
-			b.WriteString(" AND ")
-			writeReplyStateShown(b, s, facts)
-			b.WriteString(" <> ")
-			if s.Dialect() == dialect.Postgres {
-				b.WriteString("btrim(coalesce(")
-			} else {
-				b.WriteString("trim(coalesce(")
-			}
-			b.WriteString(summary)
-			b.WriteString(", '')))")
-		}))
-	})
-}
-
-func writeReplyStateShown(b *sql.Builder, s *sql.Selector, facts string) {
-	b.WriteString("CASE ")
-	writeActivityFactTrim(b, s, facts, "reply_state")
-	b.WriteString(" WHEN 'awaiting_reply' THEN 'Awaiting Reply' WHEN 'needs_reply' THEN 'Needs Reply' ELSE ")
-	writeActivityFactTrim(b, s, facts, "reply_state")
-	b.WriteString(" END")
-}
-
-// relationshipSheetActivityDepartureKindMatch is "Departure Kind: …" on an
-// opened activity. A bounce stores left_organization or recipient_unknown.
-// The sheet prints the label. A label that repeats the row stays hidden.
-func relationshipSheetActivityDepartureKindMatch(needle string) predicate.Relationship {
-	const marker = "departure kind: "
-	index := strings.Index(needle, marker)
-	if index < 0 {
-		return nil
-	}
-	value := strings.TrimSpace(needle[index+len(marker):])
-	if value == "" {
-		return nil
-	}
-	return relationship.HasObservationsWith(observationFactDepartureKind(value))
-}
-
-// relationshipSheetActivityDepartureEvidenceMatch is "Departure Evidence: …"
-// on an opened activity. The mailbox sentence stays visible when it differs
-// from the row summary.
-func relationshipSheetActivityDepartureEvidenceMatch(needle string) predicate.Relationship {
-	return relationshipSheetActivityFactMatch(needle, "departure evidence: ", "departure_evidence")
-}
-
-func observationFactDepartureKind(value string) predicate.RelationshipObservation {
-	return predicate.RelationshipObservation(func(s *sql.Selector) {
-		s.Where(sql.P(func(b *sql.Builder) {
-			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
-			summary := s.C(relationshipobservation.FieldSummary)
-			b.WriteString("(")
-			writeActivityFactTrim(b, s, facts, "departure_kind")
-			b.WriteString(" <> '' AND ")
-			writeActivityFactTrim(b, s, facts, "departure_kind")
-			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
-			writeNormalizedActivityFact(b, s, facts, "departure_kind")
-			b.WriteString(" = ")
-			b.Arg(value)
-			b.WriteString(" AND ")
-			writeDepartureKindShown(b, s, facts)
-			b.WriteString(" <> ")
-			if s.Dialect() == dialect.Postgres {
-				b.WriteString("btrim(coalesce(")
-			} else {
-				b.WriteString("trim(coalesce(")
-			}
-			b.WriteString(summary)
-			b.WriteString(", '')))")
-		}))
-	})
-}
-
-func writeDepartureKindShown(b *sql.Builder, s *sql.Selector, facts string) {
-	b.WriteString("CASE ")
-	writeActivityFactTrim(b, s, facts, "departure_kind")
-	b.WriteString(" WHEN 'left_organization' THEN 'Left Organization' WHEN 'recipient_unknown' THEN 'Recipient Unknown' ELSE ")
-	writeActivityFactTrim(b, s, facts, "departure_kind")
-	b.WriteString(" END")
-}
-
-// relationshipSheetActivityCountMatch is "Message Count: 4", "Outbound Count: 2",
-// or "Inbound Count: 1" on an opened activity. Gmail stores those as numbers.
-// The mail row's "4 messages" is a different sentence. A count that repeats
-// the row summary stays hidden.
-func relationshipSheetActivityCountMatch(needle string) predicate.Relationship {
-	counts := []struct{ marker, key string }{
-		{"message count: ", "message_count"},
-		{"outbound count: ", "outbound_count"},
-		{"inbound count: ", "inbound_count"},
+	sentences := []struct{ phrase, state string }{
+		{"their reply has not arrived", "awaiting_reply"},
+		{"we have not answered this thread", "needs_reply"},
+		{"no reply is outstanding", "quiet"},
 	}
 	var preds []predicate.RelationshipObservation
-	for _, count := range counts {
-		index := strings.Index(needle, count.marker)
-		if index < 0 {
-			continue
+	for _, sentence := range sentences {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, observationFactReplyState(sentence.state, sentence.phrase))
 		}
-		value := strings.TrimSpace(needle[index+len(count.marker):])
-		if value == "" {
-			continue
-		}
-		preds = append(preds, observationFactLine(count.key, value))
 	}
 	switch len(preds) {
 	case 0:
@@ -13015,6 +13252,97 @@ func relationshipSheetActivityCountMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
 	}
+}
+
+func observationFactReplyState(state, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeActivityFactTrim(b, s, facts, "reply_state")
+			b.WriteString(" = ")
+			b.Arg(state)
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+			} else {
+				b.WriteString("lower(trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
+}
+
+// relationshipSheetActivityDepartureKindMatch is "Left this company" or
+// "Address was not recognized" on an opened activity. A bounce stores
+// left_organization or recipient_unknown. A sentence that repeats the row
+// stays hidden. local-user is not a departure.
+func relationshipSheetActivityDepartureKindMatch(needle string) predicate.Relationship {
+	sentences := []struct{ phrase, kind string }{
+		{"left this company", "left_organization"},
+		{"address was not recognized", "recipient_unknown"},
+	}
+	var preds []predicate.RelationshipObservation
+	for _, sentence := range sentences {
+		if strings.Contains(needle, sentence.phrase) {
+			preds = append(preds, observationFactDepartureKind(sentence.kind, sentence.phrase))
+		}
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+// relationshipSheetActivityDepartureEvidenceMatch is "The bounce said: …"
+// on an opened activity. The mailbox sentence stays visible when it differs
+// from the row summary.
+func relationshipSheetActivityDepartureEvidenceMatch(needle string) predicate.Relationship {
+	return relationshipSheetActivityFactMatch(needle, "the bounce said: ", "departure_evidence")
+}
+
+func observationFactDepartureKind(kind, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeActivityFactTrim(b, s, facts, "departure_kind")
+			b.WriteString(" = ")
+			b.Arg(kind)
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+			} else {
+				b.WriteString("lower(trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
+}
+
+// relationshipSheetActivityCountMatch is "4 messages in this activity",
+// "2 messages sent from this mailbox", or "1 message received from them"
+// on an opened activity. Gmail stores those as numbers. The mail row's
+// "4 messages" is a different sentence. A sentence that repeats the row
+// summary stays hidden.
+func relationshipSheetActivityCountMatch(needle string) predicate.Relationship {
+	return activityCountSentenceMatch(needle, []activityCountPhrase{
+		{"message in this activity", "messages in this activity", "message_count"},
+		{"message sent from this mailbox", "messages sent from this mailbox", "outbound_count"},
+		{"message received from them", "messages received from them", "inbound_count"},
+	})
 }
 
 func observationFactSubject(subject string) predicate.RelationshipObservation {

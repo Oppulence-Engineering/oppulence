@@ -38,6 +38,7 @@ vi.mock("@/components/auth/auth-gate", () => ({
 }));
 
 import {
+  artifactReadOnlyCopy,
   ChatDashboardRoute,
   pulseFigureValue,
   pulseLoadFailureCopy,
@@ -71,6 +72,14 @@ describe("ChatDashboardRoute", () => {
     expect(source).not.toContain('Trust tier: {item.trustTier.replaceAll("_", " ")}');
     expect(source).not.toContain("title={item.name}");
     expect(source).not.toContain("Approval required: {item.name}");
+    expect(source).toContain("approvalDecisionCopy(item.status)");
+    expect(source).not.toContain('className="col-start-2 mt-3 text-xs capitalize text-primary/60"');
+    expect(source).not.toContain('item.status === "resolving" ? "Submitting decision…" : item.status');
+    expect(source).toContain("toolFailureCopy(item.result)");
+    expect(source).toContain("toolResultCopy(item.result)");
+    expect(source).toContain("toolArgumentsVisible(item.input)");
+    expect(source).toContain("artifactReadOnlyCopy(chat.artifact.resource.kind)");
+    expect(source).not.toContain("use the API to replay");
   });
 
   it("names a missed pulse instead of leaving a blank count", () => {
@@ -79,5 +88,17 @@ describe("ChatDashboardRoute", () => {
     expect(pulseFigureValue(true, true)).toBe("ready");
     expect(pulseLoadFailureCopy()).toBe("Workspace counts could not load. Try again.");
     expect(pulseRefreshFailureCopy()).toBe("Could not refresh workspace counts. Try again.");
+    expect(artifactReadOnlyCopy("agent")).toBe(
+      "This managed agent can be viewed here but cannot be changed from the workspace.",
+    );
+    expect(artifactReadOnlyCopy("task")).toBe(
+      "This workflow can be read here. Change it from Workflows.",
+    );
+    expect(artifactReadOnlyCopy("taskrun")).toBe(
+      "This run can be read here. Open Workflows to start another one.",
+    );
+    expect(artifactReadOnlyCopy("run")).toBe(
+      "This run can be read here. Open Workflows to start another one.",
+    );
   });
 });

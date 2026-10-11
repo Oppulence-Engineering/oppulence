@@ -49,6 +49,10 @@ export function keptRegisterPage<T>(
 }
 
 /** A known register keeps its rows or its empty state. The sentence says which request missed. */
+export function promisesUnavailableCopy(): string {
+  return "Promises are not available in this workspace yet.";
+}
+
 export function registerLoadNotice(reason: unknown, hadPage: boolean): string {
   const status =
     reason instanceof RevenueAPIError || reason instanceof DashboardRequestError
@@ -59,7 +63,7 @@ export function registerLoadNotice(reason: unknown, hadPage: boolean): string {
       ? reason.code
       : undefined;
   if (status === 404) {
-    return "Promises are unavailable on this server. This usually means the app is newer than the API it is talking to.";
+    return promisesUnavailableCopy();
   }
   if (status === 403) {
     return "You do not have access to promises in this workspace.";

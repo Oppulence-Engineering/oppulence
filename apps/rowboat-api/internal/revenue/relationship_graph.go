@@ -924,7 +924,7 @@ func graphEventLabel(eventType string) string {
 	switch strings.ToLower(strings.TrimSpace(eventType)) {
 	case "thread.updated":
 		return "Mail updated"
-	case "thread", "thread.snapshot":
+	case "thread", "thread.snapshot", "email_exchanged":
 		return "Mail"
 	case "message.posted", "message.snapshot", "message.created":
 		return "Message"
