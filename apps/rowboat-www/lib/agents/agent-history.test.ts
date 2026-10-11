@@ -28,6 +28,24 @@ it("hides model and workflow details from agent failures", () => {
   expect(friendlyAgentError("insufficient_credits")).toBe(
     "This workspace is out of AI credits. Ask an administrator to add credits, then try again.",
   );
+  expect(friendlyAgentError("insufficient credits for cloud run preflight", "run")).toBe(
+    "This workspace is out of AI credits. Ask an administrator to add credits, then try again.",
+  );
+  expect(friendlyAgentError("subscription not active for cloud run preflight", "run")).toBe(
+    "An active subscription is required before this workflow can run.",
+  );
+  expect(friendlyAgentError("daily credit limit exceeded for cloud run preflight", "run")).toBe(
+    "This workspace has used its daily AI credits. Try again tomorrow.",
+  );
+  expect(friendlyAgentError("monthly credit limit exceeded for cloud run preflight", "run")).toBe(
+    "This workspace has used its monthly AI credits.",
+  );
+  expect(friendlyAgentError("cloud run queue is at global capacity", "run")).toBe(
+    "Too many workflows are running right now. Try again in a moment.",
+  );
+  expect(friendlyAgentError("cloud run start rate limit exceeded for this user", "run")).toBe(
+    "Too many requests were sent from this workspace. Wait a moment, then try again.",
+  );
   expect(
     friendlyAgentError(
       'activity error (type: rowboat.agent.llm_complete.v1): llm upstream returned status 401: {"error":{"message":"Missing Authentication header","code":401}}',

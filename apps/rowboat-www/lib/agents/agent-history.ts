@@ -33,11 +33,23 @@ export function friendlyAgentError(message: string, subject: "agent" | "run" = "
     return modelOutageCopy();
   }
   if (
-    /status 402|requires more credits|insufficient_credits|credits_exhausted|out of (?:AI )?credits/i.test(
+    /status 402|requires more credits|insufficient_credits|credits_exhausted|out of (?:AI )?credits|insufficient credits for cloud run preflight/i.test(
       message,
     )
   ) {
     return "This workspace is out of AI credits. Ask an administrator to add credits, then try again.";
+  }
+  if (/subscription not active for cloud run preflight/i.test(message)) {
+    return "An active subscription is required before this workflow can run.";
+  }
+  if (/daily credit limit exceeded for cloud run preflight/i.test(message)) {
+    return "This workspace has used its daily AI credits. Try again tomorrow.";
+  }
+  if (/monthly credit limit exceeded for cloud run preflight/i.test(message)) {
+    return "This workspace has used its monthly AI credits.";
+  }
+  if (/cloud run queue is at (?:global|per-user) capacity/i.test(message)) {
+    return "Too many workflows are running right now. Try again in a moment.";
   }
   // A bad or missing provider key comes back wrapped in a Temporal activity
   // error. Match it before the generic activity rewrite, or dogfooding looks

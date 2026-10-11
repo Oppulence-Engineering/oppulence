@@ -926,7 +926,21 @@ describe("workflow revision conflict", () => {
     expect(workflowFailureCopy("temporal is not configured")).toBe(
       "Workflows cannot be started right now. Try again later.",
     );
+    expect(workflowFailureCopy("could not start temporal workflow")).toBe(
+      "Workflows cannot be started right now. Try again later.",
+    );
+    expect(workflowFailureCopy("could not cancel temporal workflow")).toBe(
+      "This run could not be stopped. Try again.",
+    );
     expect(workflowFailureCopy("could not list runs")).toBeNull();
+    expect(workflowSource).toContain("explainedWorkflowDetail(detail)");
+    expect(
+      runFailureLine({
+        error: "insufficient credits for cloud run preflight",
+        errorCode: "insufficient_credits",
+        status: "failed",
+      }),
+    ).toBe("This workspace is out of AI credits. Ask an administrator to add credits, then try again.");
     expect(workflowsUnavailableCopy()).toBe(
       "Workflows are not available in this workspace yet.",
     );

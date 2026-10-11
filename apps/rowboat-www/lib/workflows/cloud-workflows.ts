@@ -528,12 +528,26 @@ export function workflowFailureCopy(detail: string): string | null {
     case "only api-target runs can be retried by the API worker":
       return "This run can be tried again from the desktop app.";
     case "temporal is not configured":
+    case "could not start temporal workflow":
       return "Workflows cannot be started right now. Try again later.";
+    case "could not cancel temporal workflow":
+      return "This run could not be stopped. Try again.";
     case "run is not temporal-backed":
       return "This run cannot be stopped from here.";
     default:
       return null;
   }
+}
+
+/**
+ * A start refusal is a problem detail. The page only kept the status, so a
+ * workspace out of credits looked like the button had failed. An unknown
+ * detail stays off the page.
+ */
+function explainedWorkflowDetail(detail: string): string | null {
+  if (!detail) return null;
+  const explained = friendlyAgentError(detail, "run");
+  return explained === detail ? null : explained;
 }
 
 async function workflowRequest<T>(
@@ -555,7 +569,7 @@ async function workflowRequest<T>(
     if (response.status === 409 && detail === "revision conflict") {
       throw new Error(workflowConflictCopy("save"));
     }
-    const known = workflowFailureCopy(detail);
+    const known = workflowFailureCopy(detail) ?? explainedWorkflowDetail(detail);
     if (known) throw new Error(known);
     const message =
       body && typeof body === "object" && "message" in body && typeof body.message === "string"
@@ -676,7 +690,7 @@ export async function deleteCloudTask(task: Pick<CloudTask, "slug" | "revision">
   if (response.status === 409 && detail === "revision conflict") {
     throw new Error(workflowConflictCopy("remove"));
   }
-  const known = workflowFailureCopy(detail);
+  const known = workflowFailureCopy(detail) ?? explainedWorkflowDetail(detail);
   if (known) throw new Error(known);
   const message =
     body && typeof body === "object" && "message" in body && typeof body.message === "string"
