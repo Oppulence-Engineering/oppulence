@@ -432,16 +432,25 @@ export function sessionPermissionsCopy(permissions: readonly string[]): string {
 }
 
 /**
+ * A stored role is a lowercase slug. The account row and the permissions
+ * page share this name. A blank role stays blank so the empty sentence shows.
+ */
+export function sessionRoleLabel(role?: string | null): string {
+  const named = role?.trim() ?? "";
+  if (!named) return "";
+  return SESSION_ROLE_LABELS[named.toLowerCase()] ?? sessionWords(named);
+}
+
+/**
  * A blank session role is not the Member role. The line names a role only
  * when the session actually has one, and it names access in the same words
  * as the security page.
  */
 export function sessionRoleCopy(role: string | undefined, permissions: readonly string[]): string {
-  const named = role?.trim() ?? "";
+  const named = sessionRoleLabel(role);
   const access = sessionPermissionsCopy(permissions);
   if (!named) return `No role is attached to this session. ${access}`;
-  const roleLabel = SESSION_ROLE_LABELS[named.toLowerCase()] ?? sessionWords(named);
-  return `${roleLabel} · ${access}`;
+  return `${named} · ${access}`;
 }
 
 /**
@@ -1374,7 +1383,7 @@ function AccountSection({ session }: { session: SessionShape }) {
           <ValueRow
             empty="No role is attached to this session."
             label="Role"
-            value={session.user.role}
+            value={sessionRoleLabel(session.user.role)}
           />
         </div>
       </SettingsRow>

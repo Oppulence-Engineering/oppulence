@@ -11,6 +11,7 @@ import {
   preferenceRefreshCopy,
   sessionPermissionsCopy,
   sessionRoleCopy,
+  sessionRoleLabel,
   serviceAccessDetail,
   sessionWorkspaceCopy,
 } from "@/components/features/settings/app-settings/app-settings";
@@ -157,6 +158,10 @@ describe("SettingsView", () => {
     expect(sessionRoleCopy("  ", ["billing:read"])).toBe(
       "No role is attached to this session. View billing",
     );
+    expect(sessionRoleLabel("owner")).toBe("Owner");
+    expect(sessionRoleLabel("  ")).toBe("");
+    expect(source).toContain("value={sessionRoleLabel(session.user.role)}");
+    expect(source).not.toContain("value={session.user.role}");
     expect(sessionRoleCopy("owner", [])).toBe("Owner · Standard workspace access");
     expect(sessionRoleCopy("admin", ["billing:read", "workspace:write"])).toBe(
       "Admin · View billing, Change the workspace",
