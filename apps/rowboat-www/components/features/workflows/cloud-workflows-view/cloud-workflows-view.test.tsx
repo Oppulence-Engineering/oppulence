@@ -389,6 +389,12 @@ describe("CloudWorkflowsView", () => {
     ).toBe("The result is ready.");
     expect(
       runEventBody({
+        type: "runtime.limit_exceeded",
+        event: { limit: "tool_calls", value: 9, max: 8 },
+      }),
+    ).toBe("This run reached its limit.");
+    expect(
+      runEventBody({
         type: "runtime.tool_call_started",
         event: { tool: "relationship.read", callIndex: 1, trustTier: "read" },
       }),

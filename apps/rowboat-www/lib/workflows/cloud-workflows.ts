@@ -10,7 +10,7 @@ import {
   fetchWorkflowTemplates,
 } from "@/hooks/queries/utils/fetch-workflows";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
-import { friendlyAgentError } from "@/lib/agents/agent-history";
+import { friendlyAgentError, runLimitCopy } from "@/lib/agents/agent-history";
 import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { schemaMismatchCopy } from "@/lib/api/request-json";
 import { workflowProductDescription } from "@/lib/workflows/workflow-product-copy";
@@ -420,6 +420,7 @@ export function runEventBody(event: { type?: string; event: unknown }): string {
   if (error) return friendlyAgentError(error, "run");
   if (message) return "This run could not finish.";
   if (type === "runtime.final_artifact_ready") return "The result is ready.";
+  if (type === "runtime.limit_exceeded") return runLimitCopy();
   return "Recorded an update.";
 }
 
