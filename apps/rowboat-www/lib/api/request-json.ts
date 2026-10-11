@@ -74,7 +74,7 @@ async function readJsonBody(response: Response): Promise<unknown> {
   try {
     return JSON.parse(text);
   } catch {
-    throw new DashboardRequestError("Dashboard API returned malformed JSON", response.status);
+    throw new DashboardRequestError(schemaMismatchCopy(), response.status);
   }
 }
 
