@@ -134,6 +134,12 @@ it("hides model and workflow details from agent failures", () => {
   expect(friendlyAgentError("event_bytes limit exceeded (9000 > 1000)", "run")).toBe(
     "This run reached its limit.",
   );
+  expect(
+    friendlyAgentError("run abandoned before Temporal workflow start was confirmed", "run"),
+  ).toBe("This run did not start. Try again.");
+  expect(friendlyAgentError("run went silent: no heartbeat for over 15m0s", "run")).toBe(
+    "This run stopped responding. Try again.",
+  );
   expect(friendlyAgentError("The agent was canceled.")).toBe("The agent was canceled.");
   expect(friendlyAgentError("rate limit exceeded")).toBe(
     "Too many requests were sent from this workspace. Wait a moment, then try again.",

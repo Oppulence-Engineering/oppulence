@@ -985,6 +985,20 @@ describe("workflow revision conflict", () => {
         null,
       ),
     ).toBe("Connect Google, then try again.");
+    expect(
+      runFailureLine({
+        error: "run abandoned before Temporal workflow start was confirmed",
+        errorCode: "temporal_start_failed",
+        status: "failed",
+      }),
+    ).toBe("This run did not start. Try again.");
+    expect(
+      runFailureLine({
+        error: "run went silent: no heartbeat for over 15m0s",
+        errorCode: "activity_failed",
+        status: "failed",
+      }),
+    ).toBe("This run stopped responding. Try again.");
     expect(workflowsUnavailableCopy()).toBe(
       "Workflows are not available in this workspace yet.",
     );

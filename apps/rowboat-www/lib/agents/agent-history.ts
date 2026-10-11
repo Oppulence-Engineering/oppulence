@@ -106,6 +106,12 @@ export function friendlyAgentError(message: string, subject: "agent" | "run" = "
   if (/\blimit exceeded \(/i.test(message)) {
     return runLimitCopy();
   }
+  if (/abandoned before Temporal workflow start was confirmed/i.test(message)) {
+    return "This run did not start. Try again.";
+  }
+  if (/run went silent: no heartbeat/i.test(message)) {
+    return "This run stopped responding. Try again.";
+  }
   if (/activity error|scheduledEventID|startedEventID/i.test(message)) {
     return subject === "run"
       ? "This run could not finish. Please try again."
