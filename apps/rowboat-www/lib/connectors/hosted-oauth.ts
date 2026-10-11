@@ -28,11 +28,15 @@ export function requiredConnectorScopes(connector: Connector): string[] {
     .map((scope) => scope.name);
 }
 
+export function connectionScopeCopy(): string {
+  return "This connection asked for permissions this workspace cannot accept. Review them and connect again.";
+}
+
 export function connectionReasonCopy(reason: string): string {
   const labels: Record<string, string> = {
     not_connected: "Not connected",
     reauth_required: "Sign in again to restore this connection.",
-    upstream_error: "The provider returned an error. Try connecting again.",
+    upstream_error: "Connecting failed. Try again.",
     revocation_pending: "Disconnect is still finishing.",
     provider_configuration_missing: "This connection is not set up for this workspace yet.",
   };

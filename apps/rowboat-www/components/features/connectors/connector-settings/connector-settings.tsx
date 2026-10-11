@@ -35,6 +35,7 @@ import { ComposioConnections } from "@/components/features/connectors/composio-c
 import { dashboardFetch } from "@/lib/auth/client";
 import {
   connectionReasonCopy,
+  connectionScopeCopy,
   hostedOAuthUnsupportedReason,
   requiredConnectorScopes,
   safeAuthorizationURL,
@@ -56,7 +57,7 @@ const OUTCOME_MESSAGES: Record<HostedOAuthOutcome, string> = {
   replay: "That connection link was already used. The existing connection was not changed.",
   restart: "The connection needs to start over. Nothing was saved.",
   retry: "The connection service is busy. Wait a moment, then try again.",
-  scope: "The provider asked for permissions this workspace cannot accept. Review them and connect again.",
+  scope: connectionScopeCopy(),
 };
 
 function proxyPath(path: string): string {

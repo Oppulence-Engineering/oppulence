@@ -8,6 +8,7 @@ import {
   callbackStatusOutcome,
   claimOutcome,
   connectionReasonCopy,
+  connectionScopeCopy,
   connectorSettingsURL,
   safeAuthorizationURL,
   startOutcome,
@@ -68,6 +69,10 @@ describe("hosted connector OAuth outcomes", () => {
     );
     expect(connectionReasonCopy("reauth_required")).toBe(
       "Sign in again to restore this connection.",
+    );
+    expect(connectionReasonCopy("upstream_error")).toBe("Connecting failed. Try again.");
+    expect(connectionScopeCopy()).toBe(
+      "This connection asked for permissions this workspace cannot accept. Review them and connect again.",
     );
     expect(connectionReasonCopy("upstream_timeout")).toBe("Upstream timeout");
     expect(connectionReasonCopy("")).toBe("This connection is unavailable.");
