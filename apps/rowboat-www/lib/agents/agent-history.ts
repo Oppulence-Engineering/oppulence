@@ -104,6 +104,14 @@ export function toolFailureCopy(result: unknown): string {
   }
 }
 
+export function runLimitCopy(): string {
+  return "This run reached its limit.";
+}
+
+export function runFailedCopy(): string {
+  return "This run could not finish.";
+}
+
 /**
  * A chat action should keep a specific failure. A status code with no sentence
  * is replaced by the action's own fallback. A rejected key, a rate limit, and

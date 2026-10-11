@@ -14,5 +14,9 @@ describe("useAgentRun", () => {
       'shownAgentError(new Error(message), "Could not load conversation")',
     );
     expect(source).toContain("const explained = friendlyAgentError(message);");
+    expect(source).toContain("runLimitCopy()");
+    expect(source).toContain("runFailedCopy()");
+    expect(source).not.toContain("configured limit");
+    expect(source).not.toContain("The agent run failed.");
   });
 });

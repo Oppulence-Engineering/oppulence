@@ -6,6 +6,8 @@ import {
   friendlyAgentError,
   parseAgentSessionEventsResponse,
   parseAgentSessionsResponse,
+  runFailedCopy,
+  runLimitCopy,
   shownAgentError,
   toolFailureCopy,
 } from "@/lib/agents/agent-history";
@@ -66,6 +68,8 @@ it("hides model and workflow details from agent failures", () => {
   expect(toolFailureCopy("denied by registry")).toBe("This tool is not allowed.");
   expect(toolFailureCopy("llm_call_failed")).toBe("This tool could not finish.");
   expect(toolFailureCopy("The mailbox is busy.")).toBe("The mailbox is busy.");
+  expect(runLimitCopy()).toBe("This run reached its limit.");
+  expect(runFailedCopy()).toBe("This run could not finish.");
 });
 
 describe("shownAgentError", () => {
