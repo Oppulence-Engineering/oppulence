@@ -133,6 +133,20 @@ export function pulseRefreshFailureCopy(): string {
   return "Could not refresh workspace counts. Try again.";
 }
 
+/**
+ * A read-only workflow or run used to send the person to the API.
+ * The record is already on this page. Changing a workflow happens in Workflows.
+ */
+export function artifactReadOnlyCopy(kind: string): string {
+  if (kind === "agent") {
+    return "This managed agent can be viewed here but cannot be changed from the workspace.";
+  }
+  if (kind === "task") {
+    return "This workflow can be read here. Change it from Workflows.";
+  }
+  return "This run can be read here. Open Workflows to start another one.";
+}
+
 function PulseFigure({ state, value }: { state: "loading" | "failed" | "ready"; value: number }) {
   if (state === "loading") return <Skeleton className="inline-block h-3 w-4" />;
   if (state === "failed") return "Couldn't load";
@@ -427,9 +441,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                   )}
                   {chat.artifact.readOnly ? (
                     <CardDescription className="text-xs text-muted-foreground">
-                      {chat.artifact.resource.kind === "agent"
-                        ? "This managed agent can be viewed here but cannot be changed from the workspace."
-                        : "Runs are read-only; use the API to replay or inspect in detail."}
+                      {artifactReadOnlyCopy(chat.artifact.resource.kind)}
                     </CardDescription>
                   ) : null}
                 </div>
