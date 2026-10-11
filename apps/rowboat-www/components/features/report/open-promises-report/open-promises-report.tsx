@@ -51,7 +51,11 @@ import {
   shownRequestError,
   startScan,
 } from "@/lib/revenue/revenue";
-import { promiseDirectionLabel, promiseDueLabel } from "@/lib/revenue/revenue-records";
+import {
+  localMomentLabel,
+  promiseDirectionLabel,
+  promiseDueLabel,
+} from "@/lib/revenue/revenue-records";
 import { sourceLastErrorCopy } from "@/lib/revenue/source-product-copy";
 import type { OpenPromisesReport, RelationshipSourceStatus } from "@/lib/revenue/types";
 
@@ -698,7 +702,7 @@ export function Report({ report, scanId }: { report: OpenPromisesReport; scanId:
               {item.occurredAt || safeResearchCitationURL(item.sourceUri ?? "") ? (
                 <p className="mt-2 text-[12px] text-primary/45">
                   {item.occurredAt
-                    ? `Source observed ${new Date(item.occurredAt).toLocaleString()}`
+                    ? `Source observed ${localMomentLabel(item.occurredAt)}`
                     : "Source"}
                   {safeResearchCitationURL(item.sourceUri ?? "") ? (
                     <>
