@@ -9,6 +9,7 @@ import {
   mailPrivacySectionCopy,
   preferenceFormIsHidden,
   preferenceRefreshCopy,
+  sessionPermissionsCopy,
   sessionRoleCopy,
   serviceAccessDetail,
   sessionWorkspaceCopy,
@@ -142,17 +143,23 @@ describe("SettingsView", () => {
     expect(source).not.toContain("authorized services");
     expect(source).toContain('empty="No role is attached to this session."');
     expect(source).toContain("sessionRoleCopy(session.user.role, session.user.permissions)");
+    expect(source).toContain("sessionPermissionsCopy(session.user.permissions)");
+    expect(source).not.toContain("session.user.permissions.join");
     expect(source).not.toContain('empty="Member"');
     expect(source).not.toContain('session.user.role || "Member"');
+    expect(sessionPermissionsCopy([])).toBe("Standard workspace access");
+    expect(sessionPermissionsCopy(["billing:read", "workspace:write"])).toBe(
+      "View billing, Change the workspace",
+    );
     expect(sessionRoleCopy(undefined, [])).toBe(
       "No role is attached to this session. Standard workspace access",
     );
     expect(sessionRoleCopy("  ", ["billing:read"])).toBe(
-      "No role is attached to this session. billing:read",
+      "No role is attached to this session. View billing",
     );
-    expect(sessionRoleCopy("owner", [])).toBe("owner · Standard workspace access");
+    expect(sessionRoleCopy("owner", [])).toBe("Owner · Standard workspace access");
     expect(sessionRoleCopy("admin", ["billing:read", "workspace:write"])).toBe(
-      "admin · billing:read, workspace:write",
+      "Admin · View billing, Change the workspace",
     );
     expect(source).toContain("getReadyz({");
     expect(source).toContain("Check again");

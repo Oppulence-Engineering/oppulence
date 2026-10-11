@@ -381,15 +381,67 @@ export function sessionWorkspaceCopy(organizationId: string | undefined): {
   };
 }
 
+const SESSION_ROLE_LABELS: Record<string, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Member",
+};
+
+const SESSION_PERMISSION_LABELS: Record<string, string> = {
+  "billing:read": "View billing",
+  "billing:write": "Change billing",
+  "workspace:read": "View the workspace",
+  "workspace:write": "Change the workspace",
+};
+
+function sessionWords(value: string): string {
+  const words = value.replaceAll(/[_-]+/g, " ").trim();
+  if (!words) return "";
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/**
+ * A permission arrives as resource:action. The security page names what that
+ * lets this session do.
+ */
+export function sessionPermissionLabel(permission: string): string {
+  const raw = permission.trim();
+  if (!raw) return "";
+  const known = SESSION_PERMISSION_LABELS[raw.toLowerCase()];
+  if (known) return known;
+  const [resource, action, extra] = raw.split(":");
+  if (resource && action && extra === undefined) {
+    const verbs: Record<string, string> = {
+      read: "View",
+      write: "Change",
+      delete: "Remove",
+      manage: "Manage",
+    };
+    const verb = verbs[action.toLowerCase()] ?? sessionWords(action);
+    const thing = sessionWords(resource).toLowerCase();
+    if (verb && thing) return `${verb} ${thing}`;
+  }
+  return sessionWords(raw.replaceAll(":", " "));
+}
+
+/** No listed permission is ordinary access, not a blank line. */
+export function sessionPermissionsCopy(permissions: readonly string[]): string {
+  const labels = permissions.map(sessionPermissionLabel).filter(Boolean);
+  if (labels.length === 0) return "Standard workspace access";
+  return labels.join(", ");
+}
+
 /**
  * A blank session role is not the Member role. The line names a role only
- * when the session actually has one.
+ * when the session actually has one, and it names access in the same words
+ * as the security page.
  */
 export function sessionRoleCopy(role: string | undefined, permissions: readonly string[]): string {
   const named = role?.trim() ?? "";
-  const access = permissions.length ? permissions.join(", ") : "Standard workspace access";
+  const access = sessionPermissionsCopy(permissions);
   if (!named) return `No role is attached to this session. ${access}`;
-  return `${named} · ${access}`;
+  const roleLabel = SESSION_ROLE_LABELS[named.toLowerCase()] ?? sessionWords(named);
+  return `${roleLabel} · ${access}`;
 }
 
 /**
@@ -1146,9 +1198,7 @@ function SecuritySection({ session }: { session: SessionShape }) {
           <div className="settings-row-copy">
             <p className="settings-row-label">What you can do</p>
             <p className="settings-row-description">
-              {session.user.permissions.length > 0
-                ? session.user.permissions.join(", ")
-                : "Standard workspace access"}
+              {sessionPermissionsCopy(session.user.permissions)}
             </p>
           </div>
           <ShieldCheck className="size-4 text-[var(--settings-success)]" />
