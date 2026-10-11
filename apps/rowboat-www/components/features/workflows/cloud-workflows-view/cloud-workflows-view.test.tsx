@@ -561,6 +561,19 @@ describe("CloudWorkflowsView", () => {
     expect(
       runEventBody({
         type: "desktop.code_run_event",
+        event: {
+          event: {
+            type: "permission",
+            ask: { title: "Edit the security note", isRead: false },
+            decision: "allow_once",
+            auto: false,
+          },
+        },
+      }),
+    ).toBe("Edit the security note was allowed.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_event",
         event: { event: { type: "other", sessionUpdate: "session/update" } },
       }),
     ).toBe("Recorded an update.");
