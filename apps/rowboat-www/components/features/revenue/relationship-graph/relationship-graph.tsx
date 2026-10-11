@@ -16,7 +16,15 @@ import {
   fetchConsoleResources,
 } from "@/hooks/queries/utils/fetch-console";
 import { personResearchConfidenceLabel } from "@/components/features/revenue/workspace-records/workspace-records-view";
-import { companyName, promiseDirectionLabel, promiseDueDay } from "@/lib/revenue/revenue-records";
+import {
+  companyName,
+  graphAsOfLabel,
+  promiseDirectionLabel,
+  promiseDueDay,
+} from "@/lib/revenue/revenue-records";
+
+export { graphAsOfLabel };
+
 import { getRelationshipGraph } from "@/lib/revenue/revenue";
 import {
   activityRowSummary,
@@ -1128,10 +1136,6 @@ export function graphEvidenceChipLabel(evidence: {
 }
 
 /**
- * The toolbar date is a moment to view, not a mode called "historical".
- * The banner uses the same words once a moment is chosen.
- */
-/**
  * Approve already ends in e, so appending "d" spelled it. Reject does not:
  * "Action rejectd." is what the inspector used to say after a successful reject.
  */
@@ -1144,12 +1148,6 @@ export function graphActionNotice(kind: "evaluate" | "approve" | "reject"): stri
     case "reject":
       return "Action rejected.";
   }
-}
-
-export function graphAsOfLabel(asOf: string): string {
-  const parsed = new Date(asOf);
-  const when = Number.isNaN(parsed.getTime()) ? asOf : parsed.toLocaleString();
-  return `As of ${when}`;
 }
 
 /**

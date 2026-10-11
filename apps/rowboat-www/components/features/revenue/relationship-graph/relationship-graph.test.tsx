@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { localMomentLabel } from "@/lib/revenue/revenue-records";
+
 import {
   accountGraphPrompt,
   graphCanvasEmptyState,
@@ -118,7 +120,10 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphActionNotice("reject")).toBe("Action rejected.");
     expect(source).toContain("onNotice(graphActionNotice(kind))");
     expect(source).not.toContain("`Action ${kind}d.`");
-    expect(graphAsOfLabel("2026-09-30T13:00:00.000Z")).toMatch(/^As of /);
+    expect(graphAsOfLabel("2026-09-30T13:00:00.000Z")).toBe(
+      `As of ${localMomentLabel("2026-09-30T13:00:00.000Z")}`,
+    );
+    expect(graphAsOfLabel("2026-09-30T13:00:00.000Z")).not.toMatch(/\d:\d{2}:\d{2}/);
     expect(graphChangedDetail(["next_action", "health"])).toBe(
       "Changed since you last looked: Next action, Health.",
     );
