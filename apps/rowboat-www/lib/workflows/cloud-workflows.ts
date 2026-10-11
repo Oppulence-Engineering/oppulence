@@ -11,6 +11,7 @@ import {
 } from "@/hooks/queries/utils/fetch-workflows";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 import { friendlyAgentError } from "@/lib/agents/agent-history";
+import { schemaMismatchCopy } from "@/lib/api/request-json";
 import { workflowProductDescription } from "@/lib/workflows/workflow-product-copy";
 
 export const CloudTaskSchema = z.object({
@@ -524,9 +525,7 @@ async function workflowRequest<T>(
     // The zod issue list is a developer artifact. Printed verbatim it put
     // `[{"expected":"array","code":"invalid_type",…}]` on the workflows page.
     console.error(`Unexpected response from ${path}`, parsed.error);
-    throw new Error(
-      "The workflows response did not match what this app expects. The app and the API are probably running different versions.",
-    );
+    throw new Error(schemaMismatchCopy());
   }
   return parsed.data;
 }

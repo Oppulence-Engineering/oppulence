@@ -30,6 +30,14 @@ export type RequestJsonInput<T> = {
 
 export type RequestJsonFn = <T>(input: RequestJsonInput<T>) => Promise<T>;
 
+/**
+ * A contract mismatch is a deployment fact. The path stays in the console,
+ * because printing it named an internal route on the page.
+ */
+export function schemaMismatchCopy(): string {
+  return "This page could not read the latest data. Refresh and try again.";
+}
+
 /** A missing route is optional. A gateway timeout or an unavailable API is a failed load. */
 export function isOptionalRequestFailure(error: unknown): boolean {
   return error instanceof DashboardRequestError && error.status === 404;
@@ -94,10 +102,6 @@ export async function requestJson<T>(input: RequestJsonInput<T>): Promise<T> {
     return input.schema.parse(body);
   } catch (error) {
     console.error(`Unexpected ${input.path} response`, error);
-    throw new DashboardRequestError(
-      `The ${input.path} response did not match what this app expects. The app and the API are probably running different versions.`,
-      0,
-      "schema_mismatch",
-    );
+    throw new DashboardRequestError(schemaMismatchCopy(), 0, "schema_mismatch");
   }
 }

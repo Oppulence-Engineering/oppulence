@@ -89,7 +89,7 @@ import { fetchSnoozeRevenueAction } from "@/hooks/queries/utils/mutate-snooze-re
 import { fetchStartRevenueLeakScan } from "@/hooks/queries/utils/mutate-start-revenue-leak-scan";
 import type { RelationshipListScope } from "@/hooks/queries/utils/relationship-keys";
 import { RELATIONSHIP_SOURCE_STATUS_QUERY_KEY } from "@/hooks/queries/utils/relationship-source-keys";
-import { DashboardRequestError } from "@/lib/api/request-json";
+import { DashboardRequestError, schemaMismatchCopy } from "@/lib/api/request-json";
 import {
   dashboardRequest,
   redirectBrowserIfUnauthorized,
@@ -169,11 +169,7 @@ function parsed<T>(schema: { parse: (value: unknown) => T }, value: unknown, sub
     return schema.parse(value);
   } catch (error) {
     console.error(`Unexpected ${subject} response`, error);
-    throw new RevenueAPIError(
-      `The ${subject} response did not match what this app expects. The app and the API are probably running different versions.`,
-      0,
-      "schema_mismatch",
-    );
+    throw new RevenueAPIError(schemaMismatchCopy(), 0, "schema_mismatch");
   }
 }
 
