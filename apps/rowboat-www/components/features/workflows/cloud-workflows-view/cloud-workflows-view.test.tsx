@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   workflowConflictCopy,
+  workflowFailureCopy,
   workflowProblemDetail,
+  workflowsUnavailableCopy,
 } from "@/lib/workflows/cloud-workflows";
 
 import {
@@ -906,6 +908,27 @@ describe("workflow revision conflict", () => {
     );
     expect(workflowSource).toContain('workflowConflictCopy("remove")');
     expect(workflowSource).toContain('workflowConflictCopy("save")');
+    expect(workflowSource).toContain("workflowFailureCopy(detail)");
     expect(workflowSource).not.toContain('message === "revision conflict"');
+    expect(workflowSource).not.toContain("this environment");
+    expect(workflowFailureCopy("background task not found")).toBe(
+      "This workflow could not be found.",
+    );
+    expect(workflowFailureCopy("background task run not found")).toBe(
+      "This run could not be found.",
+    );
+    expect(workflowFailureCopy("background task template not found")).toBe(
+      "This template could not be found.",
+    );
+    expect(workflowFailureCopy("only failed or stopped runs can be retried")).toBe(
+      "Only a failed or stopped run can be tried again.",
+    );
+    expect(workflowFailureCopy("temporal is not configured")).toBe(
+      "Workflows cannot be started right now. Try again later.",
+    );
+    expect(workflowFailureCopy("could not list runs")).toBeNull();
+    expect(workflowsUnavailableCopy()).toBe(
+      "Workflows are not available in this workspace yet.",
+    );
   });
 });

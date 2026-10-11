@@ -493,6 +493,49 @@ export function workflowConflictCopy(action: "save" | "remove"): string {
     : "This workflow changed. Open it again, then save.";
 }
 
+/** A missing workflows route is not a missing workflow. */
+export function workflowsUnavailableCopy(): string {
+  return "Workflows are not available in this workspace yet.";
+}
+
+/**
+ * Stored problem details are handler phrases. The workflows page says what
+ * happened. Unknown details stay off the page so an internal token does not
+ * replace the action's own fallback.
+ */
+export function workflowFailureCopy(detail: string): string | null {
+  switch (detail) {
+    case "background task not found":
+      return "This workflow could not be found.";
+    case "background task run not found":
+      return "This run could not be found.";
+    case "background task template not found":
+      return "This template could not be found.";
+    case "background task already exists":
+      return "A workflow with that short name already exists.";
+    case "name cannot be empty":
+      return "Enter a name.";
+    case "instructions cannot be empty":
+      return "Enter what this workflow should do.";
+    case "first-party workflows can be disabled but not deleted":
+      return "Oppulence maintains this workflow. You can pause it, but you cannot remove it.";
+    case "first-party workflow definitions are managed by Oppulence; only active can be changed":
+      return "Oppulence keeps this workflow. You can pause it.";
+    case "only failed or stopped runs can be retried":
+      return "Only a failed or stopped run can be tried again.";
+    case "a retry for this run is already in progress":
+      return "A retry for this run is already going.";
+    case "only api-target runs can be retried by the API worker":
+      return "This run can be tried again from the desktop app.";
+    case "temporal is not configured":
+      return "Workflows cannot be started right now. Try again later.";
+    case "run is not temporal-backed":
+      return "This run cannot be stopped from here.";
+    default:
+      return null;
+  }
+}
+
 async function workflowRequest<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -512,11 +555,13 @@ async function workflowRequest<T>(
     if (response.status === 409 && detail === "revision conflict") {
       throw new Error(workflowConflictCopy("save"));
     }
+    const known = workflowFailureCopy(detail);
+    if (known) throw new Error(known);
     const message =
       body && typeof body === "object" && "message" in body && typeof body.message === "string"
         ? body.message
         : response.status === 404
-          ? "Cloud workflows aren’t available in this environment."
+          ? workflowsUnavailableCopy()
           : `Workflow request failed (${response.status})`;
     throw new Error(message);
   }
@@ -631,6 +676,8 @@ export async function deleteCloudTask(task: Pick<CloudTask, "slug" | "revision">
   if (response.status === 409 && detail === "revision conflict") {
     throw new Error(workflowConflictCopy("remove"));
   }
+  const known = workflowFailureCopy(detail);
+  if (known) throw new Error(known);
   const message =
     body && typeof body === "object" && "message" in body && typeof body.message === "string"
       ? body.message
