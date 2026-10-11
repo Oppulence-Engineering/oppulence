@@ -9,6 +9,7 @@ import {
   claimOutcome,
   composioConnectionStatusLabel,
   connectionHealthLabel,
+  connectionNoticeName,
   connectionReasonCopy,
   connectionScopeCopy,
   connectorSettingsURL,
@@ -84,6 +85,8 @@ describe("hosted connector OAuth outcomes", () => {
       "Sign in again. This connection is no longer valid.",
     );
     expect(connectionReasonCopy("")).toBe("This connection is unavailable.");
+    expect(connectionNoticeName("hubspot")).toBe("HubSpot");
+    expect(connectionNoticeName("")).toBe("Connection");
   });
 
   it("names a linked product that needs attention or could not connect", () => {

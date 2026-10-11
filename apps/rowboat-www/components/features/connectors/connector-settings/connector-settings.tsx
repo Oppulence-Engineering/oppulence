@@ -35,6 +35,7 @@ import { ComposioConnections } from "@/components/features/connectors/composio-c
 import { dashboardFetch } from "@/lib/auth/client";
 import {
   connectionHealthLabel,
+  connectionNoticeName,
   connectionReasonCopy,
   connectionScopeCopy,
   hostedOAuthUnsupportedReason,
@@ -681,7 +682,7 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
       ) : null}
       {notice ? (
         <div className="settings-inline-notice" role="status">
-          <strong className="capitalize">{notice.connector || "Connection"}:</strong>{" "}
+          <strong>{connectionNoticeName(notice.connector)}:</strong>{" "}
           {OUTCOME_MESSAGES[notice.outcome]}
         </div>
       ) : null}

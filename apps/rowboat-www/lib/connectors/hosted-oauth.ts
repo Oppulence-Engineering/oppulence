@@ -105,6 +105,36 @@ export function connectionReasonCopy(reason: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+/**
+ * The return notice names the product. A stored slug such as hubspot is not
+ * a label, and capitalizing it still spelled Hubspot.
+ */
+export function connectionNoticeName(slug?: string | null): string {
+  const raw = slug?.trim().toLowerCase() ?? "";
+  if (!raw) return "Connection";
+  switch (raw) {
+    case "google":
+      return "Google";
+    case "gmail":
+      return "Gmail";
+    case "slack":
+      return "Slack";
+    case "hubspot":
+      return "HubSpot";
+    case "canvas":
+      return "Canvas";
+    case "github":
+      return "GitHub";
+    case "jira":
+      return "Jira";
+    default: {
+      const words = raw.replace(/[_-]+/g, " ").trim();
+      if (!words) return "Connection";
+      return words.charAt(0).toUpperCase() + words.slice(1);
+    }
+  }
+}
+
 export function hostedOAuthUnsupportedReason(connector: Connector): string | null {
   if (connector.authType !== "oauth") return "This connection does not use sign-in.";
   if (connector.status !== "enabled") return "This connection is turned off.";
