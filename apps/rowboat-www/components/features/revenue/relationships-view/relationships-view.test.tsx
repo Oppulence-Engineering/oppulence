@@ -998,6 +998,14 @@ describe("RelationshipsView", () => {
     expect(capturePolicyLabel("deny")).toBe("Do not capture");
     expect(capturePolicyLabel("allow")).toBe("Capture is allowed");
     expect(governanceCaptureLabel("manual_capture")).toBe("Captured by hand");
+    expect(governanceCaptureLabel("provider_import")).toBe("Imported from the meeting service");
+    expect(governancePlaceLabel("provider_managed")).toBe("Kept by the meeting service");
+    expect(governanceRetentionLabel("provider_policy_plus_oppulence_evidence")).toBe(
+      "The meeting service keeps the original. The evidence saved here stays.",
+    );
+    expect(governanceDisclosureLabel("provider_reported")).toBe(
+      "The meeting service says people were told",
+    );
     expect(governanceRouteLabel("local_transcription_to_oppulence")).toBe(
       "Transcribed on this device, then saved here",
     );

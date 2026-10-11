@@ -3020,7 +3020,7 @@ export function governanceCaptureLabel(capture: string): string {
     case "explicit_upload":
       return "Uploaded on purpose";
     case "provider_import":
-      return "Imported from the provider";
+      return "Imported from the meeting service";
     case "calendar_prompt_or_manual":
       return "Started from the calendar or by hand";
     case "deny":
@@ -3053,7 +3053,7 @@ export function governancePlaceLabel(region: string): string {
     case "local_device":
       return "On this device";
     case "provider_managed":
-      return "At the provider";
+      return "Kept by the meeting service";
     default:
       return governanceFallback(region);
   }
@@ -3068,7 +3068,7 @@ export function governanceRetentionLabel(retention: string): string {
     case "always":
       return "Kept";
     case "provider_policy_plus_oppulence_evidence":
-      return "The provider's policy, plus the evidence saved here";
+      return "The meeting service keeps the original. The evidence saved here stays.";
     default:
       return governanceFallback(retention);
   }
@@ -3080,7 +3080,7 @@ export function governanceDisclosureLabel(disclosure: string): string {
     case "not_recorded":
       return "People were not told";
     case "provider_reported":
-      return "The provider says people were told";
+      return "The meeting service says people were told";
     default:
       return governanceFallback(disclosure);
   }
