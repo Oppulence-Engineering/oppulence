@@ -47,6 +47,7 @@ import {
   scopeProductLabel,
 } from "@/lib/connectors/connector-product-copy";
 import { explainedRevenueError, shownRequestError } from "@/lib/revenue/revenue";
+import { localMomentLabel } from "@/lib/revenue/revenue-records";
 
 const OUTCOME_MESSAGES: Record<HostedOAuthOutcome, string> = {
   active: "Connected.",
@@ -67,7 +68,8 @@ function proxyPath(path: string): string {
 function displayDate(value?: string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
-  return Number.isNaN(date.valueOf()) ? null : date.toLocaleString();
+  if (Number.isNaN(date.valueOf())) return null;
+  return localMomentLabel(value);
 }
 
 // The Google card used to render a bare connected/not-connected badge, so a

@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQuery } from "@/quality/test-support/render-query";
 
 import type { Connector } from "@/lib/api/generated/client/model";
+import { localMomentLabel } from "@/lib/revenue/revenue-records";
 import { fetchRelationshipSourceStatuses } from "@/hooks/queries/utils/fetch-relationship-sources";
 import type { RelationshipSourceStatus } from "@/lib/revenue/types";
 
@@ -334,6 +335,9 @@ describe("hosted connector settings", () => {
     expect(within(row).getByText("Active")).toBeVisible();
     expect(within(row).getByText("Healthy")).toBeVisible();
     expect(within(row).getByText("Permissions: Read email evidence")).toBeVisible();
+    expect(
+      within(row).getByText(`Connected ${localMomentLabel("2026-08-28T01:00:00Z")}`),
+    ).toBeVisible();
     expect(window.location.search).toBe("?settings=connections");
   });
 });
