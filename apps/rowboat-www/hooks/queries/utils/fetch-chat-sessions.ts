@@ -1,4 +1,5 @@
 import { ListAgentSessions200Response } from "@/lib/api/generated/zod/agent-sessions/agent-sessions";
+import { localDayLabel } from "@/lib/revenue/revenue-records";
 import { isOptionalRequestFailure, requestJson, type RequestJsonFn } from "@/lib/api/request-json";
 import type { SessionMeta } from "@/lib/agents/chat-sessions";
 
@@ -19,10 +20,8 @@ function sessionTitle(session: {
   lastActivityAt?: string | null;
   createdAt: string;
 }): string {
-  return (
-    session.title ||
-    `${session.agent} · ${new Date(session.lastActivityAt || session.createdAt).toLocaleDateString()}`
-  );
+  const day = localDayLabel(session.lastActivityAt || session.createdAt);
+  return session.title || (day ? `${session.agent} · ${day}` : session.agent);
 }
 
 /** Rows from a history page. A bare array is a test fixture that has no flag. */

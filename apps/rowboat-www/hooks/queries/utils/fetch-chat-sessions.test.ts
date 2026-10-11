@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { SessionMeta } from "@/lib/agents/chat-sessions";
+import { localDayLabel } from "@/lib/revenue/revenue-records";
 
 import {
   CHAT_SESSION_PAGE,
@@ -34,6 +35,18 @@ describe("loadChatSessions", () => {
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({ path: "/agent-sessions?offset=50" }),
     );
+  });
+
+  it("names an untitled chat by the agent and the day", async () => {
+    const untitled = { ...session, title: "" };
+    const request = vi.fn().mockResolvedValue({ sessions: [untitled], hasMore: false });
+    await expect(loadChatSessions(request)).resolves.toMatchObject({
+      sessions: [
+        expect.objectContaining({
+          title: `assistant · ${localDayLabel(untitled.createdAt)}`,
+        }),
+      ],
+    });
   });
 
   it("leaves the first page unpaged when the history ends", async () => {
