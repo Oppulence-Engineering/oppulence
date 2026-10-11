@@ -7,6 +7,7 @@ import type {
 import {
   callbackStatusOutcome,
   claimOutcome,
+  composioConnectionStatusLabel,
   connectionHealthLabel,
   connectionReasonCopy,
   connectionScopeCopy,
@@ -79,7 +80,7 @@ describe("hosted connector OAuth outcomes", () => {
     expect(connectionReasonCopy("")).toBe("This connection is unavailable.");
   });
 
-  it("names a linked product that needs attention", () => {
+  it("names a linked product that needs attention or could not connect", () => {
     expect(connectionHealthLabel({ connected: true, connectionHealth: "degraded" })).toBe(
       "Needs attention",
     );
@@ -91,6 +92,12 @@ describe("hosted connector OAuth outcomes", () => {
       "Disconnected",
     );
     expect(connectionHealthLabel({ connected: false, connectionHealth: "disconnected" })).toBeNull();
+    expect(composioConnectionStatusLabel("FAILED")).toBe("Could not connect");
+    expect(composioConnectionStatusLabel("INITIALIZING")).toBe("Starting");
+    expect(composioConnectionStatusLabel("INACTIVE")).toBe("Turned off");
+    expect(composioConnectionStatusLabel("ACTIVE")).toBe("Connected");
+    expect(composioConnectionStatusLabel("INITIATED")).toBe("Waiting to finish");
+    expect(composioConnectionStatusLabel("EXPIRED")).toBe("Expired");
   });
 
   it("maps generated start failures and provider callback restart states", () => {

@@ -14,26 +14,8 @@ import {
   startComposioConnection,
   type ComposioConnection,
 } from "@/lib/api/composio/client";
+import { composioConnectionStatusLabel } from "@/lib/connectors/hosted-oauth";
 import { explainedRevenueError, shownRequestError } from "@/lib/revenue/revenue";
-
-/**
- * Composio returns connection enums. A teammate should see the same kind of
- * status the native cards use, not `active` or `expired`.
- */
-const CONNECTION_STATUS_LABELS: Record<string, string> = {
-  ACTIVE: "Connected",
-  INITIATED: "Waiting to finish",
-  EXPIRED: "Expired",
-};
-
-function connectionStatusLabel(status: string): string {
-  const key = status.trim().toUpperCase();
-  if (!key) return "Not connected";
-  const known = CONNECTION_STATUS_LABELS[key];
-  if (known) return known;
-  const words = key.toLowerCase().replace(/[_-]+/g, " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
-}
 
 /** An active connection wins; otherwise the most recently created one does. */
 function betterConnection(candidate: ComposioConnection, held: ComposioConnection): boolean {
@@ -192,7 +174,7 @@ export function ComposioConnections({
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-primary">{toolkit.name || toolkit.slug}</p>
                   <p className="text-xs text-muted-foreground">
-                    {connection ? connectionStatusLabel(connection.status) : "Not connected"}
+                    {connection ? composioConnectionStatusLabel(connection.status) : "Not connected"}
                   </p>
                 </div>
                 {connection ? (
@@ -231,7 +213,7 @@ export function ComposioConnections({
               <div className="min-w-0">
                 <p className="text-sm font-medium text-primary">{connection.toolkit}</p>
                 <p className="text-xs text-muted-foreground">
-                  {connectionStatusLabel(connection.status)} · no longer offered here
+                  {composioConnectionStatusLabel(connection.status)} · no longer offered here
                 </p>
               </div>
               <Button

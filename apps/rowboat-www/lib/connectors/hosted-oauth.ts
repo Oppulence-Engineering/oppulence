@@ -54,6 +54,31 @@ export function connectionHealthLabel(connector: {
   }
 }
 
+/** Additional products use the same kind of status as a native connection. */
+export function composioConnectionStatusLabel(status: string): string {
+  switch (status.trim().toUpperCase()) {
+    case "":
+      return "Not connected";
+    case "ACTIVE":
+      return "Connected";
+    case "INITIALIZING":
+      return "Starting";
+    case "INITIATED":
+      return "Waiting to finish";
+    case "FAILED":
+      return "Could not connect";
+    case "EXPIRED":
+      return "Expired";
+    case "INACTIVE":
+      return "Turned off";
+    default: {
+      const words = status.trim().toLowerCase().replace(/[_-]+/g, " ");
+      if (!words) return "Not connected";
+      return words.charAt(0).toUpperCase() + words.slice(1);
+    }
+  }
+}
+
 export function connectionScopeCopy(): string {
   return "This connection asked for permissions this workspace cannot accept. Review them and connect again.";
 }
