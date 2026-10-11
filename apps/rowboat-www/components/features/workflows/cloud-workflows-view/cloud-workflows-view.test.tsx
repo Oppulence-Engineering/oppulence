@@ -326,6 +326,12 @@ describe("CloudWorkflowsView", () => {
     expect(runEventLabel("runtime.tool_call_started")).toBe("Tool call started");
     expect(runEventLabel("runtime.llm_call_started")).toBe("Model call started");
     expect(runEventLabel("desktop.llm_stream_event")).toBe("Model stream");
+    expect(runEventLabel("runtime.final_artifact_ready")).toBe("Result ready");
+    expect(runEventLabel("temporal.artifact_updated")).toBe("Result updated");
+    expect(runEventLabel("temporal.dead_lettered")).toBe("Could not start");
+    expect(runEventLabel("desktop.ask_human_request")).toBe("Asked for a decision");
+    expect(runEventLabel("desktop.spawn_subflow")).toBe("Started a related run");
+    expect(runEventLabel("runtime.limit_exceeded")).toBe("Run limit reached");
   });
 
   it("describes a transcript row without the worker payload", () => {

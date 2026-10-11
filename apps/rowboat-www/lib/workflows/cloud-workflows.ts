@@ -240,14 +240,44 @@ export function scheduleHealthLabel(value: string): string {
 }
 
 /**
- * Transcript types are dotted tokens such as temporal.failed and
- * runtime.tool_call_started. The prefix is the emitter, not something a
- * person needs in the heading.
+ * Transcript types are dotted tokens. The prefix is the emitter. A result is
+ * not an artifact, and a question to the person is not an "ask human" event.
  */
+const RUN_EVENT_LABELS: Record<string, string> = {
+  llm_call_started: "Model call started",
+  llm_call_completed: "Model call finished",
+  llm_stream_event: "Model stream",
+  tool_call_started: "Tool call started",
+  tool_call_completed: "Tool call finished",
+  tool_approval_requested: "Waiting for approval",
+  tool_approval_resolved: "Approval recorded",
+  tool_denied: "Tool not allowed",
+  limit_exceeded: "Run limit reached",
+  artifact_updated: "Result updated",
+  final_artifact_ready: "Result ready",
+  dead_lettered: "Could not start",
+  cancel_requested: "Cancellation requested",
+  retry_requested: "Retry requested",
+  run_processing_start: "Run started",
+  run_processing_end: "Run finished",
+  spawn_subflow: "Started a related run",
+  tool_invocation: "Tool called",
+  tool_result: "Tool result",
+  tool_output_stream: "Tool output",
+  ask_human_request: "Asked for a decision",
+  ask_human_response: "Decision recorded",
+  tool_permission_request: "Permission requested",
+  tool_permission_response: "Permission recorded",
+  code_run_event: "Code ran",
+  code_run_permission_request: "Code permission requested",
+  tool_permission_auto_decision: "Permission decided automatically",
+  run_stopped: "Run stopped",
+};
+
 export function runEventLabel(type: string): string {
   const stripped = type.trim().replace(/^(temporal|runtime|desktop)\./, "");
-  if (stripped === "llm_call_started") return "Model call started";
-  if (stripped === "llm_stream_event") return "Model stream";
+  const known = RUN_EVENT_LABELS[stripped];
+  if (known) return known;
   const body = stripped.replaceAll("_", " ");
   if (!body) return type;
   const withAcronyms = body.replace(/\bllm\b/g, "model");
