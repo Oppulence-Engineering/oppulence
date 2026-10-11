@@ -63,6 +63,77 @@ it("hides model and workflow details from agent failures", () => {
   expect(friendlyAgentError("activity error: scheduledEventID=1", "run")).toBe(
     "This run could not finish. Please try again.",
   );
+  expect(
+    friendlyAgentError(
+      "activity error (type: rowboat.background_tasks.execute_api_task.v1, scheduledEventID: 11): connector_unavailable: google is not connected for this user",
+      "run",
+    ),
+  ).toBe("Connect Google, then try again.");
+  expect(
+    friendlyAgentError(
+      "activity error: connector_unavailable: google refresh token is invalid; the user must reconnect",
+      "run",
+    ),
+  ).toBe("Google stopped accepting the sign-in. Reconnect, then try again.");
+  expect(
+    friendlyAgentError(
+      "connector_unavailable: google connection is missing the https://www.googleapis.com/auth/gmail.readonly scope; reconnect Google to grant it",
+      "run",
+    ),
+  ).toBe("Google is missing a permission. Reconnect, then try again.");
+  expect(
+    friendlyAgentError(
+      "activity error: connector_unavailable: could not obtain a google access token",
+      "run",
+    ),
+  ).toBe("Google could not authorize this. Reconnect, then try again.");
+  expect(
+    friendlyAgentError(
+      "activity error: connector_unavailable: HubSpot is not connected for this user",
+      "run",
+    ),
+  ).toBe("Connect HubSpot, then try again.");
+  expect(friendlyAgentError("HubSpot is not configured on this server", "run")).toBe(
+    "HubSpot is not set up for this workspace yet.",
+  );
+  expect(
+    friendlyAgentError(
+      "that product is not connected yet; link it under Settings, Connected Accounts, More products",
+      "run",
+    ),
+  ).toBe("Connect that product under Settings, then try again.");
+  expect(friendlyAgentError("Composio is not configured on this server", "run")).toBe(
+    "More products are not set up for this workspace yet.",
+  );
+  expect(friendlyAgentError("Composio rejected this deployment's project key", "run")).toBe(
+    "More products could not be reached. Try again later.",
+  );
+  expect(friendlyAgentError("sandbox executor is not configured", "run")).toBe(
+    "Running code is not set up for this workspace yet.",
+  );
+  expect(friendlyAgentError("sandbox image is not configured", "run")).toBe(
+    "Running code is not set up for this workspace yet.",
+  );
+  expect(friendlyAgentError("sandbox execution failed: exit 1", "run")).toBe(
+    "The code could not finish. Try again.",
+  );
+  expect(
+    friendlyAgentError(
+      "tool_not_allowed: tool is not on the allowlist or the run's scope does not permit it",
+      "run",
+    ),
+  ).toBe("This tool is not available in this run.");
+  expect(
+    friendlyAgentError(
+      "tool is not on the allowlist or the run's scope does not permit it",
+    ),
+  ).toBe("This tool is not available in this chat.");
+  expect(friendlyAgentError("llm_call_failed: llm gateway call failed: dial timeout", "run")).toBe(
+    "The model could not be reached. Try again.",
+  );
+  expect(friendlyAgentError("event_bytes limit exceeded (9000 > 1000)", "run")).toBe(
+    "This run reached its limit.",
+  );
   expect(friendlyAgentError("The agent was canceled.")).toBe("The agent was canceled.");
   expect(friendlyAgentError("rate limit exceeded")).toBe(
     "Too many requests were sent from this workspace. Wait a moment, then try again.",

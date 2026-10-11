@@ -941,6 +941,32 @@ describe("workflow revision conflict", () => {
         status: "failed",
       }),
     ).toBe("This workspace is out of AI credits. Ask an administrator to add credits, then try again.");
+    expect(
+      runFailureLine({
+        error:
+          "activity error (type: rowboat.background_tasks.execute_api_task.v1, scheduledEventID: 11): connector_unavailable: google is not connected for this user",
+        errorCode: "connector_unavailable",
+        status: "failed",
+      }),
+    ).toBe("Connect Google, then try again.");
+    expect(
+      runFailureLine({
+        error:
+          "activity error: connector_unavailable: HubSpot is not connected for this user: hubspot: not connected",
+        errorCode: "connector_unavailable",
+        status: "failed",
+      }),
+    ).toBe("Connect HubSpot, then try again.");
+    expect(
+      workflowLastRunReason(
+        {
+          lastRunAt: "2026-10-02T07:45:00Z",
+          lastRunError:
+            "activity error: connector_unavailable: google is not connected for this user",
+        },
+        null,
+      ),
+    ).toBe("Connect Google, then try again.");
     expect(workflowsUnavailableCopy()).toBe(
       "Workflows are not available in this workspace yet.",
     );

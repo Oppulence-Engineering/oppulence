@@ -60,6 +60,52 @@ export function friendlyAgentError(message: string, subject: "agent" | "run" = "
   if (/\brate limit\b|too many requests|\(429\)/i.test(message)) {
     return "Too many requests were sent from this workspace. Wait a moment, then try again.";
   }
+  // Connector and sandbox refusals are wrapped in the same Temporal activity
+  // error as a random failure. Name the connection before that rewrite.
+  if (/google is not connected/i.test(message)) {
+    return "Connect Google, then try again.";
+  }
+  if (/refresh token is invalid/i.test(message)) {
+    return "Google stopped accepting the sign-in. Reconnect, then try again.";
+  }
+  if (/google connection is missing the .+ scope|reconnect Google to grant it/i.test(message)) {
+    return "Google is missing a permission. Reconnect, then try again.";
+  }
+  if (/could not obtain a google access token/i.test(message)) {
+    return "Google could not authorize this. Reconnect, then try again.";
+  }
+  if (/HubSpot is not connected/i.test(message)) {
+    return "Connect HubSpot, then try again.";
+  }
+  if (/HubSpot is not configured/i.test(message)) {
+    return "HubSpot is not set up for this workspace yet.";
+  }
+  if (/that product is not connected yet/i.test(message)) {
+    return "Connect that product under Settings, then try again.";
+  }
+  if (/Composio is not configured/i.test(message)) {
+    return "More products are not set up for this workspace yet.";
+  }
+  if (/Composio rejected this deployment's project key/i.test(message)) {
+    return "More products could not be reached. Try again later.";
+  }
+  if (/sandbox executor is not configured|sandbox image is not configured/i.test(message)) {
+    return "Running code is not set up for this workspace yet.";
+  }
+  if (/sandbox execution failed/i.test(message)) {
+    return "The code could not finish. Try again.";
+  }
+  if (/tool is not on the allowlist/i.test(message)) {
+    return subject === "run"
+      ? "This tool is not available in this run."
+      : "This tool is not available in this chat.";
+  }
+  if (/llm gateway call failed/i.test(message)) {
+    return "The model could not be reached. Try again.";
+  }
+  if (/\blimit exceeded \(/i.test(message)) {
+    return runLimitCopy();
+  }
   if (/activity error|scheduledEventID|startedEventID/i.test(message)) {
     return subject === "run"
       ? "This run could not finish. Please try again."
