@@ -9,6 +9,7 @@ import {
   mailPrivacySectionCopy,
   preferenceFormIsHidden,
   preferenceRefreshCopy,
+  sessionOrganizationNotice,
   sessionPermissionsCopy,
   sessionRoleCopy,
   sessionRoleLabel,
@@ -162,6 +163,12 @@ describe("SettingsView", () => {
     expect(sessionRoleLabel("  ")).toBe("");
     expect(source).toContain("value={sessionRoleLabel(session.user.role)}");
     expect(source).not.toContain("value={session.user.role}");
+    expect(sessionOrganizationNotice("org_01")).toBe(
+      "This session is connected to an organization.",
+    );
+    expect(sessionOrganizationNotice("")).toBe("No organization is attached to this session.");
+    expect(source).toContain("sessionOrganizationNotice(organizationId)");
+    expect(source).not.toContain("Connected to ${organizationId}");
     expect(sessionRoleCopy("owner", [])).toBe("Owner · Standard workspace access");
     expect(sessionRoleCopy("admin", ["billing:read", "workspace:write"])).toBe(
       "Admin · View billing, Change the workspace",

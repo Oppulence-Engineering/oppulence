@@ -454,6 +454,15 @@ export function sessionRoleCopy(role: string | undefined, permissions: readonly 
 }
 
 /**
+ * Connect is a status, not the support card. The organization id stays on
+ * Account, where it can be copied. This sentence does not paste it.
+ */
+export function sessionOrganizationNotice(organizationId?: string | null): string {
+  if (organizationId?.trim()) return "This session is connected to an organization.";
+  return "No organization is attached to this session.";
+}
+
+/**
 
  * Service access used to talk about removing a connection before any service
  * was connected. The sentence follows the Google grant and the connector list.
@@ -1152,9 +1161,7 @@ function ConnectSection({
         title="Oppulence Connect"
       />
       <div className="settings-inline-notice">
-        {organizationId
-          ? `Connected to ${organizationId}.`
-          : "No organization is attached to this session."}
+        {sessionOrganizationNotice(organizationId)}
       </div>
       <Button onClick={() => onNavigate("connections")} type="button" variant="outline">
         Open connections
