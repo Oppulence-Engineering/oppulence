@@ -1398,15 +1398,26 @@ function activitySnapshotLine(key: string, value: unknown): string | null {
 }
 
 function activityInviteReply(value: unknown): string | null {
+  return activityInviteReplyLine(value, "They");
+}
+
+/** The calendar stores whether you answered. The activity says that, not their reply. */
+function activitySelfInviteReply(value: unknown): string | null {
+  return activityInviteReplyLine(value, "You");
+}
+
+function activityInviteReplyLine(value: unknown, who: "They" | "You"): string | null {
   switch (activityScalar(value).toLowerCase().replaceAll("_", "")) {
     case "accepted":
-      return "They accepted the invite";
+      return `${who} accepted the invite`;
     case "declined":
-      return "They declined the invite";
+      return `${who} declined the invite`;
     case "tentative":
-      return "They replied maybe";
+      return `${who} replied maybe`;
     case "needsaction":
-      return "They have not answered the invite";
+      return who === "You"
+        ? "You have not answered the invite"
+        : "They have not answered the invite";
     default:
       return null;
   }
@@ -1442,13 +1453,33 @@ function activityVisibilityLine(value: unknown): string {
   }
 }
 
-/** Provider metadata keeps the preview. Thread ids and label tokens stay stored. */
-function activityMetadataPreview(value: unknown): string {
+/**
+ * Provider metadata keeps the preview and, for a meeting, when and where it
+ * is. Thread ids, calendar ids, and label tokens stay stored.
+ */
+function activityMetadataLines(value: unknown): string[] {
   const record = activityRecord(value);
-  if (!record) return "";
+  if (!record) return [];
+  const lines: string[] = [];
   const snippet = activityScalar(record.snippet);
-  if (!snippet || activityMachineToken(snippet)) return "";
-  return `Preview: ${snippet}`;
+  if (snippet && !activityMachineToken(snippet)) lines.push(`Preview: ${snippet}`);
+  const starts = activityMessageDayLine("Starts", record.startsAt);
+  if (starts) lines.push(starts);
+  const ends = activityMessageDayLine("Ends", record.endsAt);
+  if (ends) lines.push(ends);
+  if (record.allDay === true) lines.push("All day");
+  const place = activityScalar(record.location);
+  if (place && !activityMachineToken(place)) lines.push(`Location: ${place}`);
+  const organizer = activityScalar(record.organizer);
+  if (organizer && organizer.includes("@") && !activityMachineToken(organizer)) {
+    lines.push(`Organizer: ${organizer}`);
+  }
+  const reply = activitySelfInviteReply(record.selfResponseStatus);
+  if (reply) lines.push(reply);
+  if (activityScalar(record.status) === "cancelled") lines.push("This meeting was cancelled");
+  const description = activityScalar(record.description);
+  if (description && !activityMachineToken(description)) lines.push(description);
+  return lines;
 }
 
 /** A shared-plan reply stores ids beside what they said. The activity names the reply. */
@@ -1770,8 +1801,7 @@ function linesFromActivity(value: unknown): string[] {
       continue;
     }
     if (key === "metadata") {
-      const preview = activityMetadataPreview(item);
-      if (preview) lines.push(preview);
+      lines.push(...activityMetadataLines(item));
       continue;
     }
     if (key === "mutual_action_plan_response") {

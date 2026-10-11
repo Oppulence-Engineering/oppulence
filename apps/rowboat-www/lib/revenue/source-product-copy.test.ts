@@ -580,6 +580,88 @@ describe("source product copy", () => {
     ).toEqual(["They left a comment", "Looks right."]);
   });
 
+  it("names a projected meeting without its calendar ids", () => {
+    const meeting = activityEvidenceLines(
+      {
+        interactionId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+        interactionType: "meeting",
+        direction: "",
+        visibility: "full",
+        metadata: {
+          id: "evt-1",
+          iCalUID: "evt-1@google.com",
+          recurringEventId: "series-1",
+          htmlLink: "https://calendar.google.com/event?eid=evt-1",
+          summary: "Harbor review",
+          description: "Discuss the harbor quote.",
+          location: "Harbor conference room",
+          status: "confirmed",
+          allDay: false,
+          organizer: "avery@acme.com",
+          creator: "owner@example.com",
+          selfResponseStatus: "accepted",
+          startsAt: "2026-10-04T15:00:00Z",
+          endsAt: "2026-10-04T16:00:00Z",
+          attendees: ["avery@acme.com"],
+          attendeeResponses: { "avery@acme.com": "accepted" },
+          conferenceLink: "https://meet.example/abc",
+          conferenceProvider: "hangoutsMeet",
+          eventType: "default",
+        },
+      },
+      {
+        adapter: "communication_interaction",
+        visibility: "full",
+        contentHash: "abc",
+        communicationId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      },
+    );
+    expect(meeting).toEqual([
+      "The message is saved",
+      "Starts: Oct 4, 2026",
+      "Ends: Oct 4, 2026",
+      "Location: Harbor conference room",
+      "Organizer: avery@acme.com",
+      "You accepted the invite",
+      "Discuss the harbor quote.",
+    ]);
+    expect(meeting.join("\n")).not.toMatch(
+      /evt-1|series-1|hangoutsMeet|meet\.example|owner@example|Harbor review|9c8dfa9b/,
+    );
+    expect(
+      activityEvidenceLines(
+        {
+          visibility: "metadata",
+          metadata: {
+            id: "evt-2",
+            allDay: true,
+            startsAt: "2026-10-05",
+            endsAt: "2026-10-06",
+            location: "local-user",
+            organizer: "calendar-id",
+            selfResponseStatus: "needsAction",
+            status: "cancelled",
+            description: "meeting-counterparty",
+          },
+        },
+        null,
+      ),
+    ).toEqual([
+      "Only the subject and people are saved",
+      "Starts: Oct 5, 2026",
+      "Ends: Oct 6, 2026",
+      "All day",
+      "You have not answered the invite",
+      "This meeting was cancelled",
+    ]);
+    expect(activityEvidenceLines({ metadata: { selfResponseStatus: "declined" } }, null)).toEqual([
+      "You declined the invite",
+    ]);
+    expect(activityEvidenceLines({ metadata: { selfResponseStatus: "tentative" } }, null)).toEqual([
+      "You replied maybe",
+    ]);
+  });
+
   it("names a review decision and a promise check without their ids", () => {
     const rejected = activityEvidenceLines(null, {
       review_decision: {
