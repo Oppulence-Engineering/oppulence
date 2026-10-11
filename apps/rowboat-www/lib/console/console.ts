@@ -39,6 +39,28 @@ export function consoleUnavailableCopy(): string {
   return "Saving is not available in this workspace yet.";
 }
 
+/** Stored console details are handler phrases. The page says what happened. */
+export function consoleFailureCopy(detail: string): string | null {
+  switch (detail) {
+    case "console resource not found":
+      return "This could not be found.";
+    case "console resource already exists":
+      return "This is already saved.";
+    case "console access forbidden":
+    case "user actor required":
+      return "You do not have access to this.";
+    case "invalid JSON body":
+    case "request body must contain exactly one JSON document":
+    case "Content-Type must be application/json":
+    case "console operation failed":
+      return "This could not be saved. Try again.";
+    case "request body exceeds 262144 bytes":
+      return "This is too large to save.";
+    default:
+      return null;
+  }
+}
+
 export type ConsoleResourceCreate = z.infer<typeof CreateConsoleResourceBody>;
 export type ConsoleResourcePatch = z.infer<typeof PatchConsoleResourceBody>;
 
@@ -52,14 +74,14 @@ async function errorFromResponse(response: Response): Promise<ConsoleAPIError> {
   const fallback = `Console request failed (${response.status}).`;
   try {
     const body = ConsoleErrorBodySchema.parse(await response.json());
-    const message =
+    const raw =
       typeof body.detail === "string"
         ? body.detail
         : typeof body.title === "string"
           ? body.title
-          : fallback;
+          : "";
     return new ConsoleAPIError(
-      message,
+      consoleFailureCopy(raw) ?? (raw || fallback),
       response.status,
       typeof body.code === "string" ? body.code : undefined,
     );
