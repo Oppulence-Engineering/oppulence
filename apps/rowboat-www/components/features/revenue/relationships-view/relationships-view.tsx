@@ -233,6 +233,7 @@ import {
   relationshipDeltaValue,
   removePersonConfirmCopy,
   sourceLastErrorCopy,
+  sourceLastLookedTitle,
   sourceProductCopy,
 } from "@/lib/revenue/source-product-copy";
 import { cn } from "@/lib/utils";
@@ -1759,7 +1760,11 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
         <Badge
           key={`${source.source}:${source.sourceAccountId}`}
           variant="outline"
-          title={sourceLastErrorCopy(source.lastError) || source.lastObservationAt || undefined}
+          title={
+            sourceLastErrorCopy(source.lastError) ||
+            sourceLastLookedTitle(source.lastObservationAt) ||
+            undefined
+          }
           className={`rounded-none font-normal ${
             source.status === "live"
               ? "border-emerald-500/30"

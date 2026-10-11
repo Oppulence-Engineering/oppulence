@@ -16,6 +16,7 @@ import {
   scopeLabel,
   sourceConnectionLabel,
   sourceLastErrorCopy,
+  sourceLastLookedTitle,
   sourceProductCopy,
 } from "./source-product-copy";
 
@@ -330,6 +331,10 @@ describe("source product copy", () => {
         "Account monitoring is paused for this workspace.",
       ),
     ).toBe("Account monitoring is paused for this workspace.");
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    expect(sourceLastLookedTitle(twoHoursAgo)).toBe("Last looked 2 hours ago");
+    expect(sourceLastLookedTitle("")).toBe("");
+    expect(sourceLastLookedTitle("not-a-date")).toBe("");
     expect(sourceConnectionLabel({ source: "google", status: "not_connected" })).toBe(
       "Not connected",
     );

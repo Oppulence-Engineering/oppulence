@@ -1,4 +1,4 @@
-import { ACTION_TYPE_LABELS, actionReasonCopy } from "./revenue";
+import { ACTION_TYPE_LABELS, actionReasonCopy, relativeTime } from "./revenue";
 
 /**
  * Evidence-source cards used to print the API's scope explanation and the
@@ -189,6 +189,12 @@ export function sourceLastErrorCopy(error: string | null | undefined): string {
   if (known) return known;
   if (/^[a-z0-9_:-]+$/.test(raw)) return "Reading stopped. Reconnect or try again.";
   return raw;
+}
+
+/** A source badge stores the last read as an instant. The hover says when. */
+export function sourceLastLookedTitle(iso?: string | null): string {
+  const when = relativeTime(iso);
+  return when ? `Last looked ${when}` : "";
 }
 
 /** A stored connector slug becomes the name a person already sees elsewhere. */
