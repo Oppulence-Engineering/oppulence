@@ -64,6 +64,36 @@ export function agentWorkspaceCount(count: number, loadFailed: boolean): string 
   return `${count} ${noun} in this workspace`;
 }
 
+/**
+ * A problem document stores the sentence in detail. message is the older
+ * field. Reading only message dropped a duplicate short name.
+ */
+export function agentProblemDetail(body: unknown): string {
+  if (!body || typeof body !== "object") return "";
+  const record = body as { detail?: unknown; message?: unknown };
+  if (typeof record.detail === "string" && record.detail.trim()) return record.detail.trim();
+  if (typeof record.message === "string" && record.message.trim()) return record.message.trim();
+  return "";
+}
+
+/**
+ * Stored create failures are handler phrases. The dialog says what happened.
+ * An unknown tool names the registry; that phrase stays off the page.
+ */
+export function agentCreateFailureCopy(detail: string): string | null {
+  switch (detail) {
+    case "an agent with this slug already exists":
+      return "An agent with this short name already exists.";
+    case "slug and name are required":
+      return "Enter a display name and a short name.";
+    case "invalid limits":
+      return "Those limits could not be saved.";
+    default:
+      if (detail.startsWith("unknown tool ")) return "That tool is not available.";
+      return null;
+  }
+}
+
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -124,10 +154,8 @@ function CreateAgentDialog({
       });
       const body = await response.json().catch(() => null);
       if (!response.ok) {
-        const message =
-          body && typeof body === "object" && "message" in body && typeof body.message === "string"
-            ? body.message
-            : "Could not create agent";
+        const known = agentCreateFailureCopy(agentProblemDetail(body));
+        const message = known ?? "Could not create agent";
         throw new Error(message);
       }
       setOpen(false);
