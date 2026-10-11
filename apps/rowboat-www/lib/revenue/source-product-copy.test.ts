@@ -629,9 +629,10 @@ describe("source product copy", () => {
       "Organizer: avery@acme.com",
       "You accepted the invite",
       "Discuss the harbor quote.",
+      "Join: https://meet.example/abc",
     ]);
     expect(meeting.join("\n")).not.toMatch(
-      /evt-1|series-1|hangoutsMeet|meet\.example|owner@example|Harbor review|9c8dfa9b/,
+      /evt-1|series-1|hangoutsMeet|owner@example|Harbor review|9c8dfa9b/,
     );
     expect(
       activityEvidenceLines(

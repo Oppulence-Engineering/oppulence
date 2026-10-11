@@ -1505,6 +1505,8 @@ function activityMetadataLines(value: unknown): string[] {
   if (activityScalar(record.status) === "cancelled") lines.push("This meeting was cancelled");
   const description = activityScalar(record.description);
   if (description && !activityMachineToken(description)) lines.push(description);
+  const link = activityScalar(record.conferenceLink);
+  if (/^https?:\/\//i.test(link)) lines.push(`Join: ${link}`);
   return lines;
 }
 
