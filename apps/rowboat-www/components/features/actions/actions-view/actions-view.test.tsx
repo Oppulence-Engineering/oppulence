@@ -46,6 +46,8 @@ describe("ActionsView", () => {
     expect(actionParamsLines("not json")).toEqual(["not json"]);
     expect(actionParamsLines("")).toEqual([]);
     expect(source).toContain("<Ref>{actionKindLabel(p.kind)}</Ref>");
+    expect(source).toContain("{localMomentLabel(p.createdAt)}");
+    expect(source).not.toContain("new Date(p.createdAt).toLocaleString()");
     expect(source).not.toContain("<Ref>{p.kind}</Ref>");
     expect(source).toContain("actionParamsLines(p.paramsJson)");
     expect(source).not.toContain("JSON.stringify(JSON.parse(raw)");

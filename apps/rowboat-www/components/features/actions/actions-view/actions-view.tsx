@@ -32,6 +32,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePendingActionProposals } from "@/hooks/queries/use-action-proposals";
 import { actionProposalKeys } from "@/hooks/queries/utils/action-proposal-keys";
 import { capture, ActionEvents } from "@/lib/analytics/analytics";
+import { localMomentLabel } from "@/lib/revenue/revenue-records";
 import {
   ActionAPIError,
   actionKindLabel,
@@ -306,7 +307,7 @@ export function ActionsView() {
                       ) : null}
                       <StatusBadge status={p.status} />
                       <Badge variant="secondary" className="ml-auto font-normal text-primary/45">
-                        {new Date(p.createdAt).toLocaleString()}
+                        {localMomentLabel(p.createdAt)}
                       </Badge>
                     </div>
 

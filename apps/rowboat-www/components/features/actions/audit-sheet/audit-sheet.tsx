@@ -19,6 +19,7 @@ import {
 import { actionKindLabel, actionStatusLabel, getAudit } from "@/lib/actions/actions";
 import { errMessage } from "@/components/features/revenue/shared/shared";
 import { friendlyRevenueError } from "@/lib/revenue/revenue";
+import { localMomentLabel } from "@/lib/revenue/revenue-records";
 import type { AuditChain, AuditEntry } from "@/lib/actions/types";
 
 // ActionAuditSheet renders the full RFC 023 audit chain for one object:
@@ -88,7 +89,7 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
         </Badge>
         <Badge variant="outline">{actionStatusLabel(p.status)}</Badge>
         <Badge className="ml-auto text-xs font-normal text-primary/45" variant="secondary">
-          {new Date(p.createdAt).toLocaleString()}
+          {localMomentLabel(p.createdAt)}
         </Badge>
       </CardHeader>
       <CardContent className="px-3">
@@ -181,7 +182,7 @@ function Leg({
           <Label className="font-normal">{label}</Label>
           <ArrowRight weight="bold" className="text-primary/25" />
           <Badge className="font-normal text-primary/45" variant="secondary">
-            {new Date(when).toLocaleString()}
+            {localMomentLabel(when)}
           </Badge>
         </div>
         {detail ? <div className="text-primary/60">{detail}</div> : null}
