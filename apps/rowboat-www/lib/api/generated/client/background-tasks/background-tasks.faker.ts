@@ -19,6 +19,7 @@ import type {
   BackgroundTaskRunsResponse,
   BackgroundTaskTemplate,
   BackgroundTaskTemplatesResponse,
+  GetBackgroundTaskScheduleState200,
 } from "../model";
 
 export const getListBackgroundTaskRunsForAccountResponseMock = (
@@ -29,12 +30,17 @@ export const getListBackgroundTaskRunsForAccountResponseMock = (
     undefined,
   ]),
   runs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+    attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
     completedAt: faker.helpers.arrayElement([
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       undefined,
     ]),
     createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
     error: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+      undefined,
+    ]),
+    errorCode: faker.helpers.arrayElement([
       faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
       undefined,
     ]),
@@ -114,7 +120,7 @@ export const getListBackgroundTaskRunsForAccountResponseMock = (
       faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
       undefined,
     ]),
-    trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event"] as const),
+    trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event", "retry"] as const),
     updatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
     useCase: faker.helpers.arrayElement([
       faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
@@ -616,12 +622,17 @@ export const getListBackgroundTaskRunsResponseMock = (
     undefined,
   ]),
   runs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+    attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
     completedAt: faker.helpers.arrayElement([
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       undefined,
     ]),
     createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
     error: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+      undefined,
+    ]),
+    errorCode: faker.helpers.arrayElement([
       faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
       undefined,
     ]),
@@ -701,7 +712,7 @@ export const getListBackgroundTaskRunsResponseMock = (
       faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
       undefined,
     ]),
-    trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event"] as const),
+    trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event", "retry"] as const),
     updatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
     useCase: faker.helpers.arrayElement([
       faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
@@ -714,12 +725,17 @@ export const getListBackgroundTaskRunsResponseMock = (
 export const getCreateBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
@@ -799,7 +815,7 @@ export const getCreateBackgroundTaskRunResponseMock = (
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
-  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event"] as const),
+  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event", "retry"] as const),
   updatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   useCase: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
@@ -811,12 +827,17 @@ export const getCreateBackgroundTaskRunResponseMock = (
 export const getGetBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
@@ -896,7 +917,7 @@ export const getGetBackgroundTaskRunResponseMock = (
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
-  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event"] as const),
+  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event", "retry"] as const),
   updatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   useCase: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
@@ -908,12 +929,17 @@ export const getGetBackgroundTaskRunResponseMock = (
 export const getPatchBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
@@ -993,7 +1019,7 @@ export const getPatchBackgroundTaskRunResponseMock = (
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
-  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event"] as const),
+  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event", "retry"] as const),
   updatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   useCase: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
@@ -1005,12 +1031,17 @@ export const getPatchBackgroundTaskRunResponseMock = (
 export const getCancelBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
@@ -1090,7 +1121,7 @@ export const getCancelBackgroundTaskRunResponseMock = (
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
-  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event"] as const),
+  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event", "retry"] as const),
   updatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   useCase: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
@@ -1114,6 +1145,10 @@ export const getListBackgroundTaskRunEventsResponseMock = (
       ]),
     }),
   ),
+  nextSeq: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.number.int(), null]),
+    undefined,
+  ]),
   ...overrideResponse,
 });
 
@@ -1142,12 +1177,17 @@ export const getStreamBackgroundTaskRunEventsResponseMock = (
 export const getRetryBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
@@ -1227,7 +1267,7 @@ export const getRetryBackgroundTaskRunResponseMock = (
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
-  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event"] as const),
+  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event", "retry"] as const),
   updatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   useCase: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
@@ -1239,12 +1279,17 @@ export const getRetryBackgroundTaskRunResponseMock = (
 export const getSignalBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
@@ -1324,7 +1369,7 @@ export const getSignalBackgroundTaskRunResponseMock = (
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
-  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event"] as const),
+  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event", "retry"] as const),
   updatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   useCase: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
@@ -1386,15 +1431,89 @@ export const getGetBackgroundTaskRunStatusResponseMock = (
   ...overrideResponse,
 });
 
+export const getGetBackgroundTaskScheduleStateResponseMock = (
+  overrideResponse: Partial<Extract<GetBackgroundTaskScheduleState200, object>> = {},
+): GetBackgroundTaskScheduleState200 => ({
+  health: faker.helpers.arrayElement([
+    "paused",
+    "current",
+    "failed",
+    "unknown",
+    "syncing",
+  ] as const),
+  lastEvaluatedAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  lastTriggeredAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  mechanism: faker.helpers.arrayElement([
+    "none",
+    "desktop_loop",
+    "rowboat_loop",
+    "temporal_schedule",
+  ] as const),
+  nextDueAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  scheduleSyncState: faker.helpers.arrayElement([
+    faker.helpers.arrayElement(["current", "syncing", "failed", "paused"] as const),
+    undefined,
+  ]),
+  sources: faker.helpers.arrayElement([
+    {
+      [faker.string.alphanumeric(5)]: {
+        health: faker.helpers.arrayElement([
+          "paused",
+          "current",
+          "failed",
+          "unknown",
+          "syncing",
+        ] as const),
+        lastEvaluatedAt: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+          undefined,
+        ]),
+        lastTriggeredAt: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+          undefined,
+        ]),
+        mechanism: faker.helpers.arrayElement([
+          "none",
+          "desktop_loop",
+          "rowboat_loop",
+          "temporal_schedule",
+        ] as const),
+        nextDueAt: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+          undefined,
+        ]),
+      },
+    },
+    undefined,
+  ]),
+  target: faker.helpers.arrayElement(["api", "desktop"] as const),
+  triggerSources: faker.helpers.arrayElements(["cron", "window", "event"] as const),
+  ...overrideResponse,
+});
+
 export const getTriggerBackgroundTaskResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
@@ -1474,7 +1593,7 @@ export const getTriggerBackgroundTaskResponseMock = (
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
-  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event"] as const),
+  trigger: faker.helpers.arrayElement(["manual", "cron", "window", "event", "retry"] as const),
   updatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   useCase: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),

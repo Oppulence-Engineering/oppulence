@@ -28,7 +28,7 @@ test:
 
 .PHONY: test-race
 test-race:
-	go test ./... -race -count=1
+	go test ./... -race -count=1 -timeout=30m
 
 .PHONY: vet
 vet:

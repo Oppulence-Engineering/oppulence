@@ -1,4 +1,4 @@
-import { createParser, createSearchParamsCache } from "nuqs/server";
+import { createParser, createSearchParamsCache, parseAsString } from "nuqs/server";
 
 import { RevenueTabSchema, type RevenueTab } from "@/lib/dashboard/product-navigation";
 
@@ -10,6 +10,8 @@ export const revenueParsers = {
     },
     serialize: (value: RevenueTab) => value,
   }).withDefault("commitments"),
+  /** The open company record. Absent means the companies list, not a sheet. */
+  company: parseAsString,
 } as const;
 
 /** Clean URLs, no back-stack churn for tab changes. */

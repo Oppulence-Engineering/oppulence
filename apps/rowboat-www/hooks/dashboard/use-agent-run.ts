@@ -8,6 +8,9 @@ import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import {
   applyAgentEvent,
   friendlyAgentError,
+  runFailedCopy,
+  runLimitCopy,
+  shownAgentError,
   type ApprovalRequest,
   type ConversationItem,
 } from "@/lib/agents/agent-history";
@@ -94,7 +97,7 @@ export function useAgentRun(selectedAgent: string) {
   const failOpenRun = useCallback((message: string) => {
     setConversation([]);
     setStatus("error");
-    setChatError(message);
+    setChatError(shownAgentError(new Error(message), "Could not load conversation"));
   }, []);
 
   const handleEvent = useCallback((rawEvent: AgentStreamEvent) => {
@@ -125,8 +128,8 @@ export function useAgentRun(selectedAgent: string) {
           event.data.error
             ? friendlyAgentError(event.data.error)
             : event.type === "agent.limit_exceeded"
-              ? "This run reached its configured limit."
-              : "The agent run failed.",
+              ? runLimitCopy()
+              : runFailedCopy(),
         );
         setProcessing(false);
         setStatus("error");
@@ -165,6 +168,15 @@ export function useAgentRun(selectedAgent: string) {
           });
         } catch (error) {
           if (controller.signal.aborted) return;
+          const message = error instanceof Error ? error.message : "";
+          const explained = friendlyAgentError(message);
+          // A rate limit or a rejected key will not clear by retrying the stream.
+          if (explained !== message) {
+            setChatError(explained);
+            setProcessing(false);
+            setStatus("error");
+            return;
+          }
           console.error("Agent stream interrupted:", error);
           setChatError("Connection to the agent was interrupted. Reconnecting…");
         }
@@ -194,7 +206,7 @@ export function useAgentRun(selectedAgent: string) {
       setProcessing(false);
       setStatus("ready");
     } catch (error) {
-      setChatError(error instanceof Error ? error.message : "Could not stop the run");
+      setChatError(shownAgentError(error, "Could not stop the run"));
       setStatus("streaming");
     }
   }, [runId]);
@@ -243,7 +255,7 @@ export function useAgentRun(selectedAgent: string) {
               : item,
           ),
         );
-        setChatError(error instanceof Error ? error.message : "Could not resolve the approval");
+        setChatError(shownAgentError(error, "Could not resolve the approval"));
       }
     },
     [runId],
@@ -251,7 +263,7 @@ export function useAgentRun(selectedAgent: string) {
 
   const submit = useCallback(
     async (message: PromptInputMessage) => {
-      if (!(message.text || message.files?.length)) return;
+      if (!(message.text?.trim() || message.files?.length)) return;
 
       let prepared: Awaited<ReturnType<typeof prepareWebChatInput>>;
       try {
@@ -310,7 +322,7 @@ export function useAgentRun(selectedAgent: string) {
       } catch (error) {
         setConversation((items) => items.filter((item) => item.id !== userMessageId));
         setText(originalText);
-        setChatError(error instanceof Error ? error.message : "Failed to send message");
+        setChatError(shownAgentError(error, "Failed to send message"));
         setStatus("error");
         window.setTimeout(() => setStatus("ready"), 2_000);
         throw error;

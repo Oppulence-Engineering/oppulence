@@ -18,7 +18,7 @@ export interface RelationshipIdentity {
   id: string;
   kind: string;
   last_seen_at: string;
-  /** Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend. */
+  /** Tool this identity came from. For an external record it is the first part of that record, such as hubspot. */
   provider?: string;
   relationship: Relationship;
   source?: string;

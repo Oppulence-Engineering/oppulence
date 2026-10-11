@@ -48,7 +48,7 @@ func addConsoleSchemas(schemas obj) {
 		"layout":             stringEnum("Graph layout.", "force", "force", "radial", "timeline"),
 		"density":            obj{"type": "number", "minimum": 0.25, "maximum": 1, "example": 0.72},
 		"hideIsolated":       boolSchema("Hide nodes without visible edges.", false),
-		"selectedNodeId":     stringSchema("Optional selected graph node.", "relationship:123", nullable(), obj{"maxLength": 512}),
+		"selectedNodeId":     stringSchema("Optional selected graph node.", "relationship:3a196c5e-b10e-46cb-a177-7c001f7be573", nullable(), obj{"maxLength": 512}),
 		"focusDepth":         intSchema("Neighborhood depth.", 0, obj{"minimum": 0, "maximum": 2}),
 		"asOf":               stringSchema("Optional historical boundary.", "2026-09-17T20:00:00Z", obj{"format": "date-time"}, nullable()),
 		"changedSinceReview": boolSchema("Show relationships changed since review.", false),
@@ -87,11 +87,81 @@ func addConsoleSchemas(schemas obj) {
 	})
 	patch["additionalProperties"] = false
 	schemas["ConsoleResourcePatch"] = patch
-	schemas["ConsoleResourcePage"] = objectSchema("Bounded deterministic resource page.", obj{
+	schemas["ConsoleResourcePage"] = objectSchema("Bounded deterministic resource page. A full page is the end of the list when hasMore is false.", obj{
 		"resources": arraySchema("Resources ordered by sortOrder, createdAt descending, then id.", ref("ConsoleResource")),
 		"limit":     intSchema("Applied page limit.", 50),
 		"offset":    intSchema("Applied page offset.", 0),
+		"hasMore":   boolSchema("Another resource exists beyond this page.", false),
 	}, "resources", "limit", "offset")
+}
+
+const documentedSavedTemplateID = "bed845f2-975a-4678-9c86-2157548161e4"
+
+func documentedSavedTemplatePayload() obj {
+	return obj{
+		"title": "Weekly account review",
+		"body":  "Agenda",
+	}
+}
+
+func documentedSavedTemplateRequest() obj {
+	return obj{
+		"kind":    "note_template",
+		"name":    "Weekly account review",
+		"payload": documentedSavedTemplatePayload(),
+	}
+}
+
+func documentedSavedTemplate() obj {
+	return obj{
+		"id":        documentedSavedTemplateID,
+		"kind":      "note_template",
+		"name":      "Weekly account review",
+		"payload":   documentedSavedTemplatePayload(),
+		"sortOrder": 0,
+		"createdAt": "2026-09-17T20:00:00Z",
+		"updatedAt": "2026-09-17T20:00:00Z",
+	}
+}
+
+const documentedEditedTemplateID = "bed845f2-975a-4678-9c86-2157548161e4"
+
+func documentedEditedTemplatePayload() obj {
+	return obj{"title": "Weekly account review", "body": "Agenda"}
+}
+
+func documentedEditedTemplateRequest() obj {
+	return obj{
+		"name":    "Weekly account review",
+		"payload": documentedEditedTemplatePayload(),
+	}
+}
+
+func documentedEditedTemplate() obj {
+	return obj{
+		"id":        documentedEditedTemplateID,
+		"kind":      "note_template",
+		"name":      "Weekly account review",
+		"payload":   documentedEditedTemplatePayload(),
+		"sortOrder": 0,
+		"createdAt": "2026-09-17T20:00:00Z",
+		"updatedAt": "2026-09-17T20:01:00Z",
+	}
+}
+
+func documentedSavedProfileRequest() obj {
+	return obj{"displayName": "Ada Lovelace"}
+}
+
+func documentedSavedProfile() obj {
+	return obj{
+		"displayName":        "Ada Lovelace",
+		"defaultAgentSlug":   "",
+		"shareUsageData":     false,
+		"notificationLevel":  "off",
+		"showModelReasoning": false,
+		"theme":              "system",
+	}
 }
 
 func addConsolePaths(paths obj) {
@@ -107,42 +177,40 @@ func addConsolePaths(paths obj) {
 	}
 	preferenceResponses := cloneResponses(authErrors)
 	preferenceResponses["200"] = jsonResponse("Current preferences.", ref("ConsolePreferences"), nil)
+	savedProfileResponses := cloneResponses(preferenceResponses)
+	savedProfileResponses["200"] = jsonResponse("Stored profile.", ref("ConsolePreferences"), documentedSavedProfile())
+
+	profileResponses := cloneResponses(authErrors)
+	profileResponses["200"] = jsonResponse("Preferences Profile loads before a name is saved.", ref("ConsolePreferences"), profilePreferences())
 	paths["/v1/console/preferences"] = obj{
-		"get": operation("Console", "Get console preferences", "Returns defaults before the caller's first write.", "getConsolePreferences", bearer(), nil, nil, preferenceResponses),
-		"patch": operation("Console", "Patch console preferences", "Strictly merges supplied typed fields into the caller's durable preference document.", "patchConsolePreferences", bearer(), nil,
-			jsonRequest("Preference fields to merge.", ref("ConsolePreferencesPatch"), nil), preferenceResponses),
+		"get": operation("Console", "Profile", profileDescription, "getConsolePreferences", bearer(), nil, nil, profileResponses),
+		"patch": operation("Console", "Save profile", "Save profile posts the display name. The name is Ada Lovelace. The stored preferences keep that name, an empty default agent, usage sharing off, notifications off, model reasoning hidden, and the system theme.", "patchConsolePreferences", bearer(), nil,
+			jsonRequest("Preference fields to merge.", ref("ConsolePreferencesPatch"), documentedSavedProfileRequest()), savedProfileResponses),
 	}
 
-	listResponses := cloneResponses(authErrors)
-	listResponses["200"] = jsonResponse("Resource page.", ref("ConsoleResourcePage"), nil)
 	createResponses := cloneResponses(authErrors)
 	createResponses["200"] = jsonResponse("Existing favorite returned after an idempotent replay.", ref("ConsoleResource"), nil)
-	createResponses["201"] = jsonResponse("Created resource.", ref("ConsoleResource"), nil)
+	createResponses["201"] = jsonResponse("Stored template.", ref("ConsoleResource"), documentedSavedTemplate())
 	createResponses["409"] = consoleConflictResponse()
 	paths["/v1/console/resources"] = obj{
-		"get": operation("Console", "List console resources", "Lists only the caller's resources in the exact organization workspace asserted by the token.", "listConsoleResources", bearer(), []any{
-			queryParam("kind", "Required resource kind.", true, ref("ConsoleResourceKind")),
-			queryParam("limit", "Page size (default 50, max 100).", false, obj{"type": "integer", "minimum": 1, "maximum": 100}),
-			queryParam("offset", "Page offset (max 10000).", false, obj{"type": "integer", "minimum": 0, "maximum": 10000}),
-		}, nil, listResponses),
-		"post": operation("Console", "Create console resource", "Creates a typed artifact. Replaying a note favorite returns the existing resource.", "createConsoleResource", bearer(), nil,
-			jsonRequest("Typed resource.", ref("ConsoleResourceCreate"), nil), createResponses),
+		"get": noteTemplatesOperation(authErrors),
+		"post": operation("Console", "Save template", "Save template posts a note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0.", "createConsoleResource", bearer(), nil,
+			jsonRequest("Typed resource.", ref("ConsoleResourceCreate"), documentedSavedTemplateRequest()), createResponses),
 	}
 
 	resourceID := []any{pathParam("resourceId", "Console resource id.", obj{"type": "string", "format": "uuid"})}
+	editedTemplateID := []any{pathParam("resourceId", "Console resource id.", uuidSchema("Console resource id.", documentedEditedTemplateID))}
 	getResponses := cloneResponses(authErrors)
 	getResponses["200"] = jsonResponse("Resource.", ref("ConsoleResource"), nil)
 	getResponses["404"] = consoleNotFoundResponse()
 	patchResponses := cloneResponses(getResponses)
+	patchResponses["200"] = jsonResponse("Stored template.", ref("ConsoleResource"), documentedEditedTemplate())
 	patchResponses["409"] = consoleConflictResponse()
-	deleteResponses := cloneResponses(authErrors)
-	deleteResponses["204"] = obj{"description": "Resource deleted."}
-	deleteResponses["404"] = consoleNotFoundResponse()
 	paths["/v1/console/resources/{resourceId}"] = obj{
 		"get": operation("Console", "Get console resource", "Returns one caller-owned resource.", "getConsoleResource", bearer(), resourceID, nil, getResponses),
-		"patch": operation("Console", "Patch console resource", "Validates the complete resulting kind-specific payload before updating.", "patchConsoleResource", bearer(), resourceID,
-			jsonRequest("Mutable resource fields.", ref("ConsoleResourcePatch"), nil), patchResponses),
-		"delete": operation("Console", "Delete console resource", "Deletes one caller-owned resource.", "deleteConsoleResource", bearer(), resourceID, nil, deleteResponses),
+		"patch": operation("Console", "Save template", "Save template posts the name and payload of an existing note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0, and the update time is later.", "patchConsoleResource", bearer(), editedTemplateID,
+			jsonRequest("Mutable resource fields.", ref("ConsoleResourcePatch"), documentedEditedTemplateRequest()), patchResponses),
+		"delete": removeFavoriteOperation(),
 	}
 }
 

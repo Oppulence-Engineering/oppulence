@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Relationship } from "./relationship";
-import type { RelationshipAssertionReason } from "./relationshipAssertionReason";
 import type { RelationshipObservation } from "./relationshipObservation";
 import type { RevenueWorkspace } from "./revenueWorkspace";
 import type { User } from "./user";
@@ -23,8 +22,8 @@ export interface RelationshipAssertion {
   id: string;
   observation?: RelationshipObservation;
   projector_compat_version: number;
-  /** Reason code for the ledger entry. */
-  reason?: RelationshipAssertionReason;
+  /** Evidence-backed explanation. */
+  reason?: string;
   relationship: Relationship;
   retracted_at?: string;
   retraction_reason?: string;

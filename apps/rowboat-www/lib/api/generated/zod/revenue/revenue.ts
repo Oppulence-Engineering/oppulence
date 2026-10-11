@@ -8,15 +8,464 @@
 import * as zod from "zod";
 
 /**
- * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.
- * @summary List the action queue
+ * Agent approvals loads the pending queue. The request asks for pending proposals. This workspace has no pending proposal, so the page is empty.
+ * @summary Agent approvals
  */
+export const ListActionProposalsQueryParams = zod.object({
+  status: zod
+    .string()
+    .optional()
+    .describe("pending is the queue. Agent approvals asks for pending."),
+});
+
+export const ListActionProposals200Response = zod
+  .strictObject({
+    proposals: zod
+      .array(zod.looseObject({}).describe("One proposal."))
+      .describe("Proposals waiting for a decision."),
+  })
+  .describe("Pending proposals.");
+
+export const ListActionProposals401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Approve and run posts no body. The page receives the approved proposal and a one-time value, then runs the action.
+ * @summary Approve and run
+ */
+export const ApproveActionProposalParams = zod.object({
+  id: zod.uuid().describe("Proposal id."),
+});
+
+export const ApproveActionProposal200Response = zod
+  .strictObject({
+    expiresAt: zod.iso
+      .datetime({ offset: true })
+      .describe("When the one-time value stops working."),
+    proposal: zod
+      .strictObject({
+        approvedAt: zod.iso.datetime({ offset: true }).describe("When it was approved."),
+        createdAt: zod.iso.datetime({ offset: true }).describe("When the proposal was created."),
+        financial: zod.boolean().describe("Whether money moves."),
+        id: zod.uuid().describe("Proposal id."),
+        kind: zod.string().describe("Action kind."),
+        paramsJson: zod.string().optional().describe("JSON parameters."),
+        rationale: zod.string().optional().describe("Why the action was proposed."),
+        status: zod.string().describe("Approved."),
+        target: zod.string().describe("Object the action changes."),
+      })
+      .describe("Approved proposal."),
+    token: zod
+      .string()
+      .describe(
+        "One-time value the page uses to run the action. This sample is not a live approval.",
+      ),
+  })
+  .describe("Approve result.");
+
+export const ApproveActionProposal400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ApproveActionProposal401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ApproveActionProposal403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ApproveActionProposal404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ApproveActionProposal409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+/**
+ * Execute posts the one-time value Approve and run returned. The page shows the result while it waits for the product to confirm the change.
+ * @summary Execute
+ */
+export const ExecuteActionProposalParams = zod.object({
+  id: zod.uuid().describe("Proposal id."),
+});
+
+export const ExecuteActionProposalBody = zod
+  .strictObject({
+    token: zod
+      .string()
+      .describe("One-time value from Approve and run. This sample is not a live approval."),
+  })
+  .describe("Execute request.");
+
+export const ExecuteActionProposal200Response = zod
+  .strictObject({
+    approvedAt: zod.iso.datetime({ offset: true }).describe("When it was approved."),
+    createdAt: zod.iso.datetime({ offset: true }).describe("When the proposal was created."),
+    executedAt: zod.iso.datetime({ offset: true }).describe("When it ran."),
+    financial: zod.boolean().describe("Whether money moves."),
+    id: zod.uuid().describe("Proposal id."),
+    kind: zod.string().describe("Action kind."),
+    paramsJson: zod.string().optional().describe("JSON parameters."),
+    rationale: zod.string().optional().describe("Why the action was proposed."),
+    resultRef: zod.string().optional().describe("Result the page shows."),
+    status: zod.string().describe("Executed."),
+    target: zod.string().describe("Object the action changes."),
+  })
+  .describe("Executed proposal.");
+
+export const ExecuteActionProposal400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ExecuteActionProposal401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ExecuteActionProposal403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ExecuteActionProposal404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ExecuteActionProposal409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+export const ExecuteActionProposal503Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Reject posts a short reason. The page discards the action and keeps that reason on the audit trail.
+ * @summary Reject
+ */
+export const RejectActionProposalParams = zod.object({
+  id: zod.uuid().describe("Proposal id."),
+});
+
+export const RejectActionProposalBody = zod
+  .strictObject({
+    reason: zod.string().describe("Why this action is being rejected."),
+  })
+  .describe("Reject request.");
+
+export const RejectActionProposal200Response = zod
+  .strictObject({
+    createdAt: zod.iso.datetime({ offset: true }).describe("When the proposal was created."),
+    financial: zod.boolean().describe("Whether money moves."),
+    id: zod.uuid().describe("Proposal id."),
+    kind: zod.string().describe("Action kind."),
+    paramsJson: zod.string().optional().describe("JSON parameters."),
+    rationale: zod.string().optional().describe("Why the action was proposed."),
+    reason: zod.string().describe("Why it was rejected."),
+    status: zod.string().describe("Rejected."),
+    target: zod.string().describe("Object the action changes."),
+  })
+  .describe("Rejected proposal.");
+
+export const RejectActionProposal400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const RejectActionProposal401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const RejectActionProposal404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const RejectActionProposal409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+/**
+ * Audit trail opens this object's proposal, approval, and execution. The page shows the proposal kind, the approval prefix, and the execution result.
+ * @summary Audit trail
+ */
+export const GetObjectAuditParams = zod.object({
+  resourceRef: zod
+    .string()
+    .describe("The object Audit trail opens. Agent approvals sends the proposal target."),
+});
+
+export const GetObjectAudit200Response = zod
+  .record(zod.string(), zod.unknown())
+  .describe("Audit trail.");
+
+export const GetObjectAudit400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetObjectAudit401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetObjectAudit404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetObjectAudit500Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Tasks loads open follow-ups with the soonest due date first. It asks for open tasks, one hundred at a time, and does not ask for an older page. The first task is Follow up on the proposal, due on July 15.
+ * @summary Tasks
+ */
+export const listRevenueActionsQueryOffsetMin = 0;
+
 export const ListRevenueActionsQueryParams = zod.object({
   queueStatus: zod
     .enum(["open", "snoozed", "dismissed", "handled", "all"])
     .optional()
     .describe("Queue status filter, or all."),
-  limit: zod.coerce.number().int().optional().describe("Page size (max 100, default 10)."),
+  limit: zod.coerce.number().int().optional().describe("Page size (max 100). Tasks asks for 100."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRevenueActionsQueryOffsetMin)
+    .optional()
+    .describe("How many tasks to skip. Tasks does not send this on the first page."),
+  surface: zod
+    .enum(["task", "recovery"])
+    .optional()
+    .describe("task keeps follow-up tasks. recovery keeps every other action."),
+  due: zod
+    .enum(["asc", "desc"])
+    .optional()
+    .describe("Soonest due first is asc. Latest due is desc."),
 });
 
 export const ListRevenueActions200Response = zod
@@ -99,7 +548,7 @@ export const ListRevenueActions200Response = zod
             priorityComponents: zod
               .record(zod.string(), zod.unknown())
               .optional()
-              .describe("Per-component priority breakdown; every component is stored and shown."),
+              .describe("Factors the review lists."),
             priorityScore: zod.int().describe("Explainable priority score (0-100)."),
             proposedMessage: zod.string().optional().describe("Proposed message body."),
             proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -114,17 +563,7 @@ export const ListRevenueActions200Response = zod
             queueStatus: zod
               .enum(["open", "snoozed", "dismissed", "handled"])
               .describe("Operator triage state."),
-            reason: zod
-              .enum([
-                "llm_call",
-                "llm_call_reserve",
-                "llm_settle",
-                "voice_tts",
-                "exa_search",
-                "grant",
-                "refund",
-              ])
-              .describe("Reason code for the ledger entry."),
+            reason: zod.string().describe("Human-readable evidence-backed reason."),
             recipientEmail: zod.string().optional().describe("Recipient email address."),
             reconciliationAttempts: zod
               .int()
@@ -144,6 +583,12 @@ export const ListRevenueActions200Response = zod
               .optional()
               .describe("Read-only provider reconciliation state for an ambiguous write."),
             relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+            relationshipName: zod
+              .string()
+              .optional()
+              .describe(
+                "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+              ),
             revision: zod.int().describe("Current revision number."),
             revisionHash: zod.string().describe("Canonical hash of the revision content."),
             senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -157,10 +602,13 @@ export const ListRevenueActions200Response = zod
             "One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.",
           ),
       )
-      .optional()
       .describe("Actions."),
+    hasMore: zod
+      .boolean()
+      .optional()
+      .describe("Another task or follow-up exists beyond this page."),
   })
-  .describe("Action list.");
+  .describe("Action list. A full page is the end of the queue when hasMore is false.");
 
 export const ListRevenueActions401Response = zod
   .strictObject({
@@ -178,8 +626,8 @@ export const ListRevenueActions401Response = zod
   );
 
 /**
- * Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.
- * @summary Create a manual action
+ * Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.
+ * @summary Create task
  */
 export const CreateRevenueActionBody = zod
   .strictObject({
@@ -209,9 +657,9 @@ export const CreateRevenueActionBody = zod
     priorityScore: zod.int().optional().describe("Priority (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed body."),
     proposedSubject: zod.string().optional().describe("Proposed subject."),
-    reason: zod.string().describe("Evidence-backed reason."),
+    reason: zod.string().describe("Task title."),
     recipientEmail: zod.string().optional().describe("Recipient email."),
-    relationshipId: zod.uuid().describe("Owning relationship id."),
+    relationshipId: zod.uuid().describe("Company the task is for."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
   })
   .describe("Create request.");
@@ -292,7 +740,7 @@ export const CreateRevenueAction201Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -301,17 +749,7 @@ export const CreateRevenueAction201Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Human-readable evidence-backed reason."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -331,6 +769,12 @@ export const CreateRevenueAction201Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -387,11 +831,11 @@ export const CreateRevenueAction404Response = zod
   );
 
 /**
- * Returns one action with relationship context.
- * @summary Get an action
+ * Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.
+ * @summary Reload the checked action
  */
 export const GetRevenueActionParams = zod.object({
-  actionId: zod.uuid().describe("Action id."),
+  actionId: zod.uuid().describe("Action the sheet reloads."),
 });
 
 export const GetRevenueAction200Response = zod
@@ -470,7 +914,7 @@ export const GetRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -479,17 +923,7 @@ export const GetRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Human-readable evidence-backed reason."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -509,6 +943,12 @@ export const GetRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -517,6 +957,21 @@ export const GetRevenueAction200Response = zod
   })
   .describe(
     "One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.",
+  );
+
+export const GetRevenueAction400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
 export const GetRevenueAction401Response = zod
@@ -550,8 +1005,8 @@ export const GetRevenueAction404Response = zod
   );
 
 /**
- * Approves the current revision. Send-mode actions require a passed (or explicitly risk-accepted review_required) unexpired decision bound to the exact revision; blocked actions can never be approved.
- * @summary Approve an action
+ * Approve posts acceptRisk false. The stored action is approved for its current revision, and the approval time is recorded. Approve send uses this same call when the action is in send mode. A blocked action cannot be approved.
+ * @summary Approve
  */
 export const ApproveRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -639,7 +1094,7 @@ export const ApproveRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -648,17 +1103,7 @@ export const ApproveRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Human-readable evidence-backed reason."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -678,6 +1123,12 @@ export const ApproveRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -749,8 +1200,8 @@ export const ApproveRevenueAction409Response = zod
   );
 
 /**
- * Returns the full observe, decision, approval, execution, and outcome chain for one action.
- * @summary Get the audit chain
+ * History loads the action, its revisions, the policy decisions, and the outcomes.
+ * @summary Get action history
  */
 export const GetRevenueActionAuditParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -834,7 +1285,7 @@ export const GetRevenueActionAudit200Response = zod
         priorityComponents: zod
           .record(zod.string(), zod.unknown())
           .optional()
-          .describe("Per-component priority breakdown; every component is stored and shown."),
+          .describe("Factors the review lists."),
         priorityScore: zod.int().describe("Explainable priority score (0-100)."),
         proposedMessage: zod.string().optional().describe("Proposed message body."),
         proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -843,17 +1294,7 @@ export const GetRevenueActionAudit200Response = zod
         queueStatus: zod
           .enum(["open", "snoozed", "dismissed", "handled"])
           .describe("Operator triage state."),
-        reason: zod
-          .enum([
-            "llm_call",
-            "llm_call_reserve",
-            "llm_settle",
-            "voice_tts",
-            "exa_search",
-            "grant",
-            "refund",
-          ])
-          .describe("Reason code for the ledger entry."),
+        reason: zod.string().describe("Human-readable evidence-backed reason."),
         recipientEmail: zod.string().optional().describe("Recipient email address."),
         reconciliationAttempts: zod
           .int()
@@ -873,6 +1314,12 @@ export const GetRevenueActionAudit200Response = zod
           .optional()
           .describe("Read-only provider reconciliation state for an ambiguous write."),
         relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+        relationshipName: zod
+          .string()
+          .optional()
+          .describe(
+            "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+          ),
         revision: zod.int().describe("Current revision number."),
         revisionHash: zod.string().describe("Canonical hash of the revision content."),
         senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -908,11 +1355,7 @@ export const GetRevenueActionAudit200Response = zod
               .describe("Research sub-result snapshot."),
             revision: zod.int().describe("Action revision the decision is about."),
             revisionHash: zod.string().describe("Revision hash the decision is bound to."),
-            status: zod
-              .enum(["passed", "review_required", "blocked"])
-              .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-              ),
+            status: zod.enum(["passed", "review_required", "blocked"]).describe("Decision status."),
             suppression: zod
               .record(zod.string(), zod.unknown())
               .optional()
@@ -956,7 +1399,11 @@ export const GetRevenueActionAudit200Response = zod
             source: zod
               .enum(["gmail", "calendar", "crm", "user", "outbound", "slack", "meeting", "task"])
               .describe("Observing source."),
-            sourceEventId: zod.string().describe("Source event id used for deduplication."),
+            sourceEventId: zod
+              .string()
+              .describe(
+                "Source event id used for deduplication. Log outcome sends manual, the kind, and the current time.",
+              ),
           })
           .describe(
             "One observed action outcome, append-only and idempotent on (action, source, sourceEventId).",
@@ -969,7 +1416,7 @@ export const GetRevenueActionAudit200Response = zod
       .optional()
       .describe("Immutable revision snapshots."),
   })
-  .describe("Audit chain.");
+  .describe("Action history.");
 
 export const GetRevenueActionAudit401Response = zod
   .strictObject({
@@ -1002,8 +1449,8 @@ export const GetRevenueActionAudit404Response = zod
   );
 
 /**
- * Dismisses the action with a reason label and records the dismissed outcome.
- * @summary Dismiss an action
+ * Dismiss removes this follow-up from the queue and stores the reason.
+ * @summary Dismiss
  */
 export const DismissRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -1091,7 +1538,7 @@ export const DismissRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -1100,17 +1547,7 @@ export const DismissRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Human-readable evidence-backed reason."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -1130,6 +1567,12 @@ export const DismissRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -1171,8 +1614,8 @@ export const DismissRevenueAction404Response = zod
   );
 
 /**
- * Creates a new revision and invalidates the previous policy decision and approval. Editing is refused once execution has started.
- * @summary Edit an action
+ * Save draft posts the subject and message from the review sheet. The stored action moves to revision 2, and the previous sending check and approval no longer apply.
+ * @summary Save draft
  */
 export const EditRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -1276,7 +1719,7 @@ export const EditRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -1285,17 +1728,7 @@ export const EditRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Human-readable evidence-backed reason."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -1315,6 +1748,12 @@ export const EditRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -1386,8 +1825,8 @@ export const EditRevenueAction409Response = zod
   );
 
 /**
- * Requests or retries the OutboundConsole preflight for the current revision and stores the immutable decision snapshot. A fresh unexpired decision for the same revision is returned without provider cost. Facade unavailability keeps the action pending (fail closed).
- * @summary Request policy preflight
+ * Re-check policy posts no request body. The stored decision passed for the current revision, with no reason codes, and it expires the next day.
+ * @summary Re-check policy
  */
 export const EvaluateRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -1416,11 +1855,7 @@ export const EvaluateRevenueAction200Response = zod
       .describe("Research sub-result snapshot."),
     revision: zod.int().describe("Action revision the decision is about."),
     revisionHash: zod.string().describe("Revision hash the decision is bound to."),
-    status: zod
-      .enum(["passed", "review_required", "blocked"])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+    status: zod.enum(["passed", "review_required", "blocked"]).describe("Decision status."),
     suppression: zod
       .record(zod.string(), zod.unknown())
       .optional()
@@ -1480,8 +1915,8 @@ export const EvaluateRevenueAction503Response = zod
   );
 
 /**
- * Executes the approved current revision exactly once through the assigned execution owner, with an idempotency key derived from the action and revision. A duplicate execute returns the existing result. A lost provider result is marked ambiguous and never automatically resent.
- * @summary Execute an action
+ * Create provider draft posts no request body. The stored action is sent and handled, and the draft time is recorded. Send approved email uses this same call when the action is in send mode.
+ * @summary Create provider draft
  */
 export const ExecuteRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -1563,7 +1998,7 @@ export const ExecuteRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -1572,17 +2007,7 @@ export const ExecuteRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Human-readable evidence-backed reason."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -1602,6 +2027,12 @@ export const ExecuteRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -1673,8 +2104,8 @@ export const ExecuteRevenueAction409Response = zod
   );
 
 /**
- * Appends an observed outcome idempotently on (action, source, sourceEventId); the duplicate returns the stored row.
- * @summary Record an outcome
+ * Log outcome records They replied from the history sheet. The button sends source user and sourceEventId manual:replied plus the current time. Sending the same id again returns the stored row.
+ * @summary Log outcome
  */
 export const RecordRevenueActionOutcomeParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -1696,11 +2127,18 @@ export const RecordRevenueActionOutcomeBody = zod
       ])
       .describe("Outcome kind."),
     metadata: zod.record(zod.string(), zod.unknown()).optional().describe("Bounded metadata."),
-    occurredAt: zod.iso.datetime({ offset: true }).nullish().describe("When the outcome occurred."),
+    occurredAt: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe(
+        "When the outcome occurred. Log outcome leaves this empty and the server records the current time.",
+      ),
     source: zod
       .enum(["gmail", "calendar", "crm", "user", "outbound"])
-      .describe("Observing source."),
-    sourceEventId: zod.string().describe("Source event id for deduplication."),
+      .describe("Observing source. Log outcome sends user."),
+    sourceEventId: zod
+      .string()
+      .describe("Source event id. Log outcome sends manual, the kind, and the current time."),
   })
   .describe("Outcome request.");
 
@@ -1730,7 +2168,11 @@ export const RecordRevenueActionOutcome201Response = zod
     source: zod
       .enum(["gmail", "calendar", "crm", "user", "outbound", "slack", "meeting", "task"])
       .describe("Observing source."),
-    sourceEventId: zod.string().describe("Source event id used for deduplication."),
+    sourceEventId: zod
+      .string()
+      .describe(
+        "Source event id used for deduplication. Log outcome sends manual, the kind, and the current time.",
+      ),
   })
   .describe(
     "One observed action outcome, append-only and idempotent on (action, source, sourceEventId).",
@@ -1782,8 +2224,8 @@ export const RecordRevenueActionOutcome404Response = zod
   );
 
 /**
- * Rejects the current revision with a reason.
- * @summary Reject an action
+ * Reject declines this follow-up. The decision is stored and the follow-up stays open.
+ * @summary Reject
  */
 export const RejectRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -1871,7 +2313,7 @@ export const RejectRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -1880,17 +2322,7 @@ export const RejectRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Human-readable evidence-backed reason."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -1910,6 +2342,12 @@ export const RejectRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -1968,8 +2406,8 @@ export const RejectRevenueAction409Response = zod
   );
 
 /**
- * Parks the action until a bounded future timestamp (at most 90 days).
- * @summary Snooze an action
+ * Snooze posts a wake time seven days out. The stored action is snoozed until that time. The wake time has to be in the future and within 90 days.
+ * @summary Snooze
  */
 export const SnoozeRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -1977,7 +2415,7 @@ export const SnoozeRevenueActionParams = zod.object({
 
 export const SnoozeRevenueActionBody = zod
   .strictObject({
-    until: zod.iso.datetime({ offset: true }).describe("Wake time."),
+    until: zod.iso.datetime({ offset: true }).describe("Wake time seven days out."),
   })
   .describe("Snooze request.");
 
@@ -2057,7 +2495,7 @@ export const SnoozeRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -2066,17 +2504,7 @@ export const SnoozeRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Human-readable evidence-backed reason."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -2096,6 +2524,12 @@ export const SnoozeRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -2152,8 +2586,8 @@ export const SnoozeRevenueAction404Response = zod
   );
 
 /**
- * Returns the plain-text body of the original email behind this action (RFC 031 Layer 3), served from the sealed short-TTL cache or fetched from Gmail on demand. 404 when no source message is linked or the body is unavailable.
- * @summary Get the original email body
+ * View original email loads the Gmail message behind this action. The request sends only the action id. The answer is that message as plain text in body, separate from the draft on the action.
+ * @summary View original email
  */
 export const GetRevenueActionSourceBodyParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -2161,7 +2595,7 @@ export const GetRevenueActionSourceBodyParams = zod.object({
 
 export const GetRevenueActionSourceBody200Response = zod
   .strictObject({
-    body: zod.string().optional().describe("Plain-text body."),
+    body: zod.string().optional().describe("Plain-text Gmail message."),
   })
   .describe("Body.");
 
@@ -2196,8 +2630,8 @@ export const GetRevenueActionSourceBody404Response = zod
   );
 
 /**
- * Returns the digest content the scheduled email is built from: the top open loops and running impact counts.
- * @summary Preview the proactive digest
+ * Impact loads the weekly digest. The request sends no filter. This workspace has no open loop, so the highlight list is empty and every count is zero.
+ * @summary Weekly digest
  */
 export const GetRevenueDigest200Response = zod
   .strictObject({
@@ -2240,8 +2674,8 @@ export const GetRevenueDigest401Response = zod
   );
 
 /**
- * Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.
- * @summary Get the revenue impact summary
+ * Impact loads the home counts. The request sends no filter. Overdue promises, open recovery, and companies at risk are zero, and there is no reply rate or meeting rate yet.
+ * @summary Impact
  */
 export const GetRevenueImpact200Response = zod
   .strictObject({
@@ -2275,6 +2709,9 @@ export const GetRevenueImpact200Response = zod
       .describe("Meeting rate = meetings \/ executed; null with no denominator."),
     meetingsBooked: zod.int().optional().describe("Meetings booked."),
     open: zod.int().describe("Actions currently open."),
+    openTasks: zod
+      .int()
+      .describe("Open follow-up tasks. These are saved work, not recovery follow-ups."),
     outcomes: zod
       .record(zod.string(), zod.unknown())
       .optional()
@@ -2327,10 +2764,12 @@ export const GetRevenueImpact401Response = zod
   );
 
 /**
- * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.
- * @summary List revenue leak scans
+ * Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty.
+ * @summary Audits
  */
 export const listRevenueLeakScansQueryLimitMax = 100;
+
+export const listRevenueLeakScansQueryOffsetMin = 0;
 
 export const ListRevenueLeakScansQueryParams = zod.object({
   limit: zod.coerce
@@ -2339,11 +2778,18 @@ export const ListRevenueLeakScansQueryParams = zod.object({
     .min(1)
     .max(listRevenueLeakScansQueryLimitMax)
     .optional()
-    .describe("Maximum scans to return (default 10, max 100)."),
+    .describe("Page size (max 100). Audits asks for 10."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRevenueLeakScansQueryOffsetMin)
+    .optional()
+    .describe("How many audits to skip. Audits does not send this on the first page."),
 });
 
 export const ListRevenueLeakScans200Response = zod
   .strictObject({
+    hasMore: zod.boolean().describe("Whether another audit exists past this page."),
     scans: zod
       .array(
         zod
@@ -2365,9 +2811,7 @@ export const ListRevenueLeakScans200Response = zod
             startedAt: zod.iso.datetime({ offset: true }).nullish().describe("Start time."),
             status: zod
               .enum(["pending", "running", "completed", "failed"])
-              .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-              ),
+              .describe("Scan status."),
             threadsDeepRead: zod
               .int()
               .optional()
@@ -2421,15 +2865,17 @@ export const ListRevenueLeakScans401Response = zod
   );
 
 /**
- * Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.
- * @summary Start a revenue leak scan
+ * Run Promise Leak Audit reads the last six months of connected Gmail. The button sends lookbackDays 180. One audit runs at a time; poll the scan id for progress.
+ * @summary Run Promise Leak Audit
  */
 export const StartRevenueLeakScanBody = zod
   .strictObject({
     lookbackDays: zod
       .int()
       .optional()
-      .describe("Historical lookback in days (default 90, max 365)."),
+      .describe(
+        "Historical lookback in days. Run Promise Leak Audit sends 180. Omitted values use 180. Maximum 365.",
+      ),
   })
   .describe("Scan request.");
 
@@ -2450,11 +2896,7 @@ export const StartRevenueLeakScan202Response = zod
       .nullish()
       .describe("Newest source timestamp observed (incremental cursor)."),
     startedAt: zod.iso.datetime({ offset: true }).nullish().describe("Start time."),
-    status: zod
-      .enum(["pending", "running", "completed", "failed"])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+    status: zod.enum(["pending", "running", "completed", "failed"]).describe("Scan status."),
     threadsDeepRead: zod
       .int()
       .optional()
@@ -2501,11 +2943,11 @@ export const StartRevenueLeakScan409Response = zod
   );
 
 /**
- * Returns progress, counts, errors, and source freshness for one scan.
- * @summary Get scan progress
+ * Reading your last 6 months polls this audit while it runs. The page shows how many conversations have been read.
+ * @summary Reading your last 6 months
  */
 export const GetRevenueLeakScanParams = zod.object({
-  scanId: zod.uuid().describe("Scan id."),
+  scanId: zod.uuid().describe("The audit Reading your last 6 months is polling."),
 });
 
 export const GetRevenueLeakScan200Response = zod
@@ -2525,11 +2967,7 @@ export const GetRevenueLeakScan200Response = zod
       .nullish()
       .describe("Newest source timestamp observed (incremental cursor)."),
     startedAt: zod.iso.datetime({ offset: true }).nullish().describe("Start time."),
-    status: zod
-      .enum(["pending", "running", "completed", "failed"])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+    status: zod.enum(["pending", "running", "completed", "failed"]).describe("Scan status."),
     threadsDeepRead: zod
       .int()
       .optional()
@@ -2576,15 +3014,15 @@ export const GetRevenueLeakScan404Response = zod
   );
 
 /**
- * Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
- * @summary Get the open promises report
+ * Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.
+ * @summary Download the report
  */
 export const GetOpenPromisesReportParams = zod.object({
   scanId: zod.uuid().describe("Scan id."),
 });
 
 export const GetOpenPromisesReportQueryParams = zod.object({
-  format: zod.string().optional().describe("md for Markdown; JSON otherwise."),
+  format: zod.string().optional().describe("md for the file Download the report saves."),
 });
 
 export const GetOpenPromisesReport200Response = zod
@@ -2653,16 +3091,16 @@ export const GetOpenPromisesReport404Response = zod
   );
 
 /**
- * Natural-language search over the caller's Layer-2 signals (RFC 031). Returns available=false with no matches when semantic memory is not configured.
- * @summary Semantic search over mail
+ * Search mail sends the words typed in the palette. The answer lists the closest mail first, with the subject, the other person's email, the kind of thread, why it matched, and how close it is. When mail search is not set up, the answer includes no matches.
+ * @summary Search mail
  */
 export const RevenueSemanticSearchQueryParams = zod.object({
-  q: zod.string().describe("Search query."),
+  q: zod.string().describe("Words typed in Search mail."),
 });
 
 export const RevenueSemanticSearch200Response = zod
   .strictObject({
-    available: zod.boolean().optional().describe("Whether semantic memory is configured."),
+    available: zod.boolean().optional().describe("Whether mail search is set up."),
     matches: zod
       .array(
         zod
@@ -2670,19 +3108,19 @@ export const RevenueSemanticSearch200Response = zod
             classification: zod
               .enum(["deal", "invoice", "client", "referral", "other"])
               .optional()
-              .describe("Signal class."),
-            counterparty: zod.string().optional().describe("Counterparty email."),
-            score: zod.number().optional().describe("Cosine similarity."),
-            subject: zod.string().optional().describe("Thread subject."),
-            summary: zod.string().optional().describe("Derived summary."),
-            threadId: zod.string().optional().describe("Provider thread id."),
+              .describe("Kind of thread."),
+            counterparty: zod.string().optional().describe("Other person's email."),
+            score: zod.number().optional().describe("How close this thread is."),
+            subject: zod.string().optional().describe("Subject."),
+            summary: zod.string().optional().describe("Why this thread matched."),
+            threadId: zod.string().optional().describe("Mail thread id."),
           })
-          .describe("Match."),
+          .describe("One mail thread."),
       )
       .optional()
-      .describe("Ranked matches."),
+      .describe("Closest mail first."),
   })
-  .describe("Search result.");
+  .describe("Mail search answer.");
 
 export const RevenueSemanticSearch400Response = zod
   .strictObject({
@@ -2715,8 +3153,8 @@ export const RevenueSemanticSearch401Response = zod
   );
 
 /**
- * Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.
- * @summary Get current revenue workspace
+ * Local mode is the workspace Connected sources opens before a sending workspace is linked. It comes back local and active, and the sending check stays off.
+ * @summary Local mode
  */
 export const GetRevenueWorkspace200Response = zod
   .strictObject({
@@ -2757,13 +3195,83 @@ export const GetRevenueWorkspace401Response = zod
   );
 
 /**
- * Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.
- * @summary Link the OutboundConsole workspace
+ * Add rule sends kind protected_address and value buyer@example.com. The server lowercases the address, stores an active rule, and returns that rule with the sha256 of the stored address.
+ * @summary Add rule
+ */
+export const CreateCommunicationPrivacyRuleBody = zod
+  .strictObject({
+    kind: zod
+      .enum(["protected_address", "protected_domain", "blocked_address", "blocked_domain"])
+      .describe("Rule kind. Add rule leaves the default protected address selected."),
+    value: zod.string().describe("Address or domain typed into the rule field."),
+  })
+  .describe("Privacy rule.");
+
+export const CreateCommunicationPrivacyRule201Response = zod
+  .strictObject({
+    active: zod.boolean().describe("New rules are stored active."),
+    id: zod.uuid().describe("Rule id."),
+    kind: zod
+      .enum(["protected_address", "protected_domain", "blocked_address", "blocked_domain"])
+      .describe("Stored rule kind."),
+    value: zod.string().describe("Normalized address or domain."),
+    valueHash: zod.string().describe("sha256 of the normalized value."),
+  })
+  .describe("Stored privacy rule.");
+
+export const CreateCommunicationPrivacyRule400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateCommunicationPrivacyRule401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateCommunicationPrivacyRule403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.
+ * @summary Link workspace
  */
 export const LinkRevenueWorkspaceBody = zod
   .strictObject({
-    outboundOrganizationId: zod.string().optional().describe("OutboundConsole organization id."),
-    outboundWorkspaceId: zod.string().describe("OutboundConsole workspace id."),
+    outboundOrganizationId: zod.string().optional().describe("Organization id."),
+    outboundWorkspaceId: zod.string().describe("Sending workspace id."),
   })
   .describe("Link request.");
 

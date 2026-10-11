@@ -10,6 +10,6 @@
  * Correction retraction.
  */
 export type RetractRelationshipAssertionBody = {
-  /** Why the correction is being retracted. */
+  /** Why this correction is no longer valid. */
   reason: string;
 };

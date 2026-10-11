@@ -1,6 +1,14 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { REGISTER_VIEWS, registerFilterFor } from "./commitment-queue";
+import {
+  overdueRegisterFilter,
+  registerAccountChoices,
+  registerFilterFor,
+} from "@/lib/revenue/commitment-register-filter";
+import { REGISTER_VIEWS } from "./commitment-queue";
 
 // One-pager §3: the register has five views. Each must be one query against
 // GET /v1/commitments, not a separate screen with its own data path. Keeping
@@ -70,5 +78,79 @@ describe("the five register views", () => {
     ]) {
       expect(filter?.limit).toBeGreaterThan(0);
     }
+  });
+
+  it("opens home's overdue count across directions, without promises that are only due soon", () => {
+    const filter = overdueRegisterFilter("2026-10-01T00:00:00Z");
+    expect(filter.direction).toBeUndefined();
+    expect(filter.state).toEqual(["at_risk", "disputed"]);
+    expect(filter.dueBefore).toBe("2026-10-01T00:00:00Z");
+    expect(filter.limit).toBe(200);
+  });
+
+  it("lists a saved company even when the graph has not projected it", () => {
+    expect(
+      registerAccountChoices(
+        [
+          { id: "company-1", kind: "company", displayName: "Dogfood Harbor" },
+          { id: "person-1", kind: "person", displayName: "Ada" },
+        ],
+        [],
+      ),
+    ).toEqual([{ id: "company-1", label: "Dogfood Harbor" }]);
+    expect(
+      registerAccountChoices(
+        [
+          {
+            id: "company-domain",
+            kind: "company",
+            displayName: "northwind.example",
+            accountDomain: "northwind.example",
+          },
+        ],
+        [],
+      ),
+    ).toEqual([{ id: "company-domain", label: "Northwind" }]);
+    expect(
+      registerAccountChoices([], [{ kind: "relationship", relationshipId: "graph-1", label: "Acme" }]),
+    ).toEqual([{ id: "graph-1", label: "Acme" }]);
+    expect(
+      registerAccountChoices(
+        [],
+        [
+          {
+            kind: "relationship",
+            relationshipId: "person-1",
+            label: "Ada",
+            metadata: { kind: "person" },
+          },
+          {
+            kind: "relationship",
+            relationshipId: "graph-1",
+            label: "Acme",
+            metadata: { kind: "company" },
+          },
+        ],
+      ),
+    ).toEqual([{ id: "graph-1", label: "Acme" }]);
+    expect(
+      registerAccountChoices(
+        [{ id: "person-1", kind: "person", displayName: "Ada" }],
+        [
+          {
+            kind: "relationship",
+            relationshipId: "person-1",
+            label: "Ada",
+            metadata: { kind: "person" },
+          },
+        ],
+      ),
+    ).toEqual([]);
+    const hook = fs.readFileSync(
+      path.join(import.meta.dirname, "../../../../hooks/queries/use-commitments.ts"),
+      "utf8",
+    );
+    expect(hook).toContain("registerAccountChoices(");
+    expect(hook).toContain("fetchRelationships({}, signal)");
   });
 });

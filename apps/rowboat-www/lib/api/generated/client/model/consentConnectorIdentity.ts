@@ -10,10 +10,10 @@
  * Connector identity shown to the user.
  */
 export interface ConsentConnectorIdentity {
-  /** OAuth token audience for the connector. */
+  /** Audience bound to any resulting resource token. */
   audience: string;
   /** Connector display name. */
   display_name: string;
-  /** Stable UUID primary key. */
+  /** Connector slug. */
   id: string;
 }

@@ -39,7 +39,9 @@ function fetcherFiles(): string[] {
 }
 
 function forbiddenCasts(source: string): string[] {
-  return [...source.matchAll(/\bas\s+([A-Za-z_$][\w$]*)(\[\])?/g)].flatMap((match) => {
+  // Prose in a comment ("shown as a list") is not a cast.
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  return [...code.matchAll(/\bas\s+([A-Za-z_$][\w$]*)(\[\])?/g)].flatMap((match) => {
     const typeName = match[1];
     if (!typeName || ALLOWED_CASTS.has(typeName)) return [];
     return [match[0]];

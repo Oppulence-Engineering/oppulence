@@ -3,6 +3,7 @@ package revenue
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -28,6 +29,46 @@ func (f *fakeEmail) Send(_ context.Context, m email.Message) error {
 	return nil
 }
 func (f *fakeEmail) Enabled() bool { return f.enabled }
+
+func TestDigestPriorityLabelMatchesRecoveryBands(t *testing.T) {
+	if digestPriorityLabel(80) != "High" || digestPriorityLabel(70) != "High" {
+		t.Fatal("70 and above are High")
+	}
+	if digestPriorityLabel(40) != "Medium" || digestPriorityLabel(69) != "Medium" {
+		t.Fatal("40 through 69 are Medium")
+	}
+	if digestPriorityLabel(0) != "Low" || digestPriorityLabel(39) != "Low" {
+		t.Fatal("below 40 is Low")
+	}
+}
+
+func TestDetectorLabelNamesEveryActionDetector(t *testing.T) {
+	for _, key := range []string{
+		"requested_follow_up_due",
+		"unanswered_proposal",
+		"waiting_on_me",
+		"dormant_warm_opportunity",
+		"neglected_referral",
+		"former_customer_reconnect",
+		"conversation_action_pack",
+		"commitment_due",
+		"manual",
+	} {
+		label := detectorLabel(key)
+		if label == "" || strings.Contains(label, "_") {
+			t.Fatalf("detector %q labeled %q", key, label)
+		}
+	}
+	if detectorLabel("commitment_due") != "Promise due" {
+		t.Fatalf("commitment_due labeled %q", detectorLabel("commitment_due"))
+	}
+	if detectorLabel("conversation_action_pack") != "Conversation action pack" {
+		t.Fatalf("conversation_action_pack labeled %q", detectorLabel("conversation_action_pack"))
+	}
+	if detectorLabel("manual") != "Added by you" {
+		t.Fatalf("manual labeled %q", detectorLabel("manual"))
+	}
+}
 
 func TestDigestComposeAndRender(t *testing.T) {
 	f := newFixture(t)
@@ -55,11 +96,43 @@ func TestDigestComposeAndRender(t *testing.T) {
 	if !strings.Contains(textBody, "buyer@example.com") {
 		t.Fatalf("text body missing recipient: %q", textBody)
 	}
+	if !strings.Contains(htmlBody, "High") || strings.Contains(htmlBody, "priority 80") {
+		t.Fatalf("html should name the band, got %q", htmlBody)
+	}
+	if !strings.Contains(textBody, "(High)") {
+		t.Fatalf("text should name the band, got %q", textBody)
+	}
 	// HTML-escaping: a crafted recipient must not inject markup.
 	dg.Top[0].Recipient = `<script>x</script>@evil.com`
 	_, htmlBody2, _ := RenderDigest(dg, "https://oppulence.io")
 	if strings.Contains(htmlBody2, "<script>x</script>") {
 		t.Fatal("recipient must be HTML-escaped in the digest")
+	}
+}
+
+func TestDigestSkipsSavedTasks(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	for n := 0; n < 5; n++ {
+		if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+			Reason: "Pack the booth crate", PriorityScore: 90, DedupeKey: fmt.Sprintf("digest-task-%d", n),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "Send the harbor note", PriorityScore: 10, DedupeKey: "digest-email",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	dg, err := f.svc.Digest(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dg.OpenCount != 1 || len(dg.Top) != 1 || dg.Top[0].Reason != "Send the harbor note" {
+		t.Fatalf("digest = open %d top %+v, want the email only", dg.OpenCount, dg.Top)
 	}
 }
 

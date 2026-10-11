@@ -113,4 +113,5 @@ type ResourcePage struct {
 	Resources []Resource `json:"resources"`
 	Limit     int        `json:"limit"`
 	Offset    int        `json:"offset"`
+	HasMore   bool       `json:"hasMore"`
 }

@@ -3,6 +3,12 @@
 import "client-only";
 
 import * as React from "react";
+import { useTheme } from "next-themes";
+import { useConsolePreferences } from "@/hooks/queries/use-console";
+import { sidebarShortcutTitle } from "@/lib/a11y/sidebar-shortcut";
+import { friendlyAgentError } from "@/lib/agents/agent-history";
+import { CHAT_SESSIONS_LOAD_ERROR } from "@/hooks/dashboard/use-chat-sessions";
+import { friendlyRevenueError } from "@/lib/revenue/revenue";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
 import {
   useSidebarAgents,
@@ -58,8 +64,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@oppulence/ui/components/dropdown-menu";
+import {
+  sidebarRunCountLabel,
+  sidebarRunLabel,
+  type SidebarRunPreview,
+} from "@/hooks/queries/utils/fetch-sidebar";
 import { getPref, setPref, usePref } from "@/lib/console/console-prefs";
 import { connectedSourceCount, googleNeedsReconnect } from "@/lib/revenue/revenue";
+import { sourceConnectionLabel } from "@/lib/revenue/source-product-copy";
 import { loadChangelog, type ChangelogEntry } from "@/lib/api/changelog/changelog";
 import type { ResourceKind } from "@/lib/dashboard/dashboard-resource";
 import {
@@ -103,28 +115,28 @@ export const SETTINGS_SECTIONS: {
     label: "Preferences",
     icon: Clock,
     group: "workspace",
-    description: "Default agent, reasoning, notifications, privacy, and memory.",
+    description: "Default agent and anonymous usage data.",
   },
   {
     key: "notifications",
     label: "Notifications",
     icon: Bell,
     group: "workspace",
-    description: "Configure browser and relationship notification preferences.",
+    description: "This workspace does not send browser or email notifications.",
   },
   {
     key: "permissions",
     label: "Permissions",
     icon: AddressBook,
     group: "workspace",
-    description: "Control identity, access, and authorized workspace resources.",
+    description: "Who you are and what this session can do.",
   },
   {
     key: "security",
     label: "Security",
     icon: ShieldCheck,
     group: "workspace",
-    description: "Review session security and authorized evidence access.",
+    description: "Review this session and what it can open.",
   },
   {
     key: "connections",
@@ -138,21 +150,22 @@ export const SETTINGS_SECTIONS: {
     label: "Advanced",
     icon: Rocket,
     group: "workspace",
-    description: "Inspect endpoints, diagnostics, and advanced workspace controls.",
+    description: "Check this browser and whether Oppulence Cloud is reachable.",
   },
   {
     key: "customization",
     label: "Customization",
     icon: Folder,
     group: "global",
-    description: "Tune product branding, navigation, and workspace layout.",
+    description:
+      "Branding and layout are not separate settings. Theme and language are in Appearance.",
   },
   {
     key: "appearance",
     label: "Appearance",
     icon: Palette,
     group: "global",
-    description: "Set theme, language, and window preferences.",
+    description: "Set the theme and the interface language.",
   },
   {
     key: "account",
@@ -166,7 +179,7 @@ export const SETTINGS_SECTIONS: {
     label: "Oppulence Connect",
     icon: Plus,
     group: "cloud",
-    description: "Manage organization-approved, shared cloud connections.",
+    description: "Shared organization connections are not a separate list yet.",
     beta: true,
   },
   {
@@ -174,7 +187,7 @@ export const SETTINGS_SECTIONS: {
     label: "Help",
     icon: Question,
     group: "support",
-    description: "Get help, report a problem, or read the documentation.",
+    description: "Get help, report a problem, or review the API reference.",
   },
 ];
 
@@ -187,43 +200,23 @@ const SETTINGS_GROUP_LABELS: Record<SettingsGroup, string> = {
 
 export type ThemePreference = "light" | "dark" | "system";
 
+/**
+ * The sidebar, command palette, and Appearance settings all change the theme.
+ * next-themes (AppProviders) is the only writer of the `light` / `dark` class
+ * on `<html>`. A second writer that only toggled `dark` left both classes on
+ * the document, so light tokens kept winning after the user chose Dark.
+ */
 export function useThemePreference() {
-  const [theme, setTheme] = React.useState<ThemePreference>("system");
-
-  const applyTheme = React.useCallback((value: ThemePreference) => {
-    const resolved =
-      value === "system"
-        ? window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light"
-        : value;
-    document.documentElement.classList.toggle("dark", resolved === "dark");
-    localStorage.setItem("theme", value);
-  }, []);
-
-  React.useEffect(() => {
-    const saved = (localStorage.getItem("theme") as ThemePreference) || "system";
-    setTheme(saved);
-    applyTheme(saved);
-  }, [applyTheme]);
-
-  React.useEffect(() => {
-    if (theme !== "system") return;
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const listener = () => applyTheme("system");
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
-  }, [theme, applyTheme]);
-
-  const handleTheme = React.useCallback(
+  const { theme, setTheme } = useTheme();
+  const preference: ThemePreference =
+    theme === "light" || theme === "dark" || theme === "system" ? theme : "system";
+  const selectTheme = React.useCallback(
     (value: ThemePreference) => {
       setTheme(value);
-      applyTheme(value);
     },
-    [applyTheme],
+    [setTheme],
   );
-
-  return { theme, setTheme: handleTheme };
+  return { theme: preference, setTheme: selectTheme };
 }
 
 type SidebarSelect = (item: { kind: ResourceKind; name: string }) => void;
@@ -240,15 +233,35 @@ export type ShellBilling = {
   trialExpiresAt?: string | null;
 };
 
+function looksLikeEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 /**
- * The single workspace is the account itself. We do not model named
- * organizations, so the switcher is labelled with the person rather than an
- * invented org name; an email is trimmed to its local part to read as a name.
+ * Label for the account menu. Settings saves a cross-device display name and
+ * tells the user it replaces the email in the sidebar. That value lives on
+ * the console preferences document. The device-local `display-name` pref is
+ * only a fallback: the profile form no longer writes it, so reading it first
+ * would hide the name that was just saved.
  */
-export function useWorkspaceLabel(user: { name: string; email: string }) {
-  const displayName = usePref("display-name") || user.name;
-  const label = displayName.includes("@") ? displayName.split("@")[0] : displayName;
+export function workspaceLabel(input: {
+  preferenceName?: string | null;
+  deviceName?: string | null;
+  userName: string;
+}) {
+  const displayName = input.preferenceName?.trim() || input.deviceName?.trim() || input.userName;
+  const label = looksLikeEmail(displayName) ? displayName.split("@")[0] : displayName;
   return label || "Workspace";
+}
+
+export function useWorkspaceLabel(user: { name: string; email: string }) {
+  const preferences = useConsolePreferences();
+  const deviceName = usePref("display-name");
+  return workspaceLabel({
+    preferenceName: preferences.data?.displayName,
+    deviceName,
+    userName: user.name,
+  });
 }
 
 /** Whole days left on a trial, or null when the account is not trialing. */
@@ -452,9 +465,24 @@ export function AppTopBar({
 export type SourceHealth = { tone: "ok" | "syncing" | "attention" | "idle"; label: string };
 
 /**
+ * The sources page already names each connection. The sidebar uses those same
+ * sentences, so a live note does not read as behind while its badge says Active.
+ */
+function sourcePageLabel(source: RelationshipSourceStatus): string {
+  return sourceConnectionLabel({
+    source: source.source ?? "",
+    status: source.status,
+    backfillPhase: source.backfillPhase,
+    completeness: source.completeness,
+  });
+}
+
+/**
  * One line for the state of the evidence sources. A source that stopped
  * reporting is the difference between "no risk" and "we cannot see the risk",
- * so a stalled or disconnected source outranks anything else here.
+ * so a stalled or disconnected source outranks anything else here. Behind
+ * means the sources page would say Out of date or Sync incomplete. An
+ * in-progress sync says Syncing before a finished live source says current.
  */
 export function sourceHealth(sources: RelationshipSourceStatus[]): SourceHealth {
   if (sources.length === 0) return { tone: "idle", label: "No sources connected" };
@@ -467,16 +495,17 @@ export function sourceHealth(sources: RelationshipSourceStatus[]): SourceHealth 
       label: stopped === 1 ? "1 source needs reconnecting" : `${stopped} sources need reconnecting`,
     };
   }
-  const behind = sources.filter(
-    (source) => source.status === "stale" || source.completeness !== "complete",
-  ).length;
+  const behind = sources.filter((source) => {
+    const label = sourcePageLabel(source);
+    return label === "Out of date" || label === "Sync incomplete";
+  }).length;
   if (behind > 0) {
     return {
       tone: "attention",
       label: behind === 1 ? "1 source is behind" : `${behind} sources are behind`,
     };
   }
-  if (sources.some((source) => source.status === "backfilling" || source.status === "rebuilding")) {
+  if (sources.some((source) => sourcePageLabel(source) === "Syncing")) {
     return { tone: "syncing", label: "Syncing sources" };
   }
   return { tone: "ok", label: "Sources are current" };
@@ -494,6 +523,45 @@ const SOURCE_TONE_CARD: Record<SourceHealth["tone"], string> = {
 // Preserve the public helper seam while source-health policy lives with the
 // revenue data contract and is shared by report, sidebar, and audit surfaces.
 export { connectedSourceCount, googleNeedsReconnect };
+
+/**
+ * A sidebar query failure is not the same as an empty list. Rate limits and
+ * a down API already have sentences; anything else stays the short fallback
+ * so a raw status code does not land in the rail.
+ */
+export function sidebarQueryError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message.trim() : "";
+  if (!message) return fallback;
+  const agent = friendlyAgentError(message);
+  if (agent !== message) return agent;
+  const revenue = friendlyRevenueError(message);
+  if (revenue !== message) return revenue;
+  return fallback;
+}
+
+/** A cached sidebar list, even an empty one, is a refresh. */
+export function sidebarGroupFallback(loaded: boolean, noun: string): string {
+  return loaded ? `Could not refresh ${noun}` : `Could not load ${noun}`;
+}
+
+function sidebarListError(
+  query: { isError: boolean; error: unknown; data?: unknown },
+  noun: string,
+): string | undefined {
+  if (!query.isError) return undefined;
+  return sidebarQueryError(query.error, sidebarGroupFallback(query.data != null, noun));
+}
+
+/**
+ * The meter is a ratio of sources that are still delivering. An empty workspace
+ * is not a ratio: "0 / 0" under "No sources connected" reads as a broken meter.
+ */
+export function sourceMeterVisible(
+  total: number | undefined,
+  connected: number | undefined,
+): boolean {
+  return typeof total === "number" && typeof connected === "number" && total > 0;
+}
 
 /** A row of ticks, filled up to `ratio`. */
 function TickMeter({ ratio }: { ratio: number }) {
@@ -517,12 +585,14 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
   const sources = useRelationshipSourceStatuses();
 
   const trialDaysLeft = trialDaysRemaining(billing);
-  if (sources.isPending) return null;
-  const health: SourceHealth = sources.isError
-    ? { tone: "idle", label: "Source status unavailable" }
-    : sourceHealth(sources.data);
-  const connected = sources.isError ? undefined : connectedSourceCount(sources.data);
-  const total = sources.isError ? undefined : sources.data.length;
+  if (sources.isPending && !sources.data) return null;
+  const loadedSources = sources.data ?? [];
+  const sourcesNeverLoaded = sources.isError && sources.data == null;
+  const health: SourceHealth = sourcesNeverLoaded
+    ? { tone: "idle", label: sidebarQueryError(sources.error, "Source status unavailable") }
+    : sourceHealth(loadedSources);
+  const connected = sourcesNeverLoaded ? undefined : connectedSourceCount(loadedSources);
+  const total = sourcesNeverLoaded ? undefined : loadedSources.length;
   return (
     <Button
       className={cn(
@@ -533,8 +603,17 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
       type="button"
       variant="ghost"
     >
-      <Label className="text-[15px] font-normal">{health.label}</Label>
-      {typeof total === "number" && typeof connected === "number" ? (
+      <Label className="block whitespace-normal text-left text-[15px] font-normal leading-5">
+        {health.label}
+      </Label>
+      {sources.isError && !sourcesNeverLoaded ? (
+        <span className="text-[12px] font-normal leading-4 text-primary/70">
+          {sidebarQueryError(sources.error, "Source status unavailable")}
+        </span>
+      ) : null}
+      {sourceMeterVisible(total, connected) &&
+      typeof total === "number" &&
+      typeof connected === "number" ? (
         <div className="flex w-full flex-col gap-1.5">
           <div className="flex items-center justify-between text-[13px]">
             <Label className="font-normal text-primary">Sources connected</Label>
@@ -559,6 +638,12 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
 
 /* --------------------------------- sidebar --------------------------------- */
 
+/** A zero count is omitted. A string such as "8+" is a capped preview, not a total. */
+function sidebarCountLabel(count: number | string | undefined): string {
+  if (typeof count === "number") return count > 0 ? String(count) : "";
+  return count?.trim() ?? "";
+}
+
 function SidebarNavItem({
   label,
   count,
@@ -571,7 +656,7 @@ function SidebarNavItem({
   disabled,
 }: {
   label: string;
-  count?: number;
+  count?: number | string;
   active?: boolean;
   chevron?: boolean;
   chevronOpen?: boolean;
@@ -580,6 +665,7 @@ function SidebarNavItem({
   disabled?: boolean;
   className?: string;
 }) {
+  const countLabel = sidebarCountLabel(count);
   const classes = cn(
     "group/item flex h-[var(--shell-nav-row-height,30px)] w-full shrink-0 items-center justify-start gap-1.5 rounded-lg px-2 text-left text-[var(--text-small,13px)] text-[var(--text-body)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--border)]",
     active && "bg-[var(--surface-active)] text-[var(--text-primary)]",
@@ -588,16 +674,16 @@ function SidebarNavItem({
   const content = (
     <>
       <Label className="truncate font-normal">{label}</Label>
-      {typeof count === "number" && count > 0 ? (
+      {countLabel ? (
         <Badge className="ml-auto font-normal text-primary/40" variant="secondary">
-          {count}
+          {countLabel}
         </Badge>
       ) : null}
       {chevron ? (
         <CaretRight
           className={cn(
             "h-3.5 w-3.5 shrink-0 text-primary/40 transition-transform",
-            typeof count === "number" && count > 0 ? "" : "ml-auto",
+            countLabel ? "" : "ml-auto",
             chevronOpen && "rotate-90",
           )}
         />
@@ -674,6 +760,30 @@ function SidebarEmptyHint({ children }: { children: React.ReactNode }) {
   return <div className="px-6 py-1.5 text-[13px] text-muted-foreground">{children}</div>;
 }
 
+function SidebarGroupError({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <>
+      <SidebarEmptyHint>{message}</SidebarEmptyHint>
+      {onRetry ? (
+        <Button
+          className={
+            "h-auto w-full justify-start rounded-lg px-4 py-1.5 text-left " +
+            "text-[13px] font-normal text-[var(--text-secondary)]"
+          }
+          onClick={(event) => {
+            event.stopPropagation();
+            onRetry();
+          }}
+          type="button"
+          variant="ghost"
+        >
+          Try again
+        </Button>
+      ) : null}
+    </>
+  );
+}
+
 const SIDEBAR_FOOTER_LINK =
   "flex h-[var(--shell-nav-row-height,30px)] w-full shrink-0 items-center justify-start rounded-lg px-2 text-[var(--text-small,13px)] text-[var(--text-body)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--border)]";
 
@@ -716,6 +826,12 @@ export function AppShellSidebar({
   activeRunId = null,
   onOpenSession,
   onNewChat,
+  hasMoreSessions = false,
+  loadingMoreSessions = false,
+  loadingSessions = false,
+  onLoadMoreSessions,
+  onRetrySessions,
+  sessionsLoadError = null,
   overlayContainer = null,
 }: {
   open: boolean;
@@ -740,6 +856,12 @@ export function AppShellSidebar({
   activeRunId?: string | null;
   onOpenSession?: (runId: string) => void;
   onNewChat?: () => void;
+  hasMoreSessions?: boolean;
+  loadingMoreSessions?: boolean;
+  loadingSessions?: boolean;
+  onLoadMoreSessions?: () => void;
+  onRetrySessions?: () => void;
+  sessionsLoadError?: string | null;
   overlayContainer?: HTMLElement | null;
 }) {
   const agentsQuery = useSidebarAgents();
@@ -747,16 +869,17 @@ export function AppShellSidebar({
   const runsQuery = useSidebarRuns();
   const agents = agentsQuery.data ?? [];
   const tasks = tasksQuery.data ?? [];
-  const taskRuns = runsQuery.data ?? [];
+  const runPreview: SidebarRunPreview = runsQuery.data ?? { items: [], truncated: false };
+  const taskRuns = runPreview.items;
   const loadingGroups = {
     agents: agentsQuery.isPending,
     scheduled: tasksQuery.isPending,
     runs: runsQuery.isPending,
   };
-  const groupErrors: Partial<Record<string, string>> = {
-    ...(agentsQuery.isError ? { agents: "Could not load agents" } : {}),
-    ...(tasksQuery.isError ? { scheduled: "Could not load schedules" } : {}),
-    ...(runsQuery.isError ? { runs: "Could not load runs" } : {}),
+  const groupErrors = {
+    agents: sidebarListError(agentsQuery, "agents"),
+    scheduled: sidebarListError(tasksQuery, "schedules"),
+    runs: sidebarListError(runsQuery, "runs"),
   };
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({});
   const { theme, setTheme: handleTheme } = useThemePreference();
@@ -769,20 +892,25 @@ export function AppShellSidebar({
     label: string;
     kind?: ResourceKind;
     items: { label: string; value: string }[];
+    countLabel?: string;
     empty: string;
     loading?: boolean;
     error?: string;
+    loaded?: boolean;
     onNavigate?: () => void;
+    onRetry?: () => void;
   }[] = [
     {
       key: "agents",
       label: "Agents",
       kind: "agent",
-      items: agents.map((name) => ({ label: name, value: name })),
+      items: agents,
       empty: "No agents found",
       loading: loadingGroups.agents,
+      loaded: agentsQuery.data != null,
       error: groupErrors.agents,
       onNavigate: onNavigateAgents,
+      onRetry: () => void agentsQuery.refetch(),
     },
     {
       key: "scheduled",
@@ -791,18 +919,23 @@ export function AppShellSidebar({
       items: tasks,
       empty: "Nothing scheduled",
       loading: loadingGroups.scheduled,
+      loaded: tasksQuery.data != null,
       error: groupErrors.scheduled,
       onNavigate: onNavigateScheduled,
+      onRetry: () => void tasksQuery.refetch(),
     },
     {
       key: "runs",
       label: "Runs",
       kind: "taskrun",
-      items: taskRuns,
+      items: taskRuns.map((run) => ({ ...run, label: sidebarRunLabel(run, tasks) })),
+      countLabel: sidebarRunCountLabel(runPreview),
       empty: "No runs yet",
       loading: loadingGroups.runs,
+      loaded: runsQuery.data != null,
       error: groupErrors.runs,
       onNavigate: onNavigateRuns,
+      onRetry: () => void runsQuery.refetch(),
     },
   ];
 
@@ -933,32 +1066,45 @@ export function AppShellSidebar({
                     active={activeResourceGroup === group.key}
                     chevron
                     chevronOpen={Boolean(openGroups[group.key])}
-                    count={group.items.length}
+                    count={group.countLabel ?? group.items.length}
                     label={group.label}
                     onClick={group.onNavigate}
                   />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="flex flex-col gap-0.5 pb-1">
-                    {group.loading ? (
+                    {group.loading && group.items.length === 0 ? (
                       <SidebarEmptyHint>Loading…</SidebarEmptyHint>
-                    ) : group.error ? (
-                      <SidebarEmptyHint>{group.error}</SidebarEmptyHint>
-                    ) : group.items.length === 0 ? (
-                      <SidebarEmptyHint>{group.empty}</SidebarEmptyHint>
+                    ) : group.error && !group.loaded ? (
+                      <SidebarGroupError message={group.error} onRetry={group.onRetry} />
                     ) : (
-                      group.items.map((item) => (
-                        <SidebarSubItem
-                          active={selected?.kind === group.kind && selected?.name === item.value}
-                          key={item.value}
-                          label={item.label}
-                          onClick={
-                            group.kind
-                              ? () => onSelectResource?.({ kind: group.kind!, name: item.value })
-                              : undefined
-                          }
-                        />
-                      ))
+                      <>
+                        {group.error ? (
+                          <SidebarGroupError message={group.error} onRetry={group.onRetry} />
+                        ) : null}
+                        {group.items.length === 0 ? (
+                          <SidebarEmptyHint>{group.empty}</SidebarEmptyHint>
+                        ) : (
+                          group.items.map((item) => (
+                            <SidebarSubItem
+                              active={
+                                selected?.kind === group.kind && selected?.name === item.value
+                              }
+                              key={item.value}
+                              label={item.label}
+                              onClick={
+                                group.kind
+                                  ? () =>
+                                      onSelectResource?.({
+                                        kind: group.kind!,
+                                        name: item.value,
+                                      })
+                                  : undefined
+                              }
+                            />
+                          ))
+                        )}
+                      </>
                     )}
                   </div>
                 </CollapsibleContent>
@@ -979,7 +1125,9 @@ export function AppShellSidebar({
                 <Plus className="size-3.5" />
               </Button>
             </div>
-            {sessions.length === 0 ? (
+            {sessions.length === 0 && loadingSessions ? (
+              <SidebarEmptyHint>Loading…</SidebarEmptyHint>
+            ) : sessions.length === 0 && sessionsLoadError !== CHAT_SESSIONS_LOAD_ERROR ? (
               <SidebarEmptyHint>No conversations yet</SidebarEmptyHint>
             ) : (
               sessions.map((session) => (
@@ -991,6 +1139,35 @@ export function AppShellSidebar({
                 />
               ))
             )}
+            {hasMoreSessions ? (
+              <Button
+                className="h-auto w-full justify-start rounded-lg px-4 py-1.5 text-left text-[13px] font-normal text-[var(--text-secondary)]"
+                disabled={loadingMoreSessions}
+                onClick={onLoadMoreSessions}
+                type="button"
+                variant="ghost"
+              >
+                {loadingMoreSessions ? "Loading…" : "Show earlier conversations"}
+              </Button>
+            ) : null}
+            {sessionsLoadError && !loadingSessions ? (
+              <>
+                <SidebarEmptyHint>{sessionsLoadError}</SidebarEmptyHint>
+                {onRetrySessions ? (
+                  <Button
+                    className={
+                      "h-auto w-full justify-start rounded-lg px-4 py-1.5 text-left " +
+                      "text-[13px] font-normal text-[var(--text-secondary)]"
+                    }
+                    onClick={onRetrySessions}
+                    type="button"
+                    variant="ghost"
+                  >
+                    Try again
+                  </Button>
+                ) : null}
+              </>
+            ) : null}
           </nav>
         )}
 
@@ -1005,21 +1182,17 @@ export function AppShellSidebar({
             data-sidebar-footer
           >
             <SidebarStatusCard billing={billing} onOpen={() => onNavigateRevenue?.("workspace")} />
-            {/* Help used to open the OpenAPI reference: an operator who clicked
-                it because a promise was missed landed on a route table. */}
-            <Link
+            {/* Help stays in the product. The marketing blog is not where a
+                signed-in person reports a problem. */}
+            <button
               className={SIDEBAR_FOOTER_LINK}
-              href="/blog"
-              rel="noopener noreferrer"
-              target="_blank"
+              onClick={() => onOpenSettings?.("help")}
+              type="button"
             >
               Need help?
-            </Link>
-            {/* A plain anchor, not Link: the route only redirects to the API's
-                docs, and Link's RSC prefetch of it failed with a 503 on every
-                page load. This is the OpenAPI spec, not product documentation;
-                calling it "Docs" sent operators looking for help into a route
-                table. */}
+            </button>
+            {/* Plain anchor so the shell does not prefetch the reference
+                document. The page is the OpenAPI spec rendered by this app. */}
             <a
               className={SIDEBAR_FOOTER_LINK}
               href="/api/reference"
@@ -1085,11 +1258,11 @@ export function AppShellSidebar({
                     </div>
                   </div>
                 </DropdownMenuLabel>
-                {/* Sessions are reviewed in Settings > Security; this is the same
-                  surface the account menu in the screenshot opens. */}
+                {/* Security reviews this signed-in session. It does not list or
+                    revoke other sessions, so the menu uses that page's name. */}
                 <DropdownMenuItem onSelect={() => onOpenSettings?.("security")}>
                   <Stack />
-                  Manage sessions
+                  Security
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
@@ -1131,7 +1304,12 @@ export function AppShellSidebar({
                 <DropdownMenuLabel className="text-xs uppercase tracking-wider text-primary/50">
                   Workspaces
                 </DropdownMenuLabel>
-                <DropdownMenuItem className="gap-2" onSelect={(event) => event.preventDefault()}>
+                {/* This session has one workspace. A menu item here accepted the
+                    click and left the menu open. */}
+                <div
+                  className="flex items-center gap-2 px-2 py-1.5 text-sm text-primary"
+                  data-current-workspace
+                >
                   <Avatar aria-hidden="true" className="size-4 rounded-none" size="sm">
                     <AvatarImage
                       alt=""
@@ -1153,7 +1331,7 @@ export function AppShellSidebar({
                       {planLabel}
                     </Badge>
                   ) : null}
-                </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -1165,7 +1343,7 @@ export function AppShellSidebar({
           aria-label="Collapse sidebar"
           className="absolute top-0 right-0 z-10 h-full w-[2px] min-w-0 cursor-w-resize rounded-none p-0 hover:bg-border"
           onClick={onToggle}
-          title="Collapse sidebar  [ ]"
+          title={sidebarShortcutTitle("Collapse sidebar")}
           type="button"
           variant="ghost"
         />

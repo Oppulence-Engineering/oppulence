@@ -32,7 +32,7 @@ export interface RelationshipIdentityCandidate {
   decidedAt?: string | null;
   /** Resolved decision. */
   decision?: string;
-  /** Actor. */
+  /** User who resolved this review. */
   decisionActorId?: string;
   /** Reason. */
   decisionReason?: string;

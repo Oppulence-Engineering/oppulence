@@ -8,6 +8,17 @@
 import type { ListRelationshipAttentionStatus } from "./listRelationshipAttentionStatus";
 
 export type ListRelationshipAttentionParams = {
+  /**
+   * open is the queue. Attention queue asks for open.
+   */
   status?: ListRelationshipAttentionStatus;
+  /**
+   * Page size (max 100). Attention queue asks for 50.
+   */
   limit?: number;
+  /**
+   * How many items to skip. Attention queue does not send this on the first page.
+   * @minimum 0
+   */
+  offset?: number;
 };

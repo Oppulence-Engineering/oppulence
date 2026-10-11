@@ -1,22 +1,29 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  approvalDecisionCopy,
   conversationFromAgentEvents,
   friendlyAgentError,
   parseAgentSessionEventsResponse,
   parseAgentSessionsResponse,
+  runFailedCopy,
+  runLimitCopy,
+  shownAgentError,
+  toolArgumentsVisible,
+  toolFailureCopy,
+  toolResultCopy,
 } from "@/lib/agents/agent-history";
 
-it("hides provider and workflow details from agent failures", () => {
+it("hides model and workflow details from agent failures", () => {
   expect(
     friendlyAgentError(
       "activity error: agent llm call: llm upstream returned status 402: openrouter_credits",
     ),
   ).toBe(
-    "Oppulence's AI provider is temporarily unavailable. Your workspace credits were not charged. Try again later.",
+    "Oppulence cannot reach the model right now. Your workspace credits were not charged. Try again later.",
   );
   expect(friendlyAgentError("upstream provider account is out of credits")).toBe(
-    "Oppulence's AI provider is temporarily unavailable. Your workspace credits were not charged. Try again later.",
+    "Oppulence cannot reach the model right now. Your workspace credits were not charged. Try again later.",
   );
   expect(friendlyAgentError("insufficient_credits")).toBe(
     "This workspace is out of AI credits. Ask an administrator to add credits, then try again.",
@@ -25,11 +32,78 @@ it("hides provider and workflow details from agent failures", () => {
     friendlyAgentError(
       'activity error (type: rowboat.agent.llm_complete.v1): llm upstream returned status 401: {"error":{"message":"Missing Authentication header","code":401}}',
     ),
-  ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+  ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
   expect(friendlyAgentError("activity error: scheduledEventID=1 startedEventID=2")).toBe(
     "The agent could not complete this request. Please try again.",
   );
+  expect(
+    friendlyAgentError(
+      "llm_call_failed: activity error (type: rowboat.background_tasks.execute_api_task.v1, scheduledEventID: 11): llm upstream returned status 401: Missing Authentication header",
+      "run",
+    ),
+  ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
+  expect(friendlyAgentError("activity error: scheduledEventID=1", "run")).toBe(
+    "This run could not finish. Please try again.",
+  );
   expect(friendlyAgentError("The agent was canceled.")).toBe("The agent was canceled.");
+  expect(friendlyAgentError("rate limit exceeded")).toBe(
+    "Too many requests were sent from this workspace. Wait a moment, then try again.",
+  );
+  expect(friendlyAgentError("Could not delete agent (429)")).toBe(
+    "Too many requests were sent from this workspace. Wait a moment, then try again.",
+  );
+  expect(friendlyAgentError("Agent stream failed (429)")).toBe(
+    "Too many requests were sent from this workspace. Wait a moment, then try again.",
+  );
+  expect(approvalDecisionCopy("granted")).toBe("Approved");
+  expect(approvalDecisionCopy("denied")).toBe("Denied");
+  expect(approvalDecisionCopy("resolving")).toBe("Submitting decision…");
+  expect(toolFailureCopy("not on the allowlist for this session")).toBe(
+    "This tool is not available in this chat.",
+  );
+  expect(toolFailureCopy("tool requires approval but HITL is disabled")).toBe(
+    "This tool needs approval, and approval is turned off.",
+  );
+  expect(toolFailureCopy("subagents disabled")).toBe(
+    "Related agents are turned off for this chat.",
+  );
+  expect(toolFailureCopy("denied by registry")).toBe("This tool is not allowed.");
+  expect(toolFailureCopy("llm_call_failed")).toBe("This tool could not finish.");
+  expect(toolFailureCopy("The mailbox is busy.")).toBe("The mailbox is busy.");
+  expect(toolResultCopy({ resultBytes: 42 })).toBe("Finished.");
+  expect(toolResultCopy({ subject: "Hello" })).toBeNull();
+  expect(toolArgumentsVisible({})).toBe(false);
+  expect(toolArgumentsVisible({ company: "Acme" })).toBe(true);
+  expect(runLimitCopy()).toBe("This run reached its limit.");
+  expect(runFailedCopy()).toBe("This run could not finish.");
+});
+
+describe("shownAgentError", () => {
+  it("replaces a bare status and keeps a specific sentence", () => {
+    const send = "Failed to send message";
+    expect(shownAgentError(new Error("Request failed: 500 Internal Server Error"), send)).toBe(
+      send,
+    );
+    expect(shownAgentError(new Error("Request failed (500)"), send)).toBe(send);
+    expect(
+      shownAgentError(new Error("Failed to load file (500)"), "Could not load this file."),
+    ).toBe("Could not load this file.");
+    expect(
+      shownAgentError(new Error("Failed to save file (500)"), "Could not save this file."),
+    ).toBe("Could not save this file.");
+    expect(
+      shownAgentError(new Error("Could not delete agent (500)"), "Could not delete this agent."),
+    ).toBe("Could not delete this agent.");
+    expect(shownAgentError(new Error("The agent was canceled."), send)).toBe(
+      "The agent was canceled.",
+    );
+    expect(shownAgentError(new Error("Request failed: 429 Too Many Requests"), send)).toBe(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
+    expect(shownAgentError("nope", "Could not load conversation")).toBe(
+      "Could not load conversation",
+    );
+  });
 });
 
 describe("conversationFromAgentEvents", () => {

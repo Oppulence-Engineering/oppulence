@@ -34,7 +34,7 @@ export interface MCPConnection {
   revoked_at?: string;
   revoked_by?: string;
   revoked_reason?: string;
-  /** OAuth scopes granted or requested. */
+  /** Scopes granted for this connector. */
   scopes?: string[];
   /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
   status: string;

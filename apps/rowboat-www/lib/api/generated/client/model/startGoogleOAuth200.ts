@@ -7,5 +7,6 @@
  */
 
 export type StartGoogleOAuth200 = {
+  /** Google authorization address. */
   authorizeUrl: string;
 };

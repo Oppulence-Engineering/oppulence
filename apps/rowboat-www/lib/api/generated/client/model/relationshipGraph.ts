@@ -27,10 +27,14 @@ export interface RelationshipGraph {
   edges: RelationshipGraphEdge[];
   /** Projection generation time. */
   generatedAt: string;
+  /** Another company exists beyond this page. */
+  hasMore?: boolean;
   /** Whether the response is an historical projection. */
   historical: boolean;
   /** Typed nodes. */
   nodes: RelationshipGraphNode[];
+  /** An older conversation exists beyond this page. */
+  observationHasMore?: boolean;
   /** Viewer capabilities for this projection. */
   permissions: RelationshipGraphPermissions;
   /** Relationship id for account scope. */

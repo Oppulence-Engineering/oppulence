@@ -11,7 +11,7 @@ import type { RevenueOutcome } from "./revenueOutcome";
 import type { RevenuePolicyDecision } from "./revenuePolicyDecision";
 
 /**
- * Audit chain.
+ * Action history.
  */
 export type GetRevenueActionAudit200 = {
   action?: RevenueAction;

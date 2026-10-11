@@ -29,7 +29,7 @@ export type RevenueTab = z.infer<typeof RevenueTabSchema>;
 export const REVENUE_TAB_LABELS: Record<RevenueTab, string> = {
   tasks: "Tasks",
   notes: "Notes",
-  commitments: "Commitments",
+  commitments: "Promises",
   relationships: "Companies",
   people: "People",
   queue: "Recovery",
@@ -87,6 +87,26 @@ export function revenueTabFromParam(value: string | null | undefined): RevenueTa
 /** The query string that addresses a revenue tab. Commitments is the bare path. */
 export function revenueTabSearch(tab: RevenueTab): string {
   return tab === "commitments" ? "" : `?tab=${tab}`;
+}
+
+/**
+ * A company record lives on the companies tab. The id has to travel with the
+ * tab, or a search result opens the list and loses the company that was chosen.
+ */
+export function companyRecordSearch(companyId: string): string {
+  return `?tab=relationships&company=${encodeURIComponent(companyId)}`;
+}
+
+/**
+ * Tab changes return to that tab's list. A company id is kept only when this
+ * update is opening that company.
+ */
+export function revenueSelection(
+  tab: RevenueTab,
+  companyId?: string | null,
+): { tab: RevenueTab; company: string | null } {
+  const company = companyId?.trim() ?? "";
+  return { tab, company: company.length > 0 ? company : null };
 }
 
 /** Validates a settings section from an untrusted URL parameter. */

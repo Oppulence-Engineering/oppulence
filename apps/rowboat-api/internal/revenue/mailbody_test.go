@@ -79,6 +79,61 @@ func TestMessageBodyCachesAndReuses(t *testing.T) {
 	}
 }
 
+func TestViewOriginalEmailReturnsTheGmailMessage(t *testing.T) {
+	f := newFixture(t)
+	const body = "Could you circle back this month? July works for us."
+	const messageID = "msg-july-follow-up"
+	f.svc.SetBodyFetcher(&fakeBodyFetcher{body: body}, newSealer(t), time.Hour)
+	indexMessage(t, f, messageID)
+
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel := f.relationship(t)
+	when := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	evidence, err := f.client.RevenueEvidence.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		AddRelationships(rel).
+		SetSource("gmail").
+		SetSourceRecordID("thread-july").
+		SetSourceMessageID(messageID).
+		SetContentHash("sha256:july").
+		SetExcerpt("circle back this month").
+		SetOccurredAt(when).
+		SetObservedAt(when).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	action, err := f.client.RevenueAction.Create().
+		SetID(uuid.MustParse("1a8dfa9b-a7b2-46ea-982c-622a914c00e5")).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationship(rel).
+		SetActionType("warm_follow_up").
+		SetChannel("email").
+		SetDetector("manual").
+		SetDedupeKey("view-original-email").
+		SetRevisionHash("sha256:ab12").
+		SetReason("They asked for a follow-up in July.").
+		SetPriorityScore(82).
+		AddEvidences(evidence).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := f.svc.ActionSourceBody(f.ctx, f.user, action.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != body {
+		t.Fatalf("body: %q", got)
+	}
+}
+
 func TestMessageBodyOwnershipGate(t *testing.T) {
 	f := newFixture(t)
 	f.svc.SetBodyFetcher(&fakeBodyFetcher{body: "x"}, newSealer(t), time.Hour)

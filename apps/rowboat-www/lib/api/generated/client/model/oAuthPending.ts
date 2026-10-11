@@ -30,7 +30,7 @@ export interface OAuthPending {
   owner_workos_user_id?: string;
   /** AES-GCM sealed OAuth handoff payload. Internal storage field. */
   payload_encrypted: string;
-  /** Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend. */
+  /** Sign-in service for this handoff. google, canvas, corinthian, or wispr. */
   provider: string;
   redirect_target?: string;
   requested_scopes?: string[];

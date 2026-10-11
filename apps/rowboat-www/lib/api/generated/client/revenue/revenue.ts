@@ -6,25 +6,38 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  ApproveActionProposal200,
   ApproveRevenueActionBody,
+  CreateCommunicationPrivacyRule201,
+  CreateCommunicationPrivacyRuleBody,
   CreateRevenueActionBody,
   DismissRevenueActionBody,
   EditRevenueActionBody,
   ErrorEnvelope,
+  ExecuteActionProposal200,
+  ExecuteActionProposalBody,
+  GetObjectAudit200,
   GetOpenPromisesReport200One,
   GetOpenPromisesReportParams,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
   LinkRevenueWorkspaceBody,
+  ListActionProposals200,
+  ListActionProposalsParams,
   ListRevenueActions200,
   ListRevenueActionsParams,
   ListRevenueLeakScans200,
   ListRevenueLeakScansParams,
   N400Response,
   N401Response,
+  N403Response,
   N404Response,
   N409Response,
+  N500Response,
+  N503Response,
   RecordRevenueActionOutcomeBody,
+  RejectActionProposal200,
+  RejectActionProposalBody,
   RejectRevenueActionBody,
   RevenueAction,
   RevenueDigest,
@@ -38,6 +51,336 @@ import type {
   SnoozeRevenueActionBody,
   StartRevenueLeakScanBody,
 } from "../model";
+
+export type listActionProposalsResponse200 = {
+  data: ListActionProposals200;
+  status: 200;
+};
+
+export type listActionProposalsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listActionProposalsResponseSuccess = listActionProposalsResponse200 & {
+  headers: Headers;
+};
+export type listActionProposalsResponseError = listActionProposalsResponse401 & {
+  headers: Headers;
+};
+
+export type listActionProposalsResponse =
+  listActionProposalsResponseSuccess | listActionProposalsResponseError;
+
+export const getListActionProposalsUrl = (params?: ListActionProposalsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/action-proposals?${stringifiedParams}`
+    : `/v1/action-proposals`;
+};
+
+/**
+ * Agent approvals loads the pending queue. The request asks for pending proposals. This workspace has no pending proposal, so the page is empty.
+ * @summary Agent approvals
+ */
+export const listActionProposals = async (
+  params?: ListActionProposalsParams,
+  options?: RequestInit,
+): Promise<listActionProposalsResponse> => {
+  const res = await fetch(getListActionProposalsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listActionProposalsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listActionProposalsResponse;
+};
+
+export type approveActionProposalResponse200 = {
+  data: ApproveActionProposal200;
+  status: 200;
+};
+
+export type approveActionProposalResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type approveActionProposalResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type approveActionProposalResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type approveActionProposalResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type approveActionProposalResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type approveActionProposalResponseSuccess = approveActionProposalResponse200 & {
+  headers: Headers;
+};
+export type approveActionProposalResponseError = (
+  | approveActionProposalResponse400
+  | approveActionProposalResponse401
+  | approveActionProposalResponse403
+  | approveActionProposalResponse404
+  | approveActionProposalResponse409
+) & {
+  headers: Headers;
+};
+
+export type approveActionProposalResponse =
+  approveActionProposalResponseSuccess | approveActionProposalResponseError;
+
+export const getApproveActionProposalUrl = (id: string) => {
+  return `/v1/action-proposals/${id}/approve`;
+};
+
+/**
+ * Approve and run posts no body. The page receives the approved proposal and a one-time value, then runs the action.
+ * @summary Approve and run
+ */
+export const approveActionProposal = async (
+  id: string,
+  options?: RequestInit,
+): Promise<approveActionProposalResponse> => {
+  const res = await fetch(getApproveActionProposalUrl(id), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: approveActionProposalResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as approveActionProposalResponse;
+};
+
+export type executeActionProposalResponse200 = {
+  data: ExecuteActionProposal200;
+  status: 200;
+};
+
+export type executeActionProposalResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type executeActionProposalResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type executeActionProposalResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type executeActionProposalResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type executeActionProposalResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type executeActionProposalResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type executeActionProposalResponseSuccess = executeActionProposalResponse200 & {
+  headers: Headers;
+};
+export type executeActionProposalResponseError = (
+  | executeActionProposalResponse400
+  | executeActionProposalResponse401
+  | executeActionProposalResponse403
+  | executeActionProposalResponse404
+  | executeActionProposalResponse409
+  | executeActionProposalResponse503
+) & {
+  headers: Headers;
+};
+
+export type executeActionProposalResponse =
+  executeActionProposalResponseSuccess | executeActionProposalResponseError;
+
+export const getExecuteActionProposalUrl = (id: string) => {
+  return `/v1/action-proposals/${id}/execute`;
+};
+
+/**
+ * Execute posts the one-time value Approve and run returned. The page shows the result while it waits for the product to confirm the change.
+ * @summary Execute
+ */
+export const executeActionProposal = async (
+  id: string,
+  executeActionProposalBody: ExecuteActionProposalBody,
+  options?: RequestInit,
+): Promise<executeActionProposalResponse> => {
+  const res = await fetch(getExecuteActionProposalUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(executeActionProposalBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: executeActionProposalResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as executeActionProposalResponse;
+};
+
+export type rejectActionProposalResponse200 = {
+  data: RejectActionProposal200;
+  status: 200;
+};
+
+export type rejectActionProposalResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type rejectActionProposalResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type rejectActionProposalResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type rejectActionProposalResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type rejectActionProposalResponseSuccess = rejectActionProposalResponse200 & {
+  headers: Headers;
+};
+export type rejectActionProposalResponseError = (
+  | rejectActionProposalResponse400
+  | rejectActionProposalResponse401
+  | rejectActionProposalResponse404
+  | rejectActionProposalResponse409
+) & {
+  headers: Headers;
+};
+
+export type rejectActionProposalResponse =
+  rejectActionProposalResponseSuccess | rejectActionProposalResponseError;
+
+export const getRejectActionProposalUrl = (id: string) => {
+  return `/v1/action-proposals/${id}/reject`;
+};
+
+/**
+ * Reject posts a short reason. The page discards the action and keeps that reason on the audit trail.
+ * @summary Reject
+ */
+export const rejectActionProposal = async (
+  id: string,
+  rejectActionProposalBody: RejectActionProposalBody,
+  options?: RequestInit,
+): Promise<rejectActionProposalResponse> => {
+  const res = await fetch(getRejectActionProposalUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(rejectActionProposalBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: rejectActionProposalResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as rejectActionProposalResponse;
+};
+
+export type getObjectAuditResponse200 = {
+  data: GetObjectAudit200;
+  status: 200;
+};
+
+export type getObjectAuditResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type getObjectAuditResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getObjectAuditResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getObjectAuditResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type getObjectAuditResponseSuccess = getObjectAuditResponse200 & {
+  headers: Headers;
+};
+export type getObjectAuditResponseError = (
+  | getObjectAuditResponse400
+  | getObjectAuditResponse401
+  | getObjectAuditResponse404
+  | getObjectAuditResponse500
+) & {
+  headers: Headers;
+};
+
+export type getObjectAuditResponse = getObjectAuditResponseSuccess | getObjectAuditResponseError;
+
+export const getGetObjectAuditUrl = (resourceRef: string) => {
+  return `/v1/objects/${resourceRef}/audit`;
+};
+
+/**
+ * Audit trail opens this object's proposal, approval, and execution. The page shows the proposal kind, the approval prefix, and the execution result.
+ * @summary Audit trail
+ */
+export const getObjectAudit = async (
+  resourceRef: string,
+  options?: RequestInit,
+): Promise<getObjectAuditResponse> => {
+  const res = await fetch(getGetObjectAuditUrl(resourceRef), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getObjectAuditResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getObjectAuditResponse;
+};
 
 export type listRevenueActionsResponse200 = {
   data: ListRevenueActions200;
@@ -76,8 +419,8 @@ export const getListRevenueActionsUrl = (params?: ListRevenueActionsParams) => {
 };
 
 /**
- * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.
- * @summary List the action queue
+ * Tasks loads open follow-ups with the soonest due date first. It asks for open tasks, one hundred at a time, and does not ask for an older page. The first task is Follow up on the proposal, due on July 15.
+ * @summary Tasks
  */
 export const listRevenueActions = async (
   params?: ListRevenueActionsParams,
@@ -131,8 +474,8 @@ export const getCreateRevenueActionUrl = () => {
 };
 
 /**
- * Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.
- * @summary Create a manual action
+ * Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.
+ * @summary Create task
  */
 export const createRevenueAction = async (
   createRevenueActionBody: CreateRevenueActionBody,
@@ -156,6 +499,11 @@ export type getRevenueActionResponse200 = {
   status: 200;
 };
 
+export type getRevenueActionResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
 export type getRevenueActionResponse401 = {
   data: N401Response;
   status: 401;
@@ -170,7 +518,7 @@ export type getRevenueActionResponseSuccess = getRevenueActionResponse200 & {
   headers: Headers;
 };
 export type getRevenueActionResponseError = (
-  getRevenueActionResponse401 | getRevenueActionResponse404
+  getRevenueActionResponse400 | getRevenueActionResponse401 | getRevenueActionResponse404
 ) & {
   headers: Headers;
 };
@@ -183,8 +531,8 @@ export const getGetRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Returns one action with relationship context.
- * @summary Get an action
+ * Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.
+ * @summary Reload the checked action
  */
 export const getRevenueAction = async (
   actionId: string,
@@ -246,8 +594,8 @@ export const getApproveRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Approves the current revision. Send-mode actions require a passed (or explicitly risk-accepted review_required) unexpired decision bound to the exact revision; blocked actions can never be approved.
- * @summary Approve an action
+ * Approve posts acceptRisk false. The stored action is approved for its current revision, and the approval time is recorded. Approve send uses this same call when the action is in send mode. A blocked action cannot be approved.
+ * @summary Approve
  */
 export const approveRevenueAction = async (
   actionId: string,
@@ -299,8 +647,8 @@ export const getGetRevenueActionAuditUrl = (actionId: string) => {
 };
 
 /**
- * Returns the full observe, decision, approval, execution, and outcome chain for one action.
- * @summary Get the audit chain
+ * History loads the action, its revisions, the policy decisions, and the outcomes.
+ * @summary Get action history
  */
 export const getRevenueActionAudit = async (
   actionId: string,
@@ -349,8 +697,8 @@ export const getDismissRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Dismisses the action with a reason label and records the dismissed outcome.
- * @summary Dismiss an action
+ * Dismiss removes this follow-up from the queue and stores the reason.
+ * @summary Dismiss
  */
 export const dismissRevenueAction = async (
   actionId: string,
@@ -415,8 +763,8 @@ export const getEditRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Creates a new revision and invalidates the previous policy decision and approval. Editing is refused once execution has started.
- * @summary Edit an action
+ * Save draft posts the subject and message from the review sheet. The stored action moves to revision 2, and the previous sending check and approval no longer apply.
+ * @summary Save draft
  */
 export const editRevenueAction = async (
   actionId: string,
@@ -475,8 +823,8 @@ export const getEvaluateRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Requests or retries the OutboundConsole preflight for the current revision and stores the immutable decision snapshot. A fresh unexpired decision for the same revision is returned without provider cost. Facade unavailability keeps the action pending (fail closed).
- * @summary Request policy preflight
+ * Re-check policy posts no request body. The stored decision passed for the current revision, with no reason codes, and it expires the next day.
+ * @summary Re-check policy
  */
 export const evaluateRevenueAction = async (
   actionId: string,
@@ -538,8 +886,8 @@ export const getExecuteRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Executes the approved current revision exactly once through the assigned execution owner, with an idempotency key derived from the action and revision. A duplicate execute returns the existing result. A lost provider result is marked ambiguous and never automatically resent.
- * @summary Execute an action
+ * Create provider draft posts no request body. The stored action is sent and handled, and the draft time is recorded. Send approved email uses this same call when the action is in send mode.
+ * @summary Create provider draft
  */
 export const executeRevenueAction = async (
   actionId: string,
@@ -595,8 +943,8 @@ export const getRecordRevenueActionOutcomeUrl = (actionId: string) => {
 };
 
 /**
- * Appends an observed outcome idempotently on (action, source, sourceEventId); the duplicate returns the stored row.
- * @summary Record an outcome
+ * Log outcome records They replied from the history sheet. The button sends source user and sourceEventId manual:replied plus the current time. Sending the same id again returns the stored row.
+ * @summary Log outcome
  */
 export const recordRevenueActionOutcome = async (
   actionId: string,
@@ -653,8 +1001,8 @@ export const getRejectRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Rejects the current revision with a reason.
- * @summary Reject an action
+ * Reject declines this follow-up. The decision is stored and the follow-up stays open.
+ * @summary Reject
  */
 export const rejectRevenueAction = async (
   actionId: string,
@@ -711,8 +1059,8 @@ export const getSnoozeRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Parks the action until a bounded future timestamp (at most 90 days).
- * @summary Snooze an action
+ * Snooze posts a wake time seven days out. The stored action is snoozed until that time. The wake time has to be in the future and within 90 days.
+ * @summary Snooze
  */
 export const snoozeRevenueAction = async (
   actionId: string,
@@ -764,8 +1112,8 @@ export const getGetRevenueActionSourceBodyUrl = (actionId: string) => {
 };
 
 /**
- * Returns the plain-text body of the original email behind this action (RFC 031 Layer 3), served from the sealed short-TTL cache or fetched from Gmail on demand. 404 when no source message is linked or the body is unavailable.
- * @summary Get the original email body
+ * View original email loads the Gmail message behind this action. The request sends only the action id. The answer is that message as plain text in body, separate from the draft on the action.
+ * @summary View original email
  */
 export const getRevenueActionSourceBody = async (
   actionId: string,
@@ -807,8 +1155,8 @@ export const getGetRevenueDigestUrl = () => {
 };
 
 /**
- * Returns the digest content the scheduled email is built from: the top open loops and running impact counts.
- * @summary Preview the proactive digest
+ * Impact loads the weekly digest. The request sends no filter. This workspace has no open loop, so the highlight list is empty and every count is zero.
+ * @summary Weekly digest
  */
 export const getRevenueDigest = async (
   options?: RequestInit,
@@ -849,8 +1197,8 @@ export const getGetRevenueImpactUrl = () => {
 };
 
 /**
- * Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.
- * @summary Get the revenue impact summary
+ * Impact loads the home counts. The request sends no filter. Overdue promises, open recovery, and companies at risk are zero, and there is no reply rate or meeting rate yet.
+ * @summary Impact
  */
 export const getRevenueImpact = async (
   options?: RequestInit,
@@ -910,8 +1258,8 @@ export const getListRevenueLeakScansUrl = (params?: ListRevenueLeakScansParams) 
 };
 
 /**
- * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.
- * @summary List revenue leak scans
+ * Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty.
+ * @summary Audits
  */
 export const listRevenueLeakScans = async (
   params?: ListRevenueLeakScansParams,
@@ -960,8 +1308,8 @@ export const getStartRevenueLeakScanUrl = () => {
 };
 
 /**
- * Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.
- * @summary Start a revenue leak scan
+ * Run Promise Leak Audit reads the last six months of connected Gmail. The button sends lookbackDays 180. One audit runs at a time; poll the scan id for progress.
+ * @summary Run Promise Leak Audit
  */
 export const startRevenueLeakScan = async (
   startRevenueLeakScanBody?: StartRevenueLeakScanBody,
@@ -1012,8 +1360,8 @@ export const getGetRevenueLeakScanUrl = (scanId: string) => {
 };
 
 /**
- * Returns progress, counts, errors, and source freshness for one scan.
- * @summary Get scan progress
+ * Reading your last 6 months polls this audit while it runs. The page shows how many conversations have been read.
+ * @summary Reading your last 6 months
  */
 export const getRevenueLeakScan = async (
   scanId: string,
@@ -1084,8 +1432,8 @@ export const getGetOpenPromisesReportUrl = (
 };
 
 /**
- * Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
- * @summary Get the open promises report
+ * Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.
+ * @summary Download the report
  */
 export const getOpenPromisesReport = async (
   scanId: string,
@@ -1152,8 +1500,8 @@ export const getRevenueSemanticSearchUrl = (params: RevenueSemanticSearchParams)
 };
 
 /**
- * Natural-language search over the caller's Layer-2 signals (RFC 031). Returns available=false with no matches when semantic memory is not configured.
- * @summary Semantic search over mail
+ * Search mail sends the words typed in the palette. The answer lists the closest mail first, with the subject, the other person's email, the kind of thread, why it matched, and how close it is. When mail search is not set up, the answer includes no matches.
+ * @summary Search mail
  */
 export const revenueSemanticSearch = async (
   params: RevenueSemanticSearchParams,
@@ -1195,8 +1543,8 @@ export const getGetRevenueWorkspaceUrl = () => {
 };
 
 /**
- * Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.
- * @summary Get current revenue workspace
+ * Local mode is the workspace Connected sources opens before a sending workspace is linked. It comes back local and active, and the sending check stays off.
+ * @summary Local mode
  */
 export const getRevenueWorkspace = async (
   options?: RequestInit,
@@ -1210,6 +1558,70 @@ export const getRevenueWorkspace = async (
 
   const data: getRevenueWorkspaceResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getRevenueWorkspaceResponse;
+};
+
+export type createCommunicationPrivacyRuleResponse201 = {
+  data: CreateCommunicationPrivacyRule201;
+  status: 201;
+};
+
+export type createCommunicationPrivacyRuleResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type createCommunicationPrivacyRuleResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type createCommunicationPrivacyRuleResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type createCommunicationPrivacyRuleResponseSuccess =
+  createCommunicationPrivacyRuleResponse201 & {
+    headers: Headers;
+  };
+export type createCommunicationPrivacyRuleResponseError = (
+  | createCommunicationPrivacyRuleResponse400
+  | createCommunicationPrivacyRuleResponse401
+  | createCommunicationPrivacyRuleResponse403
+) & {
+  headers: Headers;
+};
+
+export type createCommunicationPrivacyRuleResponse =
+  createCommunicationPrivacyRuleResponseSuccess | createCommunicationPrivacyRuleResponseError;
+
+export const getCreateCommunicationPrivacyRuleUrl = () => {
+  return `/v1/revenue-workspaces/current/communication-privacy-rules`;
+};
+
+/**
+ * Add rule sends kind protected_address and value buyer@example.com. The server lowercases the address, stores an active rule, and returns that rule with the sha256 of the stored address.
+ * @summary Add rule
+ */
+export const createCommunicationPrivacyRule = async (
+  createCommunicationPrivacyRuleBody: CreateCommunicationPrivacyRuleBody,
+  options?: RequestInit,
+): Promise<createCommunicationPrivacyRuleResponse> => {
+  const res = await fetch(getCreateCommunicationPrivacyRuleUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createCommunicationPrivacyRuleBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createCommunicationPrivacyRuleResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createCommunicationPrivacyRuleResponse;
 };
 
 export type linkRevenueWorkspaceResponse200 = {
@@ -1251,8 +1663,8 @@ export const getLinkRevenueWorkspaceUrl = () => {
 };
 
 /**
- * Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.
- * @summary Link the OutboundConsole workspace
+ * Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.
+ * @summary Link workspace
  */
 export const linkRevenueWorkspace = async (
   linkRevenueWorkspaceBody: LinkRevenueWorkspaceBody,

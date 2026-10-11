@@ -1,8 +1,11 @@
 package revenue
 
 import (
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
@@ -123,6 +126,21 @@ func TestRegisterServesTheFiveViews(t *testing.T) {
 		}
 		if len(rows) != 1 || rows[0].Text != "Ship the migration" {
 			t.Fatalf("by-owner view wrong: %#v", rows)
+		}
+		// The field asks for a name or an email. The stored owner is the address.
+		named, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{Owner: "Alex"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(named) != 1 || named[0].Text != "Ship the migration" {
+			t.Fatalf("owner name should find the address, got %#v", named)
+		}
+		other, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{Owner: "sam"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(other) != 1 || other[0].Text != "Send the SOC 2 report" {
+			t.Fatalf("owner name matched the wrong promise: %#v", other)
 		}
 	})
 }
@@ -363,4 +381,153 @@ func TestRegisterExcludesUnconfirmedCandidates(t *testing.T) {
 	if len(withCandidates) != 2 {
 		t.Fatalf("the review queue could not see candidates: %d", len(withCandidates))
 	}
+}
+
+func TestRegisterTiedDueTimeUsesID(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel := f.relationship(t)
+	touched := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	due := time.Date(2099, 6, 1, 0, 0, 0, 0, time.UTC)
+	const total = 201
+	for i := 1; i <= total; i++ {
+		text := "Tied Promise"
+		if i == 1 {
+			text = "Tied Promise Last"
+		}
+		if _, err := f.client.Commitment.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a115f000-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(rel).
+			SetDirection("promised_by_me").
+			SetText(text).
+			SetConfidence(0.9).
+			SetSourcePhrase(text).
+			SetAcceptance("internally_confirmed").
+			SetUserConfirmed(true).
+			SetDueAt(due).
+			SetCreatedAt(touched).
+			SetUpdatedAt(touched).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	filter := CommitmentFilter{
+		Direction: "promised_by_me",
+		States:    []string{RegisterOpen},
+		Limit:     200,
+	}
+	first, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil || first == nil {
+		t.Fatal(err)
+	}
+	if len(first.Commitments) != 200 || !first.HasMore {
+		t.Fatalf("newest page = %d hasMore=%v", len(first.Commitments), first.HasMore)
+	}
+	for _, row := range first.Commitments {
+		if row.Text == "Tied Promise Last" {
+			t.Fatal("the lowest id was included beside higher ids with the same due time")
+		}
+	}
+	filter.Offset = 200
+	second, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil || second == nil {
+		t.Fatal(err)
+	}
+	if len(second.Commitments) != 1 || second.HasMore || second.Commitments[0].Text != "Tied Promise Last" {
+		t.Fatalf("older id page = %+v", second)
+	}
+}
+
+func TestListCommitmentsExactPageIsNotAnotherPage(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	due := time.Date(2099, 6, 1, 0, 0, 0, 0, time.UTC)
+	seedCommitment(t, f, rel, "promised_by_me", "Exact Promise One", "", &due)
+	seedCommitment(t, f, rel, "promised_by_me", "Exact Promise Two", "", &due)
+	filter := CommitmentFilter{Direction: "promised_by_me", Limit: 2}
+	exact, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil || exact == nil || len(exact.Commitments) != 2 || exact.HasMore {
+		count := 0
+		hasMore := false
+		if exact != nil {
+			count = len(exact.Commitments)
+			hasMore = exact.HasMore
+		}
+		t.Fatalf("exact page = %d hasMore=%v err=%v", count, hasMore, err)
+	}
+	seedCommitment(t, f, rel, "promised_by_me", "Exact Promise Extra", "", &due)
+	first, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil || first == nil || len(first.Commitments) != 2 || !first.HasMore {
+		t.Fatalf("first page = %+v err=%v", first, err)
+	}
+	filter.Offset = 2
+	next, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil || next == nil || len(next.Commitments) != 1 || next.HasMore {
+		t.Fatalf("next page = %+v err=%v", next, err)
+	}
+}
+
+func TestOwnerSearchUsesTheNameOnTheRegister(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	if rel.DisplayName != "Jordan Buyer" {
+		t.Fatalf("display name %q", rel.DisplayName)
+	}
+	due := time.Now().UTC().Add(10 * 24 * time.Hour)
+	seedCommitment(t, f, rel, "promised_by_me", "Send the quay note", "local-user", &due)
+	seedCommitment(t, f, rel, "promised_by_them", "Send the quay reply", "meeting-counterparty", &due)
+	seedCommitment(t, f, rel, "mutual", "Share the quay plan", "meeting-counterparty", &due)
+	seedCommitment(t, f, rel, "promised_by_me", "Mail the ledger", "alex@x.co", &due)
+
+	you, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{Owner: "You"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if texts := commitmentTexts(you); !sameTexts(texts, "Send the quay note", "Share the quay plan") {
+		t.Fatalf("You matched %#v", texts)
+	}
+	company, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{Owner: "Jordan Buyer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if texts := commitmentTexts(company); !sameTexts(texts, "Send the quay reply", "Share the quay plan") {
+		t.Fatalf("company matched %#v", texts)
+	}
+	both, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{Owner: "You and Jordan Buyer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if texts := commitmentTexts(both); !sameTexts(texts, "Share the quay plan") {
+		t.Fatalf("both sides matched %#v", texts)
+	}
+}
+
+func commitmentTexts(rows []*ent.Commitment) []string {
+	texts := make([]string, 0, len(rows))
+	for _, row := range rows {
+		texts = append(texts, row.Text)
+	}
+	return texts
+}
+
+func sameTexts(got []string, want ...string) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	seen := map[string]int{}
+	for _, text := range got {
+		seen[text]++
+	}
+	for _, text := range want {
+		seen[text]--
+		if seen[text] < 0 {
+			return false
+		}
+	}
+	return true
 }

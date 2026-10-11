@@ -9,21 +9,31 @@ import type { GetRelationshipGraphScope } from "./getRelationshipGraphScope";
 
 export type GetRelationshipGraphParams = {
   /**
-   * Portfolio or one relationship.
+   * portfolio is the whole workspace. Company graph asks for the portfolio.
    */
   scope?: GetRelationshipGraphScope;
   /**
-   * Required when scope=relationship.
+   * One company. Company graph does not send this for the portfolio.
    */
   relationshipId?: string;
   /**
-   * Bounded graph expansion depth.
+   * How far the graph expands (1-3). Company graph asks for 2.
    * @minimum 1
    * @maximum 3
    */
   depth?: number;
   /**
-   * Historical evidence boundary; must not be in the future.
+   * An earlier moment. Company graph does not send this on the first load.
    */
   asOf?: string;
+  /**
+   * How many companies to skip. Company graph does not send this on the first page.
+   * @minimum 0
+   */
+  offset?: number;
+  /**
+   * How many conversations to skip. Company graph does not send this on the first page.
+   * @minimum 0
+   */
+  observationOffset?: number;
 };

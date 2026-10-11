@@ -33,7 +33,7 @@ export const ExchangeWorkOSToken200Response = zod
         "JWT access token used as Authorization: Bearer for authenticated Solomon AI API calls.",
       ),
     email: zod.string().nullish().describe("Best-known WorkOS primary email for the user."),
-    expires_at: zod.int().describe("Credential or one-time ticket expiry timestamp."),
+    expires_at: zod.int().describe("Unix timestamp in seconds when the access token expires."),
     refresh_token: zod
       .string()
       .nullish()
@@ -162,7 +162,7 @@ export const RefreshWorkOSToken200Response = zod
         "JWT access token used as Authorization: Bearer for authenticated Solomon AI API calls.",
       ),
     email: zod.string().nullish().describe("Best-known WorkOS primary email for the user."),
-    expires_at: zod.int().describe("Credential or one-time ticket expiry timestamp."),
+    expires_at: zod.int().describe("Unix timestamp in seconds when the access token expires."),
     refresh_token: zod
       .string()
       .nullish()

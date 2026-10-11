@@ -8,11 +8,23 @@
 import * as zod from "zod";
 
 /**
- * Returns the authenticated user's recent durable agent conversations.
- * @summary List agent sessions
+ * Show earlier conversations loads the next page of History. It skips the newest 50 conversations. This page has one older conversation, and no conversation after it.
+ * @summary Show earlier conversations
  */
+export const listAgentSessionsQueryOffsetMin = 0;
+
+export const ListAgentSessionsQueryParams = zod.object({
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listAgentSessionsQueryOffsetMin)
+    .optional()
+    .describe("How many conversations to skip. Show earlier conversations skips the newest 50."),
+});
+
 export const ListAgentSessions200Response = zod
   .strictObject({
+    hasMore: zod.boolean().optional().describe("Another conversation exists beyond this page."),
     sessions: zod
       .array(
         zod
@@ -47,7 +59,9 @@ export const ListAgentSessions200Response = zod
       )
       .describe("Sessions ordered by latest update."),
   })
-  .describe("Recent durable agent conversations.");
+  .describe(
+    "Recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",
+  );
 
 export const ListAgentSessions401Response = zod
   .strictObject({
@@ -80,15 +94,331 @@ export const ListAgentSessions500Response = zod
   );
 
 /**
- * Returns ordered durable events used to reconstruct a conversation after navigation or reload.
- * @summary List agent session events
+ * Submit sends the first chat message. It posts agent assistant, channel web, and "Ask about a company, a promise, or the next step." as both the message and the title. The stored session is active, with no completed turns yet.
+ * @summary Submit
+ */
+export const CreateAgentSessionBody = zod
+  .strictObject({
+    agent: zod.string().describe("Selected agent."),
+    channel: zod.string().optional().describe("Composer channel."),
+    input: zod.string().optional().describe("Message text."),
+    title: zod.string().optional().describe("Conversation title."),
+  })
+  .describe("First chat message.");
+
+export const CreateAgentSession201Response = zod
+  .strictObject({
+    agent: zod.string().describe("Pinned agent slug."),
+    agentSource: zod.string().nullish().describe("Agent definition source."),
+    channel: zod.string().describe("Originating channel."),
+    continuationToken: zod
+      .string()
+      .nullable()
+      .describe("Signed continuation handle when configured."),
+    costUnits: zod.int().describe("Cumulative metered cost units."),
+    createdAt: zod.iso.datetime({ offset: true }).describe("Session creation time."),
+    error: zod.string().nullish().describe("Terminal error summary."),
+    errorCode: zod.string().nullish().describe("Stable terminal error code."),
+    lastActivityAt: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe("Most recent activity time."),
+    llmCalls: zod.int().describe("Cumulative model calls."),
+    sessionId: zod.string().describe("Stable session id."),
+    status: zod
+      .enum(["active", "paused", "completed", "failed", "canceled"])
+      .describe(
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+      ),
+    title: zod.string().nullish().describe("Conversation title."),
+    toolCalls: zod.int().describe("Cumulative tool calls."),
+    turns: zod.int().describe("Completed turn count."),
+  })
+  .describe("Durable agent conversation metadata.");
+
+export const CreateAgentSession400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateAgentSession401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateAgentSession502Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Approve allows the paused chat action. It posts decision granted for approval session_abc123/turn/0/approval/0. The response repeats that approval and decision granted.
+ * @summary Approve
+ */
+export const ApproveAgentSessionParams = zod.object({
+  id: zod.string().describe("Stable session id."),
+  approvalId: zod.string().describe("Approval id."),
+});
+
+export const ApproveAgentSessionBody = zod
+  .strictObject({
+    decision: zod.enum(["granted", "denied"]).describe("Granted or denied."),
+  })
+  .describe("Chat approval decision.");
+
+export const ApproveAgentSession202Response = zod
+  .strictObject({
+    approvalId: zod.string().describe("Approval that was decided."),
+    decision: zod.enum(["granted", "denied"]).describe("Decision that was stored."),
+  })
+  .describe("Accepted approval.");
+
+export const ApproveAgentSession400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ApproveAgentSession401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ApproveAgentSession404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Approve on a payment request posts no body. The API returns the approval token for that pending payment, valid until 2026-09-02T15:10:00Z, with no extra sign-in check.
+ * @summary Approve payment
+ */
+export const MintAgentApprovalTokenParams = zod.object({
+  id: zod.string().describe("Stable session id."),
+  approvalId: zod.string().describe("Pending approval id."),
+});
+
+export const MintAgentApprovalToken200Response = zod
+  .strictObject({
+    approvalToken: zod.string().describe("Token the chat sends with the granted decision."),
+    expiresAt: zod.string().describe("When this token stops working."),
+    mfa: zod.boolean().describe("Whether an extra sign-in check backed this approval."),
+  })
+  .describe("Short-lived approval token.");
+
+export const MintAgentApprovalToken401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const MintAgentApprovalToken403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const MintAgentApprovalToken404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const MintAgentApprovalToken409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+export const MintAgentApprovalToken500Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Stop response ends the open chat. The request has no body. The response names that session and reports status canceling.
+ * @summary Stop response
+ */
+export const CancelAgentSessionParams = zod.object({
+  id: zod.string().describe("Stable session id."),
+});
+
+export const CancelAgentSession202Response = zod
+  .strictObject({
+    sessionId: zod.string().describe("Session that is stopping."),
+    status: zod.string().describe("Stop acknowledgement."),
+  })
+  .describe("Accepted stop.");
+
+export const CancelAgentSession401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CancelAgentSession404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CancelAgentSession500Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Open conversation reads the history row Review the Acme renewal. The first read asks for 1000 events and sends no cursor. The stored page starts at sequence 0 for Assistant, includes both completed turns, the relationship.read tool call, and three model calls on anthropic/claude-sonnet-4-5, and does not name another page.
+ * @summary Open conversation
  */
 export const ListAgentSessionEventsParams = zod.object({
   id: zod.string().describe("Stable session id."),
 });
 
+export const listAgentSessionEventsQueryAfterSeqMin = 0;
+
 export const ListAgentSessionEventsQueryParams = zod.object({
-  afterSeq: zod.coerce.number().int().optional().describe("Return events after this sequence."),
+  afterSeq: zod.coerce
+    .number()
+    .int()
+    .min(listAgentSessionEventsQueryAfterSeqMin)
+    .optional()
+    .describe("Return events after this sequence. The first read omits this."),
   limit: zod.coerce.number().int().optional().describe("Maximum events to return (up to 1000)."),
 });
 
@@ -98,10 +428,12 @@ export const ListAgentSessionEvents200Response = zod
       .array(
         zod
           .strictObject({
-            data: zod.record(zod.string(), zod.unknown()).describe("Event payload."),
+            data: zod
+              .record(zod.string(), zod.unknown())
+              .describe("Payload the approval card reads."),
             seq: zod.int().describe("Stable session event sequence."),
             turnSeq: zod.int().nullish().describe("Owning turn sequence when applicable."),
-            type: zod.string().describe("Canonical event type."),
+            type: zod.string().describe("Chat event. An approval request pauses until Approve."),
           })
           .describe("One ordered durable agent lifecycle or transcript event."),
       )
@@ -156,6 +488,142 @@ export const ListAgentSessionEvents404Response = zod
   );
 
 export const ListAgentSessionEvents500Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Follow the chat reads the open conversation. The first line is sequence 0, the session start for Assistant, with no turn yet.
+ * @summary Follow the chat
+ */
+export const StreamAgentSessionParams = zod.object({
+  id: zod.string().describe("Stable session id."),
+});
+
+export const streamAgentSessionQueryAfterSeqMin = 0;
+
+export const StreamAgentSessionQueryParams = zod.object({
+  afterSeq: zod.coerce
+    .number()
+    .int()
+    .min(streamAgentSessionQueryAfterSeqMin)
+    .optional()
+    .describe("Send the last sequence already shown when reconnecting. The first read omits this."),
+});
+
+export const StreamAgentSessionHeader = zod.object({
+  Accept: zod.string().optional().describe("Ask for one event per line."),
+});
+
+export const StreamAgentSession200Response = zod.unknown();
+
+export const StreamAgentSession401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const StreamAgentSession404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const StreamAgentSession500Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Submit sends the next message in the open chat. It posts only "Ask about a company, a promise, or the next step." The opening message already took sequence 0, so this turn is accepted as sequence 1.
+ * @summary Submit
+ */
+export const SubmitAgentSessionTurnParams = zod.object({
+  id: zod.string().describe("Stable session id."),
+});
+
+export const SubmitAgentSessionTurnBody = zod
+  .strictObject({
+    input: zod.string().describe("Message text."),
+  })
+  .describe("Next chat message.");
+
+export const SubmitAgentSessionTurn202Response = zod
+  .strictObject({
+    accepted: zod.boolean().describe("The turn was queued."),
+    turnSeq: zod.int().describe("Sequence of the accepted turn."),
+  })
+  .describe("Accepted turn.");
+
+export const SubmitAgentSessionTurn400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const SubmitAgentSessionTurn401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const SubmitAgentSessionTurn404Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),

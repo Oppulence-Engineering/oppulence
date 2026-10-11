@@ -2,6 +2,7 @@ import { dehydrate, HydrationBoundary, type QueryClient } from "@tanstack/react-
 import type { ReactNode } from "react";
 
 import { getQueryClient } from "@/lib/query/get-query-client";
+import { SettlePrefetch } from "@/lib/query/settle-prefetch";
 
 /** Inline fallback for streamed dashboard leaves — not the full-page /app spinner. */
 export function DashboardRouteFallback({ label }: { label: string }) {
@@ -27,5 +28,10 @@ export async function PrefetchHydration({
 }) {
   const queryClient = getQueryClient();
   await seed(queryClient);
-  return <HydrationBoundary state={dehydrate(queryClient)}>{children}</HydrationBoundary>;
+  const state = dehydrate(queryClient);
+  return (
+    <HydrationBoundary state={state}>
+      <SettlePrefetch state={state}>{children}</SettlePrefetch>
+    </HydrationBoundary>
+  );
 }

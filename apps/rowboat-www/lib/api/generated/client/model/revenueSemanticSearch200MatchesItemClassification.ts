@@ -7,7 +7,7 @@
  */
 
 /**
- * Signal class.
+ * Kind of thread.
  */
 export type RevenueSemanticSearch200MatchesItemClassification =
   (typeof RevenueSemanticSearch200MatchesItemClassification)[keyof typeof RevenueSemanticSearch200MatchesItemClassification];

@@ -31,7 +31,7 @@ function expectsJSON(request: NextRequest): boolean {
 }
 
 function outcomeStatus(outcome: HostedOAuthOutcome): number {
-  if (outcome === "scope") return 400;
+  if (outcome === "scope" || outcome === "redirect") return 400;
   if (outcome === "entitlement") return 403;
   if (outcome === "replay" || outcome === "restart") return 409;
   if (outcome === "expired") return 410;

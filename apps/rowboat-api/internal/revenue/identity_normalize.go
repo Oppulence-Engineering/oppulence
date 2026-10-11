@@ -1,6 +1,9 @@
 package revenue
 
-import "strings"
+import (
+	"net/url"
+	"strings"
+)
 
 // Email address and domain normalization, shared by every path that turns an
 // address into an identity.
@@ -43,10 +46,20 @@ func normalizeEmail(raw string) string {
 	if trimmed == "" {
 		return ""
 	}
-	if closeAngle := strings.LastIndexByte(trimmed, '>'); closeAngle == len(trimmed)-1 {
-		if openAngle := strings.LastIndexByte(trimmed[:closeAngle], '<'); openAngle >= 0 {
-			trimmed = strings.TrimSpace(trimmed[openAngle+1 : closeAngle])
+	for {
+		next := trimmed
+		if closeAngle := strings.LastIndexByte(next, '>'); closeAngle == len(next)-1 {
+			if openAngle := strings.LastIndexByte(next[:closeAngle], '<'); openAngle >= 0 {
+				next = strings.TrimSpace(next[openAngle+1 : closeAngle])
+			}
 		}
+		if strings.HasPrefix(strings.ToLower(next), "mailto:") {
+			next = strings.TrimSpace(next[len("mailto:"):])
+		}
+		if next == trimmed {
+			break
+		}
+		trimmed = next
 	}
 	return strings.ToLower(trimmed)
 }
@@ -86,4 +99,67 @@ func emailLocalPart(email string) string {
 
 func normalizeDomain(domain string) string {
 	return strings.TrimSuffix(strings.ToLower(strings.TrimSpace(domain)), ".")
+}
+
+// companyAccountDomain is what a person types into Company domain. A pasted
+// site address ("https://www.northwind.example/pricing") or an email must
+// become the host mail actually uses, or the company never matches a thread
+// from @northwind.example.
+func companyAccountDomain(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	if strings.Contains(trimmed, "@") {
+		if domain := emailDomain(trimmed); domain != "" {
+			return stripLeadingWWW(domain)
+		}
+	}
+	if looksLikeWebAddress(trimmed) {
+		host := hostFromWebAddress(trimmed)
+		if host == "" {
+			return ""
+		}
+		return stripLeadingWWW(strings.Trim(host, "."))
+	}
+	return stripLeadingWWW(strings.Trim(strings.ToLower(trimmed), "."))
+}
+
+func looksLikeWebAddress(value string) bool {
+	lower := strings.ToLower(strings.TrimSpace(value))
+	return strings.Contains(lower, "://") ||
+		strings.HasPrefix(lower, "//") ||
+		strings.ContainsAny(lower, "/?#:")
+}
+
+func hostFromWebAddress(raw string) string {
+	lower := strings.ToLower(strings.TrimSpace(raw))
+	target := lower
+	if !strings.Contains(lower, "://") {
+		if strings.HasPrefix(lower, "//") {
+			target = "https:" + lower
+		} else {
+			target = "https://" + lower
+		}
+	}
+	parsed, err := url.Parse(target)
+	if err != nil {
+		return ""
+	}
+	return parsed.Hostname()
+}
+
+func cleanAccountDomain(domain string) bool {
+	return domain != "" && !strings.ContainsAny(domain, " <>")
+}
+
+func stripLeadingWWW(host string) string {
+	if !strings.HasPrefix(host, "www.") {
+		return host
+	}
+	rest := strings.TrimPrefix(host, "www.")
+	if strings.Contains(rest, ".") {
+		return rest
+	}
+	return host
 }

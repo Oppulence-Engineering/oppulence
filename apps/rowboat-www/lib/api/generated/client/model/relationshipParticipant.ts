@@ -5,6 +5,7 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
+import type { RelationshipParticipantPerson } from "./relationshipParticipantPerson";
 
 /**
  * A person participating in the relationship, resolved across provider identities.
@@ -14,12 +15,16 @@ export interface RelationshipParticipant {
   active: boolean;
   /** Display name. */
   displayName: string;
-  /** Best-known WorkOS primary email for the user. */
+  /** Normalized email. */
   email?: string;
   /** Provider identity references. */
   externalRefs: string[];
   /** Stable UUID primary key. */
   id: string;
+  /** Directory person behind this company membership. The sheet prints this name, and Left the company when employment is departed. */
+  person?: RelationshipParticipantPerson;
+  /** Person id. The company sheet loads this profile from it. */
+  personId?: string;
   /** Relationship role. */
   role: string;
   /** Current title. */

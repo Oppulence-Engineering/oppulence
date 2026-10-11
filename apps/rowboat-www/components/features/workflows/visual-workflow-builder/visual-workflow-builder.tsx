@@ -42,10 +42,12 @@ import {
 } from "@oppulence/ui/components/select";
 import { Textarea } from "@oppulence/ui/components/textarea";
 import { cn } from "@oppulence/ui/lib/utils";
-import type {
-  VisualWorkflowDefinition,
-  WorkflowActionKind,
-  WorkflowTriggerKind,
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
+import {
+  cronClockLabel,
+  type VisualWorkflowDefinition,
+  type WorkflowActionKind,
+  type WorkflowTriggerKind,
 } from "@/lib/workflows/cloud-workflows";
 
 type Option = { value: string; label: string };
@@ -63,26 +65,26 @@ const triggers: Array<{
   detail: string;
 }> = [
   { value: "manual", label: "Manually started", detail: "Run only when someone starts it" },
-  { value: "schedule", label: "Scheduled time", detail: "Run on a simple recurring cadence" },
+  { value: "schedule", label: "Scheduled time", detail: "Run on a repeating schedule." },
   {
     value: "communication",
-    label: "Communication received",
-    detail: "Gmail, Calendar, Slack, or HubSpot",
+    label: "Mail or message received",
+    detail: "Gmail, Calendar, or HubSpot",
   },
   {
     value: "profile-change",
-    label: "Profile enriched",
-    detail: "A cited company or person field changes",
+    label: "Company or person updated",
+    detail: "A company or person field changes.",
   },
   {
     value: "relationship-risk",
-    label: "Relationship risk changed",
-    detail: "A new or materially changed attention signal",
+    label: "Company risk changed",
+    detail: "A company needs attention for a new reason.",
   },
   {
     value: "commitment-risk",
-    label: "Commitment needs recovery",
-    detail: "A promise is due, blocked, disputed, or overdue",
+    label: "A promise needs a follow-up",
+    detail: "A promise is due, disputed, or overdue.",
   },
 ];
 
@@ -95,25 +97,25 @@ const actions: Array<{
 }> = [
   {
     value: "review-account",
-    label: "Review account",
-    detail: "Read relationships, people, promises, and evidence",
+    label: "Review company",
+    detail: "Read the company, the people on it, and its open promises.",
     icon: <MagnifyingGlass />,
     fields: [
       {
         key: "scope",
-        label: "Account scope",
+        label: "Which companies",
         defaultValue: "matching-record",
         options: [
           { value: "matching-record", label: "Matching company and people" },
-          { value: "relationship-portfolio", label: "Entire relationship portfolio" },
+          { value: "relationship-portfolio", label: "Every company" },
         ],
       },
     ],
   },
   {
     value: "draft-email",
-    label: "Draft recovery email",
-    detail: "Create a Gmail draft and require approval",
+    label: "Draft a follow-up",
+    detail: "Create a Gmail draft that waits for your approval.",
     icon: <EnvelopeSimple />,
     fields: [
       {
@@ -123,7 +125,7 @@ const actions: Array<{
         options: [
           { value: "promise-recipient", label: "Promise recipient" },
           { value: "primary-contact", label: "Primary contact" },
-          { value: "relationship-owner", label: "Relationship owner" },
+          { value: "relationship-owner", label: "Company owner" },
         ],
       },
       {
@@ -140,8 +142,8 @@ const actions: Array<{
   },
   {
     value: "create-crm-task",
-    label: "Create CRM task",
-    detail: "Create an owned, dated HubSpot task",
+    label: "Create a HubSpot task",
+    detail: "Create a HubSpot task with an owner and a due date.",
     icon: <Lightning />,
     fields: [
       {
@@ -149,8 +151,8 @@ const actions: Array<{
         label: "Assign to",
         defaultValue: "relationship-owner",
         options: [
-          { value: "relationship-owner", label: "Relationship owner" },
-          { value: "commitment-owner", label: "Commitment owner" },
+          { value: "relationship-owner", label: "Company owner" },
+          { value: "commitment-owner", label: "Promise owner" },
         ],
       },
       {
@@ -167,8 +169,8 @@ const actions: Array<{
   },
   {
     value: "update-crm-note",
-    label: "Update CRM note",
-    detail: "Append an evidence-linked HubSpot note",
+    label: "Add a HubSpot note",
+    detail: "Add a HubSpot note from this workflow.",
     icon: <NotePencil />,
     fields: [
       {
@@ -177,7 +179,7 @@ const actions: Array<{
         defaultValue: "timeline",
         options: [
           { value: "timeline", label: "Timeline entry" },
-          { value: "summary", label: "Account summary" },
+          { value: "summary", label: "Company summary" },
         ],
       },
     ],
@@ -185,7 +187,7 @@ const actions: Array<{
   {
     value: "schedule-meeting",
     label: "Schedule meeting",
-    detail: "Propose an approval-gated calendar event",
+    detail: "Propose a meeting that waits for your approval.",
     icon: <CalendarBlank />,
     fields: [
       {
@@ -203,8 +205,9 @@ const actions: Array<{
   },
   {
     value: "write-brief",
-    label: "Publish live brief",
-    detail: "Save a durable, evidence-backed workflow brief",
+    // Every maintained workflow draws this step. The label names the brief, not a publish pipeline.
+    label: "Save a brief",
+    detail: "Keep a brief this workflow can update.",
     icon: <UserFocus />,
     fields: [
       {
@@ -212,7 +215,7 @@ const actions: Array<{
         label: "Audience",
         defaultValue: "account-team",
         options: [
-          { value: "account-team", label: "Account team" },
+          { value: "account-team", label: "Company team" },
           { value: "leadership", label: "Leadership" },
           { value: "customer", label: "Customer-ready" },
         ],
@@ -224,16 +227,26 @@ const actions: Array<{
 const scheduleOptions: Option[] = [
   { value: "*/15 * * * *", label: "Every 15 minutes" },
   { value: "*/30 * * * *", label: "Every 30 minutes" },
-  { value: "0 8 * * *", label: "Every day at 8:00 AM" },
-  { value: "0 9 * * *", label: "Every day at 9:00 AM" },
-  { value: "0 9 * * 1-5", label: "Weekdays at 9:00 AM" },
-  { value: "0 8 * * 1", label: "Every Monday at 8:00 AM" },
+  { value: "0 8 * * *", label: cronClockLabel("0 8 * * *") },
+  { value: "0 9 * * *", label: cronClockLabel("0 9 * * *") },
+  { value: "0 9 * * 1-5", label: cronClockLabel("0 9 * * 1-5") },
+  { value: "0 8 * * 1", label: cronClockLabel("0 8 * * 1") },
 ];
 
 const actionFor = (kind: WorkflowActionKind) =>
   actions.find((action) => action.value === kind) ?? actions[0];
 const triggerFor = (kind: WorkflowTriggerKind) =>
   triggers.find((trigger) => trigger.value === kind) ?? triggers[0];
+
+/** The closed menu shows the choice. Its name has to say which menu and which choice. */
+function workflowChoiceName(category: string, choice: string): string {
+  return comboboxFilterName(category, choice);
+}
+
+function scheduleChoiceLabel(cronExpr: string | undefined): string {
+  const value = cronExpr || "0 9 * * 1-5";
+  return scheduleOptions.find((option) => option.value === value)?.label ?? cronClockLabel(value);
+}
 
 function NodeLabel({
   eyebrow,
@@ -310,7 +323,7 @@ function graph(
           label: (
             <NodeLabel
               detail={action.detail}
-              eyebrow={`Then · ${index + 1}`}
+              eyebrow={`Step ${index + 1}`}
               icon={action.icon}
               title={action.label}
             />
@@ -471,23 +484,24 @@ export function VisualWorkflowBuilder({
             showInteractive={false}
           />
         </ReactFlow>
-        <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center">
-          <Button
-            className="pointer-events-auto rounded-none bg-background shadow-none"
-            disabled={disabled}
-            onClick={addAction}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <Plus /> Add step
-          </Button>
-        </div>
+        {disabled ? null : (
+          <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center">
+            <Button
+              className="pointer-events-auto rounded-none bg-background shadow-none"
+              onClick={addAction}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Plus /> Add step
+            </Button>
+          </div>
+        )}
       </div>
 
       <aside className="min-h-0 border-t border-border bg-background md:overflow-y-auto md:border-l md:border-t-0">
         <div className="sticky top-0 z-10 flex h-11 items-center justify-between border-b border-border bg-background px-4">
-          <p className="text-[12px] font-medium">Step configuration</p>
+          <p className="text-[12px] font-medium">Workflow</p>
           <Badge className="rounded-none text-[10px]" variant="outline">
             {selectedAction ? `Step ${selectedActionIndex + 1}` : "Trigger"}
           </Badge>
@@ -533,7 +547,11 @@ export function VisualWorkflowBuilder({
                   }}
                   value={selectedAction}
                 >
-                  <SelectTrigger className="rounded-none text-[12px]" id={`${fieldID}-action`}>
+                  <SelectTrigger
+                    aria-label={workflowChoiceName("Action", actionFor(selectedAction).label)}
+                    className="rounded-none text-[12px]"
+                    id={`${fieldID}-action`}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-none">
@@ -563,6 +581,11 @@ export function VisualWorkflowBuilder({
                         value={current}
                       >
                         <SelectTrigger
+                          aria-label={workflowChoiceName(
+                            field.label,
+                            field.options.find((option) => option.value === current)?.label ??
+                              current,
+                          )}
                           className="rounded-none text-[12px]"
                           id={`${fieldID}-${field.key}`}
                         >
@@ -663,7 +686,11 @@ export function VisualWorkflowBuilder({
                   }
                   value={value.trigger.kind}
                 >
-                  <SelectTrigger className="rounded-none text-[12px]" id={`${fieldID}-trigger`}>
+                  <SelectTrigger
+                    aria-label={workflowChoiceName("Start when", triggerFor(value.trigger.kind).label)}
+                    className="rounded-none text-[12px]"
+                    id={`${fieldID}-trigger`}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-none">
@@ -686,7 +713,7 @@ export function VisualWorkflowBuilder({
               {value.trigger.kind === "schedule" ? (
                 <div className="space-y-1.5">
                   <Label className="text-[11px]" htmlFor={`${fieldID}-schedule`}>
-                    Cadence
+                    How often
                   </Label>
                   <Select
                     disabled={disabled}
@@ -695,7 +722,16 @@ export function VisualWorkflowBuilder({
                     }
                     value={value.trigger.cronExpr || "0 9 * * 1-5"}
                   >
-                    <SelectTrigger className="rounded-none text-[12px]" id={`${fieldID}-schedule`}>
+                    <SelectTrigger
+                      aria-label={workflowChoiceName(
+                        "How often",
+                        scheduleChoiceLabel(
+                          value.trigger.kind === "schedule" ? value.trigger.cronExpr : undefined,
+                        ),
+                      )}
+                      className="rounded-none text-[12px]"
+                      id={`${fieldID}-schedule`}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-none">
@@ -728,7 +764,7 @@ export function VisualWorkflowBuilder({
                         trigger: { ...value.trigger, criteria: event.target.value },
                       })
                     }
-                    placeholder="For example: a customer mentions a blocker or missed deadline"
+                    placeholder="For example: a customer says a deadline was missed"
                     value={value.trigger.criteria ?? ""}
                   />
                 </div>

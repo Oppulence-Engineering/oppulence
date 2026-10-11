@@ -2,7 +2,12 @@
 
 import "client-only";
 
-import { AgentViewSchema, parseAgentDocument } from "@/lib/agents/agent-schemas";
+import {
+  AgentViewSchema,
+  agentArtifactTitle,
+  agentSourceLabel,
+  parseAgentDocument,
+} from "@/lib/agents/agent-schemas";
 import {
   GetBackgroundTask200Response,
   GetBackgroundTaskRun200Response,
@@ -27,6 +32,33 @@ export type DashboardArtifact = {
   readOnly: boolean;
   fileType: ArtifactFileType;
 };
+
+/**
+ * The opened record names what it is. A workflow is not a background task,
+ * and a connected-tools file is not an MCP config.
+ */
+export function dashboardArtifactSubtitle(input: {
+  kind: string;
+  markdown?: boolean;
+  name?: string;
+  readOnlyAgent?: boolean;
+  sourceLabel?: string;
+}): string {
+  if (input.kind === "agent") {
+    if (input.markdown) return "Agent";
+    if (input.readOnlyAgent && input.sourceLabel) return `${input.sourceLabel} agent`;
+    return "Agent definition";
+  }
+  if (input.kind === "config") {
+    if (input.markdown) return "Note";
+    const name = input.name?.toLowerCase() ?? "";
+    if (name.includes("mcp")) return "Connected tools";
+    if (name.includes("model")) return "Model";
+    return "Settings";
+  }
+  if (input.kind === "task") return "Workflow";
+  return "Run";
+}
 
 function stripExtension(name: string): string {
   return name.replace(/\.[^/.]+$/, "");
@@ -56,7 +88,7 @@ export async function loadDashboardArtifact(
     if (detectedFileType === "markdown") {
       return {
         title: resource.name,
-        subtitle: "Agent (Markdown)",
+        subtitle: dashboardArtifactSubtitle({ kind: "agent", markdown: true }),
         text: await readTextContent(
           `/api/rowboat/v1/agents/${encodeURIComponent(id)}?format=yaml`,
           true,
@@ -69,8 +101,12 @@ export async function loadDashboardArtifact(
     const source = agent.source ?? "";
     const readOnly = source === "builtin" || source === "gitops";
     return {
-      title: resource.name,
-      subtitle: readOnly ? `${source || "Managed"} agent` : "Agent definition",
+      title: agentArtifactTitle(agent.name, id),
+      subtitle: dashboardArtifactSubtitle({
+        kind: "agent",
+        readOnlyAgent: readOnly,
+        sourceLabel: agentSourceLabel(source || "builtin"),
+      }),
       text: JSON.stringify(parseAgentDocument(agent, id), null, 2),
       readOnly,
       fileType: "json",
@@ -82,7 +118,7 @@ export async function loadDashboardArtifact(
     if (detectedFileType === "markdown") {
       return {
         title: resource.name,
-        subtitle: "Markdown",
+        subtitle: dashboardArtifactSubtitle({ kind: "config", markdown: true }),
         text: await readTextContent(
           `/api/rowboat/config?file=${encodeURIComponent(resource.name)}`,
           true,
@@ -95,7 +131,7 @@ export async function loadDashboardArtifact(
       const data = await requestDashboardJson("/mcp", JsonObjectSchema);
       return {
         title: resource.name,
-        subtitle: "MCP config",
+        subtitle: dashboardArtifactSubtitle({ kind: "config", name: resource.name }),
         text: JSON.stringify(data, null, 2),
         readOnly: false,
         fileType: "json",
@@ -105,7 +141,7 @@ export async function loadDashboardArtifact(
       const data = await requestDashboardJson("/models", JsonObjectSchema);
       return {
         title: resource.name,
-        subtitle: "Models config",
+        subtitle: dashboardArtifactSubtitle({ kind: "config", name: resource.name }),
         text: JSON.stringify(data, null, 2),
         readOnly: false,
         fileType: "json",
@@ -117,7 +153,7 @@ export async function loadDashboardArtifact(
     );
     return {
       title: resource.name,
-      subtitle: "Config",
+      subtitle: dashboardArtifactSubtitle({ kind: "config", name: resource.name }),
       text: JSON.stringify(data, null, 2),
       readOnly: false,
       fileType: "json",
@@ -131,7 +167,7 @@ export async function loadDashboardArtifact(
     );
     return {
       title: resource.name,
-      subtitle: "Background task",
+      subtitle: dashboardArtifactSubtitle({ kind: "task" }),
       text: JSON.stringify(data, null, 2),
       readOnly: true,
       fileType: "json",
@@ -148,7 +184,7 @@ export async function loadDashboardArtifact(
     );
     return {
       title: resource.name,
-      subtitle: "Task run (read-only)",
+      subtitle: dashboardArtifactSubtitle({ kind: "taskrun" }),
       text: JSON.stringify(data, null, 2),
       readOnly: true,
       fileType: "json",
@@ -161,7 +197,7 @@ export async function loadDashboardArtifact(
   );
   return {
     title: resource.name,
-    subtitle: "Run (read-only)",
+    subtitle: dashboardArtifactSubtitle({ kind: "run" }),
     text: data.parsed !== undefined ? JSON.stringify(data.parsed, null, 2) : (data.raw ?? ""),
     readOnly: true,
     fileType: detectedFileType,

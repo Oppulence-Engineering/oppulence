@@ -8,11 +8,11 @@
 import type { RevenueSemanticSearch200MatchesItem } from "./revenueSemanticSearch200MatchesItem";
 
 /**
- * Search result.
+ * Mail search answer.
  */
 export type RevenueSemanticSearch200 = {
-  /** Whether semantic memory is configured. */
+  /** Whether mail search is set up. */
   available?: boolean;
-  /** Ranked matches. */
+  /** Closest mail first. */
   matches?: RevenueSemanticSearch200MatchesItem[];
 };

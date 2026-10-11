@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { RevenueAction } from "./revenueAction";
-import type { RevenueActionRevisionReason } from "./revenueActionRevisionReason";
 import type { User } from "./user";
 
 export interface RevenueActionRevision {
@@ -21,8 +20,8 @@ export interface RevenueActionRevision {
   id: string;
   proposed_message?: string;
   proposed_subject?: string;
-  /** Reason code for the ledger entry. */
-  reason?: RevenueActionRevisionReason;
+  /** Why this action was proposed. */
+  reason?: string;
   recipient_email?: string;
   revision: number;
   revision_hash: string;

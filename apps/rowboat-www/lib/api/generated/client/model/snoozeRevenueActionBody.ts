@@ -10,6 +10,6 @@
  * Snooze request.
  */
 export type SnoozeRevenueActionBody = {
-  /** Wake time. */
+  /** Wake time seven days out. */
   until: string;
 };

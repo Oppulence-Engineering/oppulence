@@ -7,17 +7,12 @@
  */
 
 /**
- * Reason code for the ledger entry.
+ * Why this person was removed. subject_request means they asked. user_action means the account holder removed them.
  */
 export type PersonSuppressionReason =
   (typeof PersonSuppressionReason)[keyof typeof PersonSuppressionReason];
 
 export const PersonSuppressionReason = {
-  llm_call: "llm_call",
-  llm_call_reserve: "llm_call_reserve",
-  llm_settle: "llm_settle",
-  voice_tts: "voice_tts",
-  exa_search: "exa_search",
-  grant: "grant",
-  refund: "refund",
+  user_action: "user_action",
+  subject_request: "subject_request",
 } as const;

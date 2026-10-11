@@ -5,28 +5,28 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { ListBackgroundTaskRunsForAccountExecutor } from "./listBackgroundTaskRunsForAccountExecutor";
-import type { ListBackgroundTaskRunsForAccountStatus } from "./listBackgroundTaskRunsForAccountStatus";
 
 export type ListBackgroundTaskRunsForAccountParams = {
   /**
-   * Run status.
-   */
-  status?: ListBackgroundTaskRunsForAccountStatus;
-  /**
-   * Run executor.
-   */
-  executor?: ListBackgroundTaskRunsForAccountExecutor;
-  /**
-   * Page size.
+   * How many runs to return. The Runs page asks for 50.
+   * @minimum 1
+   * @maximum 500
    */
   limit?: number;
   /**
-   * Pagination cursor.
+   * Optional run status filter.
+   */
+  status?: string;
+  /**
+   * Optional cloud or desktop filter.
+   */
+  executor?: string;
+  /**
+   * Cursor from a previous page.
    */
   cursor?: string;
   /**
-   * Task slug.
+   * Optional workflow filter.
    */
   slug?: string;
 };

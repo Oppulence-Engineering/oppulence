@@ -10,7 +10,7 @@
  * Connector connection result.
  */
 export interface ConnectionConnectedResponse {
-  /** OAuth token audience for the connector. */
+  /** Audience accepted by the product resource server. */
   audience?: string;
   /** Whether the connector is now connected. */
   connected: boolean;
@@ -18,6 +18,6 @@ export interface ConnectionConnectedResponse {
   connectionId?: string;
   /** Connector slug. */
   connector?: string;
-  /** OAuth scopes granted or requested. */
+  /** Scopes granted by the completed consent flow. */
   scopes?: string[];
 }

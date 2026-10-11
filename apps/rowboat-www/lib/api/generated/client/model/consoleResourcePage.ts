@@ -8,9 +8,11 @@
 import type { ConsoleResource } from "./consoleResource";
 
 /**
- * Bounded deterministic resource page.
+ * Bounded deterministic resource page. A full page is the end of the list when hasMore is false.
  */
 export interface ConsoleResourcePage {
+  /** Another resource exists beyond this page. */
+  hasMore?: boolean;
   /** Applied page limit. */
   limit: number;
   /** Applied page offset. */

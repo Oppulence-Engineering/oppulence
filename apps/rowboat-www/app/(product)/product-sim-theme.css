@@ -34,6 +34,11 @@ html:has([data-product-shell]) {
   width: calc(100vw / var(--app-zoom, 0.8));
   height: var(--app-vh);
   --shell-sidebar-width: 252px;
+  /* In-shell fixed panels (promise record) share the shell's coordinate
+     space: workspace padding + border + the open rail. The top bar stays
+     above them. */
+  --shell-sidebar-offset: calc(0.625rem + 1px + var(--shell-sidebar-width, 252px));
+  --shell-top-bar-offset: 3.5rem;
   --shell-nav-row-height: 30px;
   --shell-control-size: 30px;
 
@@ -75,6 +80,38 @@ html:has([data-product-shell]) {
   letter-spacing: -0.015em;
 }
 
+/* Portaled sheets sit on the viewport, outside this shell's scale. Their
+   left edge is the same inset, multiplied by --app-zoom. A collapsed rail
+   drops the width and keeps the workspace padding and border. */
+:root {
+  --shell-sidebar-screen-offset: calc(
+    (0.625rem + 1px + var(--shell-sidebar-width, 252px)) * var(--app-zoom, 0.8)
+  );
+  --shell-top-bar-screen-offset: calc(3.5rem * var(--app-zoom, 0.8));
+}
+
+/* Record overlays used to start at the top of the viewport and cut through
+   the release note. Screen overlays are portaled outside the shell scale. */
+[data-record-overlay="screen"] {
+  top: var(--shell-top-bar-screen-offset, calc(3.5rem * var(--app-zoom, 0.8)));
+  bottom: 0;
+  height: auto;
+}
+
+[data-record-overlay="shell"] {
+  top: var(--shell-top-bar-offset, 3.5rem);
+  bottom: 0;
+  height: auto;
+}
+
+html[data-sidebar-collapsed] {
+  --shell-sidebar-screen-offset: calc((0.625rem + 1px) * var(--app-zoom, 0.8));
+}
+
+html[data-sidebar-collapsed] [data-product-shell].sim-product-shell.sim-landing-root {
+  --shell-sidebar-offset: calc(0.625rem + 1px);
+}
+
 /* ── Shell frame ─────────────────────────────────────────────────────────── */
 [data-product-shell].sim-product-shell [data-slot="dashboard-workspace"] {
   border-color: var(--border);
@@ -93,14 +130,10 @@ html:has([data-product-shell]) {
 }
 
 /* ── Sidebar rail (Sim chip row geometry) ────────────────────────────────── */
+/* Width is owned by the sidebar component so the closed rail can collapse. */
 [data-product-shell].sim-product-shell [data-slot="app-sidebar"] {
   border-color: var(--border);
   background: var(--surface-1);
-  width: var(--shell-sidebar-width);
-}
-
-[data-product-shell].sim-product-shell [data-slot="app-sidebar"] > div {
-  width: var(--shell-sidebar-width);
 }
 
 [data-product-shell].sim-product-shell [data-sidebar-nav] {

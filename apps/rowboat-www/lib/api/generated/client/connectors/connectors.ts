@@ -17,6 +17,9 @@ import type {
   HandleConnectorCallbackParams,
   HubSpotSearchRequest,
   HubSpotSearchResponse,
+  ListCommunicationPrivacyRules200,
+  ListComposioConnections200,
+  ListComposioToolkits200,
   MCPTokenRequest,
   MCPTokenResponse,
   N400Response,
@@ -29,6 +32,8 @@ import type {
   N500Response,
   N502Response,
   N503Response,
+  StartComposioConnection200,
+  StartComposioConnectionBody,
 } from "../model";
 
 export type getConnectorBrokerJWKSResponse200 = {
@@ -71,6 +76,246 @@ export const getConnectorBrokerJWKS = async (
 
   const data: getConnectorBrokerJWKSResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getConnectorBrokerJWKSResponse;
+};
+
+export type listComposioConnectionsResponse200 = {
+  data: ListComposioConnections200;
+  status: 200;
+};
+
+export type listComposioConnectionsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listComposioConnectionsResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type listComposioConnectionsResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type listComposioConnectionsResponseSuccess = listComposioConnectionsResponse200 & {
+  headers: Headers;
+};
+export type listComposioConnectionsResponseError = (
+  | listComposioConnectionsResponse401
+  | listComposioConnectionsResponse502
+  | listComposioConnectionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listComposioConnectionsResponse =
+  listComposioConnectionsResponseSuccess | listComposioConnectionsResponseError;
+
+export const getListComposioConnectionsUrl = () => {
+  return `/v1/composio/connections`;
+};
+
+/**
+ * Connected lists the Jira account linked from More products.
+ * @summary Connected
+ */
+export const listComposioConnections = async (
+  options?: RequestInit,
+): Promise<listComposioConnectionsResponse> => {
+  const res = await fetch(getListComposioConnectionsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listComposioConnectionsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listComposioConnectionsResponse;
+};
+
+export type startComposioConnectionResponse200 = {
+  data: StartComposioConnection200;
+  status: 200;
+};
+
+export type startComposioConnectionResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type startComposioConnectionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type startComposioConnectionResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type startComposioConnectionResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type startComposioConnectionResponseSuccess = startComposioConnectionResponse200 & {
+  headers: Headers;
+};
+export type startComposioConnectionResponseError = (
+  | startComposioConnectionResponse400
+  | startComposioConnectionResponse401
+  | startComposioConnectionResponse502
+  | startComposioConnectionResponse503
+) & {
+  headers: Headers;
+};
+
+export type startComposioConnectionResponse =
+  startComposioConnectionResponseSuccess | startComposioConnectionResponseError;
+
+export const getStartComposioConnectionUrl = () => {
+  return `/v1/composio/connections`;
+};
+
+/**
+ * Connect opens the Jira sign-in page. The account is linked only after that page is finished.
+ * @summary Connect
+ */
+export const startComposioConnection = async (
+  startComposioConnectionBody: StartComposioConnectionBody,
+  options?: RequestInit,
+): Promise<startComposioConnectionResponse> => {
+  const res = await fetch(getStartComposioConnectionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(startComposioConnectionBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: startComposioConnectionResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as startComposioConnectionResponse;
+};
+
+export type deleteComposioConnectionResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type deleteComposioConnectionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type deleteComposioConnectionResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type deleteComposioConnectionResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type deleteComposioConnectionResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type deleteComposioConnectionResponseSuccess = deleteComposioConnectionResponse204 & {
+  headers: Headers;
+};
+export type deleteComposioConnectionResponseError = (
+  | deleteComposioConnectionResponse401
+  | deleteComposioConnectionResponse404
+  | deleteComposioConnectionResponse502
+  | deleteComposioConnectionResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteComposioConnectionResponse =
+  deleteComposioConnectionResponseSuccess | deleteComposioConnectionResponseError;
+
+export const getDeleteComposioConnectionUrl = (connectionID: string) => {
+  return `/v1/composio/connections/${connectionID}`;
+};
+
+/**
+ * Disconnect Jira removes that connection. The request sends no body.
+ * @summary Disconnect Jira
+ */
+export const deleteComposioConnection = async (
+  connectionID: string,
+  options?: RequestInit,
+): Promise<deleteComposioConnectionResponse> => {
+  const res = await fetch(getDeleteComposioConnectionUrl(connectionID), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteComposioConnectionResponse["data"] = body ? JSON.parse(body) : undefined;
+  return { data, status: res.status, headers: res.headers } as deleteComposioConnectionResponse;
+};
+
+export type listComposioToolkitsResponse200 = {
+  data: ListComposioToolkits200;
+  status: 200;
+};
+
+export type listComposioToolkitsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listComposioToolkitsResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type listComposioToolkitsResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type listComposioToolkitsResponseSuccess = listComposioToolkitsResponse200 & {
+  headers: Headers;
+};
+export type listComposioToolkitsResponseError = (
+  | listComposioToolkitsResponse401
+  | listComposioToolkitsResponse502
+  | listComposioToolkitsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listComposioToolkitsResponse =
+  listComposioToolkitsResponseSuccess | listComposioToolkitsResponseError;
+
+export const getListComposioToolkitsUrl = () => {
+  return `/v1/composio/toolkits`;
+};
+
+/**
+ * More products lists Jira and Asana. Gmail, Google Calendar, and HubSpot stay on their own cards.
+ * @summary More products
+ */
+export const listComposioToolkits = async (
+  options?: RequestInit,
+): Promise<listComposioToolkitsResponse> => {
+  const res = await fetch(getListComposioToolkitsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listComposioToolkitsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listComposioToolkitsResponse;
 };
 
 export type deleteConnectionResponse204 = {
@@ -118,8 +363,8 @@ export const getDeleteConnectionUrl = (name: string) => {
 };
 
 /**
- * Idempotently revokes upstream where possible, clears local credentials, and retains a revoked audit tombstone.
- * @summary Disconnect connector
+ * Disconnect removes the HubSpot connection. Confirm sends no body.
+ * @summary Disconnect
  */
 export const deleteConnection = async (
   name: string,
@@ -205,8 +450,8 @@ export const getSetConnectionAPIKeyUrl = (name: string) => {
 };
 
 /**
- * Stores a vendor-issued API key for an api_key connector. The key remains sealed and server-side; product calls receive only short-lived broker tokens.
- * @summary Connect API-key connector
+ * Connect on HubSpot posts the private app token from the token field. The server checks that token, stores it sealed, and answers only that the connection is on.
+ * @summary Connect HubSpot
  */
 export const setConnectionAPIKey = async (
   name: string,
@@ -566,8 +811,8 @@ export const getStartConnectionUrl = (name: string) => {
 };
 
 /**
- * Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
- * @summary Start connector OAuth flow
+ * Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.
+ * @summary Connect
  */
 export const startConnection = async (
   name: string,
@@ -631,8 +876,8 @@ export const getListConnectorsUrl = () => {
 };
 
 /**
- * Returns the configured connector registry plus the authenticated user's connection state for each connector.
- * @summary List connectors
+ * Connections loads the catalog. The request sends no filter. This workspace has not connected any of them, so every one is disconnected.
+ * @summary Connections
  */
 export const listConnectors = async (options?: RequestInit): Promise<listConnectorsResponse> => {
   const res = await fetch(getListConnectorsUrl(), {
@@ -957,8 +1202,8 @@ export const getStartConnectorUrl = (name: string) => {
 };
 
 /**
- * Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
- * @summary Start connector OAuth flow
+ * Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.
+ * @summary Connect
  */
 export const startConnector = async (
   name: string,
@@ -1046,4 +1291,52 @@ export const searchHubSpot = async (
 
   const data: searchHubSpotResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as searchHubSpotResponse;
+};
+
+export type listCommunicationPrivacyRulesResponse200 = {
+  data: ListCommunicationPrivacyRules200;
+  status: 200;
+};
+
+export type listCommunicationPrivacyRulesResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listCommunicationPrivacyRulesResponseSuccess =
+  listCommunicationPrivacyRulesResponse200 & {
+    headers: Headers;
+  };
+export type listCommunicationPrivacyRulesResponseError =
+  listCommunicationPrivacyRulesResponse401 & {
+    headers: Headers;
+  };
+
+export type listCommunicationPrivacyRulesResponse =
+  listCommunicationPrivacyRulesResponseSuccess | listCommunicationPrivacyRulesResponseError;
+
+export const getListCommunicationPrivacyRulesUrl = () => {
+  return `/v1/revenue-workspaces/current/communication-privacy-rules`;
+};
+
+/**
+ * Protected or blocked addresses loads this workspace's list. The request sends no filter. This workspace has no protected or blocked address, so the list is empty.
+ * @summary Protected or blocked addresses
+ */
+export const listCommunicationPrivacyRules = async (
+  options?: RequestInit,
+): Promise<listCommunicationPrivacyRulesResponse> => {
+  const res = await fetch(getListCommunicationPrivacyRulesUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCommunicationPrivacyRulesResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCommunicationPrivacyRulesResponse;
 };

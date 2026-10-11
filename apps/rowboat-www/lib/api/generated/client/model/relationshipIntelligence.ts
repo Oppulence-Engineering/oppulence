@@ -28,17 +28,19 @@ export interface RelationshipIntelligence {
   contradictionCases: RelationshipIntelligenceContradictionCasesItem[];
   /** Deletion status and verification. */
   deletionReceipts: ConversationDeletionReceipt[];
-  /** Credit delta. Negative values consume/reserve credits; positive values grant or refund credits. */
+  /** Exact before/after values, uncertain claim ids, contradictions, and recommendation reason. */
   delta: RelationshipIntelligenceDelta;
   effectivePolicy: ResolvedConversationPolicy;
   /** Immutable checkpoint decisions. */
   governanceDecisions: RelationshipIntelligenceGovernanceDecisionsItem[];
   /** Transcript governance receipts. */
   governanceReceipts: ConversationGovernanceReceipt[];
-  /** Account-history cue cards for the next/live meeting. */
+  /** Suggestions the company sheet lists. */
   liveCues: RelationshipIntelligenceLiveCuesItem[];
   /** Revision-bound bilateral plans. */
   mutualActionPlans: RelationshipIntelligenceMutualActionPlansItem[];
+  /** An older conversation exists beyond this page of focused review. */
+  observationPageHasMore?: boolean;
   /** Immutable contextual ranking factors. */
   recommendationEvaluations: RelationshipIntelligenceRecommendationEvaluationsItem[];
   /** Bounded commitment recovery evaluations. */

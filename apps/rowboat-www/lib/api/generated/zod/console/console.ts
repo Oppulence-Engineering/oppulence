@@ -8,8 +8,8 @@
 import * as zod from "zod";
 
 /**
- * Returns defaults before the caller's first write.
- * @summary Get console preferences
+ * Profile loads the saved display name, the default agent, and whether usage data is shared. Before a name is saved, the name and the agent are empty, usage sharing is off, notifications are off, and the theme follows the system.
+ * @summary Profile
  */
 export const getConsolePreferences200ResponseDefaultAgentSlugMax = 100;
 
@@ -125,8 +125,8 @@ export const GetConsolePreferences500Response = zod
   );
 
 /**
- * Strictly merges supplied typed fields into the caller's durable preference document.
- * @summary Patch console preferences
+ * Save profile posts the display name. The name is Ada Lovelace. The stored preferences keep that name, an empty default agent, usage sharing off, notifications off, model reasoning hidden, and the system theme.
+ * @summary Save profile
  */
 export const patchConsolePreferencesBodyDefaultAgentSlugMax = 100;
 
@@ -277,8 +277,8 @@ export const PatchConsolePreferences500Response = zod
   );
 
 /**
- * Lists only the caller's resources in the exact organization workspace asserted by the token.
- * @summary List console resources
+ * Reusable note templates loads the first page. The request asks for note templates, one hundred at a time, starting at the beginning. This workspace has no template, so the page is empty.
+ * @summary Reusable note templates
  */
 export const listConsoleResourcesQueryLimitMax = 100;
 
@@ -332,6 +332,7 @@ export const listConsoleResources200ResponseResourcesItemSortOrderMax = 1000000;
 
 export const ListConsoleResources200Response = zod
   .strictObject({
+    hasMore: zod.boolean().optional().describe("Another resource exists beyond this page."),
     limit: zod.int().describe("Applied page limit."),
     offset: zod.int().describe("Applied page offset."),
     resources: zod
@@ -427,7 +428,7 @@ export const ListConsoleResources200Response = zod
                         .nullish()
                         .describe("Optional selected graph node."),
                     })
-                    .describe("Opaque one-time OAuth state\/session ticket."),
+                    .describe("Saved relationship graph controls."),
                 })
                 .describe("Saved graph view payload."),
             ]),
@@ -442,7 +443,9 @@ export const ListConsoleResources200Response = zod
       )
       .describe("Resources ordered by sortOrder, createdAt descending, then id."),
   })
-  .describe("Bounded deterministic resource page.");
+  .describe(
+    "Bounded deterministic resource page. A full page is the end of the list when hasMore is false.",
+  );
 
 export const ListConsoleResources400Response = zod
   .strictObject({
@@ -535,8 +538,8 @@ export const ListConsoleResources500Response = zod
   );
 
 /**
- * Creates a typed artifact. Replaying a note favorite returns the existing resource.
- * @summary Create console resource
+ * Save template posts a note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0.
+ * @summary Save template
  */
 export const createConsoleResourceBodyNameMax = 120;
 
@@ -640,7 +643,7 @@ export const CreateConsoleResourceBody = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state\/session ticket."),
+            .describe("Saved relationship graph controls."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -757,7 +760,7 @@ export const CreateConsoleResource200Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state\/session ticket."),
+            .describe("Saved relationship graph controls."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -874,7 +877,7 @@ export const CreateConsoleResource201Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state\/session ticket."),
+            .describe("Saved relationship graph controls."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -993,11 +996,11 @@ export const CreateConsoleResource500Response = zod
   );
 
 /**
- * Deletes one caller-owned resource.
- * @summary Delete console resource
+ * Remove from favorites deletes the saved favorite for that note. The note stays.
+ * @summary Remove from favorites
  */
 export const DeleteConsoleResourceParams = zod.object({
-  resourceId: zod.uuid().describe("Console resource id."),
+  resourceId: zod.uuid().describe("Saved favorite to remove."),
 });
 
 export const DeleteConsoleResource204Response = zod.void();
@@ -1219,7 +1222,7 @@ export const GetConsoleResource200Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state\/session ticket."),
+            .describe("Saved relationship graph controls."),
         })
         .describe("Saved graph view payload."),
     ]),
@@ -1338,8 +1341,8 @@ export const GetConsoleResource500Response = zod
   );
 
 /**
- * Validates the complete resulting kind-specific payload before updating.
- * @summary Patch console resource
+ * Save template posts the name and payload of an existing note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0, and the update time is later.
+ * @summary Save template
  */
 export const PatchConsoleResourceParams = zod.object({
   resourceId: zod.uuid().describe("Console resource id."),
@@ -1445,7 +1448,7 @@ export const PatchConsoleResourceBody = zod
                   .nullish()
                   .describe("Optional selected graph node."),
               })
-              .describe("Opaque one-time OAuth state\/session ticket."),
+              .describe("Saved relationship graph controls."),
           })
           .describe("Saved graph view payload."),
       ])
@@ -1563,7 +1566,7 @@ export const PatchConsoleResource200Response = zod
                 .nullish()
                 .describe("Optional selected graph node."),
             })
-            .describe("Opaque one-time OAuth state\/session ticket."),
+            .describe("Saved relationship graph controls."),
         })
         .describe("Saved graph view payload."),
     ]),

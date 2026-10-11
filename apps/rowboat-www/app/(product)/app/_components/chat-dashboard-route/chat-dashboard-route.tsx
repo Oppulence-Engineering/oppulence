@@ -15,7 +15,6 @@ import { CardDescription } from "@oppulence/ui/components/card";
 import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { cn } from "@oppulence/ui/lib/utils";
-import { useAuthSession } from "@/components/auth/auth-gate";
 import {
   Artifact,
   ArtifactAction,
@@ -36,7 +35,17 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
-import type { AgentHistoryItem } from "@/lib/agents/agent-history";
+import {
+  approvalDecisionCopy,
+  toolArgumentsVisible,
+  toolFailureCopy,
+  toolResultCopy,
+  type AgentHistoryItem,
+} from "@/lib/agents/agent-history";
+import { agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
+import { requestDueCommitments } from "@/lib/dashboard/commitment-due-request";
+import { recoveryOpenCount } from "@/lib/revenue/revenue-records";
+import { explainedRevenueError } from "@/lib/revenue/revenue";
 import type { RevenueTab } from "@/lib/dashboard/product-navigation";
 import type { RevenueImpact } from "@/lib/revenue/types";
 
@@ -88,8 +97,9 @@ const HOME_STATS: {
   read: (impact: RevenueImpact) => number;
 }[] = [
   {
+    // The number is past-due promises, not how many commitments the register holds.
     tab: "commitments",
-    label: "commitments",
+    label: "overdue",
     read: (impact) => impact.overdueCommitments,
   },
   { tab: "queue", label: "recovery", read: (impact) => impact.open },
@@ -112,43 +122,102 @@ function renderToolOutput(value: unknown): string {
   }
 }
 
+/** A missed load is not an unknown count. The em dash used to read as "no number". */
+export function pulseFigureValue(
+  loaded: boolean,
+  failed: boolean,
+): "loading" | "failed" | "ready" {
+  if (!loaded) return failed ? "failed" : "loading";
+  return "ready";
+}
+
+export function pulseLoadFailureCopy(): string {
+  return "Workspace counts could not load. Try again.";
+}
+
+export function pulseRefreshFailureCopy(): string {
+  return "Could not refresh workspace counts. Try again.";
+}
+
+/**
+ * A read-only workflow or run used to send the person to the API.
+ * The record is already on this page. Changing a workflow happens in Workflows.
+ */
+export function artifactReadOnlyCopy(kind: string): string {
+  if (kind === "agent") {
+    return "This managed agent can be viewed here but cannot be changed from the workspace.";
+  }
+  if (kind === "task") {
+    return "This workflow can be read here. Change it from Workflows.";
+  }
+  return "This run can be read here. Open Workflows to start another one.";
+}
+
+function PulseFigure({ state, value }: { state: "loading" | "failed" | "ready"; value: number }) {
+  if (state === "loading") return <Skeleton className="inline-block h-3 w-4" />;
+  if (state === "failed") return "Couldn't load";
+  return value;
+}
+
 function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
   const impactQuery = useImpact();
   const impact = impactQuery.data ?? null;
+  const loaded = impact != null;
   const failed = impactQuery.isError;
+  const figure = pulseFigureValue(loaded, failed);
+  const recovery = impact ? recoveryOpenCount(impact.open, impact.openTasks) : 0;
+  const notice = failed
+    ? explainedRevenueError(
+        impactQuery.error,
+        loaded ? pulseRefreshFailureCopy() : pulseLoadFailureCopy(),
+      )
+    : null;
 
   return (
     <footer
       aria-label="Workspace pulse"
       className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-0 text-[12px] text-[var(--text-muted)]"
     >
-      {HOME_STATS.map((stat, index) => (
-        <span className="inline-flex items-center gap-3" key={stat.tab}>
-          {index > 0 ? (
-            <span aria-hidden className="text-[var(--border)]">
-              ·
-            </span>
-          ) : null}
-          <button
-            className="inline-flex items-baseline gap-1.5 font-normal transition-colors hover:text-[var(--text-secondary)]"
-            onClick={() => {
-              onOpenTab(stat.tab);
-            }}
-            type="button"
-          >
-            <span className="font-mono tabular-nums text-[var(--text-secondary)]">
-              {impact ? (
-                stat.read(impact)
-              ) : failed ? (
-                "—"
-              ) : (
-                <Skeleton className="inline-block h-3 w-4" />
-              )}
-            </span>
-            <span>{stat.label}</span>
-          </button>
-        </span>
-      ))}
+      {notice ? (
+        <button
+          className="font-normal hover:text-[var(--text-secondary)]"
+          onClick={() => void impactQuery.refetch()}
+          type="button"
+        >
+          {notice}
+        </button>
+      ) : null}
+      {figure === "failed" ? null : (
+        HOME_STATS.map((stat, index) => (
+          <span className="inline-flex items-center gap-3" key={stat.tab}>
+            {index > 0 ? (
+              <span aria-hidden className="text-[var(--border)]">
+                ·
+              </span>
+            ) : null}
+            <button
+              className={[
+                "inline-flex items-baseline gap-1.5 font-normal transition-colors",
+                "hover:text-[var(--text-secondary)]",
+              ].join(" ")}
+              onClick={() => {
+                // Past-due promises, in every direction. The register opens on that slice.
+                if (stat.tab === "commitments") requestDueCommitments();
+                onOpenTab(stat.tab);
+              }}
+              type="button"
+            >
+              <span className="font-mono tabular-nums text-[var(--text-secondary)]">
+                <PulseFigure
+                  state={figure}
+                  value={stat.label === "recovery" ? recovery : impact ? stat.read(impact) : 0}
+                />
+              </span>
+              <span>{stat.label}</span>
+            </button>
+          </span>
+        ))
+      )}
     </footer>
   );
 }
@@ -159,8 +228,6 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
  */
 export function ChatDashboardRoute({ className, ...props }: ChatDashboardRouteProps) {
   const chat = useChatRouteState();
-  const session = useAuthSession();
-  const homeUserName = session.user.email || session.user.workosUserId || undefined;
   return (
     <section
       className={cn("flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row", className)}
@@ -208,21 +275,31 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                     completed: "output-available",
                     error: "output-error",
                   };
+                  const finished = toolResultCopy(item.result);
                   return (
                     <div className="mb-2" key={item.id}>
                       <Tool>
                         <ToolHeader
                           state={states[item.status]}
-                          title={item.name}
+                          title={agentToolLabel(item.name)}
                           type="tool-call"
                         />
                         <ToolContent>
-                          <ToolInput input={item.input} />
+                          {toolArgumentsVisible(item.input) ? <ToolInput input={item.input} /> : null}
                           {item.result != null ? (
-                            <ToolOutput
-                              errorText={undefined}
-                              output={renderToolOutput(item.result)}
-                            />
+                            item.status === "error" ? (
+                              <ToolOutput
+                                errorText={toolFailureCopy(item.result)}
+                                output={undefined}
+                              />
+                            ) : finished ? (
+                              <p className="px-4 pb-4 text-xs text-muted-foreground">{finished}</p>
+                            ) : (
+                              <ToolOutput
+                                errorText={undefined}
+                                output={renderToolOutput(item.result)}
+                              />
+                            )
                           ) : null}
                         </ToolContent>
                       </Tool>
@@ -242,10 +319,10 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                 return (
                   <Alert className="border-amber-500/30 bg-amber-500/5" key={item.id}>
                     <AlertTitle className="text-sm text-primary">
-                      Approval required: {item.name}
+                      Approval required: {agentToolLabel(item.name)}
                     </AlertTitle>
                     <AlertDescription className="text-xs text-primary/55">
-                      Trust tier: {item.trustTier.replaceAll("_", " ")}
+                      {approvalTrustCopy(item.trustTier)}
                     </AlertDescription>
                     <div className="col-start-2 mt-3">
                       <ToolInput input={item.input} />
@@ -267,8 +344,8 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                         </Button>
                       </div>
                     ) : (
-                      <AlertDescription className="col-start-2 mt-3 text-xs capitalize text-primary/60">
-                        {item.status === "resolving" ? "Submitting decision…" : item.status}
+                      <AlertDescription className="col-start-2 mt-3 text-xs text-primary/60">
+                        {approvalDecisionCopy(item.status)}
                       </AlertDescription>
                     )}
                   </Alert>
@@ -285,7 +362,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
               onSelectPrompt={chat.onSelectPrompt}
               promptInput={chat.promptInput}
               signalPanel={<HomeOverview onOpenTab={chat.onOpenRevenueTab} />}
-              userName={homeUserName}
+              userName={chat.workspace}
               workspace={chat.workspace}
             />
           </div>
@@ -380,9 +457,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                   )}
                   {chat.artifact.readOnly ? (
                     <CardDescription className="text-xs text-muted-foreground">
-                      {chat.artifact.resource.kind === "agent"
-                        ? "This managed agent can be viewed here but cannot be changed from the workspace."
-                        : "Runs are read-only; use the API to replay or inspect in detail."}
+                      {artifactReadOnlyCopy(chat.artifact.resource.kind)}
                     </CardDescription>
                   ) : null}
                 </div>

@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { RelationshipIdentityCandidate } from "./relationshipIdentityCandidate";
-import type { RelationshipLineageEventReason } from "./relationshipLineageEventReason";
 import type { RevenueWorkspace } from "./revenueWorkspace";
 import type { User } from "./user";
 
@@ -24,8 +23,8 @@ export interface RelationshipLineageEvent {
   moved_object_refs: string[];
   observation_ids: string[];
   occurred_at: string;
-  /** Reason code for the ledger entry. */
-  reason?: RelationshipLineageEventReason;
+  /** Why this identity change was recorded. */
+  reason?: string;
   /** Last row update timestamp. */
   updated_at: string;
   /** User that owns this row. */

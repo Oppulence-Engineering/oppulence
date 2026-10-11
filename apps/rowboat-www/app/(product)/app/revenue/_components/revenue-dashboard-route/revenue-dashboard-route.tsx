@@ -17,7 +17,7 @@ const RevenuePanel = dynamic(() =>
 export type RevenueDashboardRouteProps = ComponentPropsWithoutRef<"section">;
 
 export function RevenueDashboardRoute({ className, ...props }: RevenueDashboardRouteProps) {
-  const { openRevenueTab, openSettings, revenueTab } = useProductRouteState();
+  const { openCompany, openRevenueTab, openSettings, revenueTab } = useProductRouteState();
   return (
     <section
       className={cn("flex-1 overflow-hidden", className)}
@@ -28,6 +28,7 @@ export function RevenueDashboardRoute({ className, ...props }: RevenueDashboardR
         onOpenConnectors={() => {
           openSettings("connections");
         }}
+        onOpenCompany={openCompany}
         onTabChange={openRevenueTab}
         tab={revenueTab}
       />

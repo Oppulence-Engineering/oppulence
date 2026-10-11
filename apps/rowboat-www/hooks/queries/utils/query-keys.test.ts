@@ -46,6 +46,8 @@ describe("query key factories", () => {
     expect(communicationKeys.policy("acct-1")[0]).toBe(communicationKeys.all[0]);
     expect(workspaceKeys.current()[0]).toBe(workspaceKeys.all[0]);
     expect(workspaceKeys.notes()[0]).toBe(workspaceKeys.all[0]);
+    expect(workspaceKeys.noteOrder("oldest")[0]).toBe(workspaceKeys.all[0]);
+    expect(workspaceKeys.noteOrder("oldest")).toEqual(["revenue-workspace", "notes", "oldest"]);
     expect(consoleKeys.resourceKind("note_template")[0]).toBe(consoleKeys.all[0]);
     expect(agentKeys.summaries()[0]).toBe(agentKeys.all[0]);
     expect(chatSessionKeys.list()[0]).toBe(chatSessionKeys.all[0]);

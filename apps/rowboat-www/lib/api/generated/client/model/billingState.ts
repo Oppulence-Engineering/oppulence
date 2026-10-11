@@ -19,7 +19,7 @@ export interface BillingState {
    */
   plan: BillingStatePlan;
   /**
-   * Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+   * Trial means this plan is still in its trial.
    * @nullable
    */
   status: BillingStateStatus;

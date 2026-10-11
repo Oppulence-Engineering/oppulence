@@ -122,6 +122,44 @@ func TestRelationshipProjectionUsesExplicitEvaluationTimeAndStableHash(t *testin
 	}
 }
 
+func TestRelationshipCorrectionOfTheDefaultStageIsAChange(t *testing.T) {
+	f := newFixture(t)
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Default Stage", PrimaryEmail: "buyer@default-stage.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rel.Lifecycle != "prospect" || rel.StateVersion != 0 {
+		t.Fatalf("new company = lifecycle %q version %d", rel.Lifecycle, rel.StateVersion)
+	}
+	corrected, err := f.svc.CorrectRelationship(f.ctx, f.user, rel.ID, RelationshipCorrectionInput{
+		Dimension: "lifecycle", Value: "prospect", Reason: "The buyer is a prospect.",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if corrected.StateVersion != 1 || corrected.Lifecycle != "prospect" {
+		t.Fatalf("corrected = lifecycle %q version %d", corrected.Lifecycle, corrected.StateVersion)
+	}
+	model, err := f.svc.MissionControl(f.ctx, f.user, rel.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !model.ChangedSinceReview {
+		t.Fatal("recording the default stage should count as a change")
+	}
+	var sawLifecycle bool
+	for _, change := range model.Changes {
+		if change.Dimension == "lifecycle" {
+			sawLifecycle = true
+		}
+	}
+	if !sawLifecycle {
+		t.Fatalf("changes = %#v", model.Changes)
+	}
+}
+
 func TestRelationshipCorrectionRetractionRestoresSourceFact(t *testing.T) {
 	f := newFixture(t)
 	base := time.Date(2026, 7, 31, 15, 0, 0, 0, time.UTC)

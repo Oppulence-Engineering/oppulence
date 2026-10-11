@@ -12,6 +12,8 @@ import type {
   AccountDeletionReceipt,
   AccountDeletionRequest,
   AccountDeletionStepUp,
+  CreateCheckoutSession200,
+  CreateCheckoutSessionBody,
   ErrorEnvelope,
   MeResponse,
   N400Response,
@@ -19,6 +21,65 @@ import type {
   N500Response,
   N503Response,
 } from "../model";
+
+export type createCheckoutSessionResponse200 = {
+  data: CreateCheckoutSession200;
+  status: 200;
+};
+
+export type createCheckoutSessionResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type createCheckoutSessionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type createCheckoutSessionResponse502 = {
+  data: ErrorEnvelope;
+  status: 502;
+};
+
+export type createCheckoutSessionResponseSuccess = createCheckoutSessionResponse200 & {
+  headers: Headers;
+};
+export type createCheckoutSessionResponseError = (
+  | createCheckoutSessionResponse400
+  | createCheckoutSessionResponse401
+  | createCheckoutSessionResponse502
+) & {
+  headers: Headers;
+};
+
+export type createCheckoutSessionResponse =
+  createCheckoutSessionResponseSuccess | createCheckoutSessionResponseError;
+
+export const getCreateCheckoutSessionUrl = () => {
+  return `/v1/billing/checkout-session`;
+};
+
+/**
+ * Upgrade to Pro opens checkout. The request asks for the Pro plan. This server has not configured checkout, so the request is refused.
+ * @summary Upgrade to Pro
+ */
+export const createCheckoutSession = async (
+  createCheckoutSessionBody: CreateCheckoutSessionBody,
+  options?: RequestInit,
+): Promise<createCheckoutSessionResponse> => {
+  const res = await fetch(getCreateCheckoutSessionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createCheckoutSessionBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createCheckoutSessionResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as createCheckoutSessionResponse;
+};
 
 export type deleteMeResponse200 = {
   data: AccountDeletionReceipt;

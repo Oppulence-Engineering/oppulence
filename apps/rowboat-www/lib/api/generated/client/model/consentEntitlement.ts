@@ -5,7 +5,6 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { ConsentEntitlementReason } from "./consentEntitlementReason";
 
 /**
  * Current entitlement decision, distinct from OAuth approval or denial.
@@ -19,10 +18,10 @@ export interface ConsentEntitlement {
    */
   message?: string | null;
   /**
-   * Reason code for the ledger entry.
+   * Machine-readable denial reason.
    * @nullable
    */
-  reason?: ConsentEntitlementReason;
+  reason?: string | null;
   /**
    * Minimum plan required after denial.
    * @nullable

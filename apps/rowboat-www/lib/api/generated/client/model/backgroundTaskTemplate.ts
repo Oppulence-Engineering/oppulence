@@ -22,14 +22,14 @@ export interface BackgroundTaskTemplate {
   /** Default task instructions. */
   instructions: string;
   /**
-   * Desktop-facing LLM model id.
+   * Default model id for runs.
    * @nullable
    */
   model?: string | null;
   /** Default task name. */
   name: string;
   /**
-   * Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+   * Default provider for tasks created from this template.
    * @nullable
    */
   provider?: string | null;

@@ -11,6 +11,8 @@ import type { RelationshipStateSnapshot } from "./relationshipStateSnapshot";
  * Snapshot list.
  */
 export type GetRelationshipChanges200 = {
+  /** An older snapshot exists beyond this page. */
+  hasMore: boolean;
   /** Snapshots. */
-  snapshots?: RelationshipStateSnapshot[];
+  snapshots: RelationshipStateSnapshot[];
 };

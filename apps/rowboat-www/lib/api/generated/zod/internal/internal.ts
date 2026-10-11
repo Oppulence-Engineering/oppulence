@@ -16,18 +16,7 @@ export const InvalidateConnectionBody = zod
     connection_id: zod.string().nullish().describe("Optional exact MCPConnection UUID target."),
     connector: zod.string().optional().describe("Connector slug."),
     org_id: zod.string().nullish().describe("Optional WorkOS organization target."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .nullish()
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().nullish().describe("Semantic revocation reason."),
     workos_user_id: zod
       .string()
       .optional()
@@ -144,7 +133,7 @@ export const InvalidateConnection503Response = zod
  */
 export const IntrospectConnectorConnectionBody = zod
   .strictObject({
-    audience: zod.string().describe("OAuth token audience for the connector."),
+    audience: zod.string().describe("Exact product resource audience."),
     connection_id: zod.string().describe("Immutable MCPConnection UUID from the token."),
     connector: zod.string().describe("Connector slug."),
     credential_generation: zod

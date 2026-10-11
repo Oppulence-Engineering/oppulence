@@ -16,8 +16,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
-import { getAudit } from "@/lib/actions/actions";
+import { actionKindLabel, actionStatusLabel, getAudit } from "@/lib/actions/actions";
 import { errMessage } from "@/components/features/revenue/shared/shared";
+import { friendlyRevenueError } from "@/lib/revenue/revenue";
+import { localMomentLabel } from "@/lib/revenue/revenue-records";
 import type { AuditChain, AuditEntry } from "@/lib/actions/types";
 
 // ActionAuditSheet renders the full RFC 023 audit chain for one object:
@@ -38,7 +40,11 @@ export function ActionAuditSheet({
     setError(null);
     void getAudit(resourceRef)
       .then((c) => live && setChain(c))
-      .catch((e) => live && setError(errMessage(e, "Could not load the audit trail.")));
+      .catch(
+        (e) =>
+          live &&
+          setError(friendlyRevenueError(errMessage(e, "Could not load the audit trail."))),
+      );
     return () => {
       live = false;
     };
@@ -78,14 +84,12 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
   return (
     <Card className="gap-3 py-3">
       <CardHeader className="flex-row items-center gap-2 px-3 pb-0">
-        <code className="rounded-[2px] bg-background-200 px-1.5 py-0.5 font-mono text-xs text-primary/70 dark:bg-background-100">
-          {p.kind}
-        </code>
-        <Badge variant="outline" className="capitalize">
-          {p.status.replace(/_/g, " ")}
+        <Badge className="font-normal" variant="outline">
+          {actionKindLabel(p.kind)}
         </Badge>
+        <Badge variant="outline">{actionStatusLabel(p.status)}</Badge>
         <Badge className="ml-auto text-xs font-normal text-primary/45" variant="secondary">
-          {new Date(p.createdAt).toLocaleString()}
+          {localMomentLabel(p.createdAt)}
         </Badge>
       </CardHeader>
       <CardContent className="px-3">
@@ -178,7 +182,7 @@ function Leg({
           <Label className="font-normal">{label}</Label>
           <ArrowRight weight="bold" className="text-primary/25" />
           <Badge className="font-normal text-primary/45" variant="secondary">
-            {new Date(when).toLocaleString()}
+            {localMomentLabel(when)}
           </Badge>
         </div>
         {detail ? <div className="text-primary/60">{detail}</div> : null}

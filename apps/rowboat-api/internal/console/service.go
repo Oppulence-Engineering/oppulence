@@ -142,17 +142,21 @@ func (s *Service) ListResources(
 			ent.Desc(consoleresource.FieldCreatedAt),
 			ent.Asc(consoleresource.FieldID),
 		).
-		Limit(limit).
+		Limit(limit + 1).
 		Offset(offset).
 		All(ctx)
 	if err != nil {
 		return ResourcePage{}, fmt.Errorf("list console resources: %w", err)
 	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
 	resources := make([]Resource, 0, len(rows))
 	for _, row := range rows {
 		resources = append(resources, resourceDTO(row))
 	}
-	return ResourcePage{Resources: resources, Limit: limit, Offset: offset}, nil
+	return ResourcePage{Resources: resources, Limit: limit, Offset: offset, HasMore: hasMore}, nil
 }
 
 // CreateResource validates and persists an artifact. Repeated favorite creates

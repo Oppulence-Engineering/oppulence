@@ -8,17 +8,17 @@
 import type { CreateRelationshipBodyKind } from "./createRelationshipBodyKind";
 
 /**
- * Create request.
+ * Person to save.
  */
 export type CreateRelationshipBody = {
-  /** Account domain. */
+  /** Domain from the email address. */
   accountDomain?: string;
-  /** Display name. */
+  /** Full name. */
   displayName: string;
-  /** Relationship kind. */
+  /** Person or company. */
   kind: CreateRelationshipBodyKind;
-  /** Primary email. */
+  /** Email address. */
   primaryEmail?: string;
-  /** Summary. */
+  /** Notes. */
   summary?: string;
 };

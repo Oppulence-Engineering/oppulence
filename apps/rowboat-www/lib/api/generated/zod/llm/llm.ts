@@ -312,7 +312,7 @@ export const CreateEmbeddingBody = zod
       .nullish()
       .describe("Embedding encoding format forwarded to the upstream."),
     input: zod.unknown().describe("Input string or array of strings."),
-    model: zod.string().describe("Desktop-facing LLM model id."),
+    model: zod.string().describe("Desktop-facing embedding model id."),
   })
   .describe("OpenAI-compatible embeddings request.");
 
@@ -398,8 +398,8 @@ export const CreateEmbedding503Response = zod
   );
 
 /**
- * Returns the sorted set of priced model ids the desktop can send to the LLM gateway.
- * @summary List routable LLM models
+ * AI model loads the priced list. The request sends no filter. The list is every model this workspace can choose, in order.
+ * @summary AI model
  */
 export const ListLLMModels200Response = zod
   .strictObject({
@@ -407,7 +407,7 @@ export const ListLLMModels200Response = zod
       .array(
         zod
           .strictObject({
-            id: zod.string().describe("Stable UUID primary key."),
+            id: zod.string().describe("Model id accepted by the model gateway."),
           })
           .describe("Routable model id exposed to the desktop."),
       )

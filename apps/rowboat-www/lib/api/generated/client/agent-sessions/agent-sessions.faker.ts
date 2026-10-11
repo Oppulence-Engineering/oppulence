@@ -7,11 +7,21 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { AgentSessionEventsResponse, AgentSessionListResponse } from "../model";
+import type {
+  AgentSessionEventsResponse,
+  AgentSessionListResponse,
+  ApproveAgentSession202,
+  CancelAgentSession202,
+  DurableAgentSessionEvent,
+  DurableAgentSessionView,
+  MintAgentApprovalToken200,
+  SubmitAgentSessionTurn202,
+} from "../model";
 
 export const getListAgentSessionsResponseMock = (
   overrideResponse: Partial<Extract<AgentSessionListResponse, object>> = {},
 ): AgentSessionListResponse => ({
+  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
   sessions: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       agent: faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -58,6 +68,76 @@ export const getListAgentSessionsResponseMock = (
   ...overrideResponse,
 });
 
+export const getCreateAgentSessionResponseMock = (
+  overrideResponse: Partial<Extract<DurableAgentSessionView, object>> = {},
+): DurableAgentSessionView => ({
+  agent: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  agentSource: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  channel: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  continuationToken: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
+  ]),
+  costUnits: faker.number.int(),
+  createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+  error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  lastActivityAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  llmCalls: faker.number.int(),
+  sessionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  status: faker.helpers.arrayElement([
+    "active",
+    "paused",
+    "completed",
+    "failed",
+    "canceled",
+  ] as const),
+  title: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  toolCalls: faker.number.int(),
+  turns: faker.number.int(),
+  ...overrideResponse,
+});
+
+export const getApproveAgentSessionResponseMock = (
+  overrideResponse: Partial<Extract<ApproveAgentSession202, object>> = {},
+): ApproveAgentSession202 => ({
+  approvalId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  decision: faker.helpers.arrayElement(["granted", "denied"] as const),
+  ...overrideResponse,
+});
+
+export const getMintAgentApprovalTokenResponseMock = (
+  overrideResponse: Partial<Extract<MintAgentApprovalToken200, object>> = {},
+): MintAgentApprovalToken200 => ({
+  approvalToken: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  expiresAt: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  mfa: faker.datatype.boolean(),
+  ...overrideResponse,
+});
+
+export const getCancelAgentSessionResponseMock = (
+  overrideResponse: Partial<Extract<CancelAgentSession202, object>> = {},
+): CancelAgentSession202 => ({
+  sessionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  status: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
+
 export const getListAgentSessionEventsResponseMock = (
   overrideResponse: Partial<Extract<AgentSessionEventsResponse, object>> = {},
 ): AgentSessionEventsResponse => ({
@@ -76,5 +156,26 @@ export const getListAgentSessionEventsResponseMock = (
     faker.helpers.arrayElement([faker.number.int(), null]),
     undefined,
   ]),
+  ...overrideResponse,
+});
+
+export const getStreamAgentSessionResponseMock = (
+  overrideResponse: Partial<Extract<DurableAgentSessionEvent, object>> = {},
+): DurableAgentSessionEvent => ({
+  data: {},
+  seq: faker.number.int(),
+  turnSeq: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.number.int(), null]),
+    undefined,
+  ]),
+  type: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
+
+export const getSubmitAgentSessionTurnResponseMock = (
+  overrideResponse: Partial<Extract<SubmitAgentSessionTurn202, object>> = {},
+): SubmitAgentSessionTurn202 => ({
+  accepted: faker.datatype.boolean(),
+  turnSeq: faker.number.int(),
   ...overrideResponse,
 });

@@ -19,7 +19,7 @@ export interface AgentDefinitionHistory {
   forked_from?: string;
   /** Timestamp when this history record was written. */
   history_time: string;
-  /** Stable UUID primary key. */
+  /** Id of this history row. */
   id: string;
   instructions?: string;
   limits_json?: string;

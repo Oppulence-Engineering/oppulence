@@ -26,8 +26,10 @@ import type {
   BackgroundTaskTemplateInstantiateRequest,
   BackgroundTaskTemplatesResponse,
   BackgroundTaskTriggerRequest,
+  CancelBackgroundTaskRunBody,
   DeleteBackgroundTaskParams,
   ErrorEnvelope,
+  GetBackgroundTaskScheduleState200,
   ListBackgroundTaskRunEventsParams,
   ListBackgroundTaskRunsForAccountParams,
   ListBackgroundTaskRunsParams,
@@ -37,6 +39,7 @@ import type {
   N500Response,
   N502Response,
   N503Response,
+  RetryBackgroundTaskRunBody,
   RevisionConflictEnvelope,
   StreamBackgroundTaskRunEventsParams,
 } from "../model";
@@ -99,8 +102,8 @@ export const getListBackgroundTaskRunsForAccountUrl = (
 };
 
 /**
- * Lists all background task runs visible to the authenticated user. Use this for dashboards and polling views that need queued, running, failed, or API-worker Temporal runs without knowing a task slug first.
- * @summary List account background task runs
+ * The Runs page loads the first 50 cloud runs. Each run on that page failed on a schedule.
+ * @summary Runs
  */
 export const listBackgroundTaskRunsForAccount = async (
   params?: ListBackgroundTaskRunsForAccountParams,
@@ -153,8 +156,8 @@ export const getListBackgroundTaskTemplatesUrl = () => {
 };
 
 /**
- * Lists built-in API-target task templates that can be instantiated into normal background tasks. Templates provide known-good instructions, triggers, and execution defaults for common cloud task patterns.
- * @summary List background task templates
+ * Templates loads the built-in list. The request sends no filter. The list is every workflow you can start from.
+ * @summary Templates
  */
 export const listBackgroundTaskTemplates = async (
   options?: RequestInit,
@@ -279,8 +282,8 @@ export const getInstantiateBackgroundTaskTemplateUrl = (templateSlug: string) =>
 };
 
 /**
- * Creates a normal background task from a built-in template. The resulting task is owned by the authenticated user and then follows the same trigger, admission, and Temporal execution path as tasks created directly.
- * @summary Instantiate background task template
+ * Use Inbox Digest posts an empty body. The stored workflow is named Inbox Digest, stays active, and runs in the cloud. It starts at 8:00 on weekdays in America/New_York, keeps the template instructions, model, and provider, and records revision 1 with schedule sync paused.
+ * @summary Use Inbox Digest
  */
 export const instantiateBackgroundTaskTemplate = async (
   templateSlug: string,
@@ -336,8 +339,8 @@ export const getListBackgroundTasksUrl = () => {
 };
 
 /**
- * Lists the authenticated user's server-readable desktop background task mirrors ordered by slug. This is the primary sync pull for the desktop task registry.
- * @summary List background tasks
+ * The Workflows page loads the six maintained cloud workflows for the signed-in person. Each one is live and starts on its schedule.
+ * @summary Workflows
  */
 export const listBackgroundTasks = async (
   options?: RequestInit,
@@ -398,8 +401,8 @@ export const getCreateBackgroundTaskUrl = () => {
 };
 
 /**
- * Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, Solomon AI API derives one from name. Slugs are unique per authenticated user.
- * @summary Create background task mirror
+ * Create workflow posts a draft named Follow up when a promise slips. It runs in the cloud, starts when a communication event matches, and stays inactive. The stored workflow keeps that name, the address follow-up-when-a-promise-slips, those instructions and triggers, cloud execution, revision 1, and schedule sync paused.
+ * @summary Create workflow
  */
 export const createBackgroundTask = async (
   backgroundTaskCreateRequest: BackgroundTaskCreateRequest,
@@ -660,8 +663,8 @@ export const getPatchBackgroundTaskUrl = (slug: string) => {
 };
 
 /**
- * Applies a partial task update using optimistic locking. The desktop should send the current revision from its last read; stale writes return currentRevision for merge/retry.
- * @summary Patch background task mirror
+ * Save posts the name, instructions, and triggers at revision 1. The stored workflow keeps the name Follow up when a promise slips, those instructions and triggers, cloud execution, and revision 2.
+ * @summary Save
  */
 export const patchBackgroundTask = async (
   slug: string,
@@ -1143,17 +1146,20 @@ export const getCancelBackgroundTaskRunUrl = (slug: string, runId: string) => {
 };
 
 /**
- * Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Solomon AI. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.
- * @summary Cancel API-worker run
+ * Cancel posts an empty body. The stored cloud run is stopped, its progress is Cancellation requested, and the revision is 3.
+ * @summary Cancel
  */
 export const cancelBackgroundTaskRun = async (
   slug: string,
   runId: string,
+  cancelBackgroundTaskRunBody?: CancelBackgroundTaskRunBody,
   options?: RequestInit,
 ): Promise<cancelBackgroundTaskRunResponse> => {
   const res = await fetch(getCancelBackgroundTaskRunUrl(slug, runId), {
     ...options,
     method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(cancelBackgroundTaskRunBody),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
@@ -1217,8 +1223,8 @@ export const getListBackgroundTaskRunEventsUrl = (
 };
 
 /**
- * Returns durable log/progress events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.
- * @summary List task run logs
+ * Open the transcript reads the cloud run api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b on daily-summary. The first read sends no cursor. The stored page starts at sequence 0 with the message API worker claimed the run.
+ * @summary Open the transcript
  */
 export const listBackgroundTaskRunEvents = async (
   slug: string,
@@ -1443,17 +1449,20 @@ export const getRetryBackgroundTaskRunUrl = (slug: string, runId: string) => {
 };
 
 /**
- * Creates a new API-worker run linked by previousRunId and starts a fresh Temporal workflow using the previous trigger/context.
- * @summary Retry API-worker run
+ * Retry posts an empty body. The stored cloud run is a new queued attempt of the stopped run, keeps the editor note, and records attempt 2.
+ * @summary Retry
  */
 export const retryBackgroundTaskRun = async (
   slug: string,
   runId: string,
+  retryBackgroundTaskRunBody?: RetryBackgroundTaskRunBody,
   options?: RequestInit,
 ): Promise<retryBackgroundTaskRunResponse> => {
   const res = await fetch(getRetryBackgroundTaskRunUrl(slug, runId), {
     ...options,
     method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(retryBackgroundTaskRunBody),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
@@ -1593,6 +1602,68 @@ export const getBackgroundTaskRunStatus = async (
   return { data, status: res.status, headers: res.headers } as getBackgroundTaskRunStatusResponse;
 };
 
+export type getBackgroundTaskScheduleStateResponse200 = {
+  data: GetBackgroundTaskScheduleState200;
+  status: 200;
+};
+
+export type getBackgroundTaskScheduleStateResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getBackgroundTaskScheduleStateResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getBackgroundTaskScheduleStateResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type getBackgroundTaskScheduleStateResponseSuccess =
+  getBackgroundTaskScheduleStateResponse200 & {
+    headers: Headers;
+  };
+export type getBackgroundTaskScheduleStateResponseError = (
+  | getBackgroundTaskScheduleStateResponse401
+  | getBackgroundTaskScheduleStateResponse404
+  | getBackgroundTaskScheduleStateResponse500
+) & {
+  headers: Headers;
+};
+
+export type getBackgroundTaskScheduleStateResponse =
+  getBackgroundTaskScheduleStateResponseSuccess | getBackgroundTaskScheduleStateResponseError;
+
+export const getGetBackgroundTaskScheduleStateUrl = (slug: string) => {
+  return `/v1/background-tasks/${slug}/schedule-state`;
+};
+
+/**
+ * Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger.
+ * @summary Next run
+ */
+export const getBackgroundTaskScheduleState = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<getBackgroundTaskScheduleStateResponse> => {
+  const res = await fetch(getGetBackgroundTaskScheduleStateUrl(slug), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getBackgroundTaskScheduleStateResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getBackgroundTaskScheduleStateResponse;
+};
+
 export type triggerBackgroundTaskResponse202 = {
   data: BackgroundTaskRun;
   status: 202;
@@ -1650,8 +1721,8 @@ export const getTriggerBackgroundTaskUrl = (slug: string) => {
 };
 
 /**
- * For executionTarget=desktop, queues a remote trigger with status=queued for desktop pickup. For executionTarget=api, creates an API-worker run and starts a Temporal workflow, while clients poll Solomon AI run status endpoints.
- * @summary Queue or start task trigger
+ * Run now posts a manual start from the visual workflow editor. The stored cloud run stays queued, keeps the note Started from the visual workflow editor, uses cloud execution, and records revision 2.
+ * @summary Run now
  */
 export const triggerBackgroundTask = async (
   slug: string,

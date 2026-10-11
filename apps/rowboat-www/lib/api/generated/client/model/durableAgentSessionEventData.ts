@@ -7,6 +7,6 @@
  */
 
 /**
- * Event payload.
+ * Payload the approval card reads.
  */
 export type DurableAgentSessionEventData = { [key: string]: unknown };

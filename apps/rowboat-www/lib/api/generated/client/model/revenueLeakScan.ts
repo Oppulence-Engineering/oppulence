@@ -45,7 +45,7 @@ export interface RevenueLeakScan {
    * @nullable
    */
   startedAt?: string | null;
-  /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
+  /** Scan status. */
   status: RevenueLeakScanStatus;
   /** Threads examined from complete message bodies. */
   threadsDeepRead?: number;

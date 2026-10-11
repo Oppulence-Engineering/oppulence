@@ -8,19 +8,19 @@
 import type { RevenueSemanticSearch200MatchesItemClassification } from "./revenueSemanticSearch200MatchesItemClassification";
 
 /**
- * Match.
+ * One mail thread.
  */
 export type RevenueSemanticSearch200MatchesItem = {
-  /** Signal class. */
+  /** Kind of thread. */
   classification?: RevenueSemanticSearch200MatchesItemClassification;
-  /** Counterparty email. */
+  /** Other person's email. */
   counterparty?: string;
-  /** Cosine similarity. */
+  /** How close this thread is. */
   score?: number;
-  /** Thread subject. */
+  /** Subject. */
   subject?: string;
-  /** Derived summary. */
+  /** Why this thread matched. */
   summary?: string;
-  /** Provider thread id. */
+  /** Mail thread id. */
   threadId?: string;
 };

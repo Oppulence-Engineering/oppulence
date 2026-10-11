@@ -56,10 +56,10 @@ func seedReportCommitment(
 	return row
 }
 
-// One-pager §11: the report says "here are the commitments your team made in
-// the last 90 days that have no evidence of fulfilment, and here is the exact
-// message that created each one." It is the sale and the onboarding at once,
-// so it must be readable with nothing else configured.
+// One-pager §11: the report says which promises from the last 90 days have no
+// evidence they were kept, and here is the exact message that created each
+// one. It is the sale and the onboarding at once, so it must be readable with
+// nothing else configured.
 func TestOpenPromisesReportShowsBothDirectionsWithSources(t *testing.T) {
 	f := newFixture(t)
 	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
@@ -113,7 +113,8 @@ func TestOpenPromisesReportShowsBothDirectionsWithSources(t *testing.T) {
 	doc := report.Markdown()
 	for _, want := range []string{
 		"# Open promises",
-		"last 90 days",
+		"Promises from the last 90 days with no evidence they were kept.",
+		"| Company | Open promises |",
 		"promises we made",
 		"promises made to us",
 		"Ship the migration",
@@ -128,6 +129,9 @@ func TestOpenPromisesReportShowsBothDirectionsWithSources(t *testing.T) {
 	}
 	if strings.Contains(doc, "https://example.com/old") {
 		t.Fatal("report cited evidence outside the scan window")
+	}
+	if strings.Contains(doc, "fulfilment") || strings.Contains(doc, "| Account |") {
+		t.Fatalf("report still talks about accounts or fulfilment:\n%s", doc)
 	}
 }
 
@@ -165,8 +169,66 @@ func TestOpenPromisesReportShowsUnconfirmedCandidates(t *testing.T) {
 	if len(report.Items) != 1 {
 		t.Fatalf("the report hid the scan's own candidates: %#v", report.Items)
 	}
-	if !strings.Contains(report.Markdown(), "I'll get that over to you Thursday.") {
+	if report.Items[0].State != "review" {
+		t.Fatalf("an unconfirmed extraction was not held for review: %#v", report.Items[0])
+	}
+	doc := report.Markdown()
+	if !strings.Contains(doc, "I'll get that over to you Thursday.") {
 		t.Fatal("the report dropped the verbatim source quote")
+	}
+	if !strings.Contains(doc, "state **Review**") {
+		t.Fatalf("markdown named the guess as a confirmed state:\n%s", doc)
+	}
+}
+
+// A guessed promise due inside the at-risk window is still waiting for a
+// person. The company record and the graph say Review. A confirmed promise
+// due in that same window stays At risk and still leads the page.
+func TestOpenPromisesReportKeepsADueSoonGuessInReview(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	scanID := startedScan(t, f, 90)
+	rel := f.relationship(t)
+	confirmedDue := now.Add(48 * time.Hour)
+	guessDue := now.Add(12 * time.Hour)
+	seedReportCommitment(t, f, rel, "promised_by_me", "Send the confirmed note", "", &confirmedDue, now.Add(-time.Hour))
+
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	evidence, err := f.client.RevenueEvidence.Create().
+		SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+		SetSource("gmail").SetSourceRecordID("guess-message").SetContentHash("sha256:guess").
+		SetExcerpt("I'll send the guessed note.").SetOccurredAt(now.Add(-time.Hour)).
+		SetObservedAt(now.Add(-time.Hour)).Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("Send the guessed note").SetConfidence(0.7).
+		SetSourcePhrase("I'll send the guessed note.").SetAcceptance("candidate").
+		SetDueAt(guessDue).AddEvidences(evidence).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := f.svc.OpenPromisesReport(f.ctx, f.user, mustParseUUID(t, scanID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Items) != 2 {
+		t.Fatalf("report dropped a promise: %#v", report.Items)
+	}
+	if report.Items[0].State != RegisterAtRisk || report.Items[0].Text != "Send the confirmed note" {
+		t.Fatalf("a confirmed risk no longer led the report: %#v", report.Items[0])
+	}
+	if report.Items[1].State != "review" || report.Items[1].Text != "Send the guessed note" {
+		t.Fatalf("a due-soon guess was treated as a confirmed risk: %#v", report.Items[1])
+	}
+	doc := report.Markdown()
+	if !strings.Contains(doc, "state **At risk**") || !strings.Contains(doc, "state **Review**") {
+		t.Fatalf("markdown mixed the two states:\n%s", doc)
 	}
 }
 
@@ -211,6 +273,154 @@ func TestOpenPromisesReportIsHonestWhenEmpty(t *testing.T) {
 	}
 	if !strings.Contains(doc, "sources are not connected") {
 		t.Fatalf("empty report did not name the likely cause:\n%s", doc)
+	}
+}
+
+func TestOpenPromisesReportUsesTheCompanyTitle(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	scanID := startedScan(t, f, 90)
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "dogfood-label.example", AccountDomain: "dogfood-label.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	typed, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Billing @ Northwind", AccountDomain: "northwind.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	due := now.Add(10 * 24 * time.Hour)
+	seedReportCommitment(t, f, rel, "promised_by_me", "Send the domain title", "", &due, now.Add(-2*24*time.Hour))
+	seedReportCommitment(t, f, typed, "promised_by_me", "Keep the typed name", "", &due, now.Add(-2*24*time.Hour))
+
+	report, err := f.svc.OpenPromisesReport(f.ctx, f.user, mustParseUUID(t, scanID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	accounts := map[string]bool{}
+	for _, item := range report.Items {
+		accounts[item.Account] = true
+	}
+	if !accounts["Dogfood Label"] || accounts["dogfood-label.example"] {
+		t.Fatalf("domain account title = %#v", accounts)
+	}
+	if !accounts["Billing @ Northwind"] {
+		t.Fatalf("typed account title = %#v", accounts)
+	}
+	if !strings.Contains(report.Markdown(), "Dogfood Label") {
+		t.Fatalf("markdown kept the host:\n%s", report.Markdown())
+	}
+}
+
+func TestOpenPromisesReportNamesAMutualPromise(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	scanID := startedScan(t, f, 90)
+	rel := f.relationship(t)
+	due := now.Add(10 * 24 * time.Hour)
+	seedReportCommitment(t, f, rel, "mutual", "Trade the redlines", "", &due, now.Add(-2*24*time.Hour))
+
+	report, err := f.svc.OpenPromisesReport(f.ctx, f.user, mustParseUUID(t, scanID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.OutboundCount != 0 || report.InboundCount != 0 || len(report.Items) != 1 {
+		t.Fatalf("a mutual promise was counted as one side's: out=%d in=%d items=%d", report.OutboundCount, report.InboundCount, len(report.Items))
+	}
+	doc := report.Markdown()
+	if !strings.Contains(doc, "We both owe ·") || !strings.Contains(doc, "promises we share") {
+		t.Fatalf("mutual promise was labeled as one side's:\n%s", doc)
+	}
+	if strings.Contains(doc, "We owe ·") {
+		t.Fatalf("mutual promise was also called something we owe:\n%s", doc)
+	}
+}
+
+func TestOpenPromisesReportKeepsTheSourcePhraseWhenTheExcerptIsBlank(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	scanID := startedScan(t, f, 90)
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	due := now.Add(10 * 24 * time.Hour)
+	phrase := "I'll send the harbor note."
+	row, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("  Send the harbor note  ").
+		SetConfidence(0.9).SetSourcePhrase("  " + phrase + "  ").
+		SetAcceptance("internally_confirmed").SetUserConfirmed(true).
+		SetDueAt(due).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blank, err := f.client.RevenueEvidence.Create().
+		SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+		SetSource("gmail").SetSourceRecordID("blank-excerpt").
+		SetContentHash("sha256:blank-excerpt").SetExcerpt("   ").
+		SetSourceURI("https://mail.google.com/mail/u/0/#inbox/harbor-note").
+		SetOccurredAt(now.Add(-time.Hour)).SetObservedAt(now.Add(-time.Hour)).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := row.Update().AddEvidences(blank).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := f.svc.OpenPromisesReport(f.ctx, f.user, mustParseUUID(t, scanID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Items) != 1 {
+		t.Fatalf("items = %#v", report.Items)
+	}
+	item := report.Items[0]
+	if item.Text != "Send the harbor note" {
+		t.Fatalf("text = %q", item.Text)
+	}
+	if item.SourceQuote != phrase {
+		t.Fatalf("blank excerpt erased the source phrase: %q", item.SourceQuote)
+	}
+	if item.SourceURI == "" || item.OccurredAt == nil {
+		t.Fatalf("blank excerpt also dropped the source link: %#v", item)
+	}
+	doc := report.Markdown()
+	if !strings.Contains(doc, "> "+phrase) {
+		t.Fatalf("markdown dropped the source phrase:\n%s", doc)
+	}
+
+	quoted, err := f.client.RevenueEvidence.Create().
+		SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+		SetSource("gmail").SetSourceRecordID("spaced-excerpt").
+		SetContentHash("sha256:spaced-excerpt").SetExcerpt("  From the mail.  ").
+		SetSourceURI("https://mail.google.com/mail/u/0/#inbox/from-the-mail").
+		SetOccurredAt(now.Add(-30 * time.Minute)).SetObservedAt(now.Add(-30 * time.Minute)).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := row.Update().AddEvidences(quoted).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	report, err = f.svc.OpenPromisesReport(f.ctx, f.user, mustParseUUID(t, scanID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Items) != 1 || report.Items[0].SourceQuote != "From the mail." {
+		t.Fatalf("spaced excerpt = %#v", report.Items)
+	}
+	if report.Items[0].SourceURI != "https://mail.google.com/mail/u/0/#inbox/from-the-mail" {
+		t.Fatalf("blank older excerpt was cited instead of the sentence: %q", report.Items[0].SourceURI)
 	}
 }
 

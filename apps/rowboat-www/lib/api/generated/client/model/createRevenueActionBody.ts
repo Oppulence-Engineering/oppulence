@@ -33,11 +33,11 @@ export type CreateRevenueActionBody = {
   proposedMessage?: string;
   /** Proposed subject. */
   proposedSubject?: string;
-  /** Evidence-backed reason. */
+  /** Task title. */
   reason: string;
   /** Recipient email. */
   recipientEmail?: string;
-  /** Owning relationship id. */
+  /** Company the task is for. */
   relationshipId: string;
   /** Sender account reference. */
   senderAccountRef?: string;

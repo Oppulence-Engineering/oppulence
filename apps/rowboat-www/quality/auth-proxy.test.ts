@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -32,6 +35,13 @@ describe("dashboard proxy session", () => {
     vi.clearAllMocks();
     mocks.readSessionCookie.mockReturnValue({ refreshToken: "refresh" });
     mocks.shouldRefreshSession.mockReturnValue(true);
+  });
+
+  it("says Oppulence could not be reached when the service is down", () => {
+    const source = fs.readFileSync(path.join(import.meta.dirname, "../lib/auth/proxy.ts"), "utf8");
+    expect(source).toContain("Oppulence could not be reached. Try again in a moment.");
+    expect(source).not.toContain("docker compose");
+    expect(source).not.toContain("port 18080");
   });
 
   it("keeps the cookie when refresh is temporarily unavailable", async () => {

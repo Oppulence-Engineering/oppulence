@@ -11,7 +11,7 @@ import type { BackgroundTaskRunEventEvent } from "./backgroundTaskRunEventEvent"
  * Mirrored JSONL event from a background task run log.
  */
 export interface BackgroundTaskRunEvent {
-  /** Original JSON event object from the desktop run log. */
+  /** Payload the transcript reads. A model call names the model. */
   event: BackgroundTaskRunEventEvent;
   /** Stable UUID primary key. */
   id: string;
@@ -20,7 +20,7 @@ export interface BackgroundTaskRunEvent {
   /** Zero-based sequence number for a mirrored JSONL run event. */
   seq: number;
   /**
-   * Event type, either supplied explicitly or copied from event.type.
+   * Heading for this transcript row. A model call is runtime.llm_call_started.
    * @nullable
    */
   type?: string | null;

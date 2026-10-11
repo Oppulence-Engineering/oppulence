@@ -409,7 +409,7 @@ func (s *Service) ShareMutualActionPlan(
 		}
 	}
 	responseURL := "https://app.oppulence.com/plan-response#" + token
-	message := fmt.Sprintf("A mutual action plan is ready for review (revision %d, %s): %s", record.CurrentRevision.Version, record.CurrentRevision.RevisionHash, responseURL)
+	message := fmt.Sprintf("A shared plan is ready for your review (version %d): %s", record.CurrentRevision.Version, responseURL)
 	actionInput := ActionInput{ActionType: "meeting_follow_up", Channel: "email", RecipientEmail: rel.PrimaryEmail,
 		ProposedSubject: "Mutual action plan", ProposedMessage: message, ExecutionMode: ExecModeDraft}
 	dedupe := "mutual-action-plan:" + planID + ":" + record.CurrentRevision.RevisionHash
@@ -443,7 +443,7 @@ func (s *Service) ShareMutualActionPlan(
 		action, createErr := txc.RevenueAction.Create().SetWorkspace(txws).SetRelationship(txrel).SetUser(txu).
 			SetActionType("meeting_follow_up").SetChannel("email").SetDetector("manual").
 			SetDedupeKey(dedupe).SetRevision(1).SetRevisionHash(actionInput.content(u.ID).Hash()).
-			SetReason("Share the exact approved mutual action plan revision.").
+			SetReason("Draft an email to share this plan.").
 			SetRecipientEmail(rel.PrimaryEmail).SetProposedSubject(actionInput.ProposedSubject).
 			SetProposedMessage(message).SetExecutionMode(ExecModeDraft).SetExecutionOwner(OwnerRowboat).
 			SetAssignedUserID(txu.ID).SetPriorityScore(70).AddEvidences(evidences...).Save(ctx)

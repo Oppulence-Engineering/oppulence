@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import {
-  ApproveMutualActionPlan200Response,
+  ApproveMutualActionPlan201Response,
   ApproveMutualActionPlanBody,
 } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
@@ -12,7 +12,7 @@ export type ApproveMutualActionPlanInput = z.infer<typeof ApproveMutualActionPla
 /**
  * @oppulence-gen kind=mutation
  * Same-origin BFF write for Approve mutual action plan. Validates the response with
- * ApproveMutualActionPlan200Response. Do not cast the parsed result. Owned by `use-approve-mutual-action-plan.lit.ts`.
+ * ApproveMutualActionPlan201Response. Do not cast the parsed result. Owned by `use-approve-mutual-action-plan.lit.ts`.
  */
 export function approveMutualActionPlanPath(relationshipId: string, planId: string): string {
   return `/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans/${encodeURIComponent(planId)}/approve`;
@@ -28,7 +28,7 @@ export async function loadApproveMutualActionPlan(
   return request({
     path: approveMutualActionPlanPath(relationshipId, planId),
     method: "POST",
-    schema: ApproveMutualActionPlan200Response,
+    schema: ApproveMutualActionPlan201Response,
     body,
     signal,
   });

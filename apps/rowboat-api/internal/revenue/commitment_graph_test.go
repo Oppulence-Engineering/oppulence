@@ -1,9 +1,33 @@
 package revenue
 
 import (
+	"strconv"
 	"testing"
 	"time"
 )
+
+func TestQueueAcceptStoresTheOmittedEvidenceAsTheTransitionKey(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 3, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	rel, row := recoveryCommitment(t, f, now)
+	key := "commitment-queue:accepted:" + row.ID.String() + ":v" + strconv.Itoa(row.CurrentEventVersion)
+	saved, err := f.svc.AppendCommitmentTransition(f.ctx, f.user, rel.ID, row.ID, CommitmentTransitionInput{
+		Kind: "accepted", IdempotencyKey: key,
+		Reason: "Reviewed from the Commitment Queue (accepted).",
+	})
+	if err != nil || saved.Acceptance != "accepted" {
+		t.Fatalf("queue accept failed: %#v err=%v", saved, err)
+	}
+	events, err := f.svc.CommitmentEventHistory(f.ctx, rel.ID, row.ID)
+	if err != nil || len(events) == 0 {
+		t.Fatalf("history: %#v err=%v", events, err)
+	}
+	last := events[len(events)-1]
+	if last.SourceEventID != key || len(last.EvidenceRefs) != 1 || last.EvidenceRefs[0] != "user-transition:"+key {
+		t.Fatalf("stored transition = id %s refs %#v", last.SourceEventID, last.EvidenceRefs)
+	}
+}
 
 func TestCommitmentTransitionIsValidatedAtomicAndIdempotent(t *testing.T) {
 	f := newFixture(t)

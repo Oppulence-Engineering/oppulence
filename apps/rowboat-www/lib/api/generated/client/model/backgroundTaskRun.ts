@@ -13,6 +13,8 @@ import type { BackgroundTaskRunTrigger } from "./backgroundTaskRunTrigger";
  * Mirrored run state for one desktop background task execution or queued remote trigger.
  */
 export interface BackgroundTaskRun {
+  /** Attempt shown when this run is open. */
+  attempt?: number;
   /**
    * Desktop run completion timestamp.
    * @nullable
@@ -25,6 +27,11 @@ export interface BackgroundTaskRun {
    * @nullable
    */
   error?: string | null;
+  /**
+   * Code shown before a failed run's reason.
+   * @nullable
+   */
+  errorCode?: string | null;
   /** Execution backend that owns this run. */
   executor: BackgroundTaskRunExecutor;
   /** Stable UUID primary key. */

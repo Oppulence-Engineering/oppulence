@@ -32,6 +32,10 @@ import (
 
 const maxBody = 1 << 20
 
+// sessionListLimit is one page of chat history. The response looks one row
+// past it, so an exact page of 50 is not offered as a 51st conversation.
+const sessionListLimit = 50
+
 // Handler serves /v1/agents and /v1/agent-sessions.
 type Handler struct {
 	client      *ent.Client
@@ -221,20 +225,36 @@ func (h *Handler) ListSessions(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
 		return
 	}
+	offset := 0
+	if raw := r.URL.Query().Get("offset"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			httpx.Error(w, http.StatusBadRequest, "invalid offset", "bad_request")
+			return
+		}
+		if n > 0 {
+			offset = n
+		}
+	}
 	rows, err := h.client.AgentSession.Query().
-		Order(agentsession.ByUpdatedAt(entsql.OrderDesc())).
-		Limit(50).
+		Order(agentsession.ByUpdatedAt(entsql.OrderDesc()), agentsession.ByID(entsql.OrderDesc())).
+		Limit(sessionListLimit + 1).
+		Offset(offset).
 		All(r.Context())
 	if err != nil {
 		h.log.Error("list agent sessions", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not list sessions", "internal_error")
 		return
 	}
+	hasMore := len(rows) > sessionListLimit
+	if hasMore {
+		rows = rows[:sessionListLimit]
+	}
 	sessions := make([]sessionView, 0, len(rows))
 	for _, row := range rows {
 		sessions = append(sessions, h.viewSession(row, u.ID.String()))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"sessions": sessions})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"sessions": sessions, "hasMore": hasMore})
 }
 
 // SubmitTurn handles POST /v1/agent-sessions/{id}/turns.
@@ -305,18 +325,22 @@ func (h *Handler) ListEvents(w http.ResponseWriter, r *http.Request) {
 	if limit > maxLimit {
 		limit = maxLimit
 	}
-	events, err := q.Limit(limit).All(r.Context())
+	events, err := q.Limit(limit + 1).All(r.Context())
 	if err != nil {
 		h.log.Error("list agent session events", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not list events", "internal_error")
 		return
+	}
+	hasMore := limit > 0 && len(events) > limit
+	if hasMore {
+		events = events[:limit]
 	}
 	views := make([]agentworkflow.StreamEvent, 0, len(events))
 	for _, ev := range events {
 		views = append(views, agentworkflow.StreamEvent{Seq: ev.Seq, Type: ev.EventType, TurnSeq: ev.TurnSeq, Data: []byte(ev.EventJSON)})
 	}
 	resp := map[string]any{"events": views}
-	if len(events) == limit {
+	if hasMore && len(events) > 0 {
 		resp["nextSeq"] = events[len(events)-1].Seq
 	}
 	httpx.WriteJSON(w, http.StatusOK, resp)

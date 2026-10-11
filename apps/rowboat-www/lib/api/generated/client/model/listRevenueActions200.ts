@@ -8,9 +8,11 @@
 import type { RevenueAction } from "./revenueAction";
 
 /**
- * Action list.
+ * Action list. A full page is the end of the queue when hasMore is false.
  */
 export type ListRevenueActions200 = {
   /** Actions. */
-  actions?: RevenueAction[];
+  actions: RevenueAction[];
+  /** Another task or follow-up exists beyond this page. */
+  hasMore?: boolean;
 };

@@ -8,9 +8,11 @@
 import type { DurableAgentSessionView } from "./durableAgentSessionView";
 
 /**
- * Recent durable agent conversations.
+ * Recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.
  */
 export interface AgentSessionListResponse {
+  /** Another conversation exists beyond this page. */
+  hasMore?: boolean;
   /** Sessions ordered by latest update. */
   sessions: DurableAgentSessionView[];
 }

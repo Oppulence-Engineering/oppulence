@@ -99,6 +99,7 @@ export const getListConsoleResourcesResponseConsoleGraphSavedViewPayloadMock = (
 export const getListConsoleResourcesResponseMock = (
   overrideResponse: Partial<Extract<ConsoleResourcePage, object>> = {},
 ): ConsoleResourcePage => ({
+  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
   limit: faker.number.int(),
   offset: faker.number.int(),
   resources: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(

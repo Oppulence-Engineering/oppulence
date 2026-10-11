@@ -8,27 +8,23 @@
 import * as zod from "zod";
 
 /**
- * Lists all background task runs visible to the authenticated user. Use this for dashboards and polling views that need queued, running, failed, or API-worker Temporal runs without knowing a task slug first.
- * @summary List account background task runs
+ * The Runs page loads the first 50 cloud runs. Each run on that page failed on a schedule.
+ * @summary Runs
  */
+export const listBackgroundTaskRunsForAccountQueryLimitMax = 500;
+
 export const ListBackgroundTaskRunsForAccountQueryParams = zod.object({
-  status: zod
-    .enum(["queued", "running", "succeeded", "failed", "stopped"])
-    .optional()
-    .describe(
-      "Optional run status filter. Use queued for desktop pickup or running\/failed\/succeeded for polling dashboards.",
-    ),
-  executor: zod.enum(["desktop", "api"]).optional().describe("Optional execution backend filter."),
   limit: zod.coerce
     .number()
     .int()
+    .min(1)
+    .max(listBackgroundTaskRunsForAccountQueryLimitMax)
     .optional()
-    .describe("Maximum runs to return, from 1 to 500. Defaults to 100."),
-  cursor: zod.iso
-    .datetime({ offset: true })
-    .optional()
-    .describe("RFC3339 cursor returned as nextCursor from a previous page."),
-  slug: zod.string().optional().describe("Optional task slug filter for account-wide run polling."),
+    .describe("How many runs to return. The Runs page asks for 50."),
+  status: zod.string().optional().describe("Optional run status filter."),
+  executor: zod.string().optional().describe("Optional cloud or desktop filter."),
+  cursor: zod.string().optional().describe("Cursor from a previous page."),
+  slug: zod.string().optional().describe("Optional workflow filter."),
 });
 
 export const ListBackgroundTaskRunsForAccount200Response = zod
@@ -41,6 +37,7 @@ export const ListBackgroundTaskRunsForAccount200Response = zod
       .array(
         zod
           .strictObject({
+            attempt: zod.int().optional().describe("Attempt shown when this run is open."),
             completedAt: zod.iso
               .datetime({ offset: true })
               .nullish()
@@ -49,6 +46,7 @@ export const ListBackgroundTaskRunsForAccount200Response = zod
               .datetime({ offset: true })
               .describe("Server row creation timestamp."),
             error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+            errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
             executor: zod
               .enum(["desktop", "api"])
               .describe("Execution backend that owns this run."),
@@ -128,7 +126,7 @@ export const ListBackgroundTaskRunsForAccount200Response = zod
               .nullish()
               .describe("Temporal workflow id for API-worker runs."),
             trigger: zod
-              .enum(["manual", "cron", "window", "event"])
+              .enum(["manual", "cron", "window", "event", "retry"])
               .describe("Trigger source for a task run."),
             updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
             useCase: zod
@@ -190,8 +188,8 @@ export const ListBackgroundTaskRunsForAccount500Response = zod
   );
 
 /**
- * Lists built-in API-target task templates that can be instantiated into normal background tasks. Templates provide known-good instructions, triggers, and execution defaults for common cloud task patterns.
- * @summary List background task templates
+ * Templates loads the built-in list. The request sends no filter. The list is every workflow you can start from.
+ * @summary Templates
  */
 export const ListBackgroundTaskTemplates200Response = zod
   .strictObject({
@@ -208,14 +206,12 @@ export const ListBackgroundTaskTemplates200Response = zod
                 "Whether the template is installed and maintained automatically by Oppulence.",
               ),
             instructions: zod.string().describe("Default task instructions."),
-            model: zod.string().nullish().describe("Desktop-facing LLM model id."),
+            model: zod.string().nullish().describe("Default model id for runs."),
             name: zod.string().describe("Default task name."),
             provider: zod
               .string()
               .nullish()
-              .describe(
-                "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-              ),
+              .describe("Default provider for tasks created from this template."),
             requiredConnectors: zod
               .array(zod.string().describe("Connector slug."))
               .optional()
@@ -293,14 +289,12 @@ export const GetBackgroundTaskTemplate200Response = zod
       .boolean()
       .describe("Whether the template is installed and maintained automatically by Oppulence."),
     instructions: zod.string().describe("Default task instructions."),
-    model: zod.string().nullish().describe("Desktop-facing LLM model id."),
+    model: zod.string().nullish().describe("Default model id for runs."),
     name: zod.string().describe("Default task name."),
     provider: zod
       .string()
       .nullish()
-      .describe(
-        "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-      ),
+      .describe("Default provider for tasks created from this template."),
     requiredConnectors: zod
       .array(zod.string().describe("Connector slug."))
       .optional()
@@ -369,8 +363,8 @@ export const GetBackgroundTaskTemplate500Response = zod
   );
 
 /**
- * Creates a normal background task from a built-in template. The resulting task is owned by the authenticated user and then follows the same trigger, admission, and Temporal execution path as tasks created directly.
- * @summary Instantiate background task template
+ * Use Inbox Digest posts an empty body. The stored workflow is named Inbox Digest, stays active, and runs in the cloud. It starts at 8:00 on weekdays in America/New_York, keeps the template instructions, model, and provider, and records revision 1 with schedule sync paused.
+ * @summary Use Inbox Digest
  */
 export const InstantiateBackgroundTaskTemplateParams = zod.object({
   templateSlug: zod.string().describe("Background task template slug."),
@@ -380,14 +374,9 @@ export const InstantiateBackgroundTaskTemplateBody = zod
   .strictObject({
     active: zod.boolean().optional().describe("Override active state."),
     executionTarget: zod.enum(["desktop", "api"]).optional().describe("Execution target override."),
-    model: zod.string().nullish().describe("Desktop-facing LLM model id."),
+    model: zod.string().nullish().describe("Model override."),
     name: zod.string().nullish().describe("Task name override."),
-    provider: zod
-      .string()
-      .nullish()
-      .describe(
-        "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-      ),
+    provider: zod.string().nullish().describe("Provider override."),
     slug: zod.string().nullish().describe("Task slug override. Defaults to template.taskSlug."),
     triggers: zod
       .unknown()
@@ -562,8 +551,8 @@ export const InstantiateBackgroundTaskTemplate500Response = zod
   );
 
 /**
- * Lists the authenticated user's server-readable desktop background task mirrors ordered by slug. This is the primary sync pull for the desktop task registry.
- * @summary List background tasks
+ * The Workflows page loads the six maintained cloud workflows for the signed-in person. Each one is live and starts on its schedule.
+ * @summary Workflows
  */
 export const ListBackgroundTasks200Response = zod
   .strictObject({
@@ -696,8 +685,8 @@ export const ListBackgroundTasks500Response = zod
   );
 
 /**
- * Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, Solomon AI API derives one from name. Slugs are unique per authenticated user.
- * @summary Create background task mirror
+ * Create workflow posts a draft named Follow up when a promise slips. It runs in the cloud, starts when a communication event matches, and stays inactive. The stored workflow keeps that name, the address follow-up-when-a-promise-slips, those instructions and triggers, cloud execution, revision 1, and schedule sync paused.
+ * @summary Create workflow
  */
 export const CreateBackgroundTaskBody = zod
   .strictObject({
@@ -1025,11 +1014,11 @@ export const EnsureFirstPartyBackgroundTasks500Response = zod
  * @summary Delete background task mirror
  */
 export const DeleteBackgroundTaskParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Workflow to remove."),
 });
 
 export const DeleteBackgroundTaskQueryParams = zod.object({
-  revision: zod.coerce.number().int().describe("Current task revision required for delete."),
+  revision: zod.coerce.number().int().describe("Revision the editor last read."),
 });
 
 export const DeleteBackgroundTask204Response = zod.void();
@@ -1251,11 +1240,11 @@ export const GetBackgroundTask500Response = zod
   );
 
 /**
- * Applies a partial task update using optimistic locking. The desktop should send the current revision from its last read; stale writes return currentRevision for merge/retry.
- * @summary Patch background task mirror
+ * Save posts the name, instructions, and triggers at revision 1. The stored workflow keeps the name Follow up when a promise slips, those instructions and triggers, cloud execution, and revision 2.
+ * @summary Save
  */
 export const PatchBackgroundTaskParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Workflow to save."),
 });
 
 export const PatchBackgroundTaskBody = zod
@@ -1676,6 +1665,7 @@ export const ListBackgroundTaskRuns200Response = zod
       .array(
         zod
           .strictObject({
+            attempt: zod.int().optional().describe("Attempt shown when this run is open."),
             completedAt: zod.iso
               .datetime({ offset: true })
               .nullish()
@@ -1684,6 +1674,7 @@ export const ListBackgroundTaskRuns200Response = zod
               .datetime({ offset: true })
               .describe("Server row creation timestamp."),
             error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+            errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
             executor: zod
               .enum(["desktop", "api"])
               .describe("Execution backend that owns this run."),
@@ -1763,7 +1754,7 @@ export const ListBackgroundTaskRuns200Response = zod
               .nullish()
               .describe("Temporal workflow id for API-worker runs."),
             trigger: zod
-              .enum(["manual", "cron", "window", "event"])
+              .enum(["manual", "cron", "window", "event", "retry"])
               .describe("Trigger source for a task run."),
             updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
             useCase: zod
@@ -1891,7 +1882,7 @@ export const CreateBackgroundTaskRunBody = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .optional()
       .describe("Trigger source. Defaults to manual."),
     useCase: zod.string().nullish().describe("High-level usage label."),
@@ -1902,12 +1893,14 @@ export const CreateBackgroundTaskRunBody = zod
 
 export const CreateBackgroundTaskRun201Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -1982,7 +1975,7 @@ export const CreateBackgroundTaskRun201Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2071,18 +2064,20 @@ export const CreateBackgroundTaskRun500Response = zod
  * @summary Get task run
  */
 export const GetBackgroundTaskRunParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
-  runId: zod.string().describe("Cloud-visible run id for a background task run."),
+  slug: zod.string().describe("Workflow the opened run belongs to."),
+  runId: zod.string().describe("Run the Runs page opens."),
 });
 
 export const GetBackgroundTaskRun200Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -2157,7 +2152,7 @@ export const GetBackgroundTaskRun200Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2268,19 +2263,24 @@ export const PatchBackgroundTaskRunBody = zod
       .string()
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
-    trigger: zod.enum(["manual", "cron", "window", "event"]).optional().describe("Trigger source."),
+    trigger: zod
+      .enum(["manual", "cron", "window", "event", "retry"])
+      .optional()
+      .describe("Trigger source."),
     useCase: zod.string().nullish().describe("High-level usage label."),
   })
   .describe("Revision-checked update for mirrored run state.");
 
 export const PatchBackgroundTaskRun200Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -2355,7 +2355,7 @@ export const PatchBackgroundTaskRun200Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2442,22 +2442,26 @@ export const PatchBackgroundTaskRun500Response = zod
   );
 
 /**
- * Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Solomon AI. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.
- * @summary Cancel API-worker run
+ * Cancel posts an empty body. The stored cloud run is stopped, its progress is Cancellation requested, and the revision is 3.
+ * @summary Cancel
  */
 export const CancelBackgroundTaskRunParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
-  runId: zod.string().describe("Cloud-visible run id for a background task run."),
+  slug: zod.string().describe("Workflow to stop."),
+  runId: zod.string().describe("Run to stop."),
 });
+
+export const CancelBackgroundTaskRunBody = zod.looseObject({});
 
 export const CancelBackgroundTaskRun202Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -2532,7 +2536,7 @@ export const CancelBackgroundTaskRun202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2617,21 +2621,24 @@ export const CancelBackgroundTaskRun503Response = zod
   );
 
 /**
- * Returns durable log/progress events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.
- * @summary List task run logs
+ * Open the transcript reads the cloud run api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b on daily-summary. The first read sends no cursor. The stored page starts at sequence 0 with the message API worker claimed the run.
+ * @summary Open the transcript
  */
 export const ListBackgroundTaskRunEventsParams = zod.object({
   slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
   runId: zod.string().describe("Cloud-visible run id for a background task run."),
 });
 
+export const listBackgroundTaskRunEventsQueryAfterSeqMin = 0;
+
 export const ListBackgroundTaskRunEventsQueryParams = zod.object({
   afterSeq: zod.coerce
     .number()
     .int()
+    .min(listBackgroundTaskRunEventsQueryAfterSeqMin)
     .optional()
     .describe(
-      "Optional sequence cursor. When provided, only events with seq greater than this value are returned.",
+      "Optional sequence cursor. The first read omits this. When provided, only events with seq greater than this value are returned.",
     ),
 });
 
@@ -2643,7 +2650,7 @@ export const ListBackgroundTaskRunEvents200Response = zod
           .strictObject({
             event: zod
               .record(zod.string(), zod.unknown())
-              .describe("Original JSON event object from the desktop run log."),
+              .describe("Payload the transcript reads. A model call names the model."),
             id: zod.uuid().describe("Stable UUID primary key."),
             receivedAt: zod.iso
               .datetime({ offset: true })
@@ -2652,11 +2659,17 @@ export const ListBackgroundTaskRunEvents200Response = zod
             type: zod
               .string()
               .nullish()
-              .describe("Event type, either supplied explicitly or copied from event.type."),
+              .describe(
+                "Heading for this transcript row. A model call is runtime.llm_call_started.",
+              ),
           })
           .describe("Mirrored JSONL event from a background task run log."),
       )
       .describe("Run log\/progress events ordered by seq."),
+    nextSeq: zod
+      .int()
+      .nullish()
+      .describe("Last sequence on this page. Show the next events sends it as afterSeq."),
   })
   .describe("Ordered durable task log\/progress event list for a run.");
 
@@ -2888,22 +2901,26 @@ export const StreamBackgroundTaskRunEvents500Response = zod
   );
 
 /**
- * Creates a new API-worker run linked by previousRunId and starts a fresh Temporal workflow using the previous trigger/context.
- * @summary Retry API-worker run
+ * Retry posts an empty body. The stored cloud run is a new queued attempt of the stopped run, keeps the editor note, and records attempt 2.
+ * @summary Retry
  */
 export const RetryBackgroundTaskRunParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
-  runId: zod.string().describe("Cloud-visible run id for a background task run."),
+  slug: zod.string().describe("Workflow to retry."),
+  runId: zod.string().describe("Stopped run to retry."),
 });
+
+export const RetryBackgroundTaskRunBody = zod.looseObject({});
 
 export const RetryBackgroundTaskRun202Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -2978,7 +2995,7 @@ export const RetryBackgroundTaskRun202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -3085,12 +3102,14 @@ export const SignalBackgroundTaskRunBody = zod
 
 export const SignalBackgroundTaskRun202Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -3165,7 +3184,7 @@ export const SignalBackgroundTaskRun202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -3333,11 +3352,117 @@ export const GetBackgroundTaskRunStatus500Response = zod
   );
 
 /**
- * For executionTarget=desktop, queues a remote trigger with status=queued for desktop pickup. For executionTarget=api, creates an API-worker run and starts a Temporal workflow, while clients poll Solomon AI run status endpoints.
- * @summary Queue or start task trigger
+ * Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger.
+ * @summary Next run
+ */
+export const GetBackgroundTaskScheduleStateParams = zod.object({
+  slug: zod.string().describe("Workflow to read."),
+});
+
+export const GetBackgroundTaskScheduleState200Response = zod
+  .strictObject({
+    health: zod
+      .enum(["paused", "current", "failed", "unknown", "syncing"])
+      .describe("Whether the next run is ready."),
+    lastEvaluatedAt: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe("When the schedule was last checked."),
+    lastTriggeredAt: zod.iso.datetime({ offset: true }).nullish().describe("When it last started."),
+    mechanism: zod
+      .enum(["none", "desktop_loop", "rowboat_loop", "temporal_schedule"])
+      .describe("What owns the schedule."),
+    nextDueAt: zod.iso.datetime({ offset: true }).nullish().describe("When it is due next."),
+    scheduleSyncState: zod
+      .enum(["current", "syncing", "failed", "paused"])
+      .optional()
+      .describe("Whether a timed cloud schedule matches the workflow."),
+    sources: zod
+      .record(
+        zod.string(),
+        zod
+          .strictObject({
+            health: zod
+              .enum(["paused", "current", "failed", "unknown", "syncing"])
+              .describe("Whether this trigger is ready."),
+            lastEvaluatedAt: zod.iso
+              .datetime({ offset: true })
+              .nullish()
+              .describe("When this trigger was last checked."),
+            lastTriggeredAt: zod.iso
+              .datetime({ offset: true })
+              .nullish()
+              .describe("When this trigger last started a run."),
+            mechanism: zod
+              .enum(["none", "desktop_loop", "rowboat_loop", "temporal_schedule"])
+              .describe("What owns this trigger."),
+            nextDueAt: zod.iso
+              .datetime({ offset: true })
+              .nullish()
+              .describe("When this trigger is due."),
+          })
+          .describe("One trigger on this workflow."),
+      )
+      .optional()
+      .describe("One entry for each trigger."),
+    target: zod.enum(["api", "desktop"]).describe("Where this workflow runs."),
+    triggerSources: zod
+      .array(zod.enum(["cron", "window", "event"]).describe("Trigger source."))
+      .describe("What can start this workflow."),
+  })
+  .describe("When this workflow runs next.");
+
+export const GetBackgroundTaskScheduleState401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetBackgroundTaskScheduleState404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetBackgroundTaskScheduleState500Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Run now posts a manual start from the visual workflow editor. The stored cloud run stays queued, keeps the note Started from the visual workflow editor, uses cloud execution, and records revision 2.
+ * @summary Run now
  */
 export const TriggerBackgroundTaskParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Workflow to run."),
 });
 
 export const TriggerBackgroundTaskBody = zod
@@ -3359,12 +3484,14 @@ export const TriggerBackgroundTaskBody = zod
 
 export const TriggerBackgroundTask202Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -3439,7 +3566,7 @@ export const TriggerBackgroundTask202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),

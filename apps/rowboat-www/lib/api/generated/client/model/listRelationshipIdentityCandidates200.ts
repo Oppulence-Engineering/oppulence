@@ -8,9 +8,11 @@
 import type { RelationshipIdentityCandidate } from "./relationshipIdentityCandidate";
 
 /**
- * Identity candidate list.
+ * Pending duplicate page.
  */
 export type ListRelationshipIdentityCandidates200 = {
   /** Candidates. */
   candidates: RelationshipIdentityCandidate[];
+  /** Another duplicate exists beyond this page. */
+  hasMore: boolean;
 };

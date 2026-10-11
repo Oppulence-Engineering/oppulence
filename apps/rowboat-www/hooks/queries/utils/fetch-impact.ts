@@ -28,6 +28,7 @@ export async function loadImpact(
   return {
     surfaced: impact.surfaced,
     open: impact.open,
+    openTasks: impact.openTasks,
     handled: impact.handled,
     snoozed: impact.snoozed ?? 0,
     dismissed: impact.dismissed ?? 0,

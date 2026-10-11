@@ -21,12 +21,12 @@ export interface SlackThreadMessage {
    */
   text?: string | null;
   /**
-   * Usage or ledger event timestamp.
+   * Slack message timestamp.
    * @nullable
    */
   ts?: string | null;
   /**
-   * User that owns this row.
+   * Slack user id when present.
    * @nullable
    */
   user?: string | null;

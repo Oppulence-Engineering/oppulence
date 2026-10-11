@@ -3,21 +3,25 @@ package revenue
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
 
+var emailShapedAccount = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+
 // The Open Promises report is the wedge (one-pager §11).
 //
 // Rather than demo the product, connect a prospect's sources and hand them a
-// document that says: here are the commitments your team made in the last 90
-// days that have no evidence of fulfilment, and here is the exact message that
-// created each one.
+// document that says: here are the promises from the last 90 days with no
+// evidence they were kept, and here is the exact message that created each one.
 //
 // The artifact sells itself and it is also the onboarding, so the sale and the
 // activation are one motion. That is why this lives next to the scan rather
@@ -92,32 +96,56 @@ func (s *Service) OpenPromisesReport(
 		Truncated:    len(more) > 0,
 	}
 	for _, row := range rows {
+		state := commitmentRegisterState(row, now)
+		// An extraction waiting for review stays Review on this document
+		// even when the due date is soon. The register clock would call
+		// that same row at risk. The company record and the graph already
+		// say Review.
+		if row.Acceptance == "candidate" {
+			state = "review"
+		}
 		item := ReportItem{
 			CommitmentID: row.ID.String(),
 			Direction:    row.Direction,
-			Text:         row.Text,
-			State:        commitmentRegisterState(row, now),
+			Text:         strings.TrimSpace(row.Text),
+			State:        state,
 			DueAt:        row.DueAt,
 			DuePhrase:    row.DuePhrase,
 			Owner:        row.OwnerParticipantRef,
-			SourceQuote:  row.SourcePhrase,
+			SourceQuote:  strings.TrimSpace(row.SourcePhrase),
 		}
 		if rel, relErr := row.Edges.RelationshipOrErr(); relErr == nil && rel != nil {
-			item.Account = rel.DisplayName
+			item.Account = reportAccountTitle(rel)
 		}
 		if item.Account == "" {
 			item.Account = "Unattributed"
 		}
 		if evidences, evidenceErr := row.Edges.EvidencesOrErr(); evidenceErr == nil && len(evidences) > 0 {
-			evidence := evidences[0]
-			item.SourceQuote = evidence.Excerpt
-			item.SourceURI = evidence.SourceURI
-			item.OccurredAt = &evidence.OccurredAt
+			// Evidences are oldest first. A blank excerpt is not a citation,
+			// so the report keeps walking until it finds the sentence. The
+			// source link stays with that sentence. If every excerpt is blank,
+			// the promise's own phrase remains and the first row still supplies
+			// the link.
+			cited := evidences[0]
+			for _, evidence := range evidences {
+				if strings.TrimSpace(evidence.Excerpt) != "" {
+					cited = evidence
+					break
+				}
+			}
+			if excerpt := strings.TrimSpace(cited.Excerpt); excerpt != "" {
+				item.SourceQuote = excerpt
+			}
+			item.SourceURI = cited.SourceURI
+			item.OccurredAt = &cited.OccurredAt
 		}
 		report.ByAccount[item.Account]++
-		if row.Direction == "promised_by_them" {
+		switch row.Direction {
+		case "promised_by_them":
 			report.InboundCount++
-		} else {
+		case "mutual":
+			// A shared promise is neither one we made nor one made to us.
+		default:
 			report.OutboundCount++
 		}
 		report.Items = append(report.Items, item)
@@ -142,14 +170,55 @@ func (s *Service) OpenPromisesReport(
 	return report, nil
 }
 
+// reportAccountTitle uses the same company title as the directory. A company
+// stored as dogfood-label.example is shown as Dogfood Label. A typed name,
+// including one that contains an @ sign, stays as it was written.
+func reportAccountTitle(rel *ent.Relationship) string {
+	name := strings.TrimSpace(rel.DisplayName)
+	domain := strings.TrimSpace(rel.AccountDomain)
+	if domain != "" && (name == "" || strings.EqualFold(name, domain) || emailShapedAccount.MatchString(name)) {
+		if title := domainCompanyLabel(domain); title != "" {
+			return title
+		}
+	}
+	if name == "" {
+		return "Unknown company"
+	}
+	return name
+}
+
+func domainCompanyLabel(domain string) string {
+	host := domain
+	if dot := strings.IndexByte(host, '.'); dot >= 0 {
+		host = host[:dot]
+	}
+	parts := strings.FieldsFunc(host, func(r rune) bool { return r == '-' || r == '_' })
+	words := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		first, size := utf8.DecodeRuneInString(part)
+		if first == utf8.RuneError && size == 1 {
+			words = append(words, part)
+			continue
+		}
+		words = append(words, string(unicode.ToUpper(first))+part[size:])
+	}
+	return strings.Join(words, " ")
+}
+
 // Markdown renders the report as the document handed to a prospect.
 func (r *OpenPromisesReport) Markdown() string {
 	var b strings.Builder
 	b.WriteString("# Open promises\n\n")
-	fmt.Fprintf(&b, "Commitments found in the last %d days with no evidence of fulfilment.\n\n",
+	fmt.Fprintf(&b, "Promises from the last %d days with no evidence they were kept.\n\n",
 		r.LookbackDays)
 	fmt.Fprintf(&b, "- **%d** promises we made\n", r.OutboundCount)
 	fmt.Fprintf(&b, "- **%d** promises made to us\n", r.InboundCount)
+	if shared := sharedPromiseCount(r.Items); shared > 0 {
+		fmt.Fprintf(&b, "- **%d** promises we share\n", shared)
+	}
 	fmt.Fprintf(&b, "- **%d** conversations read\n\n", r.ThreadsSeen)
 	if r.Truncated {
 		b.WriteString("This report shows the first 200 open promises. Open the register for the complete ledger.\n\n")
@@ -166,17 +235,14 @@ func (r *OpenPromisesReport) Markdown() string {
 		accounts = append(accounts, account)
 	}
 	sort.Strings(accounts)
-	b.WriteString("| Account | Open promises |\n|---|---|\n")
+	b.WriteString("| Company | Open promises |\n|---|---|\n")
 	for _, account := range accounts {
 		fmt.Fprintf(&b, "| %s | %d |\n", account, r.ByAccount[account])
 	}
 	b.WriteString("\n## The promises\n\n")
 
 	for _, item := range r.Items {
-		owed := "We owe"
-		if item.Direction == "promised_by_them" {
-			owed = "They owe"
-		}
+		owed := promiseOwesLabel(item.Direction)
 		fmt.Fprintf(&b, "### %s — %s\n\n", item.Account, item.Text)
 		fmt.Fprintf(&b, "%s · state **%s**", owed, registerStateLabel(item.State))
 		switch {
@@ -206,4 +272,25 @@ func (r *OpenPromisesReport) Markdown() string {
 	fmt.Fprintf(&b, "\n---\n\nGenerated %s. Every promise above includes the source evidence available at scan time.\n",
 		r.GeneratedAt.Format(time.RFC3339))
 	return b.String()
+}
+
+func promiseOwesLabel(direction string) string {
+	switch direction {
+	case "promised_by_them":
+		return "They owe"
+	case "mutual":
+		return "We both owe"
+	default:
+		return "We owe"
+	}
+}
+
+func sharedPromiseCount(items []ReportItem) int {
+	count := 0
+	for _, item := range items {
+		if item.Direction == "mutual" {
+			count++
+		}
+	}
+	return count
 }

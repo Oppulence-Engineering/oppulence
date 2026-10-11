@@ -20,6 +20,6 @@ export interface RevenueOutcome {
   occurredAt: string;
   /** Observing source. */
   source: RevenueOutcomeSource;
-  /** Source event id used for deduplication. */
+  /** Source event id used for deduplication. Log outcome sends manual, the kind, and the current time. */
   sourceEventId: string;
 }

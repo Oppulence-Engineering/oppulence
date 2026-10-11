@@ -8,39 +8,39 @@
 
 export type ListCommitmentsParams = {
   /**
-   * promised_by_me, promised_by_them, or mutual.
+   * promised_by_me, promised_by_them, or mutual. What we owe asks for promised_by_me.
    */
   direction?: string;
   /**
-   * Comma-separated register states: open, at_risk, met, missed, waived, disputed. at_risk is derived from the due date.
+   * Comma-separated register states. What we owe asks for open and at risk.
    */
   state?: string;
   /**
-   * Owner participant reference.
+   * Owner participant reference. What we owe does not send this.
    */
   owner?: string;
   /**
-   * Restrict to one account.
+   * Restrict to one company. What we owe does not send this.
    */
   relationshipId?: string;
   /**
-   * Only commitments due before this instant.
+   * Only commitments due before this instant. What we owe does not send this.
    */
   dueBefore?: string;
   /**
-   * Only commitments updated at or after this instant.
+   * Only commitments updated at or after this instant. What we owe does not send this.
    */
   changedSince?: string;
   /**
-   * Page size (default 50, max 200).
+   * Page size (max 200). What we owe asks for 200.
    */
   limit?: number;
   /**
-   * Page offset.
+   * How many promises to skip. What we owe does not send this on the first page.
    */
   offset?: number;
   /**
-   * Include unconfirmed extractions for a review surface.
+   * Include unconfirmed extractions. What we owe does not send this.
    */
   includeCandidates?: boolean;
 };

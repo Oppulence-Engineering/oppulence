@@ -8,12 +8,30 @@
 import type {
   AgentSessionEventsResponse,
   AgentSessionListResponse,
+  ApproveAgentSession202,
+  ApproveAgentSessionBody,
+  CancelAgentSession202,
+  CreateAgentSessionBody,
+  DurableAgentSessionEvent,
+  DurableAgentSessionView,
   ListAgentSessionEventsParams,
+  ListAgentSessionsParams,
+  MintAgentApprovalToken200,
   N400Response,
   N401Response,
+  N403Response,
   N404Response,
+  N409Response,
   N500Response,
+  N502Response,
+  StreamAgentSessionParams,
+  SubmitAgentSessionTurn202,
+  SubmitAgentSessionTurnBody,
 } from "../model";
+
+interface TypedResponse<T> extends Response {
+  json(): Promise<T>;
+}
 
 export type listAgentSessionsResponse200 = {
   data: AgentSessionListResponse;
@@ -42,18 +60,31 @@ export type listAgentSessionsResponseError = (
 export type listAgentSessionsResponse =
   listAgentSessionsResponseSuccess | listAgentSessionsResponseError;
 
-export const getListAgentSessionsUrl = () => {
-  return `/v1/agent-sessions`;
+export const getListAgentSessionsUrl = (params?: ListAgentSessionsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/agent-sessions?${stringifiedParams}`
+    : `/v1/agent-sessions`;
 };
 
 /**
- * Returns the authenticated user's recent durable agent conversations.
- * @summary List agent sessions
+ * Show earlier conversations loads the next page of History. It skips the newest 50 conversations. This page has one older conversation, and no conversation after it.
+ * @summary Show earlier conversations
  */
 export const listAgentSessions = async (
+  params?: ListAgentSessionsParams,
   options?: RequestInit,
 ): Promise<listAgentSessionsResponse> => {
-  const res = await fetch(getListAgentSessionsUrl(), {
+  const res = await fetch(getListAgentSessionsUrl(params), {
     ...options,
     method: "GET",
   });
@@ -62,6 +93,247 @@ export const listAgentSessions = async (
 
   const data: listAgentSessionsResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as listAgentSessionsResponse;
+};
+
+export type createAgentSessionResponse201 = {
+  data: DurableAgentSessionView;
+  status: 201;
+};
+
+export type createAgentSessionResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type createAgentSessionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type createAgentSessionResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type createAgentSessionResponseSuccess = createAgentSessionResponse201 & {
+  headers: Headers;
+};
+export type createAgentSessionResponseError = (
+  createAgentSessionResponse400 | createAgentSessionResponse401 | createAgentSessionResponse502
+) & {
+  headers: Headers;
+};
+
+export type createAgentSessionResponse =
+  createAgentSessionResponseSuccess | createAgentSessionResponseError;
+
+export const getCreateAgentSessionUrl = () => {
+  return `/v1/agent-sessions`;
+};
+
+/**
+ * Submit sends the first chat message. It posts agent assistant, channel web, and "Ask about a company, a promise, or the next step." as both the message and the title. The stored session is active, with no completed turns yet.
+ * @summary Submit
+ */
+export const createAgentSession = async (
+  createAgentSessionBody: CreateAgentSessionBody,
+  options?: RequestInit,
+): Promise<createAgentSessionResponse> => {
+  const res = await fetch(getCreateAgentSessionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createAgentSessionBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createAgentSessionResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as createAgentSessionResponse;
+};
+
+export type approveAgentSessionResponse202 = {
+  data: ApproveAgentSession202;
+  status: 202;
+};
+
+export type approveAgentSessionResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type approveAgentSessionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type approveAgentSessionResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type approveAgentSessionResponseSuccess = approveAgentSessionResponse202 & {
+  headers: Headers;
+};
+export type approveAgentSessionResponseError = (
+  approveAgentSessionResponse400 | approveAgentSessionResponse401 | approveAgentSessionResponse404
+) & {
+  headers: Headers;
+};
+
+export type approveAgentSessionResponse =
+  approveAgentSessionResponseSuccess | approveAgentSessionResponseError;
+
+export const getApproveAgentSessionUrl = (id: string, approvalId: string) => {
+  return `/v1/agent-sessions/${id}/approvals/${approvalId}`;
+};
+
+/**
+ * Approve allows the paused chat action. It posts decision granted for approval session_abc123/turn/0/approval/0. The response repeats that approval and decision granted.
+ * @summary Approve
+ */
+export const approveAgentSession = async (
+  id: string,
+  approvalId: string,
+  approveAgentSessionBody: ApproveAgentSessionBody,
+  options?: RequestInit,
+): Promise<approveAgentSessionResponse> => {
+  const res = await fetch(getApproveAgentSessionUrl(id, approvalId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(approveAgentSessionBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: approveAgentSessionResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as approveAgentSessionResponse;
+};
+
+export type mintAgentApprovalTokenResponse200 = {
+  data: MintAgentApprovalToken200;
+  status: 200;
+};
+
+export type mintAgentApprovalTokenResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type mintAgentApprovalTokenResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type mintAgentApprovalTokenResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type mintAgentApprovalTokenResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type mintAgentApprovalTokenResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type mintAgentApprovalTokenResponseSuccess = mintAgentApprovalTokenResponse200 & {
+  headers: Headers;
+};
+export type mintAgentApprovalTokenResponseError = (
+  | mintAgentApprovalTokenResponse401
+  | mintAgentApprovalTokenResponse403
+  | mintAgentApprovalTokenResponse404
+  | mintAgentApprovalTokenResponse409
+  | mintAgentApprovalTokenResponse500
+) & {
+  headers: Headers;
+};
+
+export type mintAgentApprovalTokenResponse =
+  mintAgentApprovalTokenResponseSuccess | mintAgentApprovalTokenResponseError;
+
+export const getMintAgentApprovalTokenUrl = (id: string, approvalId: string) => {
+  return `/v1/agent-sessions/${id}/approvals/${approvalId}/token`;
+};
+
+/**
+ * Approve on a payment request posts no body. The API returns the approval token for that pending payment, valid until 2026-09-02T15:10:00Z, with no extra sign-in check.
+ * @summary Approve payment
+ */
+export const mintAgentApprovalToken = async (
+  id: string,
+  approvalId: string,
+  options?: RequestInit,
+): Promise<mintAgentApprovalTokenResponse> => {
+  const res = await fetch(getMintAgentApprovalTokenUrl(id, approvalId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: mintAgentApprovalTokenResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as mintAgentApprovalTokenResponse;
+};
+
+export type cancelAgentSessionResponse202 = {
+  data: CancelAgentSession202;
+  status: 202;
+};
+
+export type cancelAgentSessionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type cancelAgentSessionResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type cancelAgentSessionResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type cancelAgentSessionResponseSuccess = cancelAgentSessionResponse202 & {
+  headers: Headers;
+};
+export type cancelAgentSessionResponseError = (
+  cancelAgentSessionResponse401 | cancelAgentSessionResponse404 | cancelAgentSessionResponse500
+) & {
+  headers: Headers;
+};
+
+export type cancelAgentSessionResponse =
+  cancelAgentSessionResponseSuccess | cancelAgentSessionResponseError;
+
+export const getCancelAgentSessionUrl = (id: string) => {
+  return `/v1/agent-sessions/${id}/cancel`;
+};
+
+/**
+ * Stop response ends the open chat. The request has no body. The response names that session and reports status canceling.
+ * @summary Stop response
+ */
+export const cancelAgentSession = async (
+  id: string,
+  options?: RequestInit,
+): Promise<cancelAgentSessionResponse> => {
+  const res = await fetch(getCancelAgentSessionUrl(id), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: cancelAgentSessionResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as cancelAgentSessionResponse;
 };
 
 export type listAgentSessionEventsResponse200 = {
@@ -121,8 +393,8 @@ export const getListAgentSessionEventsUrl = (id: string, params?: ListAgentSessi
 };
 
 /**
- * Returns ordered durable events used to reconstruct a conversation after navigation or reload.
- * @summary List agent session events
+ * Open conversation reads the history row Review the Acme renewal. The first read asks for 1000 events and sends no cursor. The stored page starts at sequence 0 for Assistant, includes both completed turns, the relationship.read tool call, and three model calls on anthropic/claude-sonnet-4-5, and does not name another page.
+ * @summary Open conversation
  */
 export const listAgentSessionEvents = async (
   id: string,
@@ -138,4 +410,129 @@ export const listAgentSessionEvents = async (
 
   const data: listAgentSessionEventsResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as listAgentSessionEventsResponse;
+};
+
+export type streamAgentSessionResponse200 = {
+  stream: TypedResponse<DurableAgentSessionEvent>;
+  status: 200;
+};
+
+export type streamAgentSessionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type streamAgentSessionResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type streamAgentSessionResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type streamAgentSessionResponseSuccess = streamAgentSessionResponse200 & {
+  headers: Headers;
+};
+export type streamAgentSessionResponseError = (
+  streamAgentSessionResponse401 | streamAgentSessionResponse404 | streamAgentSessionResponse500
+) & {
+  headers: Headers;
+};
+
+export type streamAgentSessionResponse =
+  streamAgentSessionResponseSuccess | streamAgentSessionResponseError;
+
+export const getStreamAgentSessionUrl = (id: string, params?: StreamAgentSessionParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/agent-sessions/${id}/stream?${stringifiedParams}`
+    : `/v1/agent-sessions/${id}/stream`;
+};
+
+/**
+ * Follow the chat reads the open conversation. The first line is sequence 0, the session start for Assistant, with no turn yet.
+ * @summary Follow the chat
+ */
+export const streamAgentSession = async (
+  id: string,
+  params?: StreamAgentSessionParams,
+  options?: RequestInit,
+): Promise<streamAgentSessionResponse> => {
+  const stream = await fetch(getStreamAgentSessionUrl(id, params), {
+    ...options,
+    method: "GET",
+  });
+
+  return { status: stream.status, stream, headers: stream.headers } as streamAgentSessionResponse;
+};
+
+export type submitAgentSessionTurnResponse202 = {
+  data: SubmitAgentSessionTurn202;
+  status: 202;
+};
+
+export type submitAgentSessionTurnResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type submitAgentSessionTurnResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type submitAgentSessionTurnResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type submitAgentSessionTurnResponseSuccess = submitAgentSessionTurnResponse202 & {
+  headers: Headers;
+};
+export type submitAgentSessionTurnResponseError = (
+  | submitAgentSessionTurnResponse400
+  | submitAgentSessionTurnResponse401
+  | submitAgentSessionTurnResponse404
+) & {
+  headers: Headers;
+};
+
+export type submitAgentSessionTurnResponse =
+  submitAgentSessionTurnResponseSuccess | submitAgentSessionTurnResponseError;
+
+export const getSubmitAgentSessionTurnUrl = (id: string) => {
+  return `/v1/agent-sessions/${id}/turns`;
+};
+
+/**
+ * Submit sends the next message in the open chat. It posts only "Ask about a company, a promise, or the next step." The opening message already took sequence 0, so this turn is accepted as sequence 1.
+ * @summary Submit
+ */
+export const submitAgentSessionTurn = async (
+  id: string,
+  submitAgentSessionTurnBody: SubmitAgentSessionTurnBody,
+  options?: RequestInit,
+): Promise<submitAgentSessionTurnResponse> => {
+  const res = await fetch(getSubmitAgentSessionTurnUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(submitAgentSessionTurnBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: submitAgentSessionTurnResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as submitAgentSessionTurnResponse;
 };

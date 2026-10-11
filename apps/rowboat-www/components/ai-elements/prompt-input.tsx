@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@oppulence/ui/components/select";
+import { dictationErrorMessage } from "@/lib/chat/dictation-error";
 import { cn } from "@/lib/utils";
 import type { ChatStatus, FileUIPart } from "ai";
 import {
@@ -1026,17 +1027,31 @@ declare global {
 export type PromptInputSpeechButtonProps = ComponentProps<typeof PromptInputButton> & {
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
   onTranscriptionChange?: (text: string) => void;
+  /** A blocked microphone otherwise leaves the button idle with no explanation. */
+  onDictationError?: (message: string) => void;
+  /** Clears a previous dictation notice once listening actually starts. */
+  onListening?: () => void;
 };
 
 export const PromptInputSpeechButton = ({
   className,
   textareaRef,
   onTranscriptionChange,
+  onDictationError,
+  onListening,
   ...props
 }: PromptInputSpeechButtonProps) => {
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // The recognizer is created once. Recreating it on each render calls stop(),
+  // which the browser reports as a cancelled dictation.
+  const onTranscriptionChangeRef = useRef(onTranscriptionChange);
+  const onDictationErrorRef = useRef(onDictationError);
+  const onListeningRef = useRef(onListening);
+  onTranscriptionChangeRef.current = onTranscriptionChange;
+  onDictationErrorRef.current = onDictationError;
+  onListeningRef.current = onListening;
 
   useEffect(() => {
     if (
@@ -1052,6 +1067,7 @@ export const PromptInputSpeechButton = ({
 
       speechRecognition.onstart = () => {
         setIsListening(true);
+        onListeningRef.current?.();
       };
 
       speechRecognition.onend = () => {
@@ -1075,13 +1091,14 @@ export const PromptInputSpeechButton = ({
 
           textarea.value = newValue;
           textarea.dispatchEvent(new Event("input", { bubbles: true }));
-          onTranscriptionChange?.(newValue);
+          onTranscriptionChangeRef.current?.(newValue);
         }
       };
 
       speechRecognition.onerror = (event) => {
-        console.error("Speech recognition error:", event.error);
         setIsListening(false);
+        const message = dictationErrorMessage(event.error);
+        if (message) onDictationErrorRef.current?.(message);
       };
 
       recognitionRef.current = speechRecognition;
@@ -1093,7 +1110,7 @@ export const PromptInputSpeechButton = ({
         recognitionRef.current.stop();
       }
     };
-  }, [textareaRef, onTranscriptionChange]);
+  }, [textareaRef]);
 
   const toggleListening = useCallback(() => {
     if (!recognition) {
@@ -1117,6 +1134,9 @@ export const PromptInputSpeechButton = ({
       disabled={!recognition}
       onClick={toggleListening}
       {...props}
+      title={
+        recognition ? props.title : "Dictation is not available in this browser."
+      }
     >
       <Microphone className="size-4" />
     </PromptInputButton>

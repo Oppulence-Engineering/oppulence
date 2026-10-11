@@ -9,11 +9,17 @@ import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
 import type {
+  ApproveActionProposal200,
+  CreateCommunicationPrivacyRule201,
+  ExecuteActionProposal200,
+  GetObjectAudit200,
   GetOpenPromisesReport200One,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
+  ListActionProposals200,
   ListRevenueActions200,
   ListRevenueLeakScans200,
+  RejectActionProposal200,
   RevenueAction,
   RevenueDigest,
   RevenueImpact,
@@ -25,12 +31,16 @@ import type {
 } from "../model";
 
 import {
+  getApproveActionProposalResponseMock,
   getApproveRevenueActionResponseMock,
+  getCreateCommunicationPrivacyRuleResponseMock,
   getCreateRevenueActionResponseMock,
   getDismissRevenueActionResponseMock,
   getEditRevenueActionResponseMock,
   getEvaluateRevenueActionResponseMock,
+  getExecuteActionProposalResponseMock,
   getExecuteRevenueActionResponseMock,
+  getGetObjectAuditResponseMock,
   getGetOpenPromisesReportResponseMock,
   getGetRevenueActionAuditResponseMock,
   getGetRevenueActionResponseMock,
@@ -40,9 +50,11 @@ import {
   getGetRevenueLeakScanResponseMock,
   getGetRevenueWorkspaceResponseMock,
   getLinkRevenueWorkspaceResponseMock,
+  getListActionProposalsResponseMock,
   getListRevenueActionsResponseMock,
   getListRevenueLeakScansResponseMock,
   getRecordRevenueActionOutcomeResponseMock,
+  getRejectActionProposalResponseMock,
   getRejectRevenueActionResponseMock,
   getRevenueSemanticSearchResponseMock,
   getSnoozeRevenueActionResponseMock,
@@ -50,6 +62,11 @@ import {
 } from "./revenue.faker";
 
 export {
+  getListActionProposalsResponseMock,
+  getApproveActionProposalResponseMock,
+  getExecuteActionProposalResponseMock,
+  getRejectActionProposalResponseMock,
+  getGetObjectAuditResponseMock,
   getListRevenueActionsResponseMock,
   getCreateRevenueActionResponseMock,
   getGetRevenueActionResponseMock,
@@ -71,8 +88,129 @@ export {
   getGetOpenPromisesReportResponseMock,
   getRevenueSemanticSearchResponseMock,
   getGetRevenueWorkspaceResponseMock,
+  getCreateCommunicationPrivacyRuleResponseMock,
   getLinkRevenueWorkspaceResponseMock,
 } from "./revenue.faker";
+
+export const getListActionProposalsMockHandler = (
+  overrideResponse?:
+    | ListActionProposals200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListActionProposals200> | ListActionProposals200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/action-proposals",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListActionProposalsResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getApproveActionProposalMockHandler = (
+  overrideResponse?:
+    | ApproveActionProposal200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<ApproveActionProposal200> | ApproveActionProposal200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/action-proposals/:id/approve",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getApproveActionProposalResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getExecuteActionProposalMockHandler = (
+  overrideResponse?:
+    | ExecuteActionProposal200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<ExecuteActionProposal200> | ExecuteActionProposal200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/action-proposals/:id/execute",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getExecuteActionProposalResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getRejectActionProposalMockHandler = (
+  overrideResponse?:
+    | RejectActionProposal200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<RejectActionProposal200> | RejectActionProposal200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/action-proposals/:id/reject",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getRejectActionProposalResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getGetObjectAuditMockHandler = (
+  overrideResponse?:
+    | GetObjectAudit200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetObjectAudit200> | GetObjectAudit200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/objects/:resourceRef/audit",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetObjectAuditResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 
 export const getListRevenueActionsMockHandler = (
   overrideResponse?:
@@ -583,6 +721,30 @@ export const getGetRevenueWorkspaceMockHandler = (
   );
 };
 
+export const getCreateCommunicationPrivacyRuleMockHandler = (
+  overrideResponse?:
+    | CreateCommunicationPrivacyRule201
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<CreateCommunicationPrivacyRule201> | CreateCommunicationPrivacyRule201),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/revenue-workspaces/current/communication-privacy-rules",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getCreateCommunicationPrivacyRuleResponseMock(),
+        { status: 201 },
+      );
+    },
+    options,
+  );
+};
+
 export const getLinkRevenueWorkspaceMockHandler = (
   overrideResponse?:
     | RevenueWorkspace
@@ -607,6 +769,11 @@ export const getLinkRevenueWorkspaceMockHandler = (
   );
 };
 export const getRevenueMock = () => [
+  getListActionProposalsMockHandler(),
+  getApproveActionProposalMockHandler(),
+  getExecuteActionProposalMockHandler(),
+  getRejectActionProposalMockHandler(),
+  getGetObjectAuditMockHandler(),
   getListRevenueActionsMockHandler(),
   getCreateRevenueActionMockHandler(),
   getGetRevenueActionMockHandler(),
@@ -628,5 +795,6 @@ export const getRevenueMock = () => [
   getGetOpenPromisesReportMockHandler(),
   getRevenueSemanticSearchMockHandler(),
   getGetRevenueWorkspaceMockHandler(),
+  getCreateCommunicationPrivacyRuleMockHandler(),
   getLinkRevenueWorkspaceMockHandler(),
 ];

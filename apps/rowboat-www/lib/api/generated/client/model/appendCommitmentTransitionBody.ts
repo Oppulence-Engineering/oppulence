@@ -17,7 +17,7 @@ export type AppendCommitmentTransitionBody = {
   blocker?: string;
   /** Replacement due date. */
   dueAt?: string;
-  /** Evidence references. */
+  /** Evidence references. An omitted list is stored as this transition. */
   evidenceRefs?: string[];
   /** Stable source event id. */
   idempotencyKey: string;

@@ -9,6 +9,7 @@
 export type ListAgentSessionEventsParams = {
   /**
    * Sequence cursor.
+   * @minimum 0
    */
   afterSeq?: number;
   /**

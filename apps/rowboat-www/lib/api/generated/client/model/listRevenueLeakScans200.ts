@@ -11,6 +11,8 @@ import type { RevenueLeakScan } from "./revenueLeakScan";
  * Audit history.
  */
 export type ListRevenueLeakScans200 = {
+  /** Whether another audit exists past this page. */
+  hasMore: boolean;
   /** Scans newest first. */
   scans: RevenueLeakScan[];
 };

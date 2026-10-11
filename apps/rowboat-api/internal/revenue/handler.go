@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -94,6 +95,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/{relationshipId}/timeline", h.RelationshipTimeline)
 		r.Get("/{relationshipId}/communication-timeline", h.RelationshipCommunicationTimeline)
 		r.Get("/{relationshipId}/changes", h.RelationshipChanges)
+		r.Get("/{relationshipId}/conversation-review", h.RelationshipConversationReview)
 		r.Post("/{relationshipId}/acknowledgements", h.AcknowledgeMissionControl)
 		r.Get("/{relationshipId}/evidence/{evidenceId}", h.RelationshipEvidence)
 		r.Post("/{relationshipId}/corrections", h.CorrectRelationship)
@@ -115,6 +117,7 @@ func (h *Handler) Mount(r chi.Router) {
 	})
 	h.MountResearch(r)
 	r.Post("/v1/relationship-observations/batch", h.IngestRelationshipObservations)
+	r.Get("/v1/workspace-notes", h.ListWorkspaceNotes)
 	r.Route("/v1/relationship-identity-candidates", func(r chi.Router) {
 		r.Get("/", h.ListIdentityCandidates)
 		r.Get("/{candidateId}", h.GetIdentityCandidate)
@@ -315,11 +318,14 @@ type personDTO struct {
 	Status      string `json:"status"`
 	// Whether their mail still reaches them. Surfaced so the UI can say a contact
 	// has left rather than silently ranking the account as merely quiet.
-	EmploymentStatus   string  `json:"employmentStatus,omitempty"`
-	RelationshipCount  int     `json:"relationshipCount"`
-	FirstInteractionAt *string `json:"firstInteractionAt,omitempty"`
-	LastInteractionAt  *string `json:"lastInteractionAt,omitempty"`
-	AttributesVersion  int     `json:"attributesVersion"`
+	EmploymentStatus  string `json:"employmentStatus,omitempty"`
+	RelationshipCount int    `json:"relationshipCount"`
+	// Roles this person holds on companies. The people directory prints them
+	// in the Role column. Empty when no company has named a role.
+	ParticipantRoles   []string `json:"participantRoles,omitempty"`
+	FirstInteractionAt *string  `json:"firstInteractionAt,omitempty"`
+	LastInteractionAt  *string  `json:"lastInteractionAt,omitempty"`
+	AttributesVersion  int      `json:"attributesVersion"`
 	// Phone is deliberately absent: it is derived PII with no relationship
 	// dimension to land in, and it stays on the device that parsed it.
 }
@@ -349,6 +355,21 @@ func personToDTO(p *ent.Person) *personDTO {
 	}
 	if dto.Aliases == nil {
 		dto.Aliases = []string{}
+	}
+	if participants, err := p.Edges.ParticipantsOrErr(); err == nil {
+		seen := map[string]struct{}{}
+		for _, participant := range participants {
+			role := strings.TrimSpace(participant.Role)
+			if role == "" {
+				continue
+			}
+			if _, ok := seen[role]; ok {
+				continue
+			}
+			seen[role] = struct{}{}
+			dto.ParticipantRoles = append(dto.ParticipantRoles, role)
+		}
+		sort.Strings(dto.ParticipantRoles)
 	}
 	if p.FirstInteractionAt != nil {
 		value := p.FirstInteractionAt.UTC().Format(time.RFC3339)
@@ -702,7 +723,7 @@ func relationshipAttentionToDTO(item *ent.RelationshipAttentionItem) (relationsh
 		return relationshipAttentionDTO{}, err
 	}
 	return relationshipAttentionDTO{
-		ID: item.ID.String(), Version: item.Version, RelationshipID: rel.ID.String(), RelationshipName: rel.DisplayName,
+		ID: item.ID.String(), Version: item.Version, RelationshipID: rel.ID.String(), RelationshipName: reportAccountTitle(rel),
 		ReasonCode: item.ReasonCode, Explanation: item.Explanation, TriggeringObjectRef: item.TriggeringObjectRef,
 		EvidenceRefs: jsonSlice(item.EvidenceRefs), UrgencyBand: item.UrgencyBand, RankScore: item.RankScore, RankFactors: item.RankFactorsJSON,
 		SourceRequirements: item.SourceRequirements, RecommendationID: item.RecommendationID,
@@ -852,6 +873,7 @@ func relationshipToDTOWithOpen(rel *ent.Relationship) relationshipDTO {
 type actionDTO struct {
 	ID                      string              `json:"id"`
 	RelationshipID          string              `json:"relationshipId,omitempty"`
+	RelationshipName        string              `json:"relationshipName,omitempty"`
 	ActionType              string              `json:"actionType"`
 	Channel                 string              `json:"channel"`
 	Detector                string              `json:"detector"`
@@ -946,11 +968,12 @@ func actionToDTO(a *ent.RevenueAction) actionDTO {
 			})
 		}
 	}
-	if a.PriorityComponentsJSON != "" {
-		dto.PriorityComponents = json.RawMessage(a.PriorityComponentsJSON)
+	if components := priorityComponentsForAPI(a.PriorityComponentsJSON); len(components) > 0 {
+		dto.PriorityComponents = components
 	}
 	if rel, err := a.Edges.RelationshipOrErr(); err == nil {
 		dto.RelationshipID = rel.ID.String()
+		dto.RelationshipName = reportAccountTitle(rel)
 	}
 	return dto
 }
@@ -1315,6 +1338,7 @@ func (h *Handler) SetWorkspaceFeatureControl(w http.ResponseWriter, r *http.Requ
 type impactDTO struct {
 	Surfaced  int `json:"surfaced"`
 	Open      int `json:"open"`
+	OpenTasks int `json:"openTasks"`
 	Handled   int `json:"handled"`
 	Snoozed   int `json:"snoozed"`
 	Dismissed int `json:"dismissed"`
@@ -1374,6 +1398,7 @@ func (h *Handler) Impact(w http.ResponseWriter, r *http.Request) {
 	dto := impactDTO{
 		Surfaced:    imp.Surfaced,
 		Open:        imp.Open,
+		OpenTasks:   imp.OpenTasks,
 		Handled:     imp.Handled,
 		Snoozed:     imp.Snoozed,
 		Dismissed:   imp.Dismissed,
@@ -1532,16 +1557,27 @@ func (h *Handler) ListScans(w http.ResponseWriter, r *http.Request) {
 		}
 		limit = value
 	}
-	scans, err := h.svc.ListScans(r.Context(), u, limit)
+	offset := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			offset = value
+		}
+	}
+	page, err := h.svc.ListScans(r.Context(), u, limit, offset)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]scanDTO, 0, len(scans))
-	for _, scan := range scans {
+	out := make([]scanDTO, 0, len(page.Scans))
+	for _, scan := range page.Scans {
 		out = append(out, scanToDTO(scan))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"scans": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"scans": out, "hasMore": page.HasMore})
 }
 
 // StartScan starts a bounded historical scan.
@@ -1594,21 +1630,30 @@ func (h *Handler) ListRelationships(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	rels, err := h.svc.ListRelationshipsFiltered(r.Context(), u, RelationshipListFilter{
+	filter := RelationshipListFilter{
 		Query:      r.URL.Query().Get("q"),
 		Lifecycle:  r.URL.Query().Get("lifecycle"),
 		Health:     r.URL.Query().Get("health"),
 		Engagement: r.URL.Query().Get("engagement"),
-	})
+	}
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		filter.Offset = n
+	}
+	page, err := h.svc.ListRelationshipsFiltered(r.Context(), u, filter)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]relationshipDTO, 0, len(rels))
-	for _, rel := range rels {
+	out := make([]relationshipDTO, 0, len(page.Relationships))
+	for _, rel := range page.Relationships {
 		out = append(out, relationshipToDTOWithOpen(rel))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"relationships": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"relationships": out, "hasMore": page.HasMore})
 }
 
 // CreateRelationship records a relationship.
@@ -2224,13 +2269,23 @@ func (h *Handler) ListIdentityCandidates(w http.ResponseWriter, r *http.Request)
 		}
 		filter.Limit = limit
 	}
-	candidates, err := h.svc.ListIdentityCandidates(r.Context(), u, filter)
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			filter.Offset = value
+		}
+	}
+	page, err := h.svc.ListIdentityCandidates(r.Context(), u, filter)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]identityCandidateDTO, 0, len(candidates))
-	for _, candidate := range candidates {
+	out := make([]identityCandidateDTO, 0, len(page.Candidates))
+	for _, candidate := range page.Candidates {
 		dto, err := identityCandidateToDTO(candidate)
 		if err != nil {
 			h.writeServiceError(w, err)
@@ -2238,7 +2293,7 @@ func (h *Handler) ListIdentityCandidates(w http.ResponseWriter, r *http.Request)
 		}
 		out = append(out, dto)
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"candidates": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"candidates": out, "hasMore": page.HasMore})
 }
 
 // GetIdentityCandidate returns one tenant-scoped identity ambiguity and lineage.
@@ -2315,13 +2370,22 @@ func (h *Handler) ListRelationshipAttention(w http.ResponseWriter, r *http.Reque
 		}
 		limit = value
 	}
-	items, err := h.svc.ListRelationshipAttention(r.Context(), u, r.URL.Query().Get("status"), limit)
+	offset := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		offset = value
+	}
+	page, err := h.svc.ListRelationshipAttention(r.Context(), u, r.URL.Query().Get("status"), limit, offset)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]relationshipAttentionDTO, 0, len(items))
-	for _, item := range items {
+	out := make([]relationshipAttentionDTO, 0, len(page.Items))
+	for _, item := range page.Items {
 		dto, err := relationshipAttentionToDTO(item)
 		if err != nil {
 			h.writeServiceError(w, err)
@@ -2330,7 +2394,7 @@ func (h *Handler) ListRelationshipAttention(w http.ResponseWriter, r *http.Reque
 		out = append(out, dto)
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
-		"contractVersion": "relationship-attention.v1", "asOf": h.svc.now().UTC(), "items": out,
+		"contractVersion": "relationship-attention.v1", "asOf": h.svc.now().UTC(), "items": out, "hasMore": page.HasMore,
 	})
 }
 
@@ -2475,16 +2539,50 @@ func (h *Handler) RelationshipTimeline(w http.ResponseWriter, r *http.Request) {
 			limit = parsed
 		}
 	}
-	observations, err := h.svc.RelationshipTimeline(r.Context(), id, limit)
+	before, beforeID, cursorErr := timelineBeforeCursor(r)
+	if cursorErr != nil {
+		h.writeServiceError(w, cursorErr)
+		return
+	}
+	page, err := h.svc.relationshipObservationPage(r.Context(), id, limit, before, beforeID)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]observationDTO, 0, len(observations))
-	for _, observation := range observations {
+	out := make([]observationDTO, 0, len(page.observations))
+	for _, observation := range page.observations {
 		out = append(out, observationToDTO(observation))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"observations": out})
+	payload := map[string]any{"observations": out, "hasMore": page.hasMore}
+	if page.nextBefore != nil {
+		payload["nextBefore"] = page.nextBefore.UTC()
+	}
+	if page.nextBeforeID != nil {
+		payload["nextBeforeId"] = page.nextBeforeID.String()
+	}
+	httpx.WriteJSON(w, http.StatusOK, payload)
+}
+
+// timelineBeforeCursor reads the activity and mail page cursor. beforeId is
+// only valid together with a parsed before time, so a partial id cannot replay
+// the first page.
+func timelineBeforeCursor(r *http.Request) (*time.Time, *uuid.UUID, error) {
+	var before *time.Time
+	if value := strings.TrimSpace(r.URL.Query().Get("before")); value != "" {
+		parsed, err := time.Parse(time.RFC3339, value)
+		if err == nil {
+			before = &parsed
+		}
+	}
+	rawID := strings.TrimSpace(r.URL.Query().Get("beforeId"))
+	if rawID == "" {
+		return before, nil, nil
+	}
+	parsedID, err := uuid.Parse(rawID)
+	if err != nil || before == nil {
+		return nil, nil, fmt.Errorf("%w: invalid beforeId", ErrInvalidInput)
+	}
+	return before, &parsedID, nil
 }
 
 // RelationshipChanges returns projected state changes for a relationship.
@@ -2496,16 +2594,69 @@ func (h *Handler) RelationshipChanges(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	snapshots, err := h.svc.RelationshipChanges(r.Context(), id)
+	limit := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil || value < 1 {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid limit", ErrInvalidInput))
+			return
+		}
+		limit = value
+	}
+	offset := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			offset = value
+		}
+	}
+	page, err := h.svc.RelationshipChanges(r.Context(), id, limit, offset)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]snapshotDTO, 0, len(snapshots))
-	for _, snapshot := range snapshots {
+	out := make([]snapshotDTO, 0, len(page.Snapshots))
+	for _, snapshot := range page.Snapshots {
 		out = append(out, snapshotToDTO(snapshot))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"snapshots": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"snapshots": out, "hasMore": page.HasMore})
+}
+
+// RelationshipConversationReview returns focused review items and governance
+// receipts past the newest page of conversations.
+func (h *Handler) RelationshipConversationReview(w http.ResponseWriter, r *http.Request) {
+	if _, ok := h.viewer(w, r); !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	offset := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			offset = value
+		}
+	}
+	page, err := h.svc.RelationshipConversationReview(r.Context(), id, offset)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"reviewItems":        page.ReviewItems,
+		"governanceReceipts": page.GovernanceReceipts,
+		"hasMore":            page.ObservationPageHasMore,
+	})
 }
 
 // RelationshipEvidence returns a single evidence record and its source references.
@@ -2736,21 +2887,37 @@ func (h *Handler) ListActions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f := ListFilter{QueueStatus: r.URL.Query().Get("queueStatus")}
+	switch r.URL.Query().Get("surface") {
+	case "task", "recovery":
+		f.Surface = r.URL.Query().Get("surface")
+	}
+	switch r.URL.Query().Get("due") {
+	case "asc", "desc":
+		f.DueOrder = r.URL.Query().Get("due")
+	}
 	if v := r.URL.Query().Get("limit"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			f.Limit = n
 		}
 	}
-	actions, err := h.svc.ListActions(r.Context(), u, f)
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		f.Offset = n
+	}
+	page, err := h.svc.ListActionPage(r.Context(), u, f)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]actionDTO, 0, len(actions))
-	for _, a := range actions {
+	out := make([]actionDTO, 0, len(page.Actions))
+	for _, a := range page.Actions {
 		out = append(out, actionToDTO(a))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"actions": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"actions": out, "hasMore": page.HasMore})
 }
 
 // CreateAction proposes a manual queue action.

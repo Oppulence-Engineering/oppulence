@@ -20,6 +20,7 @@ import (
 type Impact struct {
 	Surfaced              int            `json:"surfaced"`   // total actions ever created
 	Open                  int            `json:"open"`       // queue_status = open
+	OpenTasks             int            `json:"openTasks"`  // open follow-up tasks, a subset of Open
 	Handled               int            `json:"handled"`    // queue_status = handled
 	Snoozed               int            `json:"snoozed"`    // queue_status = snoozed
 	Dismissed             int            `json:"dismissed"`  // queue_status = dismissed
@@ -89,6 +90,15 @@ func (s *Service) Impact(ctx context.Context, u *ent.User) (*Impact, error) {
 		}
 	}
 
+	// A saved task is open work, and the home recovery number is Open minus
+	// this count. The task list is paged, so the client cannot derive it.
+	if imp.OpenTasks, err = base().Where(
+		revenueaction.QueueStatusEQ(QueueOpen),
+		revenueaction.ActionTypeEQ("follow_up_task"),
+		revenueaction.ChannelEQ("task"),
+	).Count(ctx); err != nil {
+		return nil, err
+	}
 	if imp.Approved, err = base().Where(revenueaction.ApprovalStatusEQ(ApprovalApproved)).Count(ctx); err != nil {
 		return nil, err
 	}
@@ -150,6 +160,20 @@ func (s *Service) Impact(ctx context.Context, u *ent.User) (*Impact, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The attention list is paged in the client. A saved task opens an item, and
+	// counting from the first page leaves every later task looking like risk.
+	taskActionIDs, err := s.client.RevenueAction.Query().Where(
+		revenueaction.HasUserWith(user.IDEQ(uid)),
+		revenueaction.ActionTypeEQ("follow_up_task"),
+		revenueaction.ChannelEQ("task"),
+	).IDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	taskIDs := make(map[string]struct{}, len(taskActionIDs))
+	for _, id := range taskActionIDs {
+		taskIDs[id.String()] = struct{}{}
+	}
 	maxScore := map[string]int{}
 	critical := map[string]struct{}{}
 	byReason := map[string]map[string]struct{}{}
@@ -157,6 +181,11 @@ func (s *Service) Impact(ctx context.Context, u *ent.User) (*Impact, error) {
 		rel := item.Edges.Relationship
 		if rel == nil {
 			continue
+		}
+		if item.RecommendationID != nil {
+			if _, task := taskIDs[item.RecommendationID.String()]; task {
+				continue
+			}
 		}
 		id := rel.ID.String()
 		maxScore[id] = max(maxScore[id], item.RankScore)

@@ -31,11 +31,298 @@ export const GetConnectorBrokerJWKS503Response = zod
   );
 
 /**
- * Idempotently revokes upstream where possible, clears local credentials, and retains a revoked audit tombstone.
- * @summary Disconnect connector
+ * Connected lists the Jira account linked from More products.
+ * @summary Connected
+ */
+export const ListComposioConnections200Response = zod
+  .strictObject({
+    connections: zod
+      .array(
+        zod
+          .strictObject({
+            createdAt: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe("When the account was linked."),
+            id: zod.string().describe("Connection id."),
+            status: zod.string().describe("ACTIVE shows Connected on the card."),
+            toolkit: zod.string().describe("Product id."),
+          })
+          .describe("One linked product account."),
+      )
+      .describe("Linked accounts."),
+  })
+  .describe("Accounts linked from More products.");
+
+export const ListComposioConnections401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ListComposioConnections502Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ListComposioConnections503Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Connect opens the Jira sign-in page. The account is linked only after that page is finished.
+ * @summary Connect
+ */
+export const StartComposioConnectionBody = zod
+  .strictObject({
+    toolkit: zod.string().describe("Product name."),
+  })
+  .describe("Product to connect.");
+
+export const StartComposioConnection200Response = zod
+  .strictObject({
+    connectionId: zod.string().describe("The account this page will link."),
+    expiresAt: zod.iso
+      .datetime({ offset: true })
+      .optional()
+      .describe("When the sign-in page stops working."),
+    redirectUrl: zod.string().describe("Address of the sign-in page."),
+  })
+  .describe("Hosted sign-in page for the product.");
+
+export const StartComposioConnection400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const StartComposioConnection401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const StartComposioConnection502Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const StartComposioConnection503Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Disconnect Jira removes that connection. The request sends no body.
+ * @summary Disconnect Jira
+ */
+export const DeleteComposioConnectionParams = zod.object({
+  connectionID: zod.string().describe("Connection id."),
+});
+
+export const DeleteComposioConnection204Response = zod.void();
+
+export const DeleteComposioConnection401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const DeleteComposioConnection404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const DeleteComposioConnection502Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const DeleteComposioConnection503Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * More products lists Jira and Asana. Gmail, Google Calendar, and HubSpot stay on their own cards.
+ * @summary More products
+ */
+export const ListComposioToolkits200Response = zod
+  .strictObject({
+    toolkits: zod
+      .array(
+        zod
+          .strictObject({
+            managedAuth: zod
+              .boolean()
+              .describe("This product can be connected from More products."),
+            name: zod.string().describe("Name on the card."),
+            slug: zod.string().describe("Product id."),
+          })
+          .describe("One product on More products."),
+      )
+      .describe("Products offered here."),
+  })
+  .describe("Tools that can be connected from More products.");
+
+export const ListComposioToolkits401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ListComposioToolkits502Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ListComposioToolkits503Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Disconnect removes the HubSpot connection. Confirm sends no body.
+ * @summary Disconnect
  */
 export const DeleteConnectionParams = zod.object({
-  name: zod.string().describe("Connector slug, for example canvas, corinthian, or wispr."),
+  name: zod.string().describe("Connection name."),
 });
 
 export const DeleteConnection204Response = zod.void();
@@ -101,11 +388,11 @@ export const DeleteConnection503Response = zod
   );
 
 /**
- * Stores a vendor-issued API key for an api_key connector. The key remains sealed and server-side; product calls receive only short-lived broker tokens.
- * @summary Connect API-key connector
+ * Connect on HubSpot posts the private app token from the token field. The server checks that token, stores it sealed, and answers only that the connection is on.
+ * @summary Connect HubSpot
  */
 export const SetConnectionAPIKeyParams = zod.object({
-  name: zod.string().describe("Connector slug, for example canvas, corinthian, or wispr."),
+  name: zod.string().describe("HubSpot connector name."),
 });
 
 export const SetConnectionAPIKeyBody = zod
@@ -120,7 +407,7 @@ export const SetConnectionAPIKeyBody = zod
 
 export const SetConnectionAPIKey200Response = zod
   .strictObject({
-    audience: zod.string().optional().describe("OAuth token audience for the connector."),
+    audience: zod.string().optional().describe("Audience accepted by the product resource server."),
     connected: zod.boolean().describe("Whether the connector is now connected."),
     connectionId: zod
       .string()
@@ -130,7 +417,7 @@ export const SetConnectionAPIKey200Response = zod
     scopes: zod
       .array(zod.string().describe("Scope."))
       .optional()
-      .describe("OAuth scopes granted or requested."),
+      .describe("Scopes granted by the completed consent flow."),
   })
   .describe("Connector connection result.");
 
@@ -352,7 +639,7 @@ export const ClaimConnectionBody = zod
 
 export const ClaimConnection200Response = zod
   .strictObject({
-    audience: zod.string().optional().describe("OAuth token audience for the connector."),
+    audience: zod.string().optional().describe("Audience accepted by the product resource server."),
     connected: zod.boolean().describe("Whether the connector is now connected."),
     connectionId: zod
       .string()
@@ -362,7 +649,7 @@ export const ClaimConnection200Response = zod
     scopes: zod
       .array(zod.string().describe("Scope."))
       .optional()
-      .describe("OAuth scopes granted or requested."),
+      .describe("Scopes granted by the completed consent flow."),
   })
   .describe("Connector connection result.");
 
@@ -513,7 +800,10 @@ export const CreateMCPTokenParams = zod.object({
 
 export const CreateMCPTokenBody = zod
   .strictObject({
-    audience: zod.string().nullish().describe("OAuth token audience for the connector."),
+    audience: zod
+      .string()
+      .nullish()
+      .describe("Must exactly match the connector and stored connection audience."),
     requestedScopes: zod
       .array(zod.string().describe("Scope."))
       .optional()
@@ -528,15 +818,13 @@ export const CreateMCPToken200Response = zod
       .describe(
         "RS256 broker bearer token. This is never a provider access token or vendor API key.",
       ),
-    audience: zod.string().describe("OAuth token audience for the connector."),
+    audience: zod.string().describe("Exact product resource-server audience."),
     connectionId: zod.string().describe("Connection UUID embedded in the token actor claims."),
-    expires_at: zod.int().describe("Credential or one-time ticket expiry timestamp."),
+    expires_at: zod.int().describe("Unix expiry timestamp in seconds."),
     expires_in: zod.int().describe("Remaining lifetime in seconds. Never exceeds 900."),
     mcpUrl: zod.string().describe("Connector MCP endpoint URL."),
     scope: zod.string().describe("Space-delimited granted scope subset."),
-    scopes: zod
-      .array(zod.string().describe("Scope."))
-      .describe("OAuth scopes granted or requested."),
+    scopes: zod.array(zod.string().describe("Scope.")).describe("Validated minted scope subset."),
     token: zod.string().describe("Alias for access_token used by RFC 012 clients."),
     token_type: zod.string().describe("OAuth token type."),
   })
@@ -695,11 +983,11 @@ export const CreateMCPToken503Response = zod
   );
 
 /**
- * Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
- * @summary Start connector OAuth flow
+ * Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.
+ * @summary Connect
  */
 export const StartConnectionParams = zod.object({
-  name: zod.string().describe("Connector slug, for example canvas, corinthian, or wispr."),
+  name: zod.string().describe("Connection name."),
 });
 
 export const StartConnectionBody = zod
@@ -853,8 +1141,8 @@ export const StartConnection503Response = zod
   );
 
 /**
- * Returns the configured connector registry plus the authenticated user's connection state for each connector.
- * @summary List connectors
+ * Connections loads the catalog. The request sends no filter. This workspace has not connected any of them, so every one is disconnected.
+ * @summary Connections
  */
 export const ListConnectors200Response = zod
   .strictObject({
@@ -1020,7 +1308,7 @@ export const ListConnectors200Response = zod
                   .strictObject({
                     category: zod.string().describe("UI grouping category."),
                     description: zod.string().describe("Human-readable capability description."),
-                    id: zod.string().describe("Stable UUID primary key."),
+                    id: zod.string().describe("Stable block id within the connector."),
                     mcpTools: zod
                       .array(zod.string().describe("MCP tool name."))
                       .optional()
@@ -1286,7 +1574,10 @@ export const CreateConnectorResourceTokenParams = zod.object({
 
 export const CreateConnectorResourceTokenBody = zod
   .strictObject({
-    audience: zod.string().nullish().describe("OAuth token audience for the connector."),
+    audience: zod
+      .string()
+      .nullish()
+      .describe("Must exactly match the connector and stored connection audience."),
     requestedScopes: zod
       .array(zod.string().describe("Scope."))
       .optional()
@@ -1301,15 +1592,13 @@ export const CreateConnectorResourceToken200Response = zod
       .describe(
         "RS256 broker bearer token. This is never a provider access token or vendor API key.",
       ),
-    audience: zod.string().describe("OAuth token audience for the connector."),
+    audience: zod.string().describe("Exact product resource-server audience."),
     connectionId: zod.string().describe("Connection UUID embedded in the token actor claims."),
-    expires_at: zod.int().describe("Credential or one-time ticket expiry timestamp."),
+    expires_at: zod.int().describe("Unix expiry timestamp in seconds."),
     expires_in: zod.int().describe("Remaining lifetime in seconds. Never exceeds 900."),
     mcpUrl: zod.string().describe("Connector MCP endpoint URL."),
     scope: zod.string().describe("Space-delimited granted scope subset."),
-    scopes: zod
-      .array(zod.string().describe("Scope."))
-      .describe("OAuth scopes granted or requested."),
+    scopes: zod.array(zod.string().describe("Scope.")).describe("Validated minted scope subset."),
     token: zod.string().describe("Alias for access_token used by RFC 012 clients."),
     token_type: zod.string().describe("OAuth token type."),
   })
@@ -1468,11 +1757,11 @@ export const CreateConnectorResourceToken503Response = zod
   );
 
 /**
- * Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
- * @summary Start connector OAuth flow
+ * Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.
+ * @summary Connect
  */
 export const StartConnectorParams = zod.object({
-  name: zod.string().describe("Connector slug, for example canvas, corinthian, or wispr."),
+  name: zod.string().describe("Connection name."),
 });
 
 export const StartConnectorBody = zod
@@ -1648,7 +1937,7 @@ export const SearchHubSpot200Response = zod
           .strictObject({
             archived: zod.boolean().optional().describe("Whether HubSpot archived the record."),
             createdAt: zod.string().nullish().describe("Record creation timestamp."),
-            id: zod.string().describe("Stable UUID primary key."),
+            id: zod.string().describe("HubSpot record id."),
             properties: zod.record(zod.string(), zod.string()),
             updatedAt: zod.string().nullish().describe("Record update timestamp."),
           })
@@ -1722,6 +2011,33 @@ export const SearchHubSpot502Response = zod
   );
 
 export const SearchHubSpot503Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Protected or blocked addresses loads this workspace's list. The request sends no filter. This workspace has no protected or blocked address, so the list is empty.
+ * @summary Protected or blocked addresses
+ */
+export const ListCommunicationPrivacyRules200Response = zod
+  .strictObject({
+    rules: zod
+      .array(zod.looseObject({}).describe("One address rule."))
+      .describe("Addresses this workspace keeps private or leaves out."),
+  })
+  .describe("Protected and blocked addresses.");
+
+export const ListCommunicationPrivacyRules401Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),

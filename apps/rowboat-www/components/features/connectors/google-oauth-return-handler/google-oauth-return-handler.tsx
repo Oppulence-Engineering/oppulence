@@ -72,7 +72,7 @@ export function GoogleOAuthReturnHandler() {
         replaceOAuthParameters(url, true);
         window.dispatchEvent(new Event(GOOGLE_OAUTH_CONNECTED_EVENT));
         dispatchClaimResult("success");
-        toast.success("Google connected. Your evidence sync has started.");
+        toast.success("Google connected. Oppulence is reading recent mail and meetings.");
       })
       .catch(() => {
         replaceOAuthParameters(url, false);

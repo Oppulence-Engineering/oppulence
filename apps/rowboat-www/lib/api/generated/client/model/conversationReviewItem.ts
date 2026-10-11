@@ -32,7 +32,7 @@ export interface ConversationReviewItem {
   dependentActionIds?: string[];
   /** Exact words under review. */
   exactQuote?: string;
-  /** Stable UUID primary key. */
+  /** Stable review item id. */
   id: string;
   /** Review kind. */
   kind: ConversationReviewItemKind;

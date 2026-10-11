@@ -7,6 +7,6 @@
  */
 
 /**
- * Decrypted provider payload.
+ * Decrypted provider body. Empty when the activity stored none.
  */
 export type GetRelationshipEvidence200Payload = { [key: string]: unknown };

@@ -8,16 +8,37 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { AgentSessionEventsResponse, AgentSessionListResponse } from "../model";
+import type {
+  AgentSessionEventsResponse,
+  AgentSessionListResponse,
+  ApproveAgentSession202,
+  CancelAgentSession202,
+  DurableAgentSessionEvent,
+  DurableAgentSessionView,
+  MintAgentApprovalToken200,
+  SubmitAgentSessionTurn202,
+} from "../model";
 
 import {
+  getApproveAgentSessionResponseMock,
+  getCancelAgentSessionResponseMock,
+  getCreateAgentSessionResponseMock,
   getListAgentSessionEventsResponseMock,
   getListAgentSessionsResponseMock,
+  getMintAgentApprovalTokenResponseMock,
+  getStreamAgentSessionResponseMock,
+  getSubmitAgentSessionTurnResponseMock,
 } from "./agent-sessions.faker";
 
 export {
   getListAgentSessionsResponseMock,
+  getCreateAgentSessionResponseMock,
+  getApproveAgentSessionResponseMock,
+  getMintAgentApprovalTokenResponseMock,
+  getCancelAgentSessionResponseMock,
   getListAgentSessionEventsResponseMock,
+  getStreamAgentSessionResponseMock,
+  getSubmitAgentSessionTurnResponseMock,
 } from "./agent-sessions.faker";
 
 export const getListAgentSessionsMockHandler = (
@@ -38,6 +59,102 @@ export const getListAgentSessionsMockHandler = (
             : overrideResponse
           : getListAgentSessionsResponseMock(),
         { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getCreateAgentSessionMockHandler = (
+  overrideResponse?:
+    | DurableAgentSessionView
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<DurableAgentSessionView> | DurableAgentSessionView),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/agent-sessions",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getCreateAgentSessionResponseMock(),
+        { status: 201 },
+      );
+    },
+    options,
+  );
+};
+
+export const getApproveAgentSessionMockHandler = (
+  overrideResponse?:
+    | ApproveAgentSession202
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<ApproveAgentSession202> | ApproveAgentSession202),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/agent-sessions/:id/approvals/:approvalId",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getApproveAgentSessionResponseMock(),
+        { status: 202 },
+      );
+    },
+    options,
+  );
+};
+
+export const getMintAgentApprovalTokenMockHandler = (
+  overrideResponse?:
+    | MintAgentApprovalToken200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<MintAgentApprovalToken200> | MintAgentApprovalToken200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/agent-sessions/:id/approvals/:approvalId/token",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getMintAgentApprovalTokenResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getCancelAgentSessionMockHandler = (
+  overrideResponse?:
+    | CancelAgentSession202
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<CancelAgentSession202> | CancelAgentSession202),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/agent-sessions/:id/cancel",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getCancelAgentSessionResponseMock(),
+        { status: 202 },
       );
     },
     options,
@@ -67,7 +184,61 @@ export const getListAgentSessionEventsMockHandler = (
     options,
   );
 };
+
+export const getStreamAgentSessionMockHandler = (
+  overrideResponse?:
+    | DurableAgentSessionEvent
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<DurableAgentSessionEvent> | DurableAgentSessionEvent),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/agent-sessions/:id/stream",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getStreamAgentSessionResponseMock(),
+        { status: 200, headers: { "Content-Type": "application/x-ndjson" } },
+      );
+    },
+    options,
+  );
+};
+
+export const getSubmitAgentSessionTurnMockHandler = (
+  overrideResponse?:
+    | SubmitAgentSessionTurn202
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<SubmitAgentSessionTurn202> | SubmitAgentSessionTurn202),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/agent-sessions/:id/turns",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getSubmitAgentSessionTurnResponseMock(),
+        { status: 202 },
+      );
+    },
+    options,
+  );
+};
 export const getAgentSessionsMock = () => [
   getListAgentSessionsMockHandler(),
+  getCreateAgentSessionMockHandler(),
+  getApproveAgentSessionMockHandler(),
+  getMintAgentApprovalTokenMockHandler(),
+  getCancelAgentSessionMockHandler(),
   getListAgentSessionEventsMockHandler(),
+  getStreamAgentSessionMockHandler(),
+  getSubmitAgentSessionTurnMockHandler(),
 ];

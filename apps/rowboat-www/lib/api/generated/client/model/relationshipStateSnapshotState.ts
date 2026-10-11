@@ -7,6 +7,6 @@
  */
 
 /**
- * Opaque one-time OAuth state/session ticket.
+ * Projected state at this version.
  */
 export type RelationshipStateSnapshotState = { [key: string]: unknown };

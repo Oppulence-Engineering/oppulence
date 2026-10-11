@@ -67,6 +67,57 @@ func TestHandlerPreferencesAndResourceLifecycle(t *testing.T) {
 	}
 }
 
+func TestListResourcesExactPageIsNotAnotherPage(t *testing.T) {
+	fixture := newConsoleFixture(t)
+	router := chi.NewRouter()
+	NewHandler(fixture.service, zap.NewNop()).Mount(router)
+	create := func(name string) {
+		t.Helper()
+		body := `{"kind":"note_template","name":"` + name + `","payload":{"title":"` + name + `","body":"note"}}`
+		response := consoleRequest(t, router, fixture, http.MethodPost, "/v1/console/resources", body)
+		if response.Code != http.StatusCreated {
+			t.Fatalf("create %s = %d %s", name, response.Code, response.Body.String())
+		}
+	}
+	create("Template A")
+	create("Template B")
+	exact := consoleRequest(t, router, fixture, http.MethodGet, "/v1/console/resources?kind=note_template&limit=2&offset=0", "")
+	if exact.Code != http.StatusOK || !strings.Contains(exact.Body.String(), `"hasMore":false`) {
+		t.Fatalf("exact page = %d %s", exact.Code, exact.Body.String())
+	}
+	var exactPage ResourcePage
+	decodeResponse(t, exact, &exactPage)
+	if len(exactPage.Resources) != 2 || exactPage.HasMore {
+		t.Fatalf("exact page resources = %#v", exactPage)
+	}
+	create("Template C")
+	full := consoleRequest(t, router, fixture, http.MethodGet, "/v1/console/resources?kind=note_template&limit=2&offset=0", "")
+	if full.Code != http.StatusOK || !strings.Contains(full.Body.String(), `"hasMore":true`) {
+		t.Fatalf("full page = %d %s", full.Code, full.Body.String())
+	}
+	var fullPage ResourcePage
+	decodeResponse(t, full, &fullPage)
+	if len(fullPage.Resources) != 2 || !fullPage.HasMore {
+		t.Fatalf("full page resources = %#v", fullPage)
+	}
+	seen := map[string]bool{}
+	for _, resource := range fullPage.Resources {
+		seen[resource.Name] = true
+	}
+	if len(seen) != 2 {
+		t.Fatalf("full page names = %#v", seen)
+	}
+	rest := consoleRequest(t, router, fixture, http.MethodGet, "/v1/console/resources?kind=note_template&limit=2&offset=2", "")
+	if rest.Code != http.StatusOK || !strings.Contains(rest.Body.String(), `"hasMore":false`) {
+		t.Fatalf("last page = %d %s", rest.Code, rest.Body.String())
+	}
+	var restPage ResourcePage
+	decodeResponse(t, rest, &restPage)
+	if len(restPage.Resources) != 1 || restPage.HasMore || seen[restPage.Resources[0].Name] {
+		t.Fatalf("last page resources = %#v already %#v", restPage, seen)
+	}
+}
+
 func TestHandlerRejectsMalformedUnboundedAndUnauthorizedRequests(t *testing.T) {
 	fixture := newConsoleFixture(t)
 	router := chi.NewRouter()

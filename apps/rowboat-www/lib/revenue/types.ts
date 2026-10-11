@@ -112,6 +112,8 @@ export interface RelationshipPerson {
   status: string;
   employmentStatus?: "unknown" | "active" | "departed";
   relationshipCount: number;
+  /** Company roles such as decision_maker. The directory prints the words. */
+  participantRoles?: string[];
   firstInteractionAt?: string;
   lastInteractionAt?: string;
   attributesVersion: number;
@@ -839,6 +841,7 @@ export interface RelationshipIntelligence {
     sourceLayerIds: string[];
     resolvedAt: string;
   };
+  observationPageHasMore?: boolean;
   governanceDecisions: Array<{
     decisionId: string;
     checkpoint: string;
@@ -881,6 +884,7 @@ export type DigestAction = NonNullable<RevenueDigest["top"]>[number];
 export const RevenueImpactSchema = z.object({
   surfaced: z.number(),
   open: z.number(),
+  openTasks: z.number(),
   handled: z.number(),
   snoozed: z.number(),
   dismissed: z.number(),
@@ -1002,6 +1006,8 @@ export const RelationshipGraphSchema = z.object({
   nodes: z.array(RelationshipGraphNodeSchema),
   edges: z.array(RelationshipGraphEdgeSchema),
   permissions: RelationshipGraphPermissionsSchema,
+  hasMore: z.boolean().optional(),
+  observationHasMore: z.boolean().optional(),
 });
 
 export const RelationshipGraphSavedViewStateSchema = z.object({
@@ -1098,7 +1104,8 @@ export interface OpenPromisesReportItem {
   account: string;
   direction: string;
   text: string;
-  state: RegisterState;
+  /** Register states, plus "review" for an extraction no person has confirmed. */
+  state: RegisterState | "review";
   dueAt?: string;
   duePhrase?: string;
   owner?: string;

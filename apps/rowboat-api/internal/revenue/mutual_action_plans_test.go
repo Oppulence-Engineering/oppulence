@@ -7,6 +7,8 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/google/uuid"
 )
 
@@ -31,6 +33,9 @@ func TestMutualActionPlanBindsAcceptedEvidenceAndExactShareRevision(t *testing.T
 		len(plan.CurrentRevision.Items[0].EvidenceRefs) == 0 {
 		t.Fatalf("unexpected evidence-backed plan: %#v", plan)
 	}
+	if plan.CurrentRevision.Items[0].ItemID != "item:"+row.ID.String() {
+		t.Fatalf("plan item id: %q", plan.CurrentRevision.Items[0].ItemID)
+	}
 	items := append([]MutualActionPlanItem(nil), plan.CurrentRevision.Items...)
 	items[0].Title = "Send the final security packet to owner@example.com"
 	plan, err = f.svc.ReviseMutualActionPlan(f.ctx, f.user, rel.ID, plan.PlanID, items)
@@ -44,6 +49,22 @@ func TestMutualActionPlanBindsAcceptedEvidenceAndExactShareRevision(t *testing.T
 	plan, token, err := f.svc.ShareMutualActionPlan(f.ctx, f.user, rel.ID, plan.PlanID)
 	if err != nil || plan.Status != "shared" || plan.TokenState != "active" || len(token) != 64 {
 		t.Fatalf("revision-bound share failed: %#v token=%q err=%v", plan, token, err)
+	}
+	shared, err := f.client.RevenueAction.Query().Where(
+		revenueaction.HasRelationshipWith(relationship.IDEQ(rel.ID)),
+		revenueaction.DedupeKeyHasPrefix("mutual-action-plan:"),
+	).Only(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if shared.Reason != "Draft an email to share this plan." {
+		t.Fatalf("share reason: %q", shared.Reason)
+	}
+	if strings.Contains(shared.ProposedMessage, "sha256:") || strings.Contains(strings.ToLower(shared.ProposedMessage), "revision") {
+		t.Fatalf("share draft leaks internal revision words: %q", shared.ProposedMessage)
+	}
+	if !strings.Contains(shared.ProposedMessage, "version 2") || !strings.Contains(shared.ProposedMessage, token) {
+		t.Fatalf("share draft should name the version and include the response link: %q", shared.ProposedMessage)
 	}
 	latest, err := f.client.ConversationIntelligenceArtifact.Query().Where(
 		conversationintelligenceartifact.KindEQ("mutual_action_plan"),

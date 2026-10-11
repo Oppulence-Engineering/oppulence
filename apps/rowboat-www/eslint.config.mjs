@@ -109,6 +109,10 @@ const config = [
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      // `{ omitted, ...rest }` is how a component keeps a prop out of a spread.
+      "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }],
+    },
   }),
   ...tseslint.config({
     files: legacyTypedFiles,
@@ -154,7 +158,7 @@ const config = [
       "oppulence-web/require-abort-signal": ["error", { allowFiles: legacy.fetchWithoutSignal }],
       "oppulence-web/require-api-route-zod": [
         "error",
-        { allowFiles: ["app/api/reference/route.ts"] },
+        { allowFiles: ["app/api/reference/route.ts", "app/api/reference/viewer/route.ts"] },
       ],
       "oppulence-web/no-raw-upstream-errors": "error",
       "oppulence-web/no-sensitive-console": ["error", { allowFiles: legacy.sensitiveConsole }],

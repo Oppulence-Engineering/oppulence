@@ -77,8 +77,8 @@ export const getGetConsolePreferencesUrl = () => {
 };
 
 /**
- * Returns defaults before the caller's first write.
- * @summary Get console preferences
+ * Profile loads the saved display name, the default agent, and whether usage data is shared. Before a name is saved, the name and the agent are empty, usage sharing is off, notifications are off, and the theme follows the system.
+ * @summary Profile
  */
 export const getConsolePreferences = async (
   options?: RequestInit,
@@ -151,8 +151,8 @@ export const getPatchConsolePreferencesUrl = () => {
 };
 
 /**
- * Strictly merges supplied typed fields into the caller's durable preference document.
- * @summary Patch console preferences
+ * Save profile posts the display name. The name is Ada Lovelace. The stored preferences keep that name, an empty default agent, usage sharing off, notifications off, model reasoning hidden, and the system theme.
+ * @summary Save profile
  */
 export const patchConsolePreferences = async (
   consolePreferencesPatch: ConsolePreferencesPatch,
@@ -240,8 +240,8 @@ export const getListConsoleResourcesUrl = (params: ListConsoleResourcesParams) =
 };
 
 /**
- * Lists only the caller's resources in the exact organization workspace asserted by the token.
- * @summary List console resources
+ * Reusable note templates loads the first page. The request asks for note templates, one hundred at a time, starting at the beginning. This workspace has no template, so the page is empty.
+ * @summary Reusable note templates
  */
 export const listConsoleResources = async (
   params: ListConsoleResourcesParams,
@@ -328,8 +328,8 @@ export const getCreateConsoleResourceUrl = () => {
 };
 
 /**
- * Creates a typed artifact. Replaying a note favorite returns the existing resource.
- * @summary Create console resource
+ * Save template posts a note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0.
+ * @summary Save template
  */
 export const createConsoleResource = async (
   consoleResourceCreate: ConsoleResourceCreate,
@@ -411,8 +411,8 @@ export const getDeleteConsoleResourceUrl = (resourceId: string) => {
 };
 
 /**
- * Deletes one caller-owned resource.
- * @summary Delete console resource
+ * Remove from favorites deletes the saved favorite for that note. The note stays.
+ * @summary Remove from favorites
  */
 export const deleteConsoleResource = async (
   resourceId: string,
@@ -579,8 +579,8 @@ export const getPatchConsoleResourceUrl = (resourceId: string) => {
 };
 
 /**
- * Validates the complete resulting kind-specific payload before updating.
- * @summary Patch console resource
+ * Save template posts the name and payload of an existing note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0, and the update time is later.
+ * @summary Save template
  */
 export const patchConsoleResource = async (
   resourceId: string,

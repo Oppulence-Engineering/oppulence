@@ -2,11 +2,17 @@
 
 import "client-only";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRemoteChatSessions } from "@/hooks/queries/use-chat-sessions";
+import {
+  chatSessionPageHasMore,
+  chatSessionRows,
+  fetchChatSessions,
+} from "@/hooks/queries/utils/fetch-chat-sessions";
 
 import {
   conversationFromAgentEvents,
+  shownAgentError,
   type AgentHistoryItem,
   type ConversationItem,
 } from "@/lib/agents/agent-history";
@@ -18,11 +24,31 @@ import {
   loadSession,
   mergeSessionLists,
   saveSession,
+  type SessionMeta,
   type SessionScope,
 } from "@/lib/agents/chat-sessions";
 import type { AgentRunSnapshot } from "@/hooks/dashboard/use-agent-run";
 
 type ChatMessage = Extract<AgentHistoryItem, { type: "message" }>;
+
+/** A failed first page is not an empty history. */
+export const CHAT_SESSIONS_LOAD_ERROR = "Could not load conversations.";
+
+/** A failed refresh is not a missing history. */
+export const CHAT_SESSIONS_REFRESH_ERROR = "Could not refresh conversations. Try again.";
+
+/** The load-more sentence stays when that request failed. Otherwise a failed
+ * first page is named on its own, and a failed refresh keeps the list. */
+export function chatSessionsLoadError(
+  earlierError: string | null,
+  remoteFailed: boolean,
+  hasSessions = false,
+  remoteLoaded = false,
+): string | null {
+  if (earlierError) return earlierError;
+  if (!remoteFailed) return null;
+  return hasSessions || remoteLoaded ? CHAT_SESSIONS_REFRESH_ERROR : CHAT_SESSIONS_LOAD_ERROR;
+}
 
 type UseChatSessionsOptions = {
   activeRunId: string | null;
@@ -51,9 +77,24 @@ export function useChatSessions({
   selectedAgent,
 }: UseChatSessionsOptions) {
   const remoteSessionsQuery = useRemoteChatSessions();
+  const [earlierSessions, setEarlierSessions] = useState<SessionMeta[]>([]);
+  const [laterHasMore, setLaterHasMore] = useState<boolean | null>(null);
+  const [loadingEarlierSessions, setLoadingEarlierSessions] = useState(false);
+  const [earlierSessionsError, setEarlierSessionsError] = useState<string | null>(null);
+  const remoteSessions = chatSessionRows(remoteSessionsQuery.data);
   // The memory cache contains at most 30 entries, so deriving this projection
   // during render is safer than duplicating synchronized session-list state.
-  const sessions = mergeSessionLists(listSessions(scope), remoteSessionsQuery.data ?? []);
+  const sessions = mergeSessionLists(listSessions(scope), remoteSessions, earlierSessions);
+  const hasMoreSessions =
+    laterHasMore ??
+    (remoteSessions.length > 0 && chatSessionPageHasMore(remoteSessionsQuery.data));
+  const remoteKey = remoteSessions.map((session) => session.runId).join("\n");
+
+  useEffect(() => {
+    setEarlierSessions([]);
+    setLaterHasMore(null);
+    setEarlierSessionsError(null);
+  }, [remoteKey]);
 
   useEffect(() => {
     if (!activeRunId || conversation.length === 0) return;
@@ -107,11 +148,51 @@ export function useChatSessions({
         const agent = stored?.agent || meta?.agent;
         if (agent) onSelectAgent(agent);
       } catch (error) {
-        onFailedOpen(error instanceof Error ? error.message : "Could not load conversation");
+        onFailedOpen(shownAgentError(error, "Could not load conversation"));
       }
     },
     [activeRunId, onBeginOpen, onFailedOpen, onOpen, onSelectAgent, scope, sessions],
   );
 
-  return { openSession, sessions };
+  const loadEarlierSessions = useCallback(async () => {
+    setLoadingEarlierSessions(true);
+    setEarlierSessionsError(null);
+    try {
+      const page = await fetchChatSessions(
+        undefined,
+        remoteSessions.length + earlierSessions.length,
+      );
+      const rows = chatSessionRows(page);
+      setEarlierSessions((current) => {
+        const seen = new Set(current.map((session) => session.runId));
+        const next = [...current];
+        for (const session of rows) {
+          if (!seen.has(session.runId)) next.push(session);
+        }
+        return next;
+      });
+      setLaterHasMore(chatSessionPageHasMore(page));
+    } catch {
+      setEarlierSessionsError("Could not load earlier conversations.");
+    } finally {
+      setLoadingEarlierSessions(false);
+    }
+  }, [earlierSessions.length, remoteSessions.length]);
+
+  return {
+    earlierSessionsError,
+    hasMoreSessions,
+    loadEarlierSessions,
+    loadingEarlierSessions,
+    openSession,
+    loadingSessions: remoteSessionsQuery.isPending || remoteSessionsQuery.isFetching,
+    reloadSessions: () => remoteSessionsQuery.refetch(),
+    sessions,
+    sessionsLoadError: chatSessionsLoadError(
+      earlierSessionsError,
+      remoteSessionsQuery.isError,
+      sessions.length > 0,
+      remoteSessionsQuery.data != null,
+    ),
+  };
 }

@@ -7,6 +7,11 @@ import type {
 import {
   callbackStatusOutcome,
   claimOutcome,
+  composioConnectionStatusLabel,
+  connectionHealthLabel,
+  connectionNoticeName,
+  connectionReasonCopy,
+  connectionScopeCopy,
   connectorSettingsURL,
   safeAuthorizationURL,
   startOutcome,
@@ -61,8 +66,52 @@ describe("hosted connector OAuth outcomes", () => {
     expect(claimOutcome(claim(503, "connector_disabled"))).toBe("error");
   });
 
+  it("turns a machine connection reason into a sentence", () => {
+    expect(connectionReasonCopy("provider_configuration_missing")).toBe(
+      "This connection is not set up for this workspace yet.",
+    );
+    expect(connectionReasonCopy("reauth_required")).toBe(
+      "Sign in again to restore this connection.",
+    );
+    expect(connectionReasonCopy("upstream_error")).toBe("Connecting failed. Try again.");
+    expect(connectionScopeCopy()).toBe(
+      "This connection asked for permissions this workspace cannot accept. Review them and connect again.",
+    );
+    expect(connectionReasonCopy("upstream_timeout")).toBe("Upstream timeout");
+    expect(connectionReasonCopy("refresh_token_reuse")).toBe(
+      "Sign in again. The previous sign-in was reused, so this connection was turned off.",
+    );
+    expect(connectionReasonCopy("invalid_grant")).toBe(
+      "Sign in again. This connection is no longer valid.",
+    );
+    expect(connectionReasonCopy("")).toBe("This connection is unavailable.");
+    expect(connectionNoticeName("hubspot")).toBe("HubSpot");
+    expect(connectionNoticeName("")).toBe("Connection");
+  });
+
+  it("names a linked product that needs attention or could not connect", () => {
+    expect(connectionHealthLabel({ connected: true, connectionHealth: "degraded" })).toBe(
+      "Needs attention",
+    );
+    expect(connectionHealthLabel({ connected: true, connectionHealth: "disabled" })).toBe(
+      "Turned off",
+    );
+    expect(connectionHealthLabel({ connected: true, connectionHealth: "healthy" })).toBe("Healthy");
+    expect(connectionHealthLabel({ connected: true, connectionHealth: "disconnected" })).toBe(
+      "Disconnected",
+    );
+    expect(connectionHealthLabel({ connected: false, connectionHealth: "disconnected" })).toBeNull();
+    expect(composioConnectionStatusLabel("FAILED")).toBe("Could not connect");
+    expect(composioConnectionStatusLabel("INITIALIZING")).toBe("Starting");
+    expect(composioConnectionStatusLabel("INACTIVE")).toBe("Turned off");
+    expect(composioConnectionStatusLabel("ACTIVE")).toBe("Connected");
+    expect(composioConnectionStatusLabel("INITIATED")).toBe("Waiting to finish");
+    expect(composioConnectionStatusLabel("EXPIRED")).toBe("Expired");
+  });
+
   it("maps generated start failures and provider callback restart states", () => {
     expect(startOutcome(start(400, "invalid_scope"))).toBe("scope");
+    expect(startOutcome(start(400, "invalid_redirect_target"))).toBe("redirect");
     expect(startOutcome(start(403, "plan_required"))).toBe("entitlement");
     expect(startOutcome(start(409, "authorization_restart_required"))).toBe("restart");
     expect(startOutcome(start(429, "rate_limited"))).toBe("retry");

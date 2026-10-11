@@ -89,7 +89,7 @@ func (s *Service) ExportCommitment(
 		GeneratedAt:  s.now().UTC(),
 		Direction:    row.Direction,
 		Text:         row.Text,
-		State:        commitmentRegisterState(row, s.now().UTC()),
+		State:        exportedCommitmentState(row, s.now().UTC()),
 		DueAt:        row.DueAt,
 		DuePhrase:    row.DuePhrase,
 		Owner:        row.OwnerParticipantRef,
@@ -99,7 +99,7 @@ func (s *Service) ExportCommitment(
 		History:      []ExportedTransition{},
 	}
 	if rel, relErr := row.Edges.RelationshipOrErr(); relErr == nil && rel != nil {
-		record.Account = rel.DisplayName
+		record.Account = reportAccountTitle(rel)
 	}
 	if evidences, evErr := row.Edges.EvidencesOrErr(); evErr == nil {
 		for _, evidence := range evidences {
@@ -124,6 +124,17 @@ func (s *Service) ExportCommitment(
 	return record, nil
 }
 
+// exportedCommitmentState is the word the forwarded record uses. A guess
+// waiting for a person stays Review even when the due date is soon. The
+// register clock would call that same row at risk. The company record and
+// the open-promises report already say Review.
+func exportedCommitmentState(row *ent.Commitment, now time.Time) string {
+	if row.Acceptance == "candidate" {
+		return "review"
+	}
+	return commitmentRegisterState(row, now)
+}
+
 // registerStateLabel renders a state the way a reader says it.
 //
 // This document is forwarded into a customer conversation to settle an
@@ -134,7 +145,7 @@ func registerStateLabel(state string) string {
 	case RegisterAtRisk:
 		return "At risk"
 	case RegisterMet:
-		return "Met"
+		return "Kept"
 	case RegisterMissed:
 		return "Missed"
 	case RegisterWaived:
@@ -143,9 +154,102 @@ func registerStateLabel(state string) string {
 		return "Disputed"
 	case RegisterOpen:
 		return "Open"
+	case "review":
+		return "Review"
 	default:
-		return strings.ToUpper(state[:1]) + strings.ReplaceAll(state[1:], "_", " ")
+		return titledRevenueToken(state)
 	}
+}
+
+// commitmentHistoryLabel names a stored transition. The history used to print
+// the token, so a forwarded record said "internally_confirmed".
+func commitmentHistoryLabel(kind string) string {
+	switch kind {
+	case "proposed":
+		return "Proposed"
+	case "internally_confirmed":
+		return "Confirmed in this workspace"
+	case "offered":
+		return "Offered"
+	case "accepted":
+		return "Accepted"
+	case "disputed":
+		return "Disputed"
+	case "blocked":
+		return "Blocked"
+	case "unblocked":
+		return "Unblocked"
+	case "corrected":
+		return "Corrected"
+	case "due_date_changed":
+		return "Due date changed"
+	case "renegotiated":
+		return "Renegotiated"
+	case "fulfilled":
+		return "Kept"
+	case "missed":
+		return "Missed"
+	case "waived":
+		return "Waived"
+	case "cancelled":
+		return "Cancelled"
+	case "superseded":
+		return "Superseded"
+	default:
+		return titledRevenueToken(kind)
+	}
+}
+
+// commitmentActorLabel names who recorded the transition. The stored actor
+// is a token such as ai_candidate.
+func commitmentActorLabel(actorType string) string {
+	switch actorType {
+	case "user":
+		return "Someone in this workspace"
+	case "source_fact":
+		return "A connected source"
+	case "deterministic_rule":
+		return "A rule"
+	case "ai_candidate":
+		return "A suggestion"
+	default:
+		return titledRevenueToken(actorType)
+	}
+}
+
+// evidenceSourceLabel names where the quote was read. The stored source is
+// a connector slug.
+func evidenceSourceLabel(source string) string {
+	switch strings.ToLower(strings.TrimSpace(source)) {
+	case "gmail":
+		return "Gmail"
+	case "google":
+		return "Google"
+	case "calendar":
+		return "Calendar"
+	case "slack":
+		return "Slack"
+	case "hubspot":
+		return "HubSpot"
+	case "meeting":
+		return "A meeting"
+	case "desktop_note":
+		return "A note"
+	case "voice_note":
+		return "A voice note"
+	case "user":
+		return "Added here"
+	default:
+		return titledRevenueToken(source)
+	}
+}
+
+func titledRevenueToken(value string) string {
+	words := strings.TrimSpace(strings.NewReplacer("_", " ", ".", " ").Replace(value))
+	if words == "" {
+		return "Unknown"
+	}
+	return strings.ToUpper(words[:1]) + words[1:]
 }
 
 // Markdown renders the record as the document a user forwards.
@@ -169,7 +273,7 @@ func (r *CommitmentRecord) Markdown() string {
 
 	fmt.Fprintf(&b, "| Field | Value |\n|---|---|\n")
 	if r.Account != "" {
-		fmt.Fprintf(&b, "| Account | %s |\n", r.Account)
+		fmt.Fprintf(&b, "| Company | %s |\n", r.Account)
 	}
 	fmt.Fprintf(&b, "| State | %s |\n", registerStateLabel(r.State))
 	switch {
@@ -195,7 +299,7 @@ func (r *CommitmentRecord) Markdown() string {
 	}
 	for _, evidence := range r.Evidence {
 		fmt.Fprintf(&b, "> %s\n\n", strings.ReplaceAll(strings.TrimSpace(evidence.Excerpt), "\n", "\n> "))
-		fmt.Fprintf(&b, "— %s, %s", evidence.Source, evidence.OccurredAt.UTC().Format(time.RFC3339))
+		fmt.Fprintf(&b, "— %s, %s", evidenceSourceLabel(evidence.Source), evidence.OccurredAt.UTC().Format(time.RFC3339))
 		if evidence.SourceURI != "" {
 			fmt.Fprintf(&b, " · %s", evidence.SourceURI)
 		}
@@ -208,10 +312,10 @@ func (r *CommitmentRecord) Markdown() string {
 	}
 	for _, transition := range r.History {
 		fmt.Fprintf(&b, "%d. **%s** — %s",
-			transition.Version, transition.Kind, transition.OccurredAt.UTC().Format(time.RFC3339))
-		fmt.Fprintf(&b, " (%s", transition.ActorType)
+			transition.Version, commitmentHistoryLabel(transition.Kind), transition.OccurredAt.UTC().Format(time.RFC3339))
+		fmt.Fprintf(&b, " (%s", commitmentActorLabel(transition.ActorType))
 		if transition.ActorRef != "" {
-			fmt.Fprintf(&b, " %s", transition.ActorRef)
+			fmt.Fprintf(&b, ", %s", transition.ActorRef)
 		}
 		b.WriteString(")\n")
 	}

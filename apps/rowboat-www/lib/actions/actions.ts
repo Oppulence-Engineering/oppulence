@@ -6,9 +6,89 @@
 // lib/revenue/revenue.ts.
 
 import { fetchPendingActionProposals } from "@/hooks/queries/utils/fetch-action-proposals";
-import { DashboardRequestError } from "@/lib/api/request-json";
+import { DashboardRequestError, signedInProblemCopy } from "@/lib/api/request-json";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
-import type { ActionProposal, ApproveResult, AuditChain } from "@/lib/actions/types";
+import type { ActionProposal, ActionStatus, ApproveResult, AuditChain } from "@/lib/actions/types";
+
+/**
+ * A proposal kind is a product slug. The queue and the audit trail name the
+ * action. The documented dunning step is the one this workspace can run.
+ */
+export function actionKindLabel(kind: string): string {
+  const trimmed = kind.trim();
+  if (trimmed === "conduit.dunning.advance") return "Advance dunning";
+  const words = trimmed.replaceAll(/[._]+/g, " ").trim();
+  if (!words) return "Action";
+  return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function actionParamKey(key: string): string {
+  const words = key
+    .replaceAll(/[._]+/g, " ")
+    .replaceAll(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .trim();
+  if (!words) return "Detail";
+  return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function actionParamScalar(value: unknown): string {
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "";
+  if (typeof value !== "string") return "";
+  return value.trim();
+}
+
+function actionParamLines(value: unknown, prefix = ""): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) =>
+      actionParamLines(item, prefix ? `${prefix} ${index + 1}` : String(index + 1)),
+    );
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value).flatMap(([key, item]) => {
+      const label = prefix ? `${prefix} · ${actionParamKey(key)}` : actionParamKey(key);
+      if (item && typeof item === "object") return actionParamLines(item, label);
+      const shown = actionParamScalar(item);
+      return shown ? [`${label}: ${shown}`] : [];
+    });
+  }
+  const shown = actionParamScalar(value);
+  if (!shown) return [];
+  return [prefix ? `${prefix}: ${shown}` : shown];
+}
+
+/** Proposal parameters are a JSON object. The approval names each field. */
+export function actionParamsLines(raw: string): string[] {
+  const trimmed = raw.trim();
+  if (!trimmed) return [];
+  try {
+    return actionParamLines(JSON.parse(trimmed));
+  } catch {
+    return [trimmed];
+  }
+}
+
+/** The status a person sees on an approval and on its audit trail. */
+export function actionStatusLabel(status: ActionStatus | string): string {
+  switch (status) {
+    case "pending":
+      return "Awaiting approval";
+    case "approved":
+      return "Approved";
+    case "executed":
+      return "Executed";
+    case "executed_unconfirmed":
+      return "Executed · unconfirmed";
+    case "rejected":
+      return "Rejected";
+    case "failed":
+      return "Failed";
+    case "expired":
+      return "Expired";
+    default:
+      return status;
+  }
+}
 
 export class ActionAPIError extends Error {
   status: number;
@@ -35,8 +115,17 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     let code: string | undefined;
     try {
       const body = await res.json();
-      detail = body.detail || body.title || detail;
-      code = body.code;
+      const raw =
+        body && typeof body.detail === "string"
+          ? body.detail
+          : body && typeof body.title === "string"
+            ? body.title
+            : detail;
+      detail = signedInProblemCopy(raw) ?? raw;
+      if (detail === "internal error" || detail === "authentication required") {
+        detail = `Request failed (${res.status})`;
+      }
+      code = body && typeof body.code === "string" ? body.code : undefined;
     } catch {
       // non-JSON error body; keep the status-based message
     }

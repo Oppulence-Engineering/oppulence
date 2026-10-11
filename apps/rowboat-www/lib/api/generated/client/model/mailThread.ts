@@ -7,6 +7,7 @@
  */
 import type { MailMessageMeta } from "./mailMessageMeta";
 import type { MailSignal } from "./mailSignal";
+import type { MailThreadProvider } from "./mailThreadProvider";
 import type { Relationship } from "./relationship";
 import type { User } from "./user";
 
@@ -24,8 +25,8 @@ export interface MailThread {
   message_count: number;
   messages?: MailMessageMeta[];
   outbound_count: number;
-  /** Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend. */
-  provider: string;
+  /** Mailbox this row came from. Only Gmail is stored. */
+  provider: MailThreadProvider;
   provider_thread_id: string;
   relationship?: Relationship;
   reply_state: string;

@@ -2,7 +2,7 @@ export const workflowKeys = {
   all: ["workflow"] as const,
   tasks: () => [...workflowKeys.all, "tasks"] as const,
   templates: () => [...workflowKeys.all, "templates"] as const,
-  runs: (scope: { status: string; trigger: string; executor: string }) =>
+  runs: (scope: { status: string; trigger: string; executor: string; slug: string }) =>
     [...workflowKeys.all, "runs", scope] as const,
   latest: (slug: string) => [...workflowKeys.all, "latest", slug] as const,
 };

@@ -1,6 +1,7 @@
 package revenue
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -9,6 +10,25 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 )
+
+func TestRecoveryExplanationOmitsTheStoredToken(t *testing.T) {
+	for _, classification := range []string{
+		"forgotten", "unknown_stale_sources", "fulfilled", "likely_fulfilled",
+		"superseded", "renegotiated", "blocked",
+	} {
+		got := recoveryExplanation(classification, nil)
+		if strings.Contains(got, "_") {
+			t.Fatalf("%s explanation %q still has a stored token", classification, got)
+		}
+		if strings.Contains(classification, "_") && strings.Contains(got, classification) {
+			t.Fatalf("%s explanation %q still names the token", classification, got)
+		}
+	}
+	stale := recoveryExplanation("unknown_stale_sources", []string{"gmail"})
+	if strings.Contains(stale, "unknown_stale_sources") || strings.Contains(stale, "gmail") {
+		t.Fatalf("stale explanation %q", stale)
+	}
+}
 
 func recoveryCommitment(t *testing.T, f *fixture, now time.Time) (*ent.Relationship, *ent.Commitment) {
 	t.Helper()
@@ -59,6 +79,50 @@ func TestCommitmentRecoveryDedupesGovernedActionAndStoresRanking(t *testing.T) {
 	).Count(f.ctx)
 	if err != nil || rankCount != 1 {
 		t.Fatalf("rank explanation was not persisted once: count=%d err=%v", rankCount, err)
+	}
+	var rescue *ent.RevenueAction
+	for _, action := range actions {
+		if action.ActionType == "commitment_rescue" {
+			rescue = action
+			break
+		}
+	}
+	if rescue == nil {
+		t.Fatal("recovery did not store a promise follow-up")
+	}
+	if rescue.ProposedSubject != "Following up on a promise" {
+		t.Fatalf("subject = %q", rescue.ProposedSubject)
+	}
+	if strings.Contains(rescue.PriorityComponentsJSON, "An accepted commitment") ||
+		strings.HasPrefix(strings.TrimSpace(rescue.PriorityComponentsJSON), "[") {
+		t.Fatalf("ranking breakdown = %s", rescue.PriorityComponentsJSON)
+	}
+	if !strings.Contains(rescue.PriorityComponentsJSON, `"commitment_due_state"`) {
+		t.Fatalf("ranking breakdown = %s", rescue.PriorityComponentsJSON)
+	}
+	rank, err := f.client.ConversationIntelligenceArtifact.Query().Where(
+		conversationintelligenceartifact.KindEQ("recommendation_evaluation"),
+	).Only(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(rank.PayloadJSON, "Bounded prior") || strings.Contains(rank.PayloadJSON, "commitment is overdue") {
+		t.Fatalf("stored ranking still uses the ranker rule: %s", rank.PayloadJSON)
+	}
+	if !strings.Contains(rank.PayloadJSON, "This promise is past due.") {
+		t.Fatalf("stored ranking = %s", rank.PayloadJSON)
+	}
+}
+
+func TestPriorityComponentsArrayBecomesARecord(t *testing.T) {
+	raw := `[{"factor":"commitment_due_state","value":"overdue","contribution":12,"reason":"An accepted commitment is overdue."}]`
+	got := string(priorityComponentsForAPI(raw))
+	if got != `{"commitment_due_state":12}` {
+		t.Fatalf("normalized components = %s", got)
+	}
+	kept := string(priorityComponentsForAPI(`{"outcome_learning":2}`))
+	if kept != `{"outcome_learning":2}` {
+		t.Fatalf("record components = %s", kept)
 	}
 }
 

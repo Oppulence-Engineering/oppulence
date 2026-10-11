@@ -7,7 +7,7 @@
  */
 
 /**
- * Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+ * Decision status.
  */
 export type RevenuePolicyDecisionStatus =
   (typeof RevenuePolicyDecisionStatus)[keyof typeof RevenuePolicyDecisionStatus];

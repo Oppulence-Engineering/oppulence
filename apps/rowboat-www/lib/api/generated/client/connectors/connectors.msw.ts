@@ -14,7 +14,11 @@ import type {
   ConnectorsResponse,
   GetConnectorBrokerJWKS200,
   HubSpotSearchResponse,
+  ListCommunicationPrivacyRules200,
+  ListComposioConnections200,
+  ListComposioToolkits200,
   MCPTokenResponse,
+  StartComposioConnection200,
 } from "../model";
 
 import {
@@ -22,15 +26,22 @@ import {
   getCreateConnectorResourceTokenResponseMock,
   getCreateMCPTokenResponseMock,
   getGetConnectorBrokerJWKSResponseMock,
+  getListCommunicationPrivacyRulesResponseMock,
+  getListComposioConnectionsResponseMock,
+  getListComposioToolkitsResponseMock,
   getListConnectorsResponseMock,
   getSearchHubSpotResponseMock,
   getSetConnectionAPIKeyResponseMock,
+  getStartComposioConnectionResponseMock,
   getStartConnectionResponseMock,
   getStartConnectorResponseMock,
 } from "./connectors.faker";
 
 export {
   getGetConnectorBrokerJWKSResponseMock,
+  getListComposioConnectionsResponseMock,
+  getStartComposioConnectionResponseMock,
+  getListComposioToolkitsResponseMock,
   getSetConnectionAPIKeyResponseMock,
   getClaimConnectionResponseMock,
   getCreateMCPTokenResponseMock,
@@ -39,6 +50,7 @@ export {
   getCreateConnectorResourceTokenResponseMock,
   getStartConnectorResponseMock,
   getSearchHubSpotResponseMock,
+  getListCommunicationPrivacyRulesResponseMock,
 } from "./connectors.faker";
 
 export const getGetConnectorBrokerJWKSMockHandler = (
@@ -58,6 +70,96 @@ export const getGetConnectorBrokerJWKSMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getGetConnectorBrokerJWKSResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getListComposioConnectionsMockHandler = (
+  overrideResponse?:
+    | ListComposioConnections200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListComposioConnections200> | ListComposioConnections200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/composio/connections",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListComposioConnectionsResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getStartComposioConnectionMockHandler = (
+  overrideResponse?:
+    | StartComposioConnection200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<StartComposioConnection200> | StartComposioConnection200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/composio/connections",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getStartComposioConnectionResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getDeleteComposioConnectionMockHandler = (
+  overrideResponse?:
+    void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void),
+  options?: RequestHandlerOptions,
+) => {
+  return http.delete(
+    "*/v1/composio/connections/:connectionID",
+    async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+      if (typeof overrideResponse === "function") {
+        await overrideResponse(info);
+      }
+
+      return new HttpResponse(null, { status: 204 });
+    },
+    options,
+  );
+};
+
+export const getListComposioToolkitsMockHandler = (
+  overrideResponse?:
+    | ListComposioToolkits200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListComposioToolkits200> | ListComposioToolkits200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/composio/toolkits",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListComposioToolkitsResponseMock(),
         { status: 200 },
       );
     },
@@ -328,8 +430,36 @@ export const getSearchHubSpotMockHandler = (
     options,
   );
 };
+
+export const getListCommunicationPrivacyRulesMockHandler = (
+  overrideResponse?:
+    | ListCommunicationPrivacyRules200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListCommunicationPrivacyRules200> | ListCommunicationPrivacyRules200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/revenue-workspaces/current/communication-privacy-rules",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListCommunicationPrivacyRulesResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 export const getConnectorsMock = () => [
   getGetConnectorBrokerJWKSMockHandler(),
+  getListComposioConnectionsMockHandler(),
+  getStartComposioConnectionMockHandler(),
+  getDeleteComposioConnectionMockHandler(),
+  getListComposioToolkitsMockHandler(),
   getDeleteConnectionMockHandler(),
   getSetConnectionAPIKeyMockHandler(),
   getHandleConnectionCallbackMockHandler(),
@@ -342,4 +472,5 @@ export const getConnectorsMock = () => [
   getCreateConnectorResourceTokenMockHandler(),
   getStartConnectorMockHandler(),
   getSearchHubSpotMockHandler(),
+  getListCommunicationPrivacyRulesMockHandler(),
 ];

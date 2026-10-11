@@ -153,9 +153,8 @@ export async function proxyRowboatAPI(request: NextRequest, path: string[]): Pro
   } catch {
     return NextResponse.json(
       {
-        title: "rowboat-api is unreachable",
-        detail:
-          "The dashboard could not reach rowboat-api. In local dev, start the API on port 18080 (docker compose -f docker-compose.rowboat-api.yml up -d).",
+        title: "Oppulence could not be reached",
+        detail: "Oppulence could not be reached. Try again in a moment.",
         code: "upstream_unavailable",
       },
       { status: 503 },

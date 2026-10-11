@@ -8,19 +8,24 @@
 
 export type ListRelationshipsParams = {
   /**
-   * Account, domain, or contact search.
+   * Account, domain, or contact search. All companies sends none.
    */
   q?: string;
   /**
-   * Lifecycle filter.
+   * Lifecycle filter. All companies sends none.
    */
   lifecycle?: string;
   /**
-   * Health filter.
+   * Health filter. All companies sends none.
    */
   health?: string;
   /**
-   * Engagement filter.
+   * Engagement filter. All companies sends none.
    */
   engagement?: string;
+  /**
+   * How many companies to skip. All companies sends none. Each page is 200 rows, newest touch first.
+   * @minimum 0
+   */
+  offset?: number;
 };

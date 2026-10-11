@@ -20,6 +20,7 @@ import type {
   BackgroundTaskRunsResponse,
   BackgroundTaskTemplate,
   BackgroundTaskTemplatesResponse,
+  GetBackgroundTaskScheduleState200,
 } from "../model";
 
 import {
@@ -32,6 +33,7 @@ import {
   getGetBackgroundTaskResponseMock,
   getGetBackgroundTaskRunResponseMock,
   getGetBackgroundTaskRunStatusResponseMock,
+  getGetBackgroundTaskScheduleStateResponseMock,
   getGetBackgroundTaskTemplateResponseMock,
   getInstantiateBackgroundTaskTemplateResponseMock,
   getListBackgroundTaskRunEventsResponseMock,
@@ -71,6 +73,7 @@ export {
   getRetryBackgroundTaskRunResponseMock,
   getSignalBackgroundTaskRunResponseMock,
   getGetBackgroundTaskRunStatusResponseMock,
+  getGetBackgroundTaskScheduleStateResponseMock,
   getTriggerBackgroundTaskResponseMock,
 } from "./background-tasks.faker";
 
@@ -620,6 +623,30 @@ export const getGetBackgroundTaskRunStatusMockHandler = (
   );
 };
 
+export const getGetBackgroundTaskScheduleStateMockHandler = (
+  overrideResponse?:
+    | GetBackgroundTaskScheduleState200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetBackgroundTaskScheduleState200> | GetBackgroundTaskScheduleState200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/background-tasks/:slug/schedule-state",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetBackgroundTaskScheduleStateResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
 export const getTriggerBackgroundTaskMockHandler = (
   overrideResponse?:
     | BackgroundTaskRun
@@ -667,5 +694,6 @@ export const getBackgroundTasksMock = () => [
   getRetryBackgroundTaskRunMockHandler(),
   getSignalBackgroundTaskRunMockHandler(),
   getGetBackgroundTaskRunStatusMockHandler(),
+  getGetBackgroundTaskScheduleStateMockHandler(),
   getTriggerBackgroundTaskMockHandler(),
 ];

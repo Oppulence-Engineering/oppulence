@@ -10,7 +10,7 @@
  * Exact binding extracted from one verified connector resource token. Partial selectors are rejected.
  */
 export interface InternalConnectionStatusRequest {
-  /** OAuth token audience for the connector. */
+  /** Exact product resource audience. */
   audience: string;
   /** Immutable MCPConnection UUID from the token. */
   connection_id: string;

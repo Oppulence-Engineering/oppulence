@@ -7,7 +7,7 @@
  */
 
 /**
- * Observing source.
+ * Observing source. Log outcome sends user.
  */
 export type RecordRevenueActionOutcomeBodySource =
   (typeof RecordRevenueActionOutcomeBodySource)[keyof typeof RecordRevenueActionOutcomeBodySource];

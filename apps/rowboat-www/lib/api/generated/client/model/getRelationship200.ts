@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CommitmentDependency } from "./commitmentDependency";
+import type { GetRelationship200EmailThreadsItem } from "./getRelationship200EmailThreadsItem";
 import type { MissionControlReadModel } from "./missionControlReadModel";
 import type { RelationshipCommitment } from "./relationshipCommitment";
 import type { RelationshipIntelligence } from "./relationshipIntelligence";
@@ -14,18 +15,20 @@ import type { RevenueAction } from "./revenueAction";
 import type { RevenueRelationship } from "./revenueRelationship";
 
 /**
- * Relationship detail.
+ * Company the sheet opened.
  */
 export type GetRelationship200 = {
-  /** Actions for this relationship. */
+  /** Actions for this company. */
   actions?: RevenueAction[];
   /** Evidence-backed commitment graph edges. */
   commitmentDependencies?: CommitmentDependency[];
-  /** Open and completed commitments. */
+  /** Promises on this company. */
   commitments?: RelationshipCommitment[];
+  /** Email threads the company sheet counts. */
+  emailThreads?: GetRelationship200EmailThreadsItem[];
   intelligence?: RelationshipIntelligence;
   missionControl?: MissionControlReadModel;
-  /** Relationship participants. */
+  /** People on this company. */
   participants?: RelationshipParticipant[];
   /** Governed recommendations. */
   recommendations?: RevenueAction[];

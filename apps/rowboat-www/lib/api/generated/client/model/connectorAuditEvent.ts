@@ -5,7 +5,6 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { ConnectorAuditEventReason } from "./connectorAuditEventReason";
 import type { User } from "./user";
 
 export interface ConnectorAuditEvent {
@@ -30,8 +29,8 @@ export interface ConnectorAuditEvent {
   occurred_at?: string;
   org_id?: string;
   owner_workos_user_id: string;
-  /** Reason code for the ledger entry. */
-  reason?: ConnectorAuditEventReason;
+  /** Why this connector decision was recorded. */
+  reason?: string;
   requested_scopes?: string[];
   result?: string;
   /** Last row update timestamp. */

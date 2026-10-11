@@ -38,7 +38,7 @@ func (s *Service) ReconcileAmbiguousAction(ctx context.Context, u *ent.User, id 
 	if strings.TrimSpace(action.ExecutionIdempotencyKey) == "" {
 		// Older or corrupted ambiguous rows have no safe provider marker. Any
 		// lookup would risk matching a different write, so fail closed.
-		return s.markReconciliationManual(ctx, action, "execution idempotency key is missing")
+		return s.markReconciliationManual(ctx, action, "This send has no receipt to check.")
 	}
 	ws, err := s.CurrentWorkspace(ctx, u)
 	if err != nil {
@@ -103,7 +103,7 @@ func (s *Service) ReconcileAmbiguousAction(ctx context.Context, u *ent.User, id 
 	if manual {
 		status = "manual_review"
 		if errorMessage == "" {
-			errorMessage = "provider marker was not found after bounded reconciliation attempts"
+			errorMessage = "The provider could not confirm this send."
 		}
 	}
 	update := s.client.RevenueAction.Update().

@@ -4,6 +4,7 @@ import { rowboatApiURL } from "@/lib/auth/config";
 import { getOptionalSession } from "@/lib/auth/session";
 import {
   DashboardRequestError,
+  schemaMismatchCopy,
   type RequestJsonFn,
   type RequestJsonInput,
 } from "@/lib/api/request-json";
@@ -31,7 +32,7 @@ async function readJsonBody(response: Response): Promise<unknown> {
   try {
     return JSON.parse(text);
   } catch {
-    throw new DashboardRequestError("Dashboard API returned malformed JSON", response.status);
+    throw new DashboardRequestError(schemaMismatchCopy(), response.status);
   }
 }
 
@@ -67,10 +68,6 @@ export const requestUpstreamJson: RequestJsonFn = async <T>(
     return input.schema.parse(body);
   } catch (error) {
     console.error(`Unexpected ${input.path} upstream response`, error);
-    throw new DashboardRequestError(
-      `The ${input.path} response did not match what this app expects. The app and the API are probably running different versions.`,
-      0,
-      "schema_mismatch",
-    );
+    throw new DashboardRequestError(schemaMismatchCopy(), 0, "schema_mismatch");
   }
 };

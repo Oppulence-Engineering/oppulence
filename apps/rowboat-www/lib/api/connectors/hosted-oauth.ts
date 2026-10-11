@@ -7,6 +7,7 @@ const OutcomeSchema = z.enum([
   "entitlement",
   "error",
   "expired",
+  "redirect",
   "replay",
   "restart",
   "retry",

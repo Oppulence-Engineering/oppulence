@@ -10,6 +10,6 @@
  * Scan request.
  */
 export type StartRevenueLeakScanBody = {
-  /** Historical lookback in days (default 90, max 365). */
+  /** Historical lookback in days. Run Promise Leak Audit sends 180. Omitted values use 180. Maximum 365. */
   lookbackDays?: number;
 };

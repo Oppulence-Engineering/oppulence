@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Person } from "./person";
-import type { PersonAttributeReason } from "./personAttributeReason";
 import type { RelationshipObservation } from "./relationshipObservation";
 import type { RevenueWorkspace } from "./revenueWorkspace";
 import type { User } from "./user";
@@ -25,8 +24,8 @@ export interface PersonAttribute {
   observation?: RelationshipObservation;
   observed_at: string;
   person: Person;
-  /** Reason code for the ledger entry. */
-  reason?: PersonAttributeReason;
+  /** Why this detail was recorded. */
+  reason?: string;
   retracted_at?: string;
   source: string;
   source_type: string;

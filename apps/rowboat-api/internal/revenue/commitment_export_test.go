@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
 
 // One-pager §3: the exportable record is what makes the ledger useful in the
@@ -140,5 +142,89 @@ func TestExportedRecordUsesHumanStateNames(t *testing.T) {
 	}
 	if strings.Contains(doc, "at_risk") {
 		t.Fatalf("raw enum leaked into the document:\n%s", doc)
+	}
+}
+
+// The forwarded record names the company, the guess, and the history the way
+// the company page does. A raw token in that email reads as a database dump.
+func TestCommitmentRecordMarkdownUsesCompanyWords(t *testing.T) {
+	when := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	due := when.Add(12 * time.Hour)
+	record := &CommitmentRecord{
+		GeneratedAt: when,
+		Account:     "Harbor Ledger",
+		Direction:   "promised_by_me",
+		Text:        "Send the harbor note",
+		State:       exportedCommitmentState(&ent.Commitment{Status: "open", Acceptance: "candidate", DueAt: &due}, when),
+		DueAt:       &due,
+		Evidence: []ExportedEvidence{{
+			Source:      "gmail",
+			Excerpt:     "I'll send the harbor note.",
+			OccurredAt:  when,
+			ContentHash: "sha256:harbor",
+		}},
+		History: []ExportedTransition{{
+			Version:    1,
+			Kind:       "internally_confirmed",
+			ActorType:  "ai_candidate",
+			OccurredAt: when,
+		}},
+	}
+	doc := record.Markdown()
+	for _, want := range []string{
+		"| Company | Harbor Ledger |",
+		"| State | Review |",
+		"— Gmail, ",
+		"**Confirmed in this workspace**",
+		"(A suggestion)",
+	} {
+		if !strings.Contains(doc, want) {
+			t.Fatalf("markdown missing %q:\n%s", want, doc)
+		}
+	}
+	for _, leaked := range []string{"| Account |", "at_risk", "internally_confirmed", "ai_candidate", "gmail,"} {
+		if strings.Contains(doc, leaked) {
+			t.Errorf("record leaked %q\n---\n%s", leaked, doc)
+		}
+	}
+	if registerStateLabel("met") != "Kept" || commitmentHistoryLabel("fulfilled") != "Kept" {
+		t.Fatalf("kept promise labels = %q / %q", registerStateLabel("met"), commitmentHistoryLabel("fulfilled"))
+	}
+}
+
+func TestExportRecordMarkdownMatchesTheDocumentedPromise(t *testing.T) {
+	when := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	due := time.Date(2026, 9, 14, 17, 0, 0, 0, time.UTC)
+	evidenceAt := time.Date(2026, 9, 6, 12, 0, 0, 0, time.UTC)
+	historyAt := time.Date(2026, 9, 7, 9, 0, 0, 0, time.UTC)
+	doc := (&CommitmentRecord{
+		ID:           "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		GeneratedAt:  when,
+		Account:      "Acme",
+		Direction:    "promised_by_me",
+		Text:         "Migration live by the 14th",
+		State:        "at_risk",
+		DueAt:        &due,
+		DuePhrase:    "by the 14th",
+		Owner:        "alex@example.com",
+		Counterparty: "jordan@example.com",
+		Evidence: []ExportedEvidence{{
+			Source:      "gmail",
+			Excerpt:     "We will have the migration live by the 14th.",
+			OccurredAt:  evidenceAt,
+			ContentHash: "sha256:abc123",
+			SourceURI:   "https://mail.google.com/thread-1",
+		}},
+		History: []ExportedTransition{{
+			Version:    2,
+			Kind:       "internally_confirmed",
+			ActorType:  "user",
+			ActorRef:   "alex@example.com",
+			OccurredAt: historyAt,
+		}},
+	}).Markdown()
+	const want = "# Commitment record\n\n**We promised:** Migration live by the 14th\n\n| Field | Value |\n|---|---|\n| Company | Acme |\n| State | At risk |\n| Due | 2026-09-14 |\n| Owner | alex@example.com |\n| Counterparty | jordan@example.com |\n| Record generated | 2026-09-09T12:00:00Z |\n\n## Evidence\n\n> We will have the migration live by the 14th.\n\n— Gmail, 2026-09-06T12:00:00Z · https://mail.google.com/thread-1\n\nContent hash `sha256:abc123`\n\n## History\n\n2. **Confirmed in this workspace** — 2026-09-07T09:00:00Z (Someone in this workspace, alex@example.com)\n"
+	if doc != want {
+		t.Fatalf("markdown:\n%s", doc)
 	}
 }

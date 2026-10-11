@@ -8,9 +8,11 @@
 import type { CommitmentRegisterEntry } from "./commitmentRegisterEntry";
 
 /**
- * Commitment register.
+ * Promise page.
  */
 export type ListCommitments200 = {
   /** Register rows, each with its derived state and account. */
   commitments: CommitmentRegisterEntry[];
+  /** Another promise exists beyond this page. */
+  hasMore: boolean;
 };

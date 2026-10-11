@@ -11,8 +11,16 @@ import type {
   AccountDeletionChallenge,
   AccountDeletionReceipt,
   AccountDeletionStepUp,
+  CreateCheckoutSession200,
   MeResponse,
 } from "../model";
+
+export const getCreateCheckoutSessionResponseMock = (
+  overrideResponse: Partial<Extract<CreateCheckoutSession200, object>> = {},
+): CreateCheckoutSession200 => ({
+  url: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
 
 export const getDeleteMeResponseMock = (
   overrideResponse: Partial<Extract<AccountDeletionReceipt, object>> = {},

@@ -17,4 +17,5 @@ export const BackgroundTaskRunCreateRequestTrigger = {
   cron: "cron",
   window: "window",
   event: "event",
+  retry: "retry",
 } as const;

@@ -17,10 +17,10 @@ export interface OAuthConnection {
   external_account_id?: string;
   /** Stable UUID primary key. */
   id: string;
-  /** Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend. */
+  /** Sign-in service for this connection. */
   provider: string;
   refresh_token_present: boolean;
-  /** OAuth scopes granted or requested. */
+  /** Scopes granted on this connection. */
   scopes?: string[];
   /** Last row update timestamp. */
   updated_at: string;

@@ -331,8 +331,8 @@ export const ReadSlackThread200Response = zod
           .strictObject({
             bot_id: zod.string().nullish().describe("Slack bot id when present."),
             text: zod.string().nullish().describe("Slack message text."),
-            ts: zod.string().nullish().describe("Usage or ledger event timestamp."),
-            user: zod.string().nullish().describe("User that owns this row."),
+            ts: zod.string().nullish().describe("Slack message timestamp."),
+            user: zod.string().nullish().describe("Slack user id when present."),
           })
           .describe("Slack thread message metadata returned to desktop chat."),
       )
@@ -434,7 +434,7 @@ export const ListSlackWorkspaces200Response = zod
             scopes: zod
               .array(zod.string().describe("Slack OAuth scope."))
               .optional()
-              .describe("OAuth scopes granted or requested."),
+              .describe("Granted bot scopes."),
             teamId: zod
               .string()
               .describe(

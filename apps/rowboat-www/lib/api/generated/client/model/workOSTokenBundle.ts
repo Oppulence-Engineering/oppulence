@@ -18,7 +18,7 @@ export interface WorkOSTokenBundle {
    * @nullable
    */
   email?: string | null;
-  /** Credential or one-time ticket expiry timestamp. */
+  /** Unix timestamp in seconds when the access token expires. */
   expires_at: number;
   /**
    * Refresh token for obtaining a new WorkOS access token.
