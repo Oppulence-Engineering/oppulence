@@ -14,8 +14,14 @@ import {
   startComposioConnection,
   type ComposioConnection,
 } from "@/lib/api/composio/client";
-import { composioConnectionStatusLabel } from "@/lib/connectors/hosted-oauth";
+import { composioConnectionStatusLabel, connectionNoticeName } from "@/lib/connectors/hosted-oauth";
 import { explainedRevenueError, shownRequestError } from "@/lib/revenue/revenue";
+
+/** A stored product name wins. A slug such as gmail is not the name on the card. */
+function composioProductName(name: string | undefined, slug: string): string {
+  const stored = name?.trim();
+  return stored || connectionNoticeName(slug);
+}
 
 /** An active connection wins; otherwise the most recently created one does. */
 function betterConnection(candidate: ComposioConnection, held: ComposioConnection): boolean {
@@ -172,7 +178,9 @@ export function ComposioConnections({
             return (
               <div className="flex items-center justify-between gap-3 p-4" key={toolkit.slug}>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-primary">{toolkit.name || toolkit.slug}</p>
+                  <p className="text-sm font-medium text-primary">
+                    {composioProductName(toolkit.name, toolkit.slug)}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {connection ? composioConnectionStatusLabel(connection.status) : "Not connected"}
                   </p>
@@ -181,8 +189,8 @@ export function ComposioConnections({
                   <Button
                     aria-label={
                       busy === toolkit.slug
-                        ? `Working on ${toolkit.name || toolkit.slug}`
-                        : `Disconnect ${toolkit.name || toolkit.slug}`
+                        ? `Working on ${composioProductName(toolkit.name, toolkit.slug)}`
+                        : `Disconnect ${composioProductName(toolkit.name, toolkit.slug)}`
                     }
                     disabled={busy === toolkit.slug}
                     onClick={() => void disconnect(connection)}
@@ -195,8 +203,8 @@ export function ComposioConnections({
                   <Button
                     aria-label={
                       busy === toolkit.slug
-                        ? `Opening ${toolkit.name || toolkit.slug}`
-                        : `Connect ${toolkit.name || toolkit.slug}`
+                        ? `Opening ${composioProductName(toolkit.name, toolkit.slug)}`
+                        : `Connect ${composioProductName(toolkit.name, toolkit.slug)}`
                     }
                     disabled={busy === toolkit.slug}
                     onClick={() => void connect(toolkit.slug)}
@@ -211,7 +219,9 @@ export function ComposioConnections({
           {orphans.map((connection) => (
             <div className="flex items-center justify-between gap-3 p-4" key={connection.id}>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-primary">{connection.toolkit}</p>
+                <p className="text-sm font-medium text-primary">
+                  {connectionNoticeName(connection.toolkit)}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {composioConnectionStatusLabel(connection.status)} · no longer offered here
                 </p>
@@ -219,8 +229,8 @@ export function ComposioConnections({
               <Button
                 aria-label={
                   busy === connection.toolkit
-                    ? `Working on ${connection.toolkit}`
-                    : `Disconnect ${connection.toolkit}`
+                    ? `Working on ${connectionNoticeName(connection.toolkit)}`
+                    : `Disconnect ${connectionNoticeName(connection.toolkit)}`
                 }
                 disabled={busy === connection.toolkit}
                 onClick={() => void disconnect(connection)}

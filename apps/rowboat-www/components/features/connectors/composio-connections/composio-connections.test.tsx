@@ -248,9 +248,10 @@ describe("Composio connections for products no longer offered", () => {
     mocks.disconnectComposio.mockResolvedValue(undefined);
     renderWithQuery(<ComposioConnections />);
 
-    expect(await screen.findByText("gmail")).toBeInTheDocument();
+    expect(await screen.findByText("Gmail")).toBeInTheDocument();
+    expect(screen.queryByText("gmail")).not.toBeInTheDocument();
     expect(screen.getByText("Connected · no longer offered here")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Disconnect gmail" }));
+    await userEvent.click(screen.getByRole("button", { name: "Disconnect Gmail" }));
 
     expect(mocks.disconnectComposio).toHaveBeenCalledWith("ca_1");
   });
