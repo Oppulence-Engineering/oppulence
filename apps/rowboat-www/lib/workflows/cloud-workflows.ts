@@ -11,6 +11,7 @@ import {
 } from "@/hooks/queries/utils/fetch-workflows";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 import { friendlyAgentError } from "@/lib/agents/agent-history";
+import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { schemaMismatchCopy } from "@/lib/api/request-json";
 import { workflowProductDescription } from "@/lib/workflows/workflow-product-copy";
 
@@ -346,6 +347,53 @@ function eventStringField(record: Record<string, unknown>, key: string): string 
 }
 
 /**
+ * Tool rows store the tool id. The transcript names that tool. A started or
+ * finished call has no message, so the row used to say "Recorded an update."
+ */
+function toolTranscriptCopy(type: string, record: Record<string, unknown>): string | null {
+  const stripped = type.trim().replace(/^(temporal|runtime|desktop)\./, "");
+  if (!stripped.startsWith("tool_")) return null;
+  const tool = eventStringField(record, "tool");
+  const label = tool ? agentToolLabel(tool) : "";
+  const error = eventStringField(record, "error");
+  const reason = eventStringField(record, "reason");
+  if (/tool call denied by human approval/i.test(error)) {
+    return label ? `${label} was not approved.` : "This tool was not approved.";
+  }
+  if (error) return friendlyAgentError(error, "run");
+  if (stripped === "tool_denied" || /not on the allowlist/i.test(reason)) {
+    return label
+      ? `${label} is not available in this run.`
+      : "This tool is not available in this run.";
+  }
+  if (/approval control source is not configured/i.test(reason)) {
+    return "Approval is not set up for this run.";
+  }
+  if (stripped === "tool_approval_requested") {
+    return label ? `${label} needs approval.` : "Waiting for approval.";
+  }
+  if (stripped === "tool_approval_resolved") {
+    const decision = eventStringField(record, "decision");
+    if (decision === "approved") return label ? `${label} was approved.` : "Approved.";
+    if (decision === "denied") {
+      return label ? `${label} was not approved.` : "This tool was not approved.";
+    }
+  }
+  if (stripped === "tool_call_started" || stripped === "tool_invocation") {
+    return label ? `Using ${label}.` : "Using a tool.";
+  }
+  if (
+    stripped === "tool_call_completed" ||
+    stripped === "tool_result" ||
+    stripped === "tool_output_stream"
+  ) {
+    return label ? `Finished using ${label}.` : "Finished using a tool.";
+  }
+  if (label) return `Using ${label}.`;
+  return null;
+}
+
+/**
  * Transcript rows store worker payloads. A message is shown when it is already
  * a sentence. Model-call records have no message, and stringifying them put
  * prompt versions and event types on screen.
@@ -363,6 +411,8 @@ export function runEventBody(event: { type?: string; event: unknown }): string {
     .map((key) => eventStringField(record, key))
     .find(Boolean);
   if (message && message !== "Failed.") return rewriteInfrastructureEvent(message);
+  const toolCopy = toolTranscriptCopy(type, record);
+  if (toolCopy) return toolCopy;
   const error = eventStringField(record, "error");
   if (error) return friendlyAgentError(error, "run");
   if (message) return "This run could not finish.";

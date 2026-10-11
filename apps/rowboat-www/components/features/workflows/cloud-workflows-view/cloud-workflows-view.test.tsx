@@ -370,6 +370,42 @@ describe("CloudWorkflowsView", () => {
         },
       }),
     ).toBe("Calling GPT-4.1.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_call_started",
+        event: { tool: "relationship.read", callIndex: 1, trustTier: "read" },
+      }),
+    ).toBe("Using Look up companies and promises.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_call_completed",
+        event: { tool: "connector.read.gmail", resultBytes: 120, latencyMs: 40 },
+      }),
+    ).toBe("Finished using Read Gmail.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_denied",
+        event: { tool: "web.search", reason: "not on the allowlist for this run" },
+      }),
+    ).toBe("Web search is not available in this run.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_call_completed",
+        event: { tool: "connector.read.gmail", error: "google is not connected" },
+      }),
+    ).toBe("Connect Google, then try again.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_call_completed",
+        event: { tool: "connector.read.gmail", error: "tool call denied by human approval gate" },
+      }),
+    ).toBe("Read Gmail was not approved.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_approval_requested",
+        event: { tool: "relationship.read", approvalRequired: true },
+      }),
+    ).toBe("Look up companies and promises needs approval.");
     expect(calledModelLabel("openai/gpt-4o-mini")).toBe("GPT-4o mini");
     expect(calledModelLabel("anthropic/claude-3-5-sonnet")).toBe("Claude 3.5 Sonnet");
     expect(calledModelLabel("workspace-default")).toBe("workspace-default");
