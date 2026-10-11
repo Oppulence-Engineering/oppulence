@@ -35,7 +35,11 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
-import { approvalDecisionCopy, type AgentHistoryItem } from "@/lib/agents/agent-history";
+import {
+  approvalDecisionCopy,
+  toolFailureCopy,
+  type AgentHistoryItem,
+} from "@/lib/agents/agent-history";
 import { agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
 import { requestDueCommitments } from "@/lib/dashboard/commitment-due-request";
 import { recoveryOpenCount } from "@/lib/revenue/revenue-records";
@@ -280,10 +284,17 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                         <ToolContent>
                           <ToolInput input={item.input} />
                           {item.result != null ? (
-                            <ToolOutput
-                              errorText={undefined}
-                              output={renderToolOutput(item.result)}
-                            />
+                            item.status === "error" ? (
+                              <ToolOutput
+                                errorText={toolFailureCopy(item.result)}
+                                output={undefined}
+                              />
+                            ) : (
+                              <ToolOutput
+                                errorText={undefined}
+                                output={renderToolOutput(item.result)}
+                              />
+                            )
                           ) : null}
                         </ToolContent>
                       </Tool>

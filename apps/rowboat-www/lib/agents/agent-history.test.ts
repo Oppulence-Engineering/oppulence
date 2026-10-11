@@ -7,6 +7,7 @@ import {
   parseAgentSessionEventsResponse,
   parseAgentSessionsResponse,
   shownAgentError,
+  toolFailureCopy,
 } from "@/lib/agents/agent-history";
 
 it("hides model and workflow details from agent failures", () => {
@@ -53,6 +54,18 @@ it("hides model and workflow details from agent failures", () => {
   expect(approvalDecisionCopy("granted")).toBe("Approved");
   expect(approvalDecisionCopy("denied")).toBe("Denied");
   expect(approvalDecisionCopy("resolving")).toBe("Submitting decision…");
+  expect(toolFailureCopy("not on the allowlist for this session")).toBe(
+    "This tool is not available in this chat.",
+  );
+  expect(toolFailureCopy("tool requires approval but HITL is disabled")).toBe(
+    "This tool needs approval, and approval is turned off.",
+  );
+  expect(toolFailureCopy("subagents disabled")).toBe(
+    "Related agents are turned off for this chat.",
+  );
+  expect(toolFailureCopy("denied by registry")).toBe("This tool is not allowed.");
+  expect(toolFailureCopy("llm_call_failed")).toBe("This tool could not finish.");
+  expect(toolFailureCopy("The mailbox is busy.")).toBe("The mailbox is busy.");
 });
 
 describe("shownAgentError", () => {

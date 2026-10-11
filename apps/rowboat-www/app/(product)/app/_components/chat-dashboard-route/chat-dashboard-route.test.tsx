@@ -75,6 +75,7 @@ describe("ChatDashboardRoute", () => {
     expect(source).toContain("approvalDecisionCopy(item.status)");
     expect(source).not.toContain('className="col-start-2 mt-3 text-xs capitalize text-primary/60"');
     expect(source).not.toContain('item.status === "resolving" ? "Submitting decision…" : item.status');
+    expect(source).toContain("toolFailureCopy(item.result)");
     expect(source).toContain("artifactReadOnlyCopy(chat.artifact.resource.kind)");
     expect(source).not.toContain("use the API to replay");
   });

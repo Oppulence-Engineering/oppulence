@@ -82,6 +82,29 @@ export function approvalDecisionCopy(status: ApprovalRequest["status"]): string 
 }
 
 /**
+ * A denied tool stores a worker reason. The chat says whether the tool can be used.
+ * A code with no sentence is not shown as the result.
+ */
+export function toolFailureCopy(result: unknown): string {
+  const raw = typeof result === "string" ? result.trim() : "";
+  switch (raw) {
+    case "not on the allowlist for this session":
+    case "not on the allowlist for this run":
+      return "This tool is not available in this chat.";
+    case "subagents disabled":
+      return "Related agents are turned off for this chat.";
+    case "tool requires approval but HITL is disabled":
+      return "This tool needs approval, and approval is turned off.";
+    case "denied by registry":
+    case "Denied by policy":
+      return "This tool is not allowed.";
+    default:
+      if (!raw || /^[a-z0-9_:-]+$/.test(raw)) return "This tool could not finish.";
+      return raw;
+  }
+}
+
+/**
  * A chat action should keep a specific failure. A status code with no sentence
  * is replaced by the action's own fallback. A rejected key, a rate limit, and
  * an out-of-credits provider still use the sentences we already explain.
