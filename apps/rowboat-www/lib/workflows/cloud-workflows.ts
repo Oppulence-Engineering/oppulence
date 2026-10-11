@@ -346,14 +346,26 @@ function eventStringField(record: Record<string, unknown>, key: string): string 
   return typeof value === "string" ? value.trim() : "";
 }
 
+function eventKind(type: string): string {
+  return type.trim().replace(/^(temporal|runtime|desktop)\./, "").replaceAll("-", "_");
+}
+
 /**
  * Tool rows store the tool id. The transcript names that tool. A started or
  * finished call has no message, so the row used to say "Recorded an update."
  */
+function eventToolName(record: Record<string, unknown>): string {
+  const direct = eventStringField(record, "tool") || eventStringField(record, "toolName");
+  if (direct) return direct;
+  const call = record.toolCall;
+  if (!call || typeof call !== "object") return "";
+  return eventStringField(call as Record<string, unknown>, "toolName");
+}
+
 function toolTranscriptCopy(type: string, record: Record<string, unknown>): string | null {
-  const stripped = type.trim().replace(/^(temporal|runtime|desktop)\./, "");
+  const stripped = eventKind(type);
   if (!stripped.startsWith("tool_")) return null;
-  const tool = eventStringField(record, "tool");
+  const tool = eventToolName(record);
   const label = tool ? agentToolLabel(tool) : "";
   const error = eventStringField(record, "error");
   const reason = eventStringField(record, "reason");
@@ -379,6 +391,16 @@ function toolTranscriptCopy(type: string, record: Record<string, unknown>): stri
       return label ? `${label} was not approved.` : "This tool was not approved.";
     }
   }
+  if (stripped === "tool_permission_request" || stripped === "code_run_permission_request") {
+    return label ? `${label} needs permission.` : "Permission requested.";
+  }
+  if (stripped === "tool_permission_response" || stripped === "tool_permission_auto_decision") {
+    const decision = eventStringField(record, "response") || eventStringField(record, "decision");
+    if (decision === "approve" || decision === "allow") {
+      return label ? `${label} was allowed.` : "Permission granted.";
+    }
+    if (decision === "deny") return label ? `${label} was not allowed.` : "Permission denied.";
+  }
   if (stripped === "tool_call_started" || stripped === "tool_invocation") {
     return label ? `Using ${label}.` : "Using a tool.";
   }
@@ -390,6 +412,90 @@ function toolTranscriptCopy(type: string, record: Record<string, unknown>): stri
     return label ? `Finished using ${label}.` : "Finished using a tool.";
   }
   if (label) return `Using ${label}.`;
+  return null;
+}
+
+function askOptions(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .map((item) => item.trim())
+    .slice(0, 8);
+}
+
+/** The question is stored beside the tool id. The transcript shows the question. */
+function askHumanCopy(stripped: string, record: Record<string, unknown>): string | null {
+  if (stripped === "ask_human_request") {
+    const query = eventStringField(record, "query");
+    const options = askOptions(record.options);
+    if (query && options.length > 0) return `${query}\n${options.join("\n")}`;
+    return query || "Asked for a decision.";
+  }
+  if (stripped === "ask_human_response") {
+    return eventStringField(record, "response") || "Decision recorded.";
+  }
+  return null;
+}
+
+function messageText(value: unknown): string {
+  if (!value || typeof value !== "object") return "";
+  const content = (value as Record<string, unknown>).content;
+  if (typeof content === "string") return content.trim();
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((part) => {
+      if (!part || typeof part !== "object") return "";
+      const item = part as Record<string, unknown>;
+      if (item.type === "text" && typeof item.text === "string") return item.text.trim();
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function attachmentNames(value: unknown): string[] {
+  if (!value || typeof value !== "object") return [];
+  const content = (value as Record<string, unknown>).content;
+  if (!Array.isArray(content)) return [];
+  return content
+    .map((part) => {
+      if (!part || typeof part !== "object") return "";
+      const item = part as Record<string, unknown>;
+      if (item.type !== "attachment") return "";
+      return typeof item.filename === "string" ? item.filename.trim() : "";
+    })
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+/**
+ * Desktop rows store the run log. A question, a message, and a start or stop
+ * have no "message" string, so the row used to say "Recorded an update."
+ */
+function desktopTranscriptCopy(type: string, record: Record<string, unknown>): string | null {
+  const stripped = eventKind(type);
+  const asked = askHumanCopy(stripped, record);
+  if (asked) return asked;
+  if (stripped === "message") {
+    const text = messageText(record.message);
+    if (text) return text;
+    const files = attachmentNames(record.message);
+    if (files.length === 1) return `Attached ${files[0]}.`;
+    if (files.length > 1) return `Attached ${files.join(", ")}.`;
+    return null;
+  }
+  if (stripped === "spawn_subflow") {
+    const name = eventStringField(record, "agentName").replace(/_+/g, " ").replace(/\s+/g, " ").trim();
+    if (!name) return "Started a related run.";
+    return `Started ${name.charAt(0).toUpperCase()}${name.slice(1)}.`;
+  }
+  if (stripped === "run_stopped") return "This run was stopped.";
+  if (stripped === "start") {
+    const model = calledModelLabel(eventStringField(record, "model"));
+    return model ? `Started with ${model}.` : "Started.";
+  }
+  if (stripped === "run_processing_start") return "Run started.";
+  if (stripped === "run_processing_end") return "Run finished.";
   return null;
 }
 
@@ -416,6 +522,8 @@ export function runEventBody(event: { type?: string; event: unknown }): string {
   if (message && message !== "Failed.") return rewriteInfrastructureEvent(message);
   const toolCopy = toolTranscriptCopy(type, record);
   if (toolCopy) return toolCopy;
+  const desktopCopy = desktopTranscriptCopy(type, record);
+  if (desktopCopy) return desktopCopy;
   const error = eventStringField(record, "error");
   if (error) return friendlyAgentError(error, "run");
   if (message) return "This run could not finish.";

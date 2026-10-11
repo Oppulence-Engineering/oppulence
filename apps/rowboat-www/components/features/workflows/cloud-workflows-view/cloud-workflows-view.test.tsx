@@ -429,6 +429,95 @@ describe("CloudWorkflowsView", () => {
         event: { tool: "relationship.read", approvalRequired: true },
       }),
     ).toBe("Look up companies and promises needs approval.");
+    expect(
+      runEventBody({
+        type: "desktop.tool_invocation",
+        event: {
+          toolName: "relationship.read",
+          input: '{"relationshipId":"9c8dfa9b-a7b2-46ea-982c-622a914c00e5"}',
+        },
+      }),
+    ).toBe("Using Look up companies and promises.");
+    expect(
+      runEventBody({
+        type: "desktop.tool_result",
+        event: { toolName: "connector.read.gmail", result: { subject: "Hello" } },
+      }),
+    ).toBe("Finished using Read Gmail.");
+    expect(
+      runEventBody({
+        type: "desktop.tool_permission_request",
+        event: {
+          toolCall: {
+            type: "tool-call",
+            toolName: "relationship.read",
+            arguments: { q: "Acme" },
+          },
+        },
+      }),
+    ).toBe("Look up companies and promises needs permission.");
+    expect(
+      runEventBody({
+        type: "desktop.ask_human_request",
+        event: {
+          query: "Which owner should we confirm?",
+          options: ["Avery Chen", "Security review"],
+          toolCallId: "call-1",
+        },
+      }),
+    ).toBe("Which owner should we confirm?\nAvery Chen\nSecurity review");
+    expect(
+      runEventBody({
+        type: "desktop.ask_human_response",
+        event: { response: "Avery Chen", toolCallId: "call-1" },
+      }),
+    ).toBe("Avery Chen");
+    expect(
+      runEventBody({
+        type: "desktop.message",
+        event: {
+          message: {
+            role: "assistant",
+            content: [
+              { type: "text", text: "Confirm the security review owner." },
+              { type: "tool-call", toolName: "relationship.read", arguments: { q: "Acme" } },
+            ],
+          },
+        },
+      }),
+    ).toBe("Confirm the security review owner.");
+    expect(
+      runEventBody({
+        type: "desktop.message",
+        event: {
+          message: {
+            role: "user",
+            content: [{ type: "attachment", path: "/Users/ada/secret.pdf", filename: "secret.pdf" }],
+          },
+        },
+      }),
+    ).toBe("Attached secret.pdf.");
+    expect(
+      runEventBody({
+        type: "desktop.start",
+        event: { model: "openai/gpt-4.1", provider: "openai", permissionMode: "auto" },
+      }),
+    ).toBe("Started with GPT-4.1.");
+    expect(
+      runEventBody({
+        type: "desktop.spawn_subflow",
+        event: { agentName: "meeting-pre-brief" },
+      }),
+    ).toBe("Started Meeting-pre-brief.");
+    expect(runEventBody({ type: "desktop.run_stopped", event: { reason: "user-requested" } })).toBe(
+      "This run was stopped.",
+    );
+    expect(
+      runEventBody({
+        type: "desktop.llm_stream_event",
+        event: { event: { type: "text-delta", text: "partial" } },
+      }),
+    ).toBe("Recorded an update.");
     expect(calledModelLabel("openai/gpt-4o-mini")).toBe("GPT-4o mini");
     expect(calledModelLabel("anthropic/claude-3-5-sonnet")).toBe("Claude 3.5 Sonnet");
     expect(calledModelLabel("workspace-default")).toBe("workspace-default");
