@@ -599,6 +599,8 @@ it("names a shared plan without the stored hash or a redacted owner", () => {
   );
   expect(page).toContain("sharedPlanVersionLabel(plan.currentRevision.version)");
   expect(page).toContain("sharedPlanOwnerLabel(item.ownerParticipantRef)");
+  expect(page).toContain("localDayLabel(item.dueAt)");
+  expect(page).not.toContain("new Date(item.dueAt).toLocaleDateString()");
   expect(page).toContain("planResponseToken(window.location.hash, rememberedToken.current)");
   expect(page).not.toContain("plan.currentRevision.revisionHash");
   expect(page).not.toContain("Owner: {item.ownerParticipantRef}");

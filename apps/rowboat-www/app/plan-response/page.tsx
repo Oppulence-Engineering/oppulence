@@ -10,6 +10,7 @@ import {
   sharedPlanOwnerLabel,
   sharedPlanVersionLabel,
 } from "@/lib/revenue/revenue";
+import { localDayLabel } from "@/lib/revenue/revenue-records";
 
 type PublicPlan = {
   planId: string;
@@ -110,7 +111,8 @@ export default function PlanResponsePage() {
           <ul className="space-y-3">
             {plan.currentRevision.items.map((item) => {
               const owner = sharedPlanOwnerLabel(item.ownerParticipantRef);
-              const due = item.dueAt ? `Due ${new Date(item.dueAt).toLocaleDateString()}` : "";
+              const dueDay = localDayLabel(item.dueAt);
+              const due = dueDay ? `Due ${dueDay}` : "";
               const detail = [owner ? `Owner: ${owner}` : "", due].filter(Boolean).join(" · ");
               return (
                 <li key={item.itemId} className="border border-border p-4">
