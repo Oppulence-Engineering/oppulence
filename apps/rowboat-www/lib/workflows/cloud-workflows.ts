@@ -419,6 +419,7 @@ export function runEventBody(event: { type?: string; event: unknown }): string {
   const error = eventStringField(record, "error");
   if (error) return friendlyAgentError(error, "run");
   if (message) return "This run could not finish.";
+  if (type === "runtime.final_artifact_ready") return "The result is ready.";
   return "Recorded an update.";
 }
 

@@ -383,6 +383,12 @@ describe("CloudWorkflowsView", () => {
     ).toBe("Finished calling GPT-4.1.");
     expect(
       runEventBody({
+        type: "runtime.final_artifact_ready",
+        event: { artifactBytes: 240, contentType: "text/markdown" },
+      }),
+    ).toBe("The result is ready.");
+    expect(
+      runEventBody({
         type: "runtime.tool_call_started",
         event: { tool: "relationship.read", callIndex: 1, trustTier: "read" },
       }),
