@@ -64,19 +64,24 @@ import {
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
 import type { RevenueAction, RevenueWorkspace } from "@/lib/revenue/types";
 
+/** An uncertain send might already have gone out. The review says not to try again yet. */
+export function uncertainSendTitle(): string {
+  return "This send is not confirmed. Do not try again yet.";
+}
+
 /** An uncertain send stores a reconciliation token. The review says where that check stands. */
 export function reconciliationStatusLabel(status: string | null | undefined): string {
   switch (status) {
     case "found":
-      return "The provider confirmed this send.";
+      return "This send was confirmed.";
     case "not_found":
-      return "The provider has no record of this send.";
+      return "There is no record of this send.";
     case "error":
-      return "The provider check failed.";
+      return "The check could not be finished.";
     case "manual_review":
       return "This needs a person to check it.";
     default:
-      return "Still checking with the provider.";
+      return "Still checking whether this was sent.";
   }
 }
 
@@ -473,7 +478,7 @@ export function ReviewSheet({
           {uncertain ? (
             <Alert>
               <ClockCounterClockwise weight="fill" />
-              <AlertTitle>Provider result uncertain — do not retry</AlertTitle>
+              <AlertTitle>{uncertainSendTitle()}</AlertTitle>
               <AlertDescription>
                 {reconciliationStatusLabel(action.reconciliationStatus)}
                 {action.reconciliationAttempts

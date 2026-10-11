@@ -9,6 +9,7 @@ import {
   reconciliationErrorCopy,
   reconciliationStatusLabel,
   reviewSupportingQuotes,
+  uncertainSendTitle,
 } from "@/components/features/revenue/review-sheet/review-sheet";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "review-sheet.tsx"), "utf8");
@@ -20,9 +21,14 @@ describe("ReviewSheet", () => {
   });
 
   it("names an uncertain provider check", () => {
+    expect(uncertainSendTitle()).toBe("This send is not confirmed. Do not try again yet.");
+    expect(reconciliationStatusLabel("found")).toBe("This send was confirmed.");
     expect(reconciliationStatusLabel("manual_review")).toBe("This needs a person to check it.");
-    expect(reconciliationStatusLabel("not_found")).toBe("The provider has no record of this send.");
-    expect(reconciliationStatusLabel("pending")).toBe("Still checking with the provider.");
+    expect(reconciliationStatusLabel("not_found")).toBe("There is no record of this send.");
+    expect(reconciliationStatusLabel("error")).toBe("The check could not be finished.");
+    expect(reconciliationStatusLabel("pending")).toBe("Still checking whether this was sent.");
+    expect(source).toContain("{uncertainSendTitle()}");
+    expect(source).not.toContain("Provider result uncertain");
     expect(
       reconciliationErrorCopy("provider marker was not found after bounded reconciliation attempts"),
     ).toBe("");
