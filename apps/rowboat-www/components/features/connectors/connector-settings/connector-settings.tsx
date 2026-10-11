@@ -67,6 +67,45 @@ function proxyPath(path: string): string {
   return `/api/rowboat${path}`;
 }
 
+/** A problem document stores the sentence in detail. message is the older field. */
+export function connectionProblemDetail(body: unknown): string {
+  if (!body || typeof body !== "object") return "";
+  const record = body as { detail?: unknown; message?: unknown };
+  if (typeof record.detail === "string" && record.detail.trim()) return record.detail.trim();
+  if (typeof record.message === "string" && record.message.trim()) return record.message.trim();
+  return "";
+}
+
+/**
+ * Saving a token stores a handler phrase. The connection card says what happened.
+ * Unknown details stay off the card so an internal token does not replace the fallback.
+ */
+export function connectionKeyFailureCopy(detail: string): string | null {
+  switch (detail) {
+    case "missing apiKey":
+      return "Enter the token.";
+    case "unknown connector":
+      return "This connection is not available.";
+    case "connector does not use api key auth":
+      return "This connection does not use a token.";
+    case "connector is disabled":
+      return "This connection is turned off.";
+    case "connector entitlement denied":
+      return "This workspace cannot use this connection.";
+    case "HubSpot rejected the private app token":
+      return "HubSpot did not accept that token.";
+    case "HubSpot could not verify the private app token":
+      return "HubSpot could not be reached. Try again.";
+    case "could not persist connection":
+    case "could not persist connection audit":
+      return "This connection could not be saved. Try again.";
+    case "connection was disconnected while the credential update was in progress; retry":
+      return "This connection changed while it was saving. Try again.";
+    default:
+      return null;
+  }
+}
+
 function displayDate(value?: string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
@@ -407,12 +446,10 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
         body: JSON.stringify({ apiKey }),
       });
       if (!response.ok) {
-        const problem = (await response.json().catch(() => null)) as { detail?: unknown } | null;
-        throw new Error(
-          typeof problem?.detail === "string"
-            ? problem.detail
-            : "Could not save that connection.",
+        const known = connectionKeyFailureCopy(
+          connectionProblemDetail(await response.json().catch(() => null)),
         );
+        throw new Error(known ?? "Could not save that connection.");
       }
       setApiKey("");
       setKeyOpen(false);
