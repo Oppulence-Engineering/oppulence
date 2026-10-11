@@ -212,6 +212,15 @@ export function shownRequestError(error: unknown, fallback: string): string {
   return message;
 }
 
+/** A missed connection is not a local setup step. The page says to try again. */
+export function serviceUnreachableCopy(): string {
+  return "Oppulence could not be reached. Try again in a moment.";
+}
+
+export function serviceUnavailableCopy(): string {
+  return "Oppulence is temporarily unavailable. Try again in a moment.";
+}
+
 export function friendlyRevenueError(message: string) {
   if (/gmail.*(?:returned 429|user-rate limit exceeded)/i.test(message)) {
     return "Google is temporarily limiting Gmail reads for this account. Please try the audit again in about 15 minutes.";
@@ -223,10 +232,10 @@ export function friendlyRevenueError(message: string) {
     return "Your session could not be refreshed. Sign out and sign in again.";
   }
   if (/rowboat-api is unreachable|upstream_unavailable/i.test(message)) {
-    return "The Oppulence API is not reachable. In local dev, start rowboat-api on port 18080, then reload.";
+    return serviceUnreachableCopy();
   }
   if (/\(503\)/.test(message) && /\bfailed\b|unreachable|unavailable/i.test(message)) {
-    return "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.";
+    return serviceUnavailableCopy();
   }
   return message;
 }
