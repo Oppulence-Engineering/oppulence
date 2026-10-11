@@ -15,9 +15,13 @@ vi.mock("@/lib/analytics/analytics", () => ({
   capture: billing.capture,
   RevenueEvents: { UpgradeClicked: "revenue_upgrade_clicked" },
 }));
-vi.mock("@/lib/revenue/revenue", () => ({
-  startCheckout: billing.startCheckout,
-}));
+vi.mock("@/lib/revenue/revenue", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/revenue/revenue")>();
+  return {
+    ...actual,
+    startCheckout: billing.startCheckout,
+  };
+});
 
 import {
   checkoutFailureCopy,

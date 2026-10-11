@@ -47,6 +47,7 @@ import {
   rejectAction,
   RevenueAPIError,
   snoozeWakeCopy,
+  checkoutFailureCopy,
   startCheckout,
 } from "@/lib/revenue/revenue";
 import {
@@ -330,7 +331,7 @@ export function ReviewSheet({
       const url = await startCheckout("pro");
       window.location.assign(url);
     } catch (e) {
-      const message = errMessage(e, "Could not start checkout.");
+      const message = checkoutFailureCopy(e);
       setActionError(message);
       onError(message);
       setBusy(null);

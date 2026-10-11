@@ -342,6 +342,19 @@ export async function startCheckout(plan: "starter" | "pro"): Promise<string> {
   return body.url;
 }
 
+/**
+ * A missing Stripe setup is not a blip. "Please try again" sends someone back
+ * to a button that cannot open checkout until the server is configured.
+ */
+export function checkoutFailureCopy(error: unknown): string {
+  const code =
+    error && typeof error === "object" && "code" in error && typeof error.code === "string"
+      ? error.code
+      : "";
+  if (code === "provider_unconfigured") return "Checkout isn't configured on the server yet.";
+  return "Checkout is temporarily unavailable. Please try again.";
+}
+
 export type LinkWorkspaceInput = LinkRevenueWorkspaceInput;
 
 export const linkWorkspace = (input: LinkWorkspaceInput) =>

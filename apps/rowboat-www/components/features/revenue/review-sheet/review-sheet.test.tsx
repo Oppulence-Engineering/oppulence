@@ -76,6 +76,8 @@ describe("ReviewSheet", () => {
     expect(source).toContain("<AlertTitle>Dismissed</AlertTitle>");
     expect(source).toContain("setActionError(message)");
     expect(source).toContain('errMessage(e, "Could not load the original email.")');
+    expect(source).toContain("checkoutFailureCopy(e)");
+    expect(source).not.toContain('errMessage(e, "Could not start checkout.")');
     expect(actionHasOriginalEmail({ evidence: [{ source: "gmail" }] })).toBe(true);
     expect(actionHasOriginalEmail({ evidence: [{ source: " Gmail " }] })).toBe(true);
     expect(actionHasOriginalEmail({ evidence: [{ source: "meeting" }] })).toBe(false);
