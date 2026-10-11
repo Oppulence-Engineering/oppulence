@@ -424,6 +424,8 @@ describe("RelationshipsView", () => {
     expect(activitySummaryLabel("Counterparty responded to a shared mutual action plan.")).toBe(
       "They responded to the shared plan.",
     );
+    expect(activitySummaryLabel("Jordan Buyer added by the user")).toBe("You added Jordan Buyer.");
+    expect(activitySummaryLabel("local-user added by the user")).toBe("You added a person.");
     expect(communicationPreviewLabel("   ")).toBe("No message preview");
     expect(communicationPreviewLabel("Invoice packet")).toBe("Invoice packet");
     expect(evidenceExcerptLabel("   ")).toBe("Evidence excerpt unavailable");

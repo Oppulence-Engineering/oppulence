@@ -559,8 +559,28 @@ export function activityRowSummary(summary: string): string {
     activityMailThreadSummary(trimmed) ??
     activitySourceSnapshotSummary(trimmed) ??
     activityDecisionSummary(trimmed) ??
+    activityPersonAddedSummary(trimmed) ??
     trimmed
   );
+}
+
+/**
+ * Adding a person stores "{name} added by the user". The row says you added
+ * them. The request summary stays so the API sample still matches.
+ */
+export function activityPersonAddedSummary(summary: string): string | null {
+  const match = /^(.*) added by the user\.?$/.exec(summary.trim());
+  if (!match) return null;
+  const name = (match[1] ?? "").trim();
+  if (
+    !name ||
+    name === "local-user" ||
+    name === "meeting-counterparty" ||
+    /^[a-z0-9_:-]+$/.test(name)
+  ) {
+    return "You added a person.";
+  }
+  return `You added ${name}.`;
 }
 
 const ACTIVITY_DECISION_SUMMARIES: Record<string, string> = {

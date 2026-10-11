@@ -601,6 +601,12 @@ describe("RelationshipGraphWorkspace", () => {
     ).toBe("They responded to the shared plan.");
     expect(
       graphEvidenceChipLabel({
+        label: "Jordan Buyer added by the user",
+        source: "user",
+      }),
+    ).toBe("You added Jordan Buyer.");
+    expect(
+      graphEvidenceChipLabel({
         label: "Commitment marked fulfilled: Send the proposal",
         source: "meeting",
       }),
