@@ -40,6 +40,7 @@ describe("ActionsView", () => {
     expect(source).toContain("signedInProblemCopy(message)");
     expect(source).toContain("return friendlyRevenueError(message)");
     expect(source).toContain("actionStatusLabel(status)");
+    expect(source).toContain("actionFailureReasonCopy(p.reason)");
     expect(actionKindLabel("conduit.dunning.advance")).toBe("Advance dunning");
     expect(actionKindLabel("send_invoice")).toBe("Send Invoice");
     expect(actionKindLabel("")).toBe("Action");

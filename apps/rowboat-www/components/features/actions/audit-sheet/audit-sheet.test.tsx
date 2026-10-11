@@ -12,6 +12,7 @@ describe("ActionAuditSheet", () => {
 
   it("names a proposal status the same way the approval queue does", () => {
     expect(source).toContain("actionStatusLabel(p.status)");
+    expect(source).toContain("actionFailureReasonCopy(p.reason)");
     expect(source).toContain("{localMomentLabel(p.createdAt)}");
     expect(source).toContain("{localMomentLabel(when)}");
     expect(source).not.toContain("new Date(p.createdAt).toLocaleString()");
