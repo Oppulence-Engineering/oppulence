@@ -43,6 +43,7 @@ import {
   type ConsolePreferencesPatch,
 } from "@/lib/console/console";
 import { startCheckout } from "@/lib/revenue/revenue";
+import { localDayLabel } from "@/lib/revenue/revenue-records";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { CardDescription, CardTitle } from "@oppulence/ui/components/card";
@@ -895,9 +896,9 @@ export function PlanSection({ session }: { session: SessionShape }) {
         <div className="flex items-center justify-between gap-6 p-4">
           <div>
             <p className="text-lg font-medium text-primary">{planLabel(billing?.plan) || "Free"}</p>
-            {billing?.trialExpiresAt ? (
+            {localDayLabel(billing?.trialExpiresAt) ? (
               <p className="text-xs font-medium text-oppulence-orange">
-                Trial ends {new Date(billing.trialExpiresAt).toLocaleDateString()}
+                Trial ends {localDayLabel(billing?.trialExpiresAt)}
               </p>
             ) : null}
           </div>

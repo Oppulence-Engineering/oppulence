@@ -179,6 +179,8 @@ describe("SettingsView", () => {
     expect(source).toContain("the next time you start a chat.");
     expect(source).toContain('title="Chat defaults"');
     expect(source).toContain('title="Current plan"');
+    expect(source).toContain("Trial ends {localDayLabel(billing?.trialExpiresAt)}");
+    expect(source).not.toContain("trialExpiresAt).toLocaleDateString()");
     expect(source).toContain("billingStatusLabel(billing.status)");
     expect(source).toContain("planLabel(billing?.plan)");
     expect(source).not.toContain('{billing?.plan || "Free"}');
