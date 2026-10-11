@@ -154,9 +154,48 @@ export function reconciliationErrorCopy(error: string | null | undefined): strin
   ) {
     return "";
   }
-  if (raw === "execution idempotency key is missing" || raw === "This send has no receipt to check.") {
+  if (
+    raw === "execution idempotency key is missing" ||
+    raw === "This send has no receipt to check." ||
+    /reconciliation idempotency key is required/i.test(raw)
+  ) {
     return "This send has no receipt to check.";
   }
+  if (raw === "action is assigned to another provider credential") {
+    return "Someone else is set to send this, so this workspace cannot confirm it.";
+  }
+  if (
+    raw === "execution backend does not support provider reconciliation" ||
+    /cannot reconcile provider state/i.test(raw)
+  ) {
+    return "This channel cannot confirm whether the send went out.";
+  }
+  if (raw === "provider reconciliation reported a match without a receipt") {
+    return "The provider matched this send but did not return a receipt.";
+  }
+  if (/google is not connected/i.test(raw)) {
+    return "Connect Google for the person who will send this, then try again.";
+  }
+  if (/refresh token is invalid/i.test(raw)) {
+    return "Google stopped accepting the authorization. Reconnect, then try again.";
+  }
+  if (/missing the .+ scope|reconnect Google/i.test(raw)) {
+    return "Google is missing permission to check this send. Reconnect, then try again.";
+  }
+  if (/could not obtain a google access token/i.test(raw)) {
+    return "Google could not authorize this check. Reconnect, then try again.";
+  }
+  if (/Google Calendar executor is not configured/i.test(raw)) {
+    return "Calendar sending is not set up yet.";
+  }
+  if (/Slack action needs target/i.test(raw)) return "Choose the Slack channel before sending.";
+  if (/HubSpot action needs a relationship resource ref/i.test(raw)) {
+    return "Link the HubSpot record before sending.";
+  }
+  if (/resolve Slack workspace/i.test(raw)) {
+    return "Slack could not be reached for this check.";
+  }
+  if (/^revenue:/i.test(raw)) return "The check could not confirm this send.";
   return raw;
 }
 

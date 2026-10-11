@@ -35,6 +35,22 @@ describe("ReviewSheet", () => {
     expect(reconciliationErrorCopy("execution idempotency key is missing")).toBe(
       "This send has no receipt to check.",
     );
+    expect(
+      reconciliationErrorCopy("revenue: Gmail reconciliation idempotency key is required"),
+    ).toBe("This send has no receipt to check.");
+    expect(reconciliationErrorCopy("action is assigned to another provider credential")).toBe(
+      "Someone else is set to send this, so this workspace cannot confirm it.",
+    );
+    expect(reconciliationErrorCopy("execution backend does not support provider reconciliation")).toBe(
+      "This channel cannot confirm whether the send went out.",
+    );
+    expect(reconciliationErrorCopy("provider reconciliation reported a match without a receipt")).toBe(
+      "The provider matched this send but did not return a receipt.",
+    );
+    expect(reconciliationErrorCopy("revenue: load google connection: not singular")).toBe(
+      "The check could not confirm this send.",
+    );
+    expect(reconciliationErrorCopy("The mailbox is busy.")).toBe("The mailbox is busy.");
     expect(source).toContain("reconciliationStatusLabel(action.reconciliationStatus)");
     expect(source).not.toContain("{action.reconciliationStatus");
   });
