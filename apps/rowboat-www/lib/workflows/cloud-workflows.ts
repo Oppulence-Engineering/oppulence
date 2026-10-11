@@ -472,6 +472,26 @@ export function transcriptNextEventsLabel(): string {
   return "Show the next events";
 }
 
+/**
+ * A problem document stores the sentence in detail. message is the older
+ * field. Reading only message dropped "revision conflict" and the page said
+ * the operation failed.
+ */
+export function workflowProblemDetail(body: unknown): string {
+  if (!body || typeof body !== "object") return "";
+  const record = body as { detail?: unknown; message?: unknown };
+  if (typeof record.detail === "string" && record.detail.trim()) return record.detail.trim();
+  if (typeof record.message === "string" && record.message.trim()) return record.message.trim();
+  return "";
+}
+
+/** A stale revision comes back as the stored detail "revision conflict". */
+export function workflowConflictCopy(action: "save" | "remove"): string {
+  return action === "remove"
+    ? "This workflow changed. Open it again, then remove it."
+    : "This workflow changed. Open it again, then save.";
+}
+
 async function workflowRequest<T>(
   path: string,
   schema: z.ZodType<T>,
@@ -487,6 +507,10 @@ async function workflowRequest<T>(
   });
   const body = await response.json().catch(() => null);
   if (!response.ok) {
+    const detail = workflowProblemDetail(body);
+    if (response.status === 409 && detail === "revision conflict") {
+      throw new Error(workflowConflictCopy("save"));
+    }
     const message =
       body && typeof body === "object" && "message" in body && typeof body.message === "string"
         ? body.message
@@ -604,13 +628,14 @@ export async function deleteCloudTask(task: Pick<CloudTask, "slug" | "revision">
   );
   if (response.status === 204) return;
   const body = await response.json().catch(() => null);
+  const detail = workflowProblemDetail(body);
+  if (response.status === 409 && detail === "revision conflict") {
+    throw new Error(workflowConflictCopy("remove"));
+  }
   const message =
     body && typeof body === "object" && "message" in body && typeof body.message === "string"
       ? body.message
       : "";
-  if (response.status === 409 && message === "revision conflict") {
-    throw new Error("This workflow changed. Open it again, then remove it.");
-  }
   throw new Error(message || `Could not remove the workflow (${response.status}).`);
 }
 

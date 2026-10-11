@@ -4,6 +4,11 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  workflowConflictCopy,
+  workflowProblemDetail,
+} from "@/lib/workflows/cloud-workflows";
+
+import {
   runFailureLine,
   runRowDetail,
   runStatusFilterName,
@@ -880,5 +885,27 @@ describe("CloudWorkflowsView", () => {
     expect(source).not.toContain("Name, schedule, and where the workflow runs.");
     expect(source).toContain("maintainedWorkflowNotice()");
     expect(source).not.toContain("You can pause it, inspect it, and run it");
+  });
+});
+
+describe("workflow revision conflict", () => {
+  it("reads the problem detail and says the workflow changed", () => {
+    const workflowSource = fs.readFileSync(
+      path.join(process.cwd(), "lib/workflows/cloud-workflows.ts"),
+      "utf8",
+    );
+    expect(workflowProblemDetail({ detail: "revision conflict" })).toBe("revision conflict");
+    expect(workflowProblemDetail({ message: "revision conflict" })).toBe("revision conflict");
+    expect(workflowProblemDetail({ detail: "  revision conflict  " })).toBe("revision conflict");
+    expect(workflowProblemDetail({})).toBe("");
+    expect(workflowConflictCopy("remove")).toBe(
+      "This workflow changed. Open it again, then remove it.",
+    );
+    expect(workflowConflictCopy("save")).toBe(
+      "This workflow changed. Open it again, then save.",
+    );
+    expect(workflowSource).toContain('workflowConflictCopy("remove")');
+    expect(workflowSource).toContain('workflowConflictCopy("save")');
+    expect(workflowSource).not.toContain('message === "revision conflict"');
   });
 });
