@@ -391,7 +391,7 @@ function toolTranscriptCopy(type: string, record: Record<string, unknown>): stri
       return label ? `${label} was not approved.` : "This tool was not approved.";
     }
   }
-  if (stripped === "tool_permission_request" || stripped === "code_run_permission_request") {
+  if (stripped === "tool_permission_request") {
     return label ? `${label} needs permission.` : "Permission requested.";
   }
   if (stripped === "tool_permission_response" || stripped === "tool_permission_auto_decision") {
@@ -496,6 +496,73 @@ function desktopTranscriptCopy(type: string, record: Record<string, unknown>): s
   }
   if (stripped === "run_processing_start") return "Run started.";
   if (stripped === "run_processing_end") return "Run finished.";
+  if (stripped === "code_run_permission_request") return codePermissionCopy(record.ask, "");
+  if (stripped === "code_run_event") return codeRunCopy(record.event);
+  return null;
+}
+
+function sentence(value: string): string {
+  const text = value.trim();
+  if (!text) return "";
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
+function fileName(path: string): string {
+  const trimmed = path.trim();
+  const slash = Math.max(trimmed.lastIndexOf("/"), trimmed.lastIndexOf("\\"));
+  const name = slash >= 0 ? trimmed.slice(slash + 1).trim() : trimmed;
+  return name;
+}
+
+function codePermissionCopy(ask: unknown, decision: string): string | null {
+  const title =
+    ask && typeof ask === "object" ? eventStringField(ask as Record<string, unknown>, "title") : "";
+  const name = title.replace(/[.!?]$/, "");
+  if (decision === "reject") return name ? `${name} was not allowed.` : "Permission denied.";
+  if (decision === "cancelled") return "This step was cancelled.";
+  if (decision === "allow_once" || decision === "allow_always") {
+    return name ? `${name} was allowed.` : "Permission granted.";
+  }
+  if (decision) return null;
+  return name ? `${name} needs permission.` : "Permission requested.";
+}
+
+/** A code run stores the step under event. The transcript names the step, not the path. */
+function codeRunCopy(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+  const item = value as Record<string, unknown>;
+  const kind = eventStringField(item, "type");
+  if (kind === "message") return eventStringField(item, "text") || null;
+  if (kind === "thought") return "Thinking.";
+  if (kind === "tool_call") {
+    const title = eventStringField(item, "title");
+    return title ? sentence(title) : "Using a tool.";
+  }
+  if (kind === "tool_call_update") {
+    const names = (Array.isArray(item.diffs) ? item.diffs : [])
+      .filter((entry): entry is string => typeof entry === "string")
+      .map(fileName)
+      .filter(Boolean)
+      .slice(0, 3);
+    const status = eventStringField(item, "status");
+    if (status === "failed") return "Could not finish this step.";
+    if (names.length === 1) return `Changed ${names[0]}.`;
+    if (names.length > 1) return `Changed ${names.join(", ")}.`;
+    if (status === "completed") return "Finished this step.";
+    return "Working on this step.";
+  }
+  if (kind === "plan") {
+    const lines = (Array.isArray(item.entries) ? item.entries : [])
+      .map((entry) =>
+        entry && typeof entry === "object"
+          ? sentence(eventStringField(entry as Record<string, unknown>, "content"))
+          : "",
+      )
+      .filter(Boolean)
+      .slice(0, 8);
+    return lines.length > 0 ? lines.join("\n") : null;
+  }
+  if (kind === "permission") return codePermissionCopy(item.ask, eventStringField(item, "decision"));
   return null;
 }
 

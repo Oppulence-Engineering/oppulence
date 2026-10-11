@@ -514,6 +514,58 @@ describe("CloudWorkflowsView", () => {
     );
     expect(
       runEventBody({
+        type: "desktop.code_run_event",
+        event: {
+          event: { type: "message", role: "agent", text: "Updated the security review note." },
+        },
+      }),
+    ).toBe("Updated the security review note.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_event",
+        event: { event: { type: "tool_call", title: "Edit the security note", kind: "edit" } },
+      }),
+    ).toBe("Edit the security note.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_event",
+        event: {
+          event: {
+            type: "tool_call_update",
+            status: "completed",
+            diffs: ["/Users/ada/notes/security.md"],
+          },
+        },
+      }),
+    ).toBe("Changed security.md.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_event",
+        event: {
+          event: {
+            type: "plan",
+            entries: [{ content: "Confirm the owner." }, { content: "Send the note." }],
+          },
+        },
+      }),
+    ).toBe("Confirm the owner.\nSend the note.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_permission_request",
+        event: {
+          requestId: "req-1",
+          ask: { title: "Edit the security note", kind: "edit", isRead: false },
+        },
+      }),
+    ).toBe("Edit the security note needs permission.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_event",
+        event: { event: { type: "other", sessionUpdate: "session/update" } },
+      }),
+    ).toBe("Recorded an update.");
+    expect(
+      runEventBody({
         type: "desktop.llm_stream_event",
         event: { event: { type: "text-delta", text: "partial" } },
       }),
