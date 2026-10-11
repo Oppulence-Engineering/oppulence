@@ -37,7 +37,8 @@ describe("ActionsView", () => {
     expect(source).toContain("actionFailure(e, \"Could not approve the action.\")");
     expect(source).toContain("actionFailure(e, \"Execution failed.\")");
     expect(source).toContain("actionFailure(e, \"Could not reject the action.\")");
-    expect(source).toContain("return friendlyRevenueError(errMessage(error, fallback))");
+    expect(source).toContain("signedInProblemCopy(message)");
+    expect(source).toContain("return friendlyRevenueError(message)");
     expect(source).toContain("actionStatusLabel(status)");
     expect(actionKindLabel("conduit.dunning.advance")).toBe("Advance dunning");
     expect(actionKindLabel("send_invoice")).toBe("Send Invoice");

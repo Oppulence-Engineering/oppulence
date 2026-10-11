@@ -120,8 +120,34 @@ export function signedInProblemCopy(detail: string): string | null {
       return "Enter a search.";
     case "no original email available for this action":
       return "The original email is not available for this action.";
+    case "closed-loop actions are not enabled":
+      return "Agent approvals are not switched on for this workspace yet.";
+    case "approval token is required":
+      return "Approve this action again before it can run.";
+    case "invalid proposal id":
+      return "This action could not be found.";
+    case "proposal is not pending":
+      return "This action is no longer waiting for approval.";
+    case "proposal is not approved":
+      return "Approve this action before it can run.";
+    case "proposal already executed":
+      return "This action already ran.";
+    case "approval token expired; re-approve":
+      return "That approval expired. Approve the action again.";
+    case "approval token already used":
+      return "That approval was already used. Approve the action again.";
+    case "approval token is invalid":
+      return "That approval is no longer valid. Approve the action again.";
+    case "execution backend is not configured; the action stays approved":
+      return "Approved, but this action cannot run yet. The approval is saved — try again once execution is available.";
+    case "execution outcome is ambiguous; reconcile by product state before retrying":
+      return "This action may already have run. Check it before trying again.";
+    case "step-up authentication required for financial approval":
+      return "This financial action needs recent re-authentication. Sign in again, then approve.";
     default:
-      if (detail.startsWith("revenue: ")) return "This could not be saved. Try again.";
+      if (detail.startsWith("revenue: ") || detail.startsWith("actions: ")) {
+        return "This could not be saved. Try again.";
+      }
       return null;
   }
 }

@@ -42,7 +42,7 @@ import {
   execute,
   reject,
 } from "@/lib/actions/actions";
-import { DashboardRequestError } from "@/lib/api/request-json";
+import { DashboardRequestError, signedInProblemCopy } from "@/lib/api/request-json";
 import {
   errMessage,
   ListSkeleton,
@@ -53,7 +53,10 @@ import { ActionAuditSheet } from "@/components/features/actions/audit-sheet/audi
 import type { ActionProposal, ActionStatus } from "@/lib/actions/types";
 
 function actionFailure(error: unknown, fallback: string) {
-  return friendlyRevenueError(errMessage(error, fallback));
+  const message = errMessage(error, fallback);
+  const known = signedInProblemCopy(message);
+  if (known) return known;
+  return friendlyRevenueError(message);
 }
 
 function StatusBadge({ status }: { status: ActionStatus }) {

@@ -6,7 +6,7 @@
 // lib/revenue/revenue.ts.
 
 import { fetchPendingActionProposals } from "@/hooks/queries/utils/fetch-action-proposals";
-import { DashboardRequestError } from "@/lib/api/request-json";
+import { DashboardRequestError, signedInProblemCopy } from "@/lib/api/request-json";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 import type { ActionProposal, ActionStatus, ApproveResult, AuditChain } from "@/lib/actions/types";
 
@@ -115,8 +115,17 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     let code: string | undefined;
     try {
       const body = await res.json();
-      detail = body.detail || body.title || detail;
-      code = body.code;
+      const raw =
+        body && typeof body.detail === "string"
+          ? body.detail
+          : body && typeof body.title === "string"
+            ? body.title
+            : detail;
+      detail = signedInProblemCopy(raw) ?? raw;
+      if (detail === "internal error" || detail === "authentication required") {
+        detail = `Request failed (${res.status})`;
+      }
+      code = body && typeof body.code === "string" ? body.code : undefined;
     } catch {
       // non-JSON error body; keep the status-based message
     }

@@ -61,6 +61,13 @@ describe("requestJson", () => {
       "Public research is part of the Intelligence plan. This workspace does not include it.",
     );
     expect(signedInProblemCopy("action is blocked by policy")).toBe("This action is blocked.");
+    expect(signedInProblemCopy("proposal is not pending")).toBe(
+      "This action is no longer waiting for approval.",
+    );
+    expect(signedInProblemCopy("proposal already executed")).toBe("This action already ran.");
+    expect(signedInProblemCopy("actions: invalid input: target and kind are required")).toBe(
+      "This could not be saved. Try again.",
+    );
     expect(signedInProblemCopy("The mailbox is busy.")).toBeNull();
     expect(signedInProblemCopy("internal error")).toBeNull();
 
