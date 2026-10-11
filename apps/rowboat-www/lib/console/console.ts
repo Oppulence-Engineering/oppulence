@@ -4,6 +4,7 @@ import "client-only";
 
 import { z } from "zod";
 
+import { schemaMismatchCopy } from "@/lib/api/request-json";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 import {
   CreateConsoleResource201Response,
@@ -108,9 +109,15 @@ async function request<T>(
     },
   });
   if (!response.ok) throw await errorFromResponse(response);
-  // eslint-disable-next-line oppulence-web/no-unvalidated-json -- the generic runtime schema parses this unknown value on the next line.
-  const body: unknown = await response.json();
-  return schema.parse(body);
+  let body: unknown;
+  try {
+    // eslint-disable-next-line oppulence-web/no-unvalidated-json -- the generic runtime schema parses this unknown value on the next line.
+    body = await response.json();
+    return schema.parse(body);
+  } catch (error) {
+    console.error(`Unexpected ${path} response`, error);
+    throw new ConsoleAPIError(schemaMismatchCopy(), response.status, "schema_mismatch");
+  }
 }
 
 export const getConsolePreferences = (signal?: AbortSignal) => fetchConsolePreferences(signal);

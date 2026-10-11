@@ -9,6 +9,7 @@ const dashboard = vi.hoisted(() => ({
 
 vi.mock("@/lib/auth/dashboard-fetch", () => dashboard);
 
+import { schemaMismatchCopy } from "@/lib/api/request-json";
 import {
   ConsoleAPIError,
   consoleFailureCopy,
@@ -57,6 +58,19 @@ describe("validated console adapter", () => {
     );
 
     await expect(listConsoleResources("note_template")).rejects.toThrow();
+  });
+
+  it("says the page could not read a console response that does not match", async () => {
+    dashboard.dashboardRequest.mockResolvedValue(
+      new Response(JSON.stringify({ unexpected: true }), { status: 200 }),
+    );
+
+    await expect(patchConsolePreferences({ displayName: "Ada" })).rejects.toEqual(
+      expect.objectContaining<Partial<ConsoleAPIError>>({
+        code: "schema_mismatch",
+        message: schemaMismatchCopy(),
+      }),
+    );
   });
 
   it("treats a missing console route as an empty resource list", async () => {
