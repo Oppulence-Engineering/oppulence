@@ -160,7 +160,7 @@ describe("CloudWorkflowsView", () => {
         runsError: null,
         runCount: 0,
       }),
-    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
     expect(
       workflowLibraryNotice({
         tasksError: new Error("list unavailable"),
@@ -277,7 +277,7 @@ describe("CloudWorkflowsView", () => {
         errorCode: "llm_call_failed",
         status: "failed",
       }),
-    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
     expect(
       runFailureLine({
         error: "llm upstream returned status 401: missing authentication header",
@@ -301,7 +301,7 @@ describe("CloudWorkflowsView", () => {
         new Error("llm upstream returned status 401: missing authentication header"),
         "Could not create workflow",
       ),
-    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
     expect(shownWorkflowError(new Error("revision conflict"), "Could not create workflow")).toBe(
       "revision conflict",
     );
@@ -368,7 +368,7 @@ describe("CloudWorkflowsView", () => {
             'llm upstream returned status 401: {"error":{"message":"Missing Authentication header"}}',
         },
       }),
-    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
     expect(
       runEventBody({ type: "runtime.unknown", event: { prompt_version: "cloud-runtime-v1" } }),
     ).toBe("Recorded an update.");
@@ -428,7 +428,7 @@ describe("CloudWorkflowsView", () => {
       "Could not refresh the schedule. Try again.",
     );
     expect(scheduleLoadNotice(new Error("status 401 missing authentication header"), true)).toBe(
-      "The AI provider rejected the API key for this workspace. Nothing was charged.",
+      "The model rejected the API key for this workspace. Nothing was charged.",
     );
     expect(source).toContain("scheduleMomentLabel(lastRunAt)");
     expect(source).toContain("scheduleNextRunLabel(schedule?.nextDueAt, scheduleMissing)");
@@ -665,7 +665,7 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("workflowLastRunReason(");
     expect(source).not.toContain("lastRunError}");
     const apiKey =
-      "The AI provider rejected the API key for this workspace. Nothing was charged.";
+      "The model rejected the API key for this workspace. Nothing was charged.";
     const denied = {
       lastRunAt: "2026-10-02T07:45:00.234Z",
       lastRunError:

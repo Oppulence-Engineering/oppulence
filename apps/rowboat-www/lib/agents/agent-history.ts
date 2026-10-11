@@ -15,9 +15,22 @@ export type AgentSessionSummary = Pick<
   "sessionId" | "agent" | "title" | "createdAt" | "lastActivityAt"
 >;
 
+export function modelOutageCopy(): string {
+  return "Oppulence cannot reach the model right now. Your workspace credits were not charged. Try again later.";
+}
+
+export function modelKeyRejectedCopy(): string {
+  return "The model rejected the API key for this workspace. Nothing was charged.";
+}
+
+/** Shown when a connected source cannot refresh because the model is unreachable. */
+export function refreshPausedModelCopy(): string {
+  return "Automatic refresh is paused because Oppulence cannot reach the model right now. The source is still connected; reconnecting will not fix it.";
+}
+
 export function friendlyAgentError(message: string, subject: "agent" | "run" = "agent"): string {
   if (/openrouter_credits|upstream_credits_exhausted|upstream provider account/i.test(message)) {
-    return "Oppulence's AI provider is temporarily unavailable. Your workspace credits were not charged. Try again later.";
+    return modelOutageCopy();
   }
   if (
     /status 402|requires more credits|insufficient_credits|credits_exhausted|out of (?:AI )?credits/i.test(
@@ -30,7 +43,7 @@ export function friendlyAgentError(message: string, subject: "agent" | "run" = "
   // error. Match it before the generic activity rewrite, or dogfooding looks
   // like a random failure instead of a credential problem.
   if (/status 401|missing authentication header|invalid api key|invalid_api_key/i.test(message)) {
-    return "The AI provider rejected the API key for this workspace. Nothing was charged.";
+    return modelKeyRejectedCopy();
   }
   if (/\brate limit\b|too many requests|\(429\)/i.test(message)) {
     return "Too many requests were sent from this workspace. Wait a moment, then try again.";

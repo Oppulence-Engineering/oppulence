@@ -36,6 +36,7 @@ import {
   listRefreshFailureCopy,
 } from "@/components/features/revenue/shared/shared";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
+import { refreshPausedModelCopy } from "@/lib/agents/agent-history";
 import {
   activitySourceLabel,
   sourceConnectionLabel,
@@ -423,7 +424,7 @@ function SourceRow({
                 ? autoRefreshBlocker === "insufficient_credits"
                   ? "Automatic refresh is paused because this workspace is out of AI credits. The source is still connected; reconnecting will not fix it."
                   : autoRefreshBlocker === "upstream_credits_exhausted"
-                    ? "Automatic refresh is paused because Oppulence's AI provider is temporarily unavailable. The source is still connected; reconnecting will not fix it."
+                    ? refreshPausedModelCopy()
                     : "No successful update arrived on schedule. Refresh to catch up."
                 : "The connection works, but its history is not fully synced."}
           </p>
