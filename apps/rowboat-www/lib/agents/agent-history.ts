@@ -104,6 +104,25 @@ export function toolFailureCopy(result: unknown): string {
   }
 }
 
+/**
+ * A finished tool stores only how many bytes came back. The chat says it finished.
+ * Empty arguments are not a parameter list.
+ */
+export function toolResultCopy(result: unknown): string | null {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return null;
+  const keys = Object.keys(result);
+  if (keys.length === 1 && keys[0] === "resultBytes") return "Finished.";
+  return null;
+}
+
+export function toolArgumentsVisible(input: unknown): boolean {
+  if (input == null || input === "") return false;
+  if (typeof input === "object" && !Array.isArray(input) && Object.keys(input).length === 0) {
+    return false;
+  }
+  return true;
+}
+
 export function runLimitCopy(): string {
   return "This run reached its limit.";
 }

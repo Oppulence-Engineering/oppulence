@@ -37,7 +37,9 @@ import {
 } from "@/components/ai-elements/tool";
 import {
   approvalDecisionCopy,
+  toolArgumentsVisible,
   toolFailureCopy,
+  toolResultCopy,
   type AgentHistoryItem,
 } from "@/lib/agents/agent-history";
 import { agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
@@ -273,6 +275,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                     completed: "output-available",
                     error: "output-error",
                   };
+                  const finished = toolResultCopy(item.result);
                   return (
                     <div className="mb-2" key={item.id}>
                       <Tool>
@@ -282,13 +285,15 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                           type="tool-call"
                         />
                         <ToolContent>
-                          <ToolInput input={item.input} />
+                          {toolArgumentsVisible(item.input) ? <ToolInput input={item.input} /> : null}
                           {item.result != null ? (
                             item.status === "error" ? (
                               <ToolOutput
                                 errorText={toolFailureCopy(item.result)}
                                 output={undefined}
                               />
+                            ) : finished ? (
+                              <p className="px-4 pb-4 text-xs text-muted-foreground">{finished}</p>
                             ) : (
                               <ToolOutput
                                 errorText={undefined}
