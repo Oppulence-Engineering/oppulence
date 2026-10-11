@@ -77,6 +77,12 @@ describe("hosted connector OAuth outcomes", () => {
       "This connection asked for permissions this workspace cannot accept. Review them and connect again.",
     );
     expect(connectionReasonCopy("upstream_timeout")).toBe("Upstream timeout");
+    expect(connectionReasonCopy("refresh_token_reuse")).toBe(
+      "Sign in again. The previous sign-in was reused, so this connection was turned off.",
+    );
+    expect(connectionReasonCopy("invalid_grant")).toBe(
+      "Sign in again. This connection is no longer valid.",
+    );
     expect(connectionReasonCopy("")).toBe("This connection is unavailable.");
   });
 

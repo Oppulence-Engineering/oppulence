@@ -90,6 +90,13 @@ export function connectionReasonCopy(reason: string): string {
     upstream_error: "Connecting failed. Try again.",
     revocation_pending: "Disconnect is still finishing.",
     provider_configuration_missing: "This connection is not set up for this workspace yet.",
+    refresh_token_reuse:
+      "Sign in again. The previous sign-in was reused, so this connection was turned off.",
+    invalid_grant: "Sign in again. This connection is no longer valid.",
+    account_deleted: "This connection was turned off because the account was deleted.",
+    revoked: "This connection was turned off.",
+    invalidated: "This connection was turned off.",
+    forced_invalidation: "This connection was turned off.",
   };
   const known = labels[reason];
   if (known) return known;
