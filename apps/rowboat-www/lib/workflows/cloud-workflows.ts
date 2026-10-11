@@ -403,8 +403,11 @@ export function runEventBody(event: { type?: string; event: unknown }): string {
   if (!event.event || typeof event.event !== "object") return "Recorded an update.";
   const record = event.event as Record<string, unknown>;
   const type = event.type || eventStringField(record, "type");
-  if (type === "runtime.llm_call_started") {
+  if (type === "runtime.llm_call_started" || type === "runtime.llm_call_completed") {
     const model = calledModelLabel(eventStringField(record, "model"));
+    if (type === "runtime.llm_call_completed") {
+      return model ? `Finished calling ${model}.` : "Finished calling the model.";
+    }
     return model ? `Calling ${model}.` : "Calling the model.";
   }
   const message = ["message", "summary", "content"]

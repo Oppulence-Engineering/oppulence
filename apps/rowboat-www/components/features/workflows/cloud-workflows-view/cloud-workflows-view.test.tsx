@@ -372,6 +372,17 @@ describe("CloudWorkflowsView", () => {
     ).toBe("Calling GPT-4.1.");
     expect(
       runEventBody({
+        type: "runtime.llm_call_completed",
+        event: {
+          model: "openai/gpt-4.1",
+          prompt_version: "cloud-runtime-v1",
+          inputTokens: 12,
+          outputTokens: 4,
+        },
+      }),
+    ).toBe("Finished calling GPT-4.1.");
+    expect(
+      runEventBody({
         type: "runtime.tool_call_started",
         event: { tool: "relationship.read", callIndex: 1, trustTier: "read" },
       }),
