@@ -312,13 +312,32 @@ function titledModelRest(rest: string): string {
 const INFRASTRUCTURE_EVENT_COPY: Record<string, string> = {
   "Queued by Temporal schedule.": "Queued on the schedule.",
   "Queued for API worker.": "Queued to run.",
+  "Queued retry for API worker.": "Queued to try again.",
   "API worker claimed the run.": "Oppulence Cloud started this run.",
+  "Building API-native task artifact.": "Preparing the result.",
+  "Waiting for human approval.": "Waiting for approval.",
+  "Context updated.": "Updated what this run knows.",
+  "Run paused.": "Paused.",
+  "Run resumed.": "Running again.",
+  "Run completed without artifact changes.": "Finished without changing the result.",
+  "Artifact updated.": "Result updated.",
+  "Cancellation requested.": "Stopping this run.",
 };
 
 function rewriteInfrastructureEvent(value: string): string {
   const step = /^Agent step (\d+)\.$/.exec(value);
   if (step) return `Step ${step[1]}.`;
   return INFRASTRUCTURE_EVENT_COPY[value] ?? value;
+}
+
+/**
+ * The progress line stores the worker sentence. The run uses the same words
+ * as the transcript, so a queued workflow does not say "API worker".
+ */
+export function workflowProgressCopy(message: string): string {
+  const raw = message.trim();
+  if (!raw) return "";
+  return rewriteInfrastructureEvent(raw);
 }
 
 function eventStringField(record: Record<string, unknown>, key: string): string {

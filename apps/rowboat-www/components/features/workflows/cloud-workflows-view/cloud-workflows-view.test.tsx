@@ -51,6 +51,7 @@ import {
   calledModelLabel,
   readableEnum,
   runEventBody,
+  workflowProgressCopy,
   transcriptNextEventsLabel,
   triggerLabel,
   runEventLabel,
@@ -386,6 +387,23 @@ describe("CloudWorkflowsView", () => {
       runEventBody({ type: "runtime.unknown", event: { prompt_version: "cloud-runtime-v1" } }),
     ).toBe("Recorded an update.");
     expect(runEventBody({ event: "Agent step 1." })).toBe("Step 1.");
+    expect(runEventBody({ event: "Building API-native task artifact." })).toBe(
+      "Preparing the result.",
+    );
+    expect(runEventBody({ event: "Waiting for human approval." })).toBe("Waiting for approval.");
+    expect(runEventBody({ event: "Queued retry for API worker." })).toBe("Queued to try again.");
+    expect(workflowProgressCopy("Queued for API worker.")).toBe("Queued to run.");
+    expect(workflowProgressCopy("API worker claimed the run.")).toBe(
+      "Oppulence Cloud started this run.",
+    );
+    expect(workflowProgressCopy("Agent step 3.")).toBe("Step 3.");
+    expect(workflowProgressCopy("Context updated.")).toBe("Updated what this run knows.");
+    expect(workflowProgressCopy("Run paused.")).toBe("Paused.");
+    expect(workflowProgressCopy("Run resumed.")).toBe("Running again.");
+    expect(workflowProgressCopy("Cancellation requested.")).toBe("Stopping this run.");
+    expect(workflowProgressCopy("")).toBe("");
+    expect(workflowProgressCopy("Still reading mail.")).toBe("Still reading mail.");
+    expect(source).toContain("workflowProgressCopy(run.progressMessage)");
     expect(source).toContain("runEventBody(event)");
     expect(source).toContain("The transcript could not be loaded.");
     expect(transcriptLoadNotice(new Error("Workflow request failed (500)"), false)).toBe(

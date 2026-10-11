@@ -86,6 +86,7 @@ import {
   triggerLabel,
   runEventBody,
   runEventLabel,
+  workflowProgressCopy,
   runReference,
   scheduleHealthLabel,
   scheduleMomentLabel,
@@ -1223,7 +1224,7 @@ function RunInspector({
           <div className="space-y-1">
             <Progress value={run.progressPercent} />
             <p className="text-xs text-muted-foreground">
-              {run.progressMessage || `${run.progressPercent}%`}
+              {workflowProgressCopy(run.progressMessage) || `${run.progressPercent}%`}
             </p>
           </div>
         ) : null}
