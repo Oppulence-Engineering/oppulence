@@ -11,6 +11,8 @@ vi.mock("@/lib/auth/dashboard-fetch", () => dashboard);
 
 import {
   ConsoleAPIError,
+  consoleUnavailableCopy,
+  createConsoleResource,
   getConsolePreferences,
   listConsoleResources,
   patchConsolePreferences,
@@ -80,5 +82,23 @@ describe("validated console adapter", () => {
         status: 503,
       }),
     );
+  });
+
+  it("says saving is not available when the console route is missing", async () => {
+    dashboard.dashboardRequest.mockResolvedValue(
+      new Response(JSON.stringify({ code: "not_found", detail: "not found" }), { status: 404 }),
+    );
+
+    await expect(
+      createConsoleResource({ kind: "note_favorite", payload: { noteId: "note-1" } }),
+    ).rejects.toEqual(
+      expect.objectContaining<Partial<ConsoleAPIError>>({
+        code: "console_unavailable",
+        message: consoleUnavailableCopy(),
+        status: 404,
+      }),
+    );
+    expect(consoleUnavailableCopy()).toBe("Saving is not available in this workspace yet.");
+    expect(consoleUnavailableCopy()).not.toContain("rowboat-api");
   });
 });

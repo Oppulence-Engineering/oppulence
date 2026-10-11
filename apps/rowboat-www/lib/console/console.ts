@@ -34,6 +34,11 @@ export {
   type ConsoleResource,
   type ConsoleResourceKind,
 };
+/** A missing console route is not a deployment instruction. */
+export function consoleUnavailableCopy(): string {
+  return "Saving is not available in this workspace yet.";
+}
+
 export type ConsoleResourceCreate = z.infer<typeof CreateConsoleResourceBody>;
 export type ConsoleResourcePatch = z.infer<typeof PatchConsoleResourceBody>;
 
@@ -107,11 +112,7 @@ export const createConsoleResource = async (input: ConsoleResourceCreate, signal
     });
   } catch (error) {
     if (isConsoleRouteUnavailable(error)) {
-      throw new ConsoleAPIError(
-        "Favorites and templates need a rowboat-api build that includes /v1/console.",
-        404,
-        "console_unavailable",
-      );
+      throw new ConsoleAPIError(consoleUnavailableCopy(), 404, "console_unavailable");
     }
     throw error;
   }
