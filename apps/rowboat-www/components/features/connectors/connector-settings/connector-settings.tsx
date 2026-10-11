@@ -478,7 +478,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
               </Badge>
             )}
             {health ? (
-              <Badge className="shrink-0 rounded-[2px] capitalize" variant="outline">
+              <Badge className="shrink-0 rounded-[2px]" variant="outline">
                 {health}
               </Badge>
             ) : null}

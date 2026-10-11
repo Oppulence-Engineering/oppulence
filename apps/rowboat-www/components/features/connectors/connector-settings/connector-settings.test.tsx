@@ -307,6 +307,7 @@ describe("hosted connector settings", () => {
     expect(within(row).getByRole("button", { name: "Connect Google" })).toBeDisabled();
     const reason = within(row).getByText("This connection is not set up for this workspace yet.");
     expect(reason).toBeVisible();
+    expect(within(row).getByText("Turned off")).toBeVisible();
     expect(reason).not.toHaveClass("font-mono");
     expect(within(row).queryByText("provider_configuration_missing")).toBeNull();
   });
