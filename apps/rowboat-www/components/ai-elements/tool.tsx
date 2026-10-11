@@ -31,10 +31,10 @@ const getStatusBadge = (status: ToolUIPart["state"]) => {
   const labels: Record<ToolUIPart["state"], string> = {
     "input-streaming": "Pending",
     "input-available": "Running",
-    "approval-requested": "Awaiting Approval",
+    "approval-requested": "Waiting for approval",
     "approval-responded": "Responded",
-    "output-available": "Completed",
-    "output-error": "Error",
+    "output-available": "Finished",
+    "output-error": "Could not finish",
     "output-denied": "Denied",
   };
 

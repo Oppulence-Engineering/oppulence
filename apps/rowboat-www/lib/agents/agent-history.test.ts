@@ -163,7 +163,24 @@ it("hides model and workflow details from agent failures", () => {
     "Related agents are turned off for this chat.",
   );
   expect(toolFailureCopy("denied by registry")).toBe("This tool is not allowed.");
+  expect(toolFailureCopy("tool_not_allowed")).toBe("This tool is not allowed.");
+  expect(toolFailureCopy("connector_unavailable")).toBe(
+    "Connect the account this tool needs, then try again.",
+  );
+  expect(toolFailureCopy("upstream_credits_exhausted")).toBe(
+    "Oppulence cannot reach the model right now. Your workspace credits were not charged. Try again later.",
+  );
+  expect(toolFailureCopy("runtime_tool_budget_exceeded")).toBe("This run reached its limit.");
+  expect(toolFailureCopy("runtime_artifact_too_large")).toBe("This result is too large to keep.");
   expect(toolFailureCopy("llm_call_failed")).toBe("This tool could not finish.");
+  expect(
+    toolFailureCopy(
+      "activity error (type: rowboat.agent.tool.v1, scheduledEventID: 4): connector_unavailable: google is not connected for this user",
+    ),
+  ).toBe("Connect Google, then try again.");
+  expect(toolFailureCopy("activity error: scheduledEventID=1 startedEventID=2")).toBe(
+    "The agent could not complete this request. Please try again.",
+  );
   expect(toolFailureCopy("The mailbox is busy.")).toBe("The mailbox is busy.");
   expect(toolResultCopy({ resultBytes: 42 })).toBe("Finished.");
   expect(toolResultCopy({ subject: "Hello" })).toBeNull();

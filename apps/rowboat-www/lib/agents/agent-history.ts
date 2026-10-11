@@ -161,10 +161,24 @@ export function toolFailureCopy(result: unknown): string {
       return "This tool needs approval, and approval is turned off.";
     case "denied by registry":
     case "Denied by policy":
+    case "tool_not_allowed":
       return "This tool is not allowed.";
-    default:
+    case "connector_unavailable":
+      return "Connect the account this tool needs, then try again.";
+    case "upstream_credits_exhausted":
+      return modelOutageCopy();
+    case "runtime_deadline_exceeded":
+    case "runtime_llm_budget_exceeded":
+    case "runtime_tool_budget_exceeded":
+      return runLimitCopy();
+    case "runtime_artifact_too_large":
+    case "runtime_event_too_large":
+      return "This result is too large to keep.";
+    default: {
       if (!raw || /^[a-z0-9_:-]+$/.test(raw)) return "This tool could not finish.";
-      return raw;
+      const explained = friendlyAgentError(raw);
+      return explained === raw ? raw : explained;
+    }
   }
 }
 

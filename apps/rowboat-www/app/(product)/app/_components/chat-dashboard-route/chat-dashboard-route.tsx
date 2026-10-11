@@ -276,6 +276,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                     error: "output-error",
                   };
                   const finished = toolResultCopy(item.result);
+                  const failure = item.status === "error" ? toolFailureCopy(item.result) : "";
                   return (
                     <div className="mb-2" key={item.id}>
                       <Tool>
@@ -284,15 +285,13 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                           title={agentToolLabel(item.name)}
                           type="tool-call"
                         />
+                        {failure ? (
+                          <p className="px-4 pb-3 text-xs leading-5 text-destructive">{failure}</p>
+                        ) : null}
                         <ToolContent>
                           {toolArgumentsVisible(item.input) ? <ToolInput input={item.input} /> : null}
-                          {item.result != null ? (
-                            item.status === "error" ? (
-                              <ToolOutput
-                                errorText={toolFailureCopy(item.result)}
-                                output={undefined}
-                              />
-                            ) : finished ? (
+                          {item.result != null && item.status !== "error" ? (
+                            finished ? (
                               <p className="px-4 pb-4 text-xs text-muted-foreground">{finished}</p>
                             ) : (
                               <ToolOutput
