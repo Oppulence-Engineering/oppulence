@@ -7,6 +7,7 @@ import type {
 import {
   callbackStatusOutcome,
   claimOutcome,
+  connectionHealthLabel,
   connectionReasonCopy,
   connectionScopeCopy,
   connectorSettingsURL,
@@ -76,6 +77,20 @@ describe("hosted connector OAuth outcomes", () => {
     );
     expect(connectionReasonCopy("upstream_timeout")).toBe("Upstream timeout");
     expect(connectionReasonCopy("")).toBe("This connection is unavailable.");
+  });
+
+  it("names a linked product that needs attention", () => {
+    expect(connectionHealthLabel({ connected: true, connectionHealth: "degraded" })).toBe(
+      "Needs attention",
+    );
+    expect(connectionHealthLabel({ connected: true, connectionHealth: "disabled" })).toBe(
+      "Turned off",
+    );
+    expect(connectionHealthLabel({ connected: true, connectionHealth: "healthy" })).toBe("Healthy");
+    expect(connectionHealthLabel({ connected: true, connectionHealth: "disconnected" })).toBe(
+      "Disconnected",
+    );
+    expect(connectionHealthLabel({ connected: false, connectionHealth: "disconnected" })).toBeNull();
   });
 
   it("maps generated start failures and provider callback restart states", () => {

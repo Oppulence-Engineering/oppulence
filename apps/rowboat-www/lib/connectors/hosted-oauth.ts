@@ -28,6 +28,32 @@ export function requiredConnectorScopes(connector: Connector): string[] {
     .map((scope) => scope.name);
 }
 
+/**
+ * Catalog health is a token. A linked product that is degraded or disabled
+ * used to read as those words.
+ */
+export function connectionHealthLabel(connector: {
+  connected: boolean;
+  connectionHealth: string;
+}): string | null {
+  if (!connector.connected && connector.connectionHealth === "disconnected") return null;
+  switch (connector.connectionHealth) {
+    case "healthy":
+      return "Healthy";
+    case "degraded":
+      return "Needs attention";
+    case "disabled":
+      return "Turned off";
+    case "disconnected":
+      return "Disconnected";
+    default: {
+      const raw = connector.connectionHealth.replaceAll("_", " ").trim();
+      if (!raw) return null;
+      return raw.charAt(0).toUpperCase() + raw.slice(1);
+    }
+  }
+}
+
 export function connectionScopeCopy(): string {
   return "This connection asked for permissions this workspace cannot accept. Review them and connect again.";
 }

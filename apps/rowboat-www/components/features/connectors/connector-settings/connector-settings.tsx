@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { ComposioConnections } from "@/components/features/connectors/composio-connections/composio-connections";
 import { dashboardFetch } from "@/lib/auth/client";
 import {
+  connectionHealthLabel,
   connectionReasonCopy,
   connectionScopeCopy,
   hostedOAuthUnsupportedReason,
@@ -135,16 +136,6 @@ export function googleAccessConfirmCopy(tone: string): string {
   return tone === "bad"
     ? "This starts Google authorization to restore access."
     : "This opens Google only to switch accounts or update permissions. It does not catch mail up.";
-}
-
-function healthLabel(connector: Connector): string | null {
-  // A connector that was never linked already says "Not connected". Repeating
-  // the catalog health "disconnected" makes it look like a link that broke.
-  if (!connector.connected && connector.connectionHealth === "disconnected") return null;
-  if (connector.connected && connector.connectionHealth === "healthy") return "Healthy";
-  const raw = connector.connectionHealth.replaceAll("_", " ").trim();
-  if (!raw) return null;
-  return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 function OptionalConnectorScope({ scope }: { scope: ConnectorScope }) {
@@ -379,7 +370,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
   const unsupportedReason = hostedOAuthUnsupportedReason(connector);
   const connectedAt = displayDate(connector.connectedAt);
   const lastUsedAt = displayDate(connector.lastUsedAt);
-  const health = healthLabel(connector);
+  const health = connectionHealthLabel(connector);
   // `status` is whether the catalog offers this connector ("enabled"), not
   // whether this workspace linked it. Printing "Lifecycle: enabled" beside
   // "Not connected" reads as two opposite answers.
