@@ -52,6 +52,7 @@ import {
   startScan,
 } from "@/lib/revenue/revenue";
 import {
+  localDayLabel,
   localMomentLabel,
   promiseDirectionLabel,
   promiseDueLabel,
@@ -260,9 +261,7 @@ function ReportBody() {
               {scansQuery.data?.map((scan) => (
                 <option key={scan.id} value={scan.id}>
                   {auditHistoryLabel(scan.status)} ·{" "}
-                  {scan.completedAt || scan.startedAt
-                    ? new Date(scan.completedAt ?? scan.startedAt ?? "").toLocaleDateString()
-                    : scan.id}
+                  {localDayLabel(scan.completedAt || scan.startedAt) || scan.id}
                 </option>
               ))}
             </select>

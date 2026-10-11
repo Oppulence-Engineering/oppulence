@@ -413,6 +413,15 @@ export function localMomentLabel(value: string | null | undefined): string {
   return format(parsed, "MMM d, yyyy 'at' h:mm a");
 }
 
+/** The day half of the date-picker clock. A numeric locale date read as a machine stamp. */
+export function localDayLabel(value: string | null | undefined): string {
+  const raw = value?.trim() ?? "";
+  if (!raw) return "";
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return format(parsed, "MMM d, yyyy");
+}
+
 /** The graph badge sits beside the date picker, so it uses the same clock. */
 export function graphAsOfLabel(asOf: string): string {
   return `As of ${localMomentLabel(asOf) || asOf}`;

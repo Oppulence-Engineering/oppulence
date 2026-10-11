@@ -11,6 +11,7 @@ import {
   mapSettledWithConcurrency,
   mergeWorkspaceNotes,
   promiseDirectionLabel,
+  localDayLabel,
   localMomentLabel,
   promiseDueDay,
   promiseDueLabel,
@@ -222,6 +223,10 @@ describe("local due dates", () => {
     const moment = "2026-09-30T13:00:00.000Z";
     expect(localMomentLabel(moment)).toBe(format(new Date(moment), "MMM d, yyyy 'at' h:mm a"));
     expect(localMomentLabel(moment)).not.toMatch(/\d:\d{2}:\d{2}/);
+    expect(localDayLabel(moment)).toBe(format(new Date(moment), "MMM d, yyyy"));
+    expect(localMomentLabel(moment).startsWith(`${localDayLabel(moment)} at `)).toBe(true);
+    expect(localDayLabel("not-a-date")).toBe("");
+    expect(localDayLabel("  ")).toBe("");
     expect(localMomentLabel("not-a-date")).toBe("not-a-date");
     expect(localMomentLabel("  ")).toBe("");
     expect(localMomentLabel(undefined)).toBe("");
