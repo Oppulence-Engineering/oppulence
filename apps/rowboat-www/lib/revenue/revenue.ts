@@ -89,7 +89,11 @@ import { fetchSnoozeRevenueAction } from "@/hooks/queries/utils/mutate-snooze-re
 import { fetchStartRevenueLeakScan } from "@/hooks/queries/utils/mutate-start-revenue-leak-scan";
 import type { RelationshipListScope } from "@/hooks/queries/utils/relationship-keys";
 import { RELATIONSHIP_SOURCE_STATUS_QUERY_KEY } from "@/hooks/queries/utils/relationship-source-keys";
-import { DashboardRequestError, schemaMismatchCopy } from "@/lib/api/request-json";
+import {
+  DashboardRequestError,
+  schemaMismatchCopy,
+  signedInProblemCopy,
+} from "@/lib/api/request-json";
 import {
   dashboardRequest,
   redirectBrowserIfUnauthorized,
@@ -270,7 +274,16 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     let code: string | undefined;
     try {
       const body = await res.json();
-      detail = body.detail || body.title || detail;
+      const raw =
+        body && typeof body.detail === "string"
+          ? body.detail
+          : body && typeof body.title === "string"
+            ? body.title
+            : detail;
+      detail = signedInProblemCopy(raw) ?? raw;
+      if (detail === "internal error" || detail === "authentication required") {
+        detail = `Request failed (${res.status})`;
+      }
       code = body.code;
     } catch {
       // non-JSON error body; keep the status-based message

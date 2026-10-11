@@ -136,7 +136,8 @@ export async function loadRelationshipGraph(
       input.scope === "portfolio" &&
       error instanceof DashboardRequestError &&
       error.status === 400 &&
-      /relationshipId/i.test(error.message);
+      (/relationshipId/i.test(error.message) ||
+        error.message === "This company could not be found.");
     if (!legacyPortfolioEndpoint) throw error;
 
     const relationships = relationshipRows(await loadRelationships(request, {}, signal));
