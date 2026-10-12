@@ -49,6 +49,7 @@ import {
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
   calledModelLabel,
+  completedRunCopy,
   readableEnum,
   runEventBody,
   workflowProgressCopy,
@@ -669,6 +670,16 @@ describe("CloudWorkflowsView", () => {
     expect(workflowProgressCopy("Temporal start failed.")).toBe(
       "Workflows cannot be started right now. Try again later.",
     );
+    expect(
+      completedRunCopy(
+        "API worker completed Daily Account Summary via cron trigger. Context: Scheduled cron trigger fired.",
+      ),
+    ).toBe("Finished Daily Account Summary.");
+    expect(completedRunCopy("Found 4 open customer follow-ups.")).toBe(
+      "Found 4 open customer follow-ups.",
+    );
+    expect(source).toContain("completedRunCopy(run.summary)");
+    expect(source).not.toContain("{run.summary}");
     expect(
       runEventBody({
         type: "temporal.completed",

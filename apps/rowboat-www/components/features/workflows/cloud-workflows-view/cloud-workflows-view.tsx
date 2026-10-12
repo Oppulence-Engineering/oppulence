@@ -84,6 +84,7 @@ import {
   taskVisualWorkflow,
   readableEnum,
   triggerLabel,
+  completedRunCopy,
   runEventBody,
   runEventLabel,
   runStoredFailureCopy,
@@ -1247,7 +1248,7 @@ function RunInspector({
           </div>
         </div>
         {run.summary ? (
-          <p className="border border-border p-2.5 text-xs leading-5">{run.summary}</p>
+          <p className="border border-border p-2.5 text-xs leading-5">{completedRunCopy(run.summary)}</p>
         ) : null}
         {runFailureLine(run) ? (
           <p className="border border-destructive/30 bg-destructive/5 p-2.5 text-xs leading-5 text-destructive">
