@@ -1183,6 +1183,13 @@ describe("source product copy", () => {
           confidence: 0.84,
         },
         {
+          id: "action:slack",
+          actionType: "meeting_recap",
+          channel: "slack",
+          reason: "Share the evidence-backed recap with the account team.",
+          proposedMessage: "Conversation recap — Q3 review",
+        },
+        {
           id: "action:task",
           actionType: "follow_up_task",
           channel: "task",
@@ -1216,11 +1223,12 @@ describe("source product copy", () => {
       ],
     });
     expect(lines).toEqual([
-      `${ACTION_TYPE_LABELS.meeting_recap}: Send a recap grounded in the material statements from this conversation.`,
-      `${ACTION_TYPE_LABELS.follow_up_task}: Track a spoken commitment until it is fulfilled or renegotiated.`,
+      `${ACTION_TYPE_LABELS.meeting_recap}: Send a recap of what was said.`,
+      `${ACTION_TYPE_LABELS.meeting_recap}: Share the recap with the account team.`,
+      `${ACTION_TYPE_LABELS.follow_up_task}: Keep this promise until it is kept or changed.`,
       "Due: Aug 1, 2026",
-      `${ACTION_TYPE_LABELS.calendar_hold}: Protect time before the spoken commitment is due.`,
-      `${ACTION_TYPE_LABELS.crm_update}: Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.`,
+      `${ACTION_TYPE_LABELS.calendar_hold}: Hold time before this promise is due.`,
+      `${ACTION_TYPE_LABELS.crm_update}: Update the company record from what was said.`,
     ]);
     expect(lines.join("\n")).not.toMatch(
       /action:email|claim:risk|- risk:|0\.84|Recap: Q3|shadow recap|local-user/,

@@ -1193,12 +1193,27 @@ export function missionControlGapCopy(
 const CONFIRMED_FOLLOW_UP_REASON =
   /^You confirmed this follow-up from source evidence meeting\/.+\.$/;
 
+/**
+ * A conversation compiles these reasons for the model. The activity, queue,
+ * and review sheet say what the person would do.
+ */
+const ACTION_REASON_COPY: Record<string, string> = {
+  "Send a recap grounded in the material statements from this conversation.":
+    "Send a recap of what was said.",
+  "Share the evidence-backed recap with the account team.": "Share the recap with the account team.",
+  "Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.":
+    "Update the company record from what was said.",
+  "Track a spoken commitment until it is fulfilled or renegotiated.":
+    "Keep this promise until it is kept or changed.",
+  "Protect time before the spoken commitment is due.": "Hold time before this promise is due.",
+};
+
 /** A confirmed meeting stored the observation id in the reason. The queue names the meeting. */
 export function actionReasonCopy(reason: string | null | undefined): string {
   const raw = reason?.trim() ?? "";
   if (!raw) return "";
   if (CONFIRMED_FOLLOW_UP_REASON.test(raw)) return "You confirmed this follow-up from the meeting.";
-  return raw;
+  return ACTION_REASON_COPY[raw] ?? raw;
 }
 
 /**
