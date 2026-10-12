@@ -3818,6 +3818,78 @@ func TestRelationshipSearchFindsTheConfirmedMeetingReason(t *testing.T) {
 	assertCompanyQuery("xylophone")
 }
 
+func TestRelationshipSearchFindsThePrintedReason(t *testing.T) {
+	f := newFixture(t)
+	makeReason := func(name, reason string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: rel.ID,
+			ActionType:     "warm_follow_up",
+			Channel:        "email",
+			Reason:         reason,
+			PriorityScore:  60,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	makeReason("Lane Quiet", "Send the harbor note.")
+	makeReason("Lane Promise", "An explicit promise in this message needs confirmation.")
+	makeReason("Lane Proposal", "You sent a proposal-stage message 10 days ago and there has been no reply.")
+	makeReason("Lane Waiting", "Casey Lee asked you something 6 days ago and is still waiting on a reply.")
+	makeReason("Lane Intro", "An introduction in this thread has had no contact for 14 days.")
+	makeReason("Lane Dormant", "A warm two-way conversation (8 messages) has been dormant for 30 days.")
+	makeReason("Lane Follow", "A follow-up was promised in this thread and nothing has happened for 14 days (last touch Jan 2).")
+	makeReason("Lane Recap", "Send a recap grounded in the material statements from this conversation.")
+	makeReason("Lane Share", "Share the evidence-backed recap with the account team.")
+	makeReason("Lane Record", "Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.")
+	makeReason("Lane Keep", "Track a spoken commitment until it is fulfilled or renegotiated.")
+	makeReason("Lane Hold", "Protect time before the spoken commitment is due.")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Confirm this promise from the message.", "Lane Promise")
+	assertCompanyQuery("You sent a proposal 10 days ago, and there has been no reply.", "Lane Proposal")
+	assertCompanyQuery("Casey Lee asked you a question 6 days ago and is still waiting.", "Lane Waiting")
+	assertCompanyQuery("An introduction has had no follow-up for 14 days.", "Lane Intro")
+	assertCompanyQuery("A two-way conversation of 8 messages has been quiet for 30 days.", "Lane Dormant")
+	assertCompanyQuery(
+		"A follow-up was promised, and nothing has happened for 14 days. The last message was Jan 2.",
+		"Lane Follow",
+	)
+	assertCompanyQuery("Send a recap of what was said.", "Lane Recap")
+	assertCompanyQuery("Share the recap with the account team.", "Lane Share")
+	assertCompanyQuery("Update the company record from what was said.", "Lane Record")
+	assertCompanyQuery("Keep this promise until it is kept or changed.", "Lane Keep")
+	assertCompanyQuery("Hold time before this promise is due.", "Lane Hold")
+	assertCompanyQuery("you sent a proposal", "Lane Proposal")
+	assertCompanyQuery("asked you a question", "Lane Waiting")
+	assertCompanyQuery("has had no follow-up", "Lane Intro")
+	assertCompanyQuery("two-way conversation", "Lane Dormant")
+	assertCompanyQuery("a follow-up was promised", "Lane Follow")
+	assertCompanyQuery("You sent a proposal 9 days ago, and there has been no reply.")
+	assertCompanyQuery("Send the harbor note.", "Lane Quiet")
+}
+
 func TestRelationshipSearchFindsPromiseBadges(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

@@ -1322,6 +1322,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if confirmed := relationshipSheetConfirmedMeetingMatch(needle); confirmed != nil {
 			parts = append(parts, confirmed)
 		}
+		if printed := relationshipSheetPrintedReasonMatch(needle); printed != nil {
+			parts = append(parts, printed)
+		}
 		parts = append(parts, relationship.HasActionsWith(revenueaction.ReasonContainsFold(value)))
 		q.Where(relationship.Or(parts...))
 	}
@@ -8063,6 +8066,172 @@ func relationshipSheetConfirmedMeetingMatch(needle string) predicate.Relationshi
 			b.WriteString(")) GLOB 'you confirmed this follow-up from source evidence meeting/?*.')")
 		}))
 	}))
+}
+
+// printedActionReasons are conversation follow-ups the queue rewrites. The
+// stored reason stays the longer sentence. The card says the short one.
+var printedActionReasons = []struct {
+	display string
+	stored  string
+}{
+	{"Send a recap of what was said.", "Send a recap grounded in the material statements from this conversation."},
+	{"Share the recap with the account team.", "Share the evidence-backed recap with the account team."},
+	{"Update the company record from what was said.", "Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence."},
+	{"Keep this promise until it is kept or changed.", "Track a spoken commitment until it is fulfilled or renegotiated."},
+	{"Hold time before this promise is due.", "Protect time before the spoken commitment is due."},
+}
+
+var (
+	printedProposalReason = regexp.MustCompile(`^you sent a proposal (\d+) days? ago,? and there has been no reply$`)
+	printedWaitingReason  = regexp.MustCompile(`^(.+?) asked you a question (\d+) days? ago and is still waiting$`)
+	printedIntroReason    = regexp.MustCompile(`^an introduction has had no follow up for (\d+) days?$`)
+	printedQuietReason    = regexp.MustCompile(`^a two way conversation of (\d+) messages? has been quiet for (\d+) days?$`)
+	printedFollowReason   = regexp.MustCompile(`^a follow up was promised,? and nothing has happened for (\d+) days? the last message was (.+)$`)
+)
+
+// relationshipSheetPrintedReasonMatch matches a mail or conversation reason
+// by the sentence the queue prints. The stored reason still uses the detector
+// wording. "You sent a proposal" stays off a company whose reason is a recap.
+func relationshipSheetPrintedReasonMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	add := func(match predicate.RevenueAction) {
+		preds = append(preds, relationship.HasActionsWith(match))
+	}
+	if needle == "confirm this promise from the message" {
+		add(revenueActionReasonEquals("An explicit promise in this message needs confirmation."))
+	}
+	if days, ok := printedReasonCount(printedProposalReason, needle); ok {
+		add(revenueActionReasonEquals(fmt.Sprintf(
+			"You sent a proposal-stage message %d days ago and there has been no reply.", days,
+		)))
+	} else if needle == "you sent a proposal" {
+		add(revenueActionReasonHasPrefix("you sent a proposal-stage message "))
+	}
+	if who, days, ok := printedWaitingReasonParts(needle); ok {
+		add(revenueActionReasonEquals(fmt.Sprintf(
+			"%s asked you something %d days ago and is still waiting on a reply.", who, days,
+		)))
+	} else if needle == "asked you a question" {
+		add(revenueActionReasonContains("asked you something ", " days ago and is still waiting on a reply."))
+	}
+	if days, ok := printedReasonCount(printedIntroReason, needle); ok {
+		add(revenueActionReasonEquals(fmt.Sprintf(
+			"An introduction in this thread has had no contact for %d days.", days,
+		)))
+	} else if needle == "has had no follow up" {
+		add(revenueActionReasonHasPrefix("an introduction in this thread has had no contact for "))
+	}
+	if messages, days, ok := printedQuietReasonParts(needle); ok {
+		add(revenueActionReasonEquals(fmt.Sprintf(
+			"A warm two-way conversation (%d messages) has been dormant for %d days.", messages, days,
+		)))
+	} else if needle == "two way conversation" {
+		add(revenueActionReasonHasPrefix("a warm two-way conversation ("))
+	}
+	if days, when, ok := printedFollowReasonParts(needle); ok {
+		add(revenueActionReasonEquals(fmt.Sprintf(
+			"A follow-up was promised in this thread and nothing has happened for %d days (last touch %s).",
+			days, when,
+		)))
+	} else if needle == "a follow up was promised" {
+		add(revenueActionReasonHasPrefix("a follow-up was promised in this thread and nothing has happened for "))
+	}
+	for _, item := range printedActionReasons {
+		if needle == normalizePersonSearch(item.display) {
+			add(revenueActionReasonEquals(item.stored))
+		}
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func printedReasonCount(pattern *regexp.Regexp, needle string) (int, bool) {
+	match := pattern.FindStringSubmatch(needle)
+	if len(match) != 2 {
+		return 0, false
+	}
+	days, err := strconv.Atoi(match[1])
+	if err != nil || days < 0 {
+		return 0, false
+	}
+	return days, true
+}
+
+func printedWaitingReasonParts(needle string) (string, int, bool) {
+	match := printedWaitingReason.FindStringSubmatch(needle)
+	if len(match) != 3 {
+		return "", 0, false
+	}
+	who := strings.TrimSpace(match[1])
+	days, err := strconv.Atoi(match[2])
+	if who == "" || err != nil || days < 0 {
+		return "", 0, false
+	}
+	return who, days, true
+}
+
+func printedQuietReasonParts(needle string) (int, int, bool) {
+	match := printedQuietReason.FindStringSubmatch(needle)
+	if len(match) != 3 {
+		return 0, 0, false
+	}
+	messages, messageErr := strconv.Atoi(match[1])
+	days, dayErr := strconv.Atoi(match[2])
+	if messageErr != nil || dayErr != nil || messages < 0 || days < 0 {
+		return 0, 0, false
+	}
+	return messages, days, true
+}
+
+func printedFollowReasonParts(needle string) (int, string, bool) {
+	match := printedFollowReason.FindStringSubmatch(needle)
+	if len(match) != 3 {
+		return 0, "", false
+	}
+	days, err := strconv.Atoi(match[1])
+	when := strings.TrimSpace(match[2])
+	if err != nil || days < 0 || when == "" {
+		return 0, "", false
+	}
+	return days, when, true
+}
+
+func revenueActionReasonEquals(reason string) predicate.RevenueAction {
+	want := strings.ToLower(strings.TrimSpace(reason))
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("lower(trim(")
+			b.WriteString(s.C(revenueaction.FieldReason))
+			b.WriteString(")) = ")
+			b.Arg(want)
+		}))
+	})
+}
+
+func revenueActionReasonHasPrefix(prefix string) predicate.RevenueAction {
+	return revenueActionReasonLike(escapePersonSearchLike(strings.ToLower(prefix)) + "%")
+}
+
+func revenueActionReasonContains(left, right string) predicate.RevenueAction {
+	return revenueActionReasonLike("%" + escapePersonSearchLike(strings.ToLower(left)) + "%" + escapePersonSearchLike(strings.ToLower(right)))
+}
+
+func revenueActionReasonLike(pattern string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("lower(trim(")
+			b.WriteString(s.C(revenueaction.FieldReason))
+			b.WriteString(")) LIKE ")
+			b.Arg(pattern)
+			b.WriteString(" ESCAPE '!'")
+		}))
+	})
 }
 
 // relationshipSheetPromiseBadgeMatch matches the status badge on each promise.
