@@ -275,10 +275,8 @@ export function workflowLastRunReason(
   const storedError = task.lastRunError?.trim() ?? "";
   const raw = pageIsShown && pageError ? pageError : storedError;
   if (!raw) return "";
-  const friendly = friendlyAgentError(raw, "run");
-  if (friendly !== raw) return friendly;
-  const code = pageIsShown && pageError ? pageRun?.errorCode?.trim() : "";
-  return code ? `${code}: ${raw}` : raw;
+  const code = pageIsShown && pageError ? pageRun?.errorCode?.trim() ?? "" : "";
+  return shownRunError(raw, code);
 }
 
 /** Settings already says the schedule is in sync. That is not the last run. */
@@ -520,13 +518,53 @@ export function transcriptLoadNotice(cause: unknown, hadTranscript: boolean): st
     : "The transcript could not be loaded.";
 }
 
+function shownRunError(message: string, code: string): string {
+  const friendly = friendlyAgentError(message, "run");
+  if (friendly !== message) return friendly;
+  switch (code) {
+    case "workflow_canceled":
+      return "This run was stopped.";
+    case "activity_timeout":
+    case "runtime_deadline_exceeded":
+      return "This run took too long. Try again.";
+    case "db_error":
+      return "This run could not be saved. Try again.";
+    case "artifact_write_failed":
+      return "The result could not be saved. Try again.";
+    case "task_not_found":
+      return "This workflow could not be found.";
+    case "task_invalid":
+      return "This workflow could not be read. Try again.";
+    case "temporal_signal_failed":
+      return "This run could not be updated. Try again.";
+    case "temporal_cancel_failed":
+      return "This run could not be stopped. Try again.";
+    case "temporal_unavailable":
+    case "temporal_start_failed":
+      return "Workflows cannot be started right now. Try again later.";
+    case "admission_backpressure":
+      return "Too many workflows are running right now. Try again in a moment.";
+    case "admission_rate_limited":
+      return "Too many requests were sent from this workspace. Wait a moment, then try again.";
+    case "llm_call_failed":
+      return "The model could not be reached. Try again.";
+    case "tool_invoke_failed":
+      return "A tool could not finish. Try again.";
+    case "tool_not_allowed":
+      return "This tool is not available in this run.";
+    case "connector_unavailable":
+      return "Connect the account this run needs, then try again.";
+    case "internal":
+    case "activity_failed":
+      return "This run could not finish. Please try again.";
+    default:
+      return code ? `${code}: ${message}` : message;
+  }
+}
+
 function runFailureCopy(run: CloudRun): string {
   const message = run.error ?? "";
-  const friendly = friendlyAgentError(message, "run");
-  // The stored code is an API token such as llm_call_failed. Once the message
-  // is rewritten, prefixing that token puts the internal name back on screen.
-  if (friendly !== message) return friendly;
-  return run.errorCode ? `${run.errorCode}: ${message}` : message;
+  return shownRunError(message, run.errorCode?.trim() ?? "");
 }
 
 export function scheduleLabel(task: CloudTask): string {

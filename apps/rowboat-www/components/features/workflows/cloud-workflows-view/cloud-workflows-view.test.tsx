@@ -955,6 +955,38 @@ describe("CloudWorkflowsView", () => {
       ),
     ).toBe("storage: disk full");
     expect(
+      runFailureLine({
+        error: "canceled",
+        errorCode: "workflow_canceled",
+        status: "failed",
+      }),
+    ).toBe("This run was stopped.");
+    expect(
+      runFailureLine({
+        error: "load background task",
+        errorCode: "db_error",
+        status: "failed",
+      }),
+    ).toBe("This run could not be saved. Try again.");
+    expect(
+      workflowLastRunReason(
+        { lastRunAt: "2026-10-02T07:00:00Z", lastRunError: "" },
+        {
+          createdAt: "2026-10-02T07:45:00Z",
+          status: "failed",
+          error: "write artifact",
+          errorCode: "artifact_write_failed",
+        },
+      ),
+    ).toBe("The result could not be saved. Try again.");
+    expect(
+      runFailureLine({
+        error: "timeout",
+        errorCode: "activity_timeout",
+        status: "failed",
+      }),
+    ).toBe("This run took too long. Try again.");
+    expect(
       workflowLastRunReason(
         { lastRunAt: "2026-10-02T07:45:00Z", lastRunError: "activity error" },
         { createdAt: "2026-10-02T07:45:00Z", status: "stopped" },
