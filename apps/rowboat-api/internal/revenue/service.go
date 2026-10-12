@@ -4183,14 +4183,16 @@ func longestActivityMatches(needle string, each func(func(phrase, value string))
 	return values
 }
 
-// relationshipSheetRiskMatch matches the unresolved-risk sentence. "1 unresolved
-// risk" stays off a company whose queue says "2 unresolved risks", and a
-// critical company with no risks does not match.
+// relationshipSheetRiskMatch matches the risk sentence on the attention queue.
+// The queue says "1 risk is still open" and "2 risks are still open". The
+// impact list still says "Unresolved risk". "1 risk is still open" stays off
+// a company whose queue says "2 risks are still open", and a critical company
+// with no risks does not match.
 func relationshipSheetRiskMatch(needle string) predicate.Relationship {
 	var exact []predicate.Relationship
 	for _, health := range []string{"critical", "needs_attention"} {
 		for n := 1; n <= 40; n++ {
-			if needle != normalizePersonSearch(unresolvedRiskExplanation(n, health)) {
+			if needle != normalizePersonSearch(attentionRiskSentence(n, health)) {
 				continue
 			}
 			exact = append(exact, relationship.And(
@@ -4209,7 +4211,13 @@ func relationshipSheetRiskMatch(needle string) predicate.Relationship {
 	if needle == "unresolved risk" {
 		preds = append(preds, relationshipHasUnresolvedRisk())
 	}
-	if needle == "unresolved risks" {
+	if needle == "risk is still open" {
+		preds = append(preds, relationship.And(
+			relationshipHasUnresolvedRisk(),
+			relationshipRiskCount("=", 1),
+		))
+	}
+	if needle == "risks are still open" {
 		preds = append(preds, relationship.And(
 			relationshipHasUnresolvedRisk(),
 			relationshipRiskCount(">=", 2),
@@ -4242,6 +4250,23 @@ func relationshipHasUnresolvedRisk() predicate.Relationship {
 		relationship.HealthIn("critical", "needs_attention"),
 		relationshipRiskCount(">=", 1),
 	)
+}
+
+// attentionRiskSentence is the line the attention queue prints. The stored
+// explanation still says "unresolved risk". The queue says the risk is still open.
+func attentionRiskSentence(count int, health string) string {
+	rest := "Health is " + attentionTokenLabel(health) + "."
+	switch health {
+	case "critical":
+		rest = "This company is critical."
+	case "needs_attention":
+		rest = "This company needs attention."
+	}
+	noun := "risks are still open"
+	if count == 1 {
+		noun = "risk is still open"
+	}
+	return fmt.Sprintf("%d %s. %s", count, noun, rest)
 }
 
 // relationshipSheetActionOutcomeMatch matches the sentence for a send that

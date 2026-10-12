@@ -6408,10 +6408,13 @@ func TestRelationshipSearchFindsTheUnresolvedRisk(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("1 unresolved risk. This company is critical.", "Quill Atelier")
-	assertCompanyQuery("2 unresolved risks. This company needs attention.", "Lumen Packet")
+	assertCompanyQuery("1 risk is still open. This company is critical.", "Quill Atelier")
+	assertCompanyQuery("2 risks are still open. This company needs attention.", "Lumen Packet")
+	assertCompanyQuery("risk is still open", "Quill Atelier")
+	assertCompanyQuery("risks are still open", "Lumen Packet")
 	assertCompanyQuery("Unresolved risk", "Quill Atelier", "Lumen Packet")
-	assertCompanyQuery("unresolved risks", "Lumen Packet")
+	assertCompanyQuery("1 unresolved risk. This company is critical.")
+	assertCompanyQuery("unresolved risks")
 	assertCompanyQuery("This company is critical.", "Quill Atelier")
 }
 
