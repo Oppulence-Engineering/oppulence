@@ -820,6 +820,18 @@ function activityCaveatLine(value: string): string | null {
   if (text.startsWith("mic_voice_processing_silent:")) {
     return "Echo cancellation was silent, so the microphone was recorded without it.";
   }
+  if (text === "Granola supplied meeting notes rather than a timestamped verbatim transcript.") {
+    return "These are notes from Granola, not a word-for-word transcript.";
+  }
+  if (text === "Speaker attribution and wording require focused review before material use.") {
+    return "Check who spoke and the wording before you rely on this.";
+  }
+  if (
+    text ===
+    "Imported from Fireflies; capture consent and audio retention remain governed by the provider."
+  ) {
+    return "Imported from Fireflies. The meeting service still decides consent and how long the recording is kept.";
+  }
   if (text.startsWith("mic_raw_fallback_failed:")) {
     return "The microphone could not be recorded.";
   }

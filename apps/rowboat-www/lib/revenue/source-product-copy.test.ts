@@ -993,6 +993,24 @@ describe("source product copy", () => {
     ).toBe(
       ["The other side could not be recorded.", "The recording could not be saved."].join("\n"),
     );
+    expect(
+      activityEvidenceLines(
+        {
+          envelope: {
+            captureCaveats: [
+              "Granola supplied meeting notes rather than a timestamped verbatim transcript.",
+              "Speaker attribution and wording require focused review before material use.",
+              "Imported from Fireflies; capture consent and audio retention remain governed by the provider.",
+            ],
+          },
+        },
+        null,
+      ),
+    ).toEqual([
+      "These are notes from Granola, not a word-for-word transcript.",
+      "Check who spoke and the wording before you rely on this.",
+      "Imported from Fireflies. The meeting service still decides consent and how long the recording is kept.",
+    ]);
     const spoken = activityEvidenceLines(
       {
         envelope: {
