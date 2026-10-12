@@ -34,12 +34,12 @@ For this monorepo, a Dockerfile such as `apps/rowboat-www/Dockerfile` copies sha
 
 ## Provisioned production apps
 
-| App | App Platform ID | Spec | Caller |
-| --- | --- | --- | --- |
-| rowboat-www | `f2e91ead-9963-46be-b205-4fb7518dea2d` | `.do/rowboat-www-production.yaml` | `.github/workflows/rowboat-www-app-platform.yml` |
-| rowboat-api | `dd11bce0-097b-459a-9c36-c66f3562cd5a` | `.do/rowboat-api-production.json` | `.github/workflows/rowboat-api-app-platform.yml` |
+| App | App Platform ID | Default URL | Spec | Caller |
+| --- | --- | --- | --- | --- |
+| rowboat-www | `f2e91ead-9963-46be-b205-4fb7518dea2d` | https://rowboat-www-production-gmmbn.ondigitalocean.app | `.do/rowboat-www-production.yaml` | `.github/workflows/rowboat-www-app-platform.yml` |
+| rowboat-api | `dd11bce0-097b-459a-9c36-c66f3562cd5a` | https://rowboat-api-production-w59vj.ondigitalocean.app | `.do/rowboat-api-production.json` | `.github/workflows/rowboat-api-app-platform.yml` |
 
-Both apps are in DigitalOcean's Solomon-AI project and cost an estimated $24/month each at two 1 GB instances. Neither production hostname has been moved to App Platform. The repository holds `ROWBOAT_WWW_APP_ID`, `ROWBOAT_API_APP_ID`, and per-app health-check URLs as GitHub variables, and a scoped `DIGITALOCEAN_PRODUCTION_TOKEN` repository secret. Rotate the token before its October 12, 2027 expiry.
+Both apps are active in DigitalOcean's Solomon-AI project. Their `/readyz` and `/healthz` endpoints returned HTTP 200 at the default URLs above. They cost an estimated $24/month each at two 1 GB instances. Neither production hostname has been moved to App Platform. The repository holds `ROWBOAT_WWW_APP_ID`, `ROWBOAT_API_APP_ID`, `ROWBOAT_WWW_HEALTHCHECK_URL`, and `ROWBOAT_API_HEALTHCHECK_URL` as GitHub variables, and a scoped `DIGITALOCEAN_PRODUCTION_TOKEN` repository secret. Rotate the token before its October 12, 2027 expiry.
 
 The API App Platform app runs only the request service. Its Temporal worker, scheduler, Google watch, and revenue scan flags are disabled so it does not duplicate the current Fly background fleet. Its caller is manual until migrations, background roles, and hostname cutover are designed and tested. The exported API spec contains encrypted App Platform values for the existing production Infisical secrets; never replace them with plaintext in Git.
 
