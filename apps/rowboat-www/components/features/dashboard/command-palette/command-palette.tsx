@@ -42,7 +42,7 @@ import {
   relationshipPageHasMore,
   relationshipRows,
 } from "@/hooks/queries/utils/fetch-relationships";
-import { explainedRevenueError } from "@/lib/revenue/revenue";
+import { actionReasonCopy, explainedRevenueError } from "@/lib/revenue/revenue";
 import type { SessionMeta } from "@/lib/agents/chat-sessions";
 import type { SemanticMatch } from "@/lib/revenue/revenue";
 import type { RevenueRelationship } from "@/lib/revenue/types";
@@ -301,7 +301,7 @@ export function CommandPalette({
                       {mailMatchMeta(match)}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {match.summary}
+                      {actionReasonCopy(match.summary)}
                     </span>
                   </span>
                 </CommandItem>

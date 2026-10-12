@@ -1059,7 +1059,7 @@ export function attentionExplanationCopy(explanation: string | null | undefined)
   }
   const outcome = attentionOutcomeCopy(raw);
   if (outcome) return outcome;
-  return raw;
+  return actionReasonCopy(raw);
 }
 
 /** Slack and CRM are names. A manual review is a person looking at the action. */
@@ -1257,12 +1257,55 @@ const ACTION_REASON_COPY: Record<string, string> = {
   "Protect time before the spoken commitment is due.": "Hold time before this promise is due.",
 };
 
+function countedDays(count: string): string {
+  return `${count} ${count === "1" ? "day" : "days"}`;
+}
+
+/**
+ * A mail scan stores a detector sentence. The queue and mail search say what
+ * is waiting. A person's own reason stays as they wrote it.
+ */
+function detectorReasonCopy(raw: string): string | null {
+  const followUp =
+    /^A follow-up was promised in this thread and nothing has happened for (\d+) days \(last touch ([^)]+)\)\.$/.exec(
+      raw,
+    );
+  if (followUp?.[1] && followUp[2]) {
+    return `A follow-up was promised, and nothing has happened for ${countedDays(followUp[1])}. The last message was ${followUp[2]}.`;
+  }
+  const proposal =
+    /^You sent a proposal-stage message (\d+) days ago and there has been no reply\.$/.exec(raw);
+  if (proposal?.[1]) {
+    return `You sent a proposal ${countedDays(proposal[1])} ago, and there has been no reply.`;
+  }
+  const waiting = /^(.+) asked you something (\d+) days ago and is still waiting on a reply\.$/.exec(
+    raw,
+  );
+  if (waiting?.[1] && waiting[2]) {
+    return `${waiting[1]} asked you a question ${countedDays(waiting[2])} ago and is still waiting.`;
+  }
+  const intro = /^An introduction in this thread has had no contact for (\d+) days\.$/.exec(raw);
+  if (intro?.[1]) {
+    return `An introduction has had no follow-up for ${countedDays(intro[1])}.`;
+  }
+  const quiet =
+    /^A warm two-way conversation \((\d+) messages\) has been dormant for (\d+) days\.$/.exec(raw);
+  if (quiet?.[1] && quiet[2]) {
+    const messages = quiet[1] === "1" ? "1 message" : `${quiet[1]} messages`;
+    return `A two-way conversation of ${messages} has been quiet for ${countedDays(quiet[2])}.`;
+  }
+  if (raw === "An explicit promise in this message needs confirmation.") {
+    return "Confirm this promise from the message.";
+  }
+  return null;
+}
+
 /** A confirmed meeting stored the observation id in the reason. The queue names the meeting. */
 export function actionReasonCopy(reason: string | null | undefined): string {
   const raw = reason?.trim() ?? "";
   if (!raw) return "";
   if (CONFIRMED_FOLLOW_UP_REASON.test(raw)) return "You confirmed this follow-up from the meeting.";
-  return ACTION_REASON_COPY[raw] ?? raw;
+  return detectorReasonCopy(raw) ?? ACTION_REASON_COPY[raw] ?? raw;
 }
 
 /**

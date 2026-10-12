@@ -930,6 +930,29 @@ describe("RelationshipsView", () => {
     expect(actionReasonCopy("You confirmed this follow-up from the meeting.")).toBe(
       "You confirmed this follow-up from the meeting.",
     );
+    expect(actionReasonCopy("Send the harbor note")).toBe("Send the harbor note");
+    expect(
+      actionReasonCopy(
+        "A follow-up was promised in this thread and nothing has happened for 14 days (last touch Jan 2).",
+      ),
+    ).toBe(
+      "A follow-up was promised, and nothing has happened for 14 days. The last message was Jan 2.",
+    );
+    expect(
+      actionReasonCopy("You sent a proposal-stage message 10 days ago and there has been no reply."),
+    ).toBe("You sent a proposal 10 days ago, and there has been no reply.");
+    expect(
+      actionReasonCopy("Casey Lee asked you something 6 days ago and is still waiting on a reply."),
+    ).toBe("Casey Lee asked you a question 6 days ago and is still waiting.");
+    expect(
+      actionReasonCopy("An introduction in this thread has had no contact for 14 days."),
+    ).toBe("An introduction has had no follow-up for 14 days.");
+    expect(
+      actionReasonCopy("A warm two-way conversation (8 messages) has been dormant for 30 days."),
+    ).toBe("A two-way conversation of 8 messages has been quiet for 30 days.");
+    expect(actionReasonCopy("An explicit promise in this message needs confirmation.")).toBe(
+      "Confirm this promise from the message.",
+    );
     expect(source).not.toContain("String(model.evidence.lifecycle?.value ?? \"unknown\")");
     expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Not known");
     expect(source).toContain('<dt className="text-primary/40">Sentiment</dt>');
