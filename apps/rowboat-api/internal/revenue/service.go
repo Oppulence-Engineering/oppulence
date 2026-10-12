@@ -7325,6 +7325,7 @@ func governanceReceiptPhrases() []governanceReceiptPhrase {
 		{phrase: "kept because of your settings", field: "deletionOutcome", value: "retained_by_user_policy"},
 		{phrase: "nothing to delete", field: "deletionOutcome", value: "not_applicable"},
 		{phrase: "deleted", field: "deletionOutcome", value: "deleted:", prefix: true},
+		{phrase: "the meeting service deleted the original.", field: "deletionOutcome", value: "provider_deleted:", prefix: true},
 		{phrase: "no audio was kept", field: "evidenceClip", value: "not_retained"},
 		{phrase: "the audio that was kept is encrypted", field: "evidenceClip", value: "encrypted"},
 	}
@@ -7473,7 +7474,8 @@ func relationshipHasGovernanceReceiptPrefix(field, prefix string) predicate.Rela
 	return relationshipHasGovernanceReceipt(func(b *sql.Builder, s *sql.Selector) {
 		writeGovernanceText(b, s, field)
 		b.WriteString(" LIKE ")
-		b.Arg(prefix + "%")
+		b.Arg(escapePersonSearchLike(prefix) + "%")
+		b.WriteString(" ESCAPE '!'")
 	})
 }
 

@@ -9582,7 +9582,7 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	saveReceipt(harbor, "consent-harbor-2", ConversationGovernanceReceipt{
 		ReceiptID: "harbor-2", CapturePolicy: "calendar_prompt_or_manual",
 		Routing: "local_only", Region: "local_device", Retention: "untilTranscribed",
-		ParticipantDisclosure: "not_recorded", DeletionOutcome: "scheduled_after_transcription",
+		ParticipantDisclosure: "not_recorded", DeletionOutcome: "provider_deleted:2026-04-02T15:00:00Z",
 		EvidenceClip: "encrypted",
 	})
 	saveDeletion(harbor, "deletion:harbor", "pending", "2026-09-01T00:00:00Z", 1)
@@ -9632,6 +9632,7 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("The meeting service keeps the original. The evidence saved here stays.", "Harbor Ledger")
 	assertCompanyQuery("The meeting service says people were told", "Cedar Mill", "Harbor Ledger")
 	assertCompanyQuery("Deleted", "Harbor Ledger")
+	assertCompanyQuery("The meeting service deleted the original.", "Harbor Ledger")
 	assertCompanyQuery("Consent and governance (1)", "Quill Atelier", "Cedar Mill")
 	assertCompanyQuery("Consent and governance (2)", "Harbor Ledger")
 	assertCompanyQuery("Consent and governance", "Quill Atelier", "Cedar Mill", "Harbor Ledger")
