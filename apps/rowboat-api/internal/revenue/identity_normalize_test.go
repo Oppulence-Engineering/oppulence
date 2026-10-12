@@ -2499,6 +2499,70 @@ func TestRelationshipSearchFindsTheActivityStory(t *testing.T) {
 	assertCompanyQuery("4 messages with local-user")
 }
 
+func TestRelationshipSearchFindsTheActivityPlanReply(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("browser").SetExternalID(name).SetEventType("mutual_action_plan_response_received").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("Counterparty responded to a shared mutual action plan.").
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Plan Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Plan Confirm", `{"mutual_action_plan_response":{"kind":"confirm"}}`)
+	saveRow("Plan Change", `{"mutual_action_plan_response":{"kind":"correct","proposed_value":"Send the quote Friday","comment":"Friday works better."}}`)
+	saveRow("Plan Blocked", `{"mutual_action_plan_response":{"kind":"blocked"}}`)
+	saveRow("Plan Done", `{"mutual_action_plan_response":{"kind":"completed"}}`)
+	saveRow("Plan Comment", `{"mutual_action_plan_response":{"kind":"comment","comment":"Looks right."}}`)
+	saveRow("Plan Token", `{"mutual_action_plan_response":{"kind":"correct","proposed_value":"local-user"}}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("They confirmed the plan", "Plan Confirm")
+	assertCompanyQuery("They suggested a change", "Plan Change", "Plan Token")
+	assertCompanyQuery("Suggested: Send the quote Friday", "Plan Change")
+	assertCompanyQuery("Friday works better.", "Plan Change")
+	assertCompanyQuery("They said this is blocked", "Plan Blocked")
+	assertCompanyQuery("They marked this done", "Plan Done")
+	assertCompanyQuery("They left a comment", "Plan Comment")
+	assertCompanyQuery("Looks right.", "Plan Comment")
+	assertCompanyQuery("Suggested: local-user")
+}
+
 func TestRelationshipSearchFindsTheActivityDirection(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

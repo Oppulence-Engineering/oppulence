@@ -1070,6 +1070,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if story := relationshipSheetActivityStoryMatch(needle); story != nil {
 			parts = append(parts, story)
 		}
+		if plan := relationshipSheetActivityPlanReplyMatch(needle); plan != nil {
+			parts = append(parts, plan)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -4626,6 +4629,140 @@ func activityStoryPromiseUpdate(needle string) (string, string, bool, bool) {
 		return label.status, text, false, true
 	}
 	return "", "", false, false
+}
+
+// relationshipSheetActivityPlanReplyMatch matches a shared-plan reply on the
+// opened activity. The note still stores confirm, correct, blocked, completed,
+// or comment. The activity says what they did, and a suggested change keeps
+// the words they proposed. A speaker id stays off the activity.
+func relationshipSheetActivityPlanReplyMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	var preds []predicate.RelationshipObservation
+	if kind, ok := activityPlanReplyKinds[needle]; ok {
+		preds = append(preds, observationNestedFactEquals("mutual_action_plan_response", "kind", kind))
+	}
+	if text, ok := activityPlanReplySuggested(needle); ok {
+		preds = append(preds, observationNestedFactShown("mutual_action_plan_response", "proposed_value", text))
+	}
+	preds = append(preds, observationNestedFactShown("mutual_action_plan_response", "comment", needle))
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+var activityPlanReplyKinds = map[string]string{
+	"they confirmed the plan":   "confirm",
+	"they suggested a change":   "correct",
+	"they said this is blocked": "blocked",
+	"they marked this done":     "completed",
+	"they left a comment":       "comment",
+}
+
+func activityPlanReplySuggested(needle string) (string, bool) {
+	const prefix = "suggested: "
+	if !strings.HasPrefix(needle, prefix) {
+		return "", false
+	}
+	text := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+	if text == "" {
+		return "", false
+	}
+	return text, true
+}
+
+func observationNestedFactEquals(object, field, token string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("lower(")
+			writeNestedFactTrim(b, s, facts, object, field)
+			b.WriteString(") = ")
+			b.Arg(token)
+		}))
+	})
+}
+
+func observationNestedFactShown(object, field, normalized string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeNormalizedNestedFact(b, s, facts, object, field)
+			b.WriteString(" = ")
+			b.Arg(normalized)
+			b.WriteString(" AND ")
+			writeNestedFactReadable(b, s, facts, object, field)
+			b.WriteString(" AND ")
+			writeNestedFactTrim(b, s, facts, object, field)
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", '')))")
+		}))
+	})
+}
+
+func writeNestedFactTrim(b *sql.Builder, s *sql.Selector, facts, object, field string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'")
+		b.WriteString(object)
+		b.WriteString("'->>'")
+		b.WriteString(field)
+		b.WriteString("', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(CAST(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.")
+	b.WriteString(object)
+	b.WriteString(".")
+	b.WriteString(field)
+	b.WriteString("') AS TEXT), ''))")
+}
+
+func writeNormalizedNestedFact(b *sql.Builder, s *sql.Selector, facts, object, field string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		writeNestedFactTrim(b, s, facts, object, field)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	writeNestedFactTrim(b, s, facts, object, field)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
+}
+
+func writeNestedFactReadable(b *sql.Builder, s *sql.Selector, facts, object, field string) {
+	writeNestedFactTrim(b, s, facts, object, field)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(" ~ ")
+		b.Arg(`[^a-z0-9_:-]`)
+		return
+	}
+	b.WriteString(" GLOB ")
+	b.Arg("*[^a-z0-9_:-]*")
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {
