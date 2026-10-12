@@ -68,6 +68,8 @@ jobs:
           cache-dependency-path: apps/rowboat-www/package-lock.json
       - run: npm ci
         working-directory: apps/rowboat-www
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/rowboat-www
       - run: npm run verify:ci
         working-directory: apps/rowboat-www
 
