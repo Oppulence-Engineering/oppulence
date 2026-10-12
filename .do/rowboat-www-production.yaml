@@ -1,6 +1,11 @@
 alerts:
 - rule: DEPLOYMENT_FAILED
 - rule: DOMAIN_FAILED
+domains:
+- domain: oppulence.io
+  type: PRIMARY
+- domain: www.oppulence.io
+  type: ALIAS
 features:
 - buildpack-stack=ubuntu-22
 ingress:
