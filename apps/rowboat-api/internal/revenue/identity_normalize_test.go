@@ -2699,6 +2699,60 @@ func TestRelationshipSearchFindsTheActivityCaveat(t *testing.T) {
 	assertCompanyQuery("Echo cancellation was unavailable, so the microphone was recorded without it.", "Caveat Echo")
 }
 
+func TestRelationshipSearchFindsTheActivityInvite(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("calendar").SetExternalID(name).SetEventType("meeting_attendance_recorded").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("Attendance").
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Invite Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Invite Ada", `{"attendance_confidence":{"ada@acme.com":0.9,"sam@acme.com":0.6,"local-user":0.9,"speaker_2":0.6}}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Accepted the invite: ada@acme.com", "Invite Ada")
+	assertCompanyQuery("Had not accepted: sam@acme.com", "Invite Ada")
+	assertCompanyQuery("Accepted the invite: local-user")
+	assertCompanyQuery("Had not accepted: speaker_2")
+}
+
 func TestRelationshipSearchFindsTheActivityDirection(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

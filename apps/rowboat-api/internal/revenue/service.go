@@ -1079,6 +1079,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if caveat := relationshipSheetActivityCaveatMatch(needle); caveat != nil {
 			parts = append(parts, caveat)
 		}
+		if invite := relationshipSheetActivityInviteMatch(needle); invite != nil {
+			parts = append(parts, invite)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -4635,6 +4638,89 @@ func activityStoryPromiseUpdate(needle string) (string, string, bool, bool) {
 		return label.status, text, false, true
 	}
 	return "", "", false, false
+}
+
+// relationshipSheetActivityInviteMatch matches who accepted the invite on
+// the opened attendance activity. Accepted is 0.9. Invited and not confirmed
+// is 0.6. A speaker id stays off the activity.
+func relationshipSheetActivityInviteMatch(needle string) predicate.Relationship {
+	const accepted = "accepted the invite: "
+	const waiting = "had not accepted: "
+	var score float64
+	var who string
+	switch {
+	case strings.HasPrefix(needle, accepted):
+		who = strings.TrimSpace(strings.TrimPrefix(needle, accepted))
+		score = 0.9
+	case strings.HasPrefix(needle, waiting):
+		who = strings.TrimSpace(strings.TrimPrefix(needle, waiting))
+		score = 0.6
+	default:
+		return nil
+	}
+	if who == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationInviteConfidence(who, score))
+}
+
+func observationInviteConfidence(who string, score float64) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'attendance_confidence') = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'attendance_confidence') AS att(key, value) WHERE abs(att.value::double precision - ")
+				b.Arg(score)
+				b.WriteString(") < 0.001 AND ")
+				writeNormalizedSQLText(b, s, "att.key")
+				b.WriteString(" = ")
+				b.Arg(who)
+				b.WriteString(" AND att.key ~ ")
+				b.Arg(`[^a-z0-9_:-]`)
+				b.WriteString(")")
+				return
+			}
+			b.WriteString("json_valid(")
+			b.WriteString(facts)
+			b.WriteString(") AND json_type(")
+			b.WriteString(facts)
+			b.WriteString(", '$.attendance_confidence') = 'object' AND EXISTS (SELECT 1 FROM json_each(")
+			b.WriteString(facts)
+			b.WriteString(", '$.attendance_confidence') AS att WHERE abs(CAST(att.value AS REAL) - ")
+			b.Arg(score)
+			b.WriteString(") < 0.001 AND ")
+			writeNormalizedSQLText(b, s, "att.key")
+			b.WriteString(" = ")
+			b.Arg(who)
+			b.WriteString(" AND att.key GLOB ")
+			b.Arg("*[^a-z0-9_:-]*")
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeNormalizedSQLText(b *sql.Builder, s *sql.Selector, expr string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		b.WriteString(expr)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	b.WriteString(expr)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
 }
 
 // relationshipSheetActivityCaveatMatch matches a capture note on the opened
