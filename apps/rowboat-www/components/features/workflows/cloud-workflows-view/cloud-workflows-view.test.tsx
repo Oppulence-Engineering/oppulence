@@ -361,6 +361,8 @@ describe("CloudWorkflowsView", () => {
     expect(runEventLabel("desktop.ask_human_request")).toBe("Asked for a decision");
     expect(runEventLabel("desktop.spawn_subflow")).toBe("Started a related run");
     expect(runEventLabel("runtime.limit_exceeded")).toBe("Run limit reached");
+    expect(runEventLabel("temporal.retry_requested")).toBe("Trying again");
+    expect(runEventLabel("temporal.cancel_requested")).toBe("Stopping");
   });
 
   it("describes a transcript row without the worker payload", () => {
