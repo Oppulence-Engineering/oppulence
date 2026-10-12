@@ -798,7 +798,7 @@ function activityCaveatLine(value: string): string | null {
     return `${String(n)} of ${String(total)} ${people} had not accepted.`;
   }
   const guardian = /^capture guardian: [a-z0-9_]+ — (.+)$/.exec(text);
-  if (guardian?.[1]) return guardian[1].trim();
+  if (guardian?.[1]) return activityCaptureImpact(guardian[1].trim());
   if (text === "renderer fallback: timed audio evidence was not retained") {
     return "The timed recording was not saved with this transcript.";
   }
@@ -846,6 +846,37 @@ function activityCaveatLine(value: string): string | null {
     }
   }
   return text;
+}
+
+/**
+ * Capture health stores the recorder's sentence after the kind. The activity
+ * says which side stopped. A sentence that is already plain stays.
+ */
+const CAPTURE_HEALTH_IMPACTS: Record<string, string> = {
+  "The microphone track is advancing but contains no audible signal.":
+    "The microphone is on, but it is silent.",
+  "The microphone track stopped advancing while capture continues.":
+    "The microphone stopped while the meeting was still being recorded.",
+  "Other participants may not be captured.":
+    "The other side of the conversation may not be recorded.",
+  "System audio is advancing but contains no audible signal.":
+    "The other side is on, but it is silent.",
+  "System audio stopped advancing while the microphone continues.":
+    "The other side stopped while your microphone kept recording.",
+  "The recorder stopped reporting progress and evidence may be incomplete.":
+    "The recorder stopped reporting, so this meeting may be incomplete.",
+  "The recorder exited unexpectedly.": "The recorder stopped unexpectedly.",
+  "Capture may stop before the meeting ends.": "Recording may stop before the meeting ends.",
+  "On-device transcription cannot start with the selected model.":
+    "Transcription cannot start with the selected model.",
+  "Live notes are not keeping up, but the durable audio capture continues.":
+    "Live notes are behind. The recording is still going.",
+  "The recording is safe but its transcript is not progressing.":
+    "The recording is saved, but the transcript has stopped.",
+};
+
+function activityCaptureImpact(impact: string): string {
+  return CAPTURE_HEALTH_IMPACTS[impact] ?? impact;
 }
 
 /**
