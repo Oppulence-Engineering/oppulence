@@ -2630,6 +2630,75 @@ func TestRelationshipSearchFindsTheActivityReview(t *testing.T) {
 	assertCompanyQuery("Corrected to: local-user")
 }
 
+func TestRelationshipSearchFindsTheActivityCaveat(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("calendar").SetExternalID(name).SetEventType("meeting_attendance_recorded").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("2 external participant(s) on \"Q3 review\"").
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Caveat Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Caveat Invite", `{"capture_caveats":["Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined."]}`)
+	saveRow("Caveat Spoke", `{"capture_caveats":["speaker assignment requires review"]}`)
+	saveRow("Caveat Share", `{"capture_caveats":["2 participants shared one audio channel; no per-speaker attribution was attempted."]}`)
+	saveRow("Caveat Room", `{"capture_caveats":["1 invitee(s) excluded as rooms, resources, or notetaker bots."]}`)
+	saveRow("Caveat Rooms", `{"capture_caveats":["2 invitee(s) excluded as rooms, resources, or notetaker bots."]}`)
+	saveRow("Caveat Wait", `{"capture_caveats":["1 of 3 invitee(s) had not accepted at capture time."]}`)
+	saveRow("Caveat Guest", `{"capture_caveats":["remote speaker was resolved from the 1:1 calendar attendee; the system track may still contain other voices"]}`)
+	saveRow("Caveat Mic", `{"capture_caveats":["capture guardian: microphone_silent — The microphone track is advancing but contains no audible signal."]}`)
+	saveRow("Caveat Side", `{"capture_caveats":["capture guardian: microphone_missing — Your side of the conversation is not being captured."]}`)
+	saveRow("Caveat Echo", `{"capture_caveats":["mic_voice_processing_unavailable: echo cancellation unavailable — recording raw mic"]}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Someone on the invite may not have joined.", "Caveat Invite")
+	assertCompanyQuery("Who spoke is not confirmed.", "Caveat Spoke")
+	assertCompanyQuery("2 people shared one audio channel.", "Caveat Share")
+	assertCompanyQuery("1 room or bot was left off.", "Caveat Room")
+	assertCompanyQuery("2 rooms or bots were left off.", "Caveat Rooms")
+	assertCompanyQuery("1 of 3 people had not accepted.", "Caveat Wait")
+	assertCompanyQuery("The other person was named from the guest list.", "Caveat Guest")
+	assertCompanyQuery("The microphone is on, but it is silent.", "Caveat Mic")
+	assertCompanyQuery("Your side of the conversation is not being captured.", "Caveat Side")
+	assertCompanyQuery("Echo cancellation was unavailable, so the microphone was recorded without it.", "Caveat Echo")
+}
+
 func TestRelationshipSearchFindsTheActivityDirection(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

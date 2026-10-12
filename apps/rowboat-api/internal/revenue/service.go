@@ -1076,6 +1076,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if review := relationshipSheetActivityReviewMatch(needle); review != nil {
 			parts = append(parts, review)
 		}
+		if caveat := relationshipSheetActivityCaveatMatch(needle); caveat != nil {
+			parts = append(parts, caveat)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -4632,6 +4635,230 @@ func activityStoryPromiseUpdate(needle string) (string, string, bool, bool) {
 		return label.status, text, false, true
 	}
 	return "", "", false, false
+}
+
+// relationshipSheetActivityCaveatMatch matches a capture note on the opened
+// activity. The note still stores the recorder sentence. The activity says
+// who may have missed the meeting, who shared a channel, and which side of
+// the recording stopped. "Your side of the conversation is not being captured."
+// stays that sentence.
+func relationshipSheetActivityCaveatMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	var preds []predicate.RelationshipObservation
+	if stored, ok := activityCaveatExact[needle]; ok {
+		preds = append(preds, observationCaveatEquals(stored))
+	}
+	for _, prefix := range activityCaveatPrefixes[needle] {
+		preds = append(preds, observationCaveatPrefix(prefix))
+	}
+	if impact, ok := activityCaveatGuardian[needle]; ok {
+		preds = append(preds, observationCaveatGuardian(impact))
+	}
+	if stored, ok := activityCaveatShared(needle); ok {
+		preds = append(preds, observationCaveatEquals(stored))
+	}
+	if stored, ok := activityCaveatRooms(needle); ok {
+		preds = append(preds, observationCaveatEquals(stored))
+	}
+	if stored, ok := activityCaveatPending(needle); ok {
+		preds = append(preds, observationCaveatEquals(stored))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+var activityCaveatExact = map[string]string{
+	"someone on the invite may not have joined":              "Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined.",
+	"who spoke is not confirmed":                             "speaker assignment requires review",
+	"the timed recording was not saved with this transcript": "renderer fallback: timed audio evidence was not retained",
+	"a long stretch was split into shorter excerpts":         "long source segments were split into bounded evidence excerpts",
+	"the transcript was shortened":                           "transcript was truncated at the canonical evidence size limit",
+	"speaker names apply only to this meeting":               "remote speaker labels are meeting-scoped",
+}
+
+var activityCaveatPrefixes = map[string][]string{
+	"the other person was named from the guest list":                                            {"remote speaker was resolved from the 1:1 calendar attendee"},
+	"the recorder stopped before it finished saving. the two sides may be slightly out of sync": {"recovered_without_meta:"},
+	"the microphone could not be recorded": {
+		"mic_raw_fallback_failed:",
+		"mic_format_unsupported:",
+	},
+	"echo cancellation was unavailable, so the microphone was recorded without it":                     {"mic_voice_processing_unavailable:"},
+	"echo cancellation was silent, so the microphone was recorded without it":                          {"mic_voice_processing_silent:"},
+	"the other side could not be recorded. allow screen and system audio recording in system settings": {"system_tap_denied:"},
+	"the other side could not be recorded": {
+		"system_tap_format:",
+		"system_aggregate_failed:",
+		"system_ioproc_failed:",
+		"system_device_start_failed:",
+	},
+	"the other side could not be saved":                                     {"system_writer_failed:"},
+	"the microphone is blocked. allow microphone access in system settings": {"mic_permission_denied:"},
+	"the microphone could not be started":                                   {"mic_engine_start_failed:"},
+	"the microphone recording could not be saved":                           {"mic_writer_failed:"},
+	"the recording could not be saved": {
+		"standby_flush_failed:",
+		"standby_promote_failed:",
+	},
+}
+
+var activityCaveatGuardian = map[string]string{
+	"the microphone is on, but it is silent":                            "The microphone track is advancing but contains no audible signal.",
+	"the microphone stopped while the meeting was still being recorded": "The microphone track stopped advancing while capture continues.",
+	"the other side of the conversation may not be recorded":            "Other participants may not be captured.",
+	"the other side is on, but it is silent":                            "System audio is advancing but contains no audible signal.",
+	"the other side stopped while your microphone kept recording":       "System audio stopped advancing while the microphone continues.",
+	"the recorder stopped reporting, so this meeting may be incomplete": "The recorder stopped reporting progress and evidence may be incomplete.",
+	"the recorder stopped unexpectedly":                                 "The recorder exited unexpectedly.",
+	"recording may stop before the meeting ends":                        "Capture may stop before the meeting ends.",
+	"transcription cannot start with the selected model":                "On-device transcription cannot start with the selected model.",
+	"live notes are behind. the recording is still going":               "Live notes are not keeping up, but the durable audio capture continues.",
+	"the recording is saved, but the transcript has stopped":            "The recording is safe but its transcript is not progressing.",
+	"your side of the conversation is not being captured":               "Your side of the conversation is not being captured.",
+}
+
+var (
+	activityCaveatSharedPattern  = regexp.MustCompile(`^(\d+) (person|people) shared one audio channel$`)
+	activityCaveatRoomsPattern   = regexp.MustCompile(`^(\d+) rooms or bots were left off$`)
+	activityCaveatPendingPattern = regexp.MustCompile(`^(\d+) of (\d+) (person|people) had not accepted$`)
+)
+
+func activityCaveatShared(needle string) (string, bool) {
+	if needle == "1 person shared one audio channel" {
+		return "1 participants shared one audio channel; no per-speaker attribution was attempted.", true
+	}
+	match := activityCaveatSharedPattern.FindStringSubmatch(needle)
+	if match == nil || match[2] != "people" {
+		return "", false
+	}
+	count, ok := activityStoryCount(match[1])
+	if !ok || count == 1 {
+		return "", false
+	}
+	return fmt.Sprintf("%d participants shared one audio channel; no per-speaker attribution was attempted.", count), true
+}
+
+func activityCaveatRooms(needle string) (string, bool) {
+	if needle == "1 room or bot was left off" {
+		return "1 invitee(s) excluded as rooms, resources, or notetaker bots.", true
+	}
+	match := activityCaveatRoomsPattern.FindStringSubmatch(needle)
+	if match == nil {
+		return "", false
+	}
+	count, ok := activityStoryCount(match[1])
+	if !ok || count == 1 {
+		return "", false
+	}
+	return fmt.Sprintf("%d invitee(s) excluded as rooms, resources, or notetaker bots.", count), true
+}
+
+func activityCaveatPending(needle string) (string, bool) {
+	match := activityCaveatPendingPattern.FindStringSubmatch(needle)
+	if match == nil {
+		return "", false
+	}
+	got, gotOK := activityStoryCount(match[1])
+	total, totalOK := activityStoryCount(match[2])
+	if !gotOK || !totalOK {
+		return "", false
+	}
+	if total == 1 && match[3] != "person" {
+		return "", false
+	}
+	if total != 1 && match[3] != "people" {
+		return "", false
+	}
+	return fmt.Sprintf("%d of %d invitee(s) had not accepted at capture time.", got, total), true
+}
+
+func observationCaveatEquals(stored string) predicate.RelationshipObservation {
+	return observationCaveatWhere(func(b *sql.Builder, value string) {
+		b.WriteString(value)
+		b.WriteString(" = ")
+		b.Arg(stored)
+	})
+}
+
+func observationCaveatPrefix(prefix string) predicate.RelationshipObservation {
+	return observationCaveatWhere(func(b *sql.Builder, value string) {
+		b.WriteString(value)
+		b.WriteString(" LIKE ")
+		b.Arg(escapePersonSearchLike(prefix) + "%")
+		b.WriteString(" ESCAPE '!'")
+	})
+}
+
+func observationCaveatGuardian(impact string) predicate.RelationshipObservation {
+	const start = "capture guardian:"
+	const sep = " \u2014 "
+	return observationCaveatWhere(func(b *sql.Builder, value string) {
+		b.WriteString("length(")
+		b.WriteString(value)
+		b.WriteString(") > length(")
+		b.Arg(sep + impact)
+		b.WriteString(") AND substr(")
+		b.WriteString(value)
+		b.WriteString(", 1, length(")
+		b.Arg(start)
+		b.WriteString(")) = ")
+		b.Arg(start)
+		b.WriteString(" AND substr(")
+		b.WriteString(value)
+		b.WriteString(", length(")
+		b.WriteString(value)
+		b.WriteString(") - length(")
+		b.Arg(impact)
+		b.WriteString(") - length(")
+		b.Arg(sep)
+		b.WriteString(") + 1, length(")
+		b.Arg(sep)
+		b.WriteString(")) = ")
+		b.Arg(sep)
+		b.WriteString(" AND substr(")
+		b.WriteString(value)
+		b.WriteString(", length(")
+		b.WriteString(value)
+		b.WriteString(") - length(")
+		b.Arg(impact)
+		b.WriteString(") + 1) = ")
+		b.Arg(impact)
+	})
+}
+
+func observationCaveatWhere(match func(b *sql.Builder, value string)) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'capture_caveats') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'capture_caveats') AS caveat(value) WHERE ")
+				match(b, "caveat.value")
+				b.WriteString(")")
+				return
+			}
+			b.WriteString("json_valid(")
+			b.WriteString(facts)
+			b.WriteString(") AND json_type(")
+			b.WriteString(facts)
+			b.WriteString(", '$.capture_caveats') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
+			b.WriteString(facts)
+			b.WriteString(", '$.capture_caveats') AS caveat WHERE ")
+			match(b, "caveat.value")
+			b.WriteString(")")
+		}))
+	})
 }
 
 // relationshipSheetActivityPlanReplyMatch matches a shared-plan reply on the
