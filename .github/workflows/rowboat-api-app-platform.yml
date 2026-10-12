@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   quality:
@@ -30,7 +31,7 @@ jobs:
 
   deploy:
     needs: quality
-    uses: Oppulence-Engineering/shared-workflows/.github/workflows/digitalocean-app-platform.yml@71f3fa14444b21e57753b490746667b58421a452 # v1.1.2
+    uses: Oppulence-Engineering/shared-workflows/.github/workflows/digitalocean-app-platform.yml@39e73ce91a0280405ae5bfd35ef7834b2f96c58f # v1.2.0
     with:
       app_id: ${{ vars.ROWBOAT_API_APP_ID }}
       app_spec_path: .do/rowboat-api-production.json
@@ -38,6 +39,12 @@ jobs:
       environment: production
       doctl_version: 1.183.0
       timeout_minutes: 90
+      build_image: true
+      image_registry_type: GHCR
+      image_registry: oppulence-engineering
+      image_repository: desktop-assistant-rowboat-api
+      dockerfile_path: apps/rowboat-api/Dockerfile
+      build_context: .
       healthcheck_url: ${{ vars.ROWBOAT_API_HEALTHCHECK_URL }}
       healthcheck_attempts: 30
       healthcheck_interval_seconds: 10
