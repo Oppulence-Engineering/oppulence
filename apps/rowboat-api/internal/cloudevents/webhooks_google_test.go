@@ -13,6 +13,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googlechannel"
 	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -215,7 +216,8 @@ func TestGoogleWebhookRequiresActiveWatch(t *testing.T) {
 func TestCalendarNotification(t *testing.T) {
 	client, u := setup(t)
 	connectGoogle(t, client, u, "me@gmail.com")
-	addGoogleWatch(t, client, u, "calendar", "me@gmail.com", "gcal:me@gmail.com:abc", "res-1")
+	channelID := googlechannel.New("gcal", "me@gmail.com")
+	addGoogleWatch(t, client, u, "calendar", "me@gmail.com", channelID, "res-1")
 	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
 	srv := newWebhookServer(t, h)
 
@@ -236,19 +238,19 @@ func TestCalendarNotification(t *testing.T) {
 	}
 
 	// sync handshake → plain 200, nothing stored.
-	if status := send("sync", "gcal:me@gmail.com:abc", "1"); status != http.StatusOK {
+	if status := send("sync", channelID, "1"); status != http.StatusOK {
 		t.Fatalf("sync: %d, want 200", status)
 	}
 	// real update → 202 + event.
-	if status := send("exists", "gcal:me@gmail.com:abc", "2"); status != http.StatusAccepted {
+	if status := send("exists", channelID, "2"); status != http.StatusAccepted {
 		t.Fatalf("exists: %d, want 202", status)
 	}
 	ev := client.CloudEvent.Query().OnlyX(auth.WithInternal(context.Background()))
-	if ev.Source != SourceGoogleCalendar || ev.DedupeKey != "gcal:gcal:me@gmail.com:abc:2" {
+	if ev.Source != SourceGoogleCalendar || ev.DedupeKey != "gcal:"+channelID+":2" {
 		t.Fatalf("event = %s/%s", ev.Source, ev.DedupeKey)
 	}
 	// duplicate message number → 200 deduped, still one row.
-	if status := send("exists", "gcal:me@gmail.com:abc", "2"); status != http.StatusOK {
+	if status := send("exists", channelID, "2"); status != http.StatusOK {
 		t.Fatalf("dup: %d, want 200", status)
 	}
 	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
@@ -256,7 +258,7 @@ func TestCalendarNotification(t *testing.T) {
 	}
 	// A valid shared token does not authorize an invented channel for the same
 	// account; only the exact active GoogleWatch registration is accepted.
-	if status := send("exists", "gcal:me@gmail.com:forged", "3"); status != http.StatusOK {
+	if status := send("exists", googlechannel.New("gcal", "me@gmail.com"), "3"); status != http.StatusOK {
 		t.Fatalf("forged channel: %d, want 200 drop", status)
 	}
 	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
