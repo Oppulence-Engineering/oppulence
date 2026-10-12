@@ -885,7 +885,7 @@ export function workflowFailureCopy(detail: string): string | null {
     case "only failed or stopped runs can be retried":
       return "Only a failed or stopped run can be tried again.";
     case "a retry for this run is already in progress":
-      return "A retry for this run is already going.";
+      return "This run is already being tried again.";
     case "only api-target runs can be retried by the API worker":
       return "This run can be tried again from the desktop app.";
     case "temporal is not configured":

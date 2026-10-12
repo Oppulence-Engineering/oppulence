@@ -1317,6 +1317,9 @@ describe("workflow revision conflict", () => {
     expect(workflowFailureCopy("only failed or stopped runs can be retried")).toBe(
       "Only a failed or stopped run can be tried again.",
     );
+    expect(workflowFailureCopy("a retry for this run is already in progress")).toBe(
+      "This run is already being tried again.",
+    );
     expect(workflowFailureCopy("temporal is not configured")).toBe(
       "Workflows cannot be started right now. Try again later.",
     );
