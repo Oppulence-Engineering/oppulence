@@ -65,6 +65,12 @@ it("hides model and workflow details from agent failures", () => {
   );
   expect(
     friendlyAgentError(
+      "activity StartToClose timeout (type: rowboat.background_tasks.execute_api_task.v1, scheduledEventID: 11, startedEventID: 12, timeoutType: StartToClose)",
+      "run",
+    ),
+  ).toBe("This run took too long. Try again.");
+  expect(
+    friendlyAgentError(
       "activity error (type: rowboat.background_tasks.execute_api_task.v1, scheduledEventID: 11): connector_unavailable: google is not connected for this user",
       "run",
     ),

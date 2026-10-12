@@ -112,6 +112,9 @@ export function friendlyAgentError(message: string, subject: "agent" | "run" = "
   if (/run went silent: no heartbeat/i.test(message)) {
     return "This run stopped responding. Try again.";
   }
+  if (/starttoclose timeout|timeoutType: StartToClose|activity timeout/i.test(message)) {
+    return "This run took too long. Try again.";
+  }
   if (/activity error|scheduledEventID|startedEventID/i.test(message)) {
     return subject === "run"
       ? "This run could not finish. Please try again."
