@@ -579,6 +579,21 @@ it("names an overdue promise in an older attention sentence", () => {
     "A confirmed promise is overdue by 3 days.",
   );
   expect(attentionExplanationCopy("No reply in 14 days")).toBe("No reply in 14 days");
+  expect(
+    attentionExplanationCopy(
+      "Google evidence is incomplete, stale, rebuilding, or missing a required permission.",
+    ),
+  ).toBe("Google needs to be read again or reconnected.");
+  expect(
+    attentionExplanationCopy(
+      "Google and Slack evidence is incomplete, stale, rebuilding, or missing a required permission.",
+    ),
+  ).toBe("Google and Slack need to be read again or reconnected.");
+  expect(
+    attentionExplanationCopy(
+      "Source evidence is incomplete, stale, rebuilding, or missing a required permission.",
+    ),
+  ).toBe("A source needs to be read again or reconnected.");
 });
 
 it("names a shared plan without the stored hash or a redacted owner", () => {

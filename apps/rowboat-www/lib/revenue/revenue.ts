@@ -1035,14 +1035,29 @@ const ATTENTION_REASON_LABELS: Record<string, string> = {
 const STORED_OVERDUE_PROMISE =
   /^A confirmed commitment is overdue by (\d+) day(s?)\.$/;
 
-/** Older attention rows said commitment. The company sheet says promise. */
+const SOURCE_DEGRADATION =
+  /^(.+) evidence is incomplete, stale, rebuilding, or missing a required permission\.$/;
+
+/**
+ * Older attention rows said commitment. A source that stopped reading lists
+ * four internal states. The queue names the promise, or says to read that
+ * source again.
+ */
 export function attentionExplanationCopy(explanation: string | null | undefined): string {
   const raw = explanation?.trim() ?? "";
   const match = STORED_OVERDUE_PROMISE.exec(raw);
-  if (!match?.[1]) return raw;
-  const days = Number(match[1]);
-  const suffix = days === 1 ? "" : "s";
-  return `A confirmed promise is overdue by ${days} day${suffix}.`;
+  if (match?.[1]) {
+    const days = Number(match[1]);
+    const suffix = days === 1 ? "" : "s";
+    return `A confirmed promise is overdue by ${days} day${suffix}.`;
+  }
+  const degraded = SOURCE_DEGRADATION.exec(raw);
+  if (degraded?.[1]) {
+    const who = degraded[1] === "Source" ? "A source" : degraded[1];
+    const verb = who === "A source" || !/\band\b|,/.test(who) ? "needs" : "need";
+    return `${who} ${verb} to be read again or reconnected.`;
+  }
+  return raw;
 }
 
 /** Impact lists attention reason codes. The queue already has a sentence. */
