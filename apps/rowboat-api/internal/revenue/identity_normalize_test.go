@@ -6498,7 +6498,8 @@ func TestRelationshipSearchFindsTheActionOutcome(t *testing.T) {
 	}
 	assertCompanyQuery("The email action failed. Review it before trying again.", "Quill Atelier")
 	assertCompanyQuery("The slack action may have gone through. Review it before trying again.", "Lumen Packet")
-	assertCompanyQuery("The call action needs a manual review before it can be tried again.", "Cedar Mill")
+	assertCompanyQuery("The call action needs a person to review it before you try again.", "Cedar Mill")
+	assertCompanyQuery("The call action needs a manual review before it can be tried again.")
 	assertCompanyQuery("Action needs review", "Quill Atelier", "Lumen Packet", "Cedar Mill")
 	assertCompanyQuery("action failed", "Quill Atelier")
 	assertCompanyQuery("may have gone through", "Lumen Packet")

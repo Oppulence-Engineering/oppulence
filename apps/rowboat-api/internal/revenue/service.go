@@ -4289,8 +4289,8 @@ func attentionRiskSentence(count int, health string) string {
 }
 
 // relationshipSheetActionOutcomeMatch matches the sentence for a send that
-// failed, may have gone through, or needs a manual review. "The email action
-// failed" stays off a company whose failed send was Slack.
+// failed, may have gone through, or needs a person to review it. "The email
+// action failed" stays off a company whose failed send was Slack.
 func relationshipSheetActionOutcomeMatch(needle string) predicate.Relationship {
 	type outcomeWarning struct {
 		phrase string
@@ -4310,7 +4310,7 @@ func relationshipSheetActionOutcomeMatch(needle string) predicate.Relationship {
 				relationshipHasActionOutcome(kind, "ambiguous"),
 			},
 			outcomeWarning{
-				normalizePersonSearch(actionOutcomeExplanation(channel, "pending", "manual_review")),
+				normalizePersonSearch(attentionManualReviewSentence(channel)),
 				relationshipHasActionOutcome(kind, "manual_review"),
 			},
 		)
@@ -4337,6 +4337,21 @@ func relationshipSheetActionOutcomeMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// attentionManualReviewSentence is the line the attention queue prints when a
+// send needs a person to look at it. The stored explanation still says manual review.
+func attentionManualReviewSentence(channel string) string {
+	kind := strings.ToLower(attentionTokenLabel(channel))
+	switch kind {
+	case "slack":
+		kind = "Slack"
+	case "crm":
+		kind = "CRM"
+	case "crm task":
+		kind = "CRM task"
+	}
+	return fmt.Sprintf("The %s action needs a person to review it before you try again.", kind)
 }
 
 func relationshipHasActionOutcome(kind, mode string) predicate.Relationship {
