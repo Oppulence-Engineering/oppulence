@@ -303,6 +303,15 @@ describe("source product copy", () => {
         channel: "email",
       }).join("\n"),
     ).not.toMatch(/outcome_kind|action_id|meeting_booked|recommendation_revision/);
+    expect(activityHeading("user", "conversation_review_decided")).toBe(
+      "Added by you · Suggestion decided",
+    );
+    expect(activityHeading("user", "relationship_contradiction_resolved")).toBe(
+      "Added by you · Detail chosen",
+    );
+    expect(activityHeading("user", "conversation_review_decided")).not.toContain(
+      "conversation_review_decided",
+    );
     expect(activityHeading("gmail", "thread.updated")).not.toContain("thread.updated");
     expect(activityHeading("desktop_note", "note")).not.toContain("desktop_note");
     expect(mailAccessReason("mailbox_owner")).toBe("Your mailbox");

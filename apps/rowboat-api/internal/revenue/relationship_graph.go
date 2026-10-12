@@ -950,6 +950,10 @@ func graphEventLabel(eventType string) string {
 		return "Note removed"
 	case "commitment_confirmed":
 		return "Promise confirmed"
+	case "conversation_review_decided":
+		return "Suggestion decided"
+	case "relationship_contradiction_resolved":
+		return "Detail chosen"
 	default:
 		return graphTokenLabel(eventType)
 	}

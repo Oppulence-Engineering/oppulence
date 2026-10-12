@@ -373,6 +373,12 @@ func TestGraphSourceLabelUsesTheProductTitle(t *testing.T) {
 	if got := graphEventLabel("custom.event_name"); got != "Custom Event Name" {
 		t.Fatalf("unknown event label = %q", got)
 	}
+	if got := graphEventLabel("conversation_review_decided"); got != "Suggestion decided" {
+		t.Fatalf("conversation_review_decided label = %q", got)
+	}
+	if got := graphEventLabel("relationship_contradiction_resolved"); got != "Detail chosen" {
+		t.Fatalf("relationship_contradiction_resolved label = %q", got)
+	}
 }
 
 func TestRelationshipGraphPagesPastTheNewestCompanies(t *testing.T) {
