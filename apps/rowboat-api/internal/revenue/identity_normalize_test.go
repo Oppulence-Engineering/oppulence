@@ -2563,6 +2563,73 @@ func TestRelationshipSearchFindsTheActivityPlanReply(t *testing.T) {
 	assertCompanyQuery("Suggested: local-user")
 }
 
+func TestRelationshipSearchFindsTheActivityReview(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, event, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("user").SetExternalID(name).SetEventType(event).
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Review Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	decided := "User decided a proposed conversation change."
+	saveRow("Review Approve", "conversation_review_decided", decided, `{"review_decision":{"kind":"approve","reason":"User decided a proposed conversation change."}}`)
+	saveRow("Review Reject", "conversation_review_decided", decided, `{"review_decision":{"kind":"reject","reason":"User decided a proposed conversation change."}}`)
+	saveRow("Review Fix", "conversation_review_decided", decided, `{"review_decision":{"kind":"correct","corrected_value":"Security review is complete","reason":"The customer stated this directly."}}`)
+	saveRow("Review Token", "conversation_review_decided", decided, `{"review_decision":{"kind":"correct","corrected_value":"local-user","reason":"User decided a proposed conversation change."}}`)
+	saveRow("Review Aside", "conversation_review_decided", decided, `{"review_decision":{"kind":"defer"}}`)
+	saveRow("Review Later", "conversation_review_decided", decided, `{"review_decision":{"kind":"defer","defer_until":"2026-10-04T15:04:05.123Z"}}`)
+	saveRow("Review Words", "conversation_evidence_corrected", "User corrected reviewed conversation evidence.", `{"review_correction":{"corrected_value":"Avery","reason":"Calendar attendee confirmed the speaker."}}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("You approved this", "Review Approve")
+	assertCompanyQuery("You rejected this", "Review Reject")
+	assertCompanyQuery("Corrected to: Security review is complete", "Review Fix")
+	assertCompanyQuery("The customer stated this directly.", "Review Fix")
+	assertCompanyQuery("You corrected this", "Review Token")
+	assertCompanyQuery("You set this aside", "Review Aside")
+	assertCompanyQuery("You set this aside until Oct 4, 2026", "Review Later")
+	assertCompanyQuery("Corrected to: Avery", "Review Words")
+	assertCompanyQuery("Calendar attendee confirmed the speaker.", "Review Words")
+	assertCompanyQuery("Corrected to: local-user")
+}
+
 func TestRelationshipSearchFindsTheActivityDirection(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

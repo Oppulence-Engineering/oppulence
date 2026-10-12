@@ -1073,6 +1073,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if plan := relationshipSheetActivityPlanReplyMatch(needle); plan != nil {
 			parts = append(parts, plan)
 		}
+		if review := relationshipSheetActivityReviewMatch(needle); review != nil {
+			parts = append(parts, review)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -4763,6 +4766,214 @@ func writeNestedFactReadable(b *sql.Builder, s *sql.Selector, facts, object, fie
 	}
 	b.WriteString(" GLOB ")
 	b.Arg("*[^a-z0-9_:-]*")
+}
+
+// relationshipSheetActivityReviewMatch matches a review decision and a
+// correction on the opened activity. The note still stores approve, reject,
+// correct, or defer. The activity says what you did. A stored review id stays
+// off the activity, and the model reason stays off when it only repeats the row.
+func relationshipSheetActivityReviewMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	var preds []predicate.RelationshipObservation
+	if kind, ok := activityReviewKinds[needle]; ok {
+		preds = append(preds, observationNestedFactEquals("review_decision", "kind", kind))
+	}
+	if needle == "you corrected this" {
+		preds = append(preds, observationReviewCorrectedWithoutValue())
+	}
+	if needle == "you set this aside" {
+		preds = append(preds, observationReviewDeferredWithoutDay())
+	}
+	if month, day, year, ok := activityReviewDeferDay(needle); ok {
+		preds = append(preds, observationReviewDeferredOn(month, day, year))
+	}
+	if text, ok := activityReviewCorrectedTo(needle); ok {
+		preds = append(preds, observationReviewCorrectedTo("review_decision", text))
+		preds = append(preds, observationNestedFactShown("review_correction", "corrected_value", text))
+	}
+	preds = append(preds, observationReviewReasonShown("review_decision", needle, "User decided a proposed conversation change."))
+	preds = append(preds, observationReviewReasonShown("review_correction", needle,
+		"User corrected focused conversation evidence.",
+		"User corrected conversation evidence during focused review.",
+	))
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+var activityReviewKinds = map[string]string{
+	"you approved this": "approve",
+	"you rejected this": "reject",
+}
+
+var activityReviewMonths = map[string]string{
+	"jan": "01", "feb": "02", "mar": "03", "apr": "04",
+	"may": "05", "jun": "06", "jul": "07", "aug": "08",
+	"sep": "09", "oct": "10", "nov": "11", "dec": "12",
+}
+
+var activityReviewDeferDayPattern = regexp.MustCompile(`^you set this aside until ([a-z]+) (\d{1,2}), (\d{4})$`)
+
+func activityReviewCorrectedTo(needle string) (string, bool) {
+	const prefix = "corrected to: "
+	if !strings.HasPrefix(needle, prefix) {
+		return "", false
+	}
+	text := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+	if text == "" {
+		return "", false
+	}
+	return text, true
+}
+
+func activityReviewDeferDay(needle string) (string, string, string, bool) {
+	match := activityReviewDeferDayPattern.FindStringSubmatch(needle)
+	if match == nil {
+		return "", "", "", false
+	}
+	month, ok := activityReviewMonths[match[1]]
+	if !ok {
+		return "", "", "", false
+	}
+	day, err := strconv.Atoi(match[2])
+	if err != nil || day < 1 || day > 31 || match[2] != strconv.Itoa(day) {
+		return "", "", "", false
+	}
+	return month, fmt.Sprintf("%02d", day), match[3], true
+}
+
+func observationReviewCorrectedWithoutValue() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(lower(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "kind")
+			b.WriteString(") = ")
+			b.Arg("correct")
+			b.WriteString(" AND NOT (")
+			writeNestedFactReadable(b, s, facts, "review_decision", "corrected_value")
+			b.WriteString("))")
+		}))
+	})
+}
+
+func observationReviewCorrectedTo(object, normalized string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(lower(")
+			writeNestedFactTrim(b, s, facts, object, "kind")
+			b.WriteString(") = ")
+			b.Arg("correct")
+			b.WriteString(" AND ")
+			writeNormalizedNestedFact(b, s, facts, object, "corrected_value")
+			b.WriteString(" = ")
+			b.Arg(normalized)
+			b.WriteString(" AND ")
+			writeNestedFactReadable(b, s, facts, object, "corrected_value")
+			b.WriteString(" AND ")
+			writeNestedFactTrim(b, s, facts, object, "corrected_value")
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", '')))")
+		}))
+	})
+}
+
+func observationReviewDeferredWithoutDay() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(lower(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "kind")
+			b.WriteString(") = ")
+			b.Arg("defer")
+			b.WriteString(" AND ")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(" !~ ")
+				b.Arg(`^[0-9]{4}-[0-9]{2}-[0-9]{2}`)
+			} else {
+				b.WriteString(" NOT GLOB ")
+				b.Arg("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*")
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func observationReviewDeferredOn(month, day, year string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(lower(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "kind")
+			b.WriteString(") = ")
+			b.Arg("defer")
+			b.WriteString(" AND substr(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			b.WriteString(", 1, 4) = ")
+			b.Arg(year)
+			b.WriteString(" AND substr(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			b.WriteString(", 6, 2) = ")
+			b.Arg(month)
+			b.WriteString(" AND substr(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			b.WriteString(", 9, 2) = ")
+			b.Arg(day)
+			b.WriteString(" AND substr(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			b.WriteString(", 5, 1) = '-' AND substr(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			b.WriteString(", 8, 1) = '-')")
+		}))
+	})
+}
+
+func observationReviewReasonShown(object, normalized string, hidden ...string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeNormalizedNestedFact(b, s, facts, object, "reason")
+			b.WriteString(" = ")
+			b.Arg(normalized)
+			b.WriteString(" AND ")
+			writeNestedFactReadable(b, s, facts, object, "reason")
+			b.WriteString(" AND ")
+			writeNestedFactTrim(b, s, facts, object, "reason")
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))")
+			for _, sentence := range hidden {
+				b.WriteString(" AND ")
+				writeNestedFactTrim(b, s, facts, object, "reason")
+				b.WriteString(" <> ")
+				b.Arg(sentence)
+			}
+			b.WriteString(")")
+		}))
+	})
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {
