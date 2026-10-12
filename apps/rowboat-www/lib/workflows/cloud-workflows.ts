@@ -314,6 +314,7 @@ const INFRASTRUCTURE_EVENT_COPY: Record<string, string> = {
   "Queued by Temporal schedule.": "Queued on the schedule.",
   "Queued for API worker.": "Queued to run.",
   "Queued retry for API worker.": "Queued to try again.",
+  "Retry requested.": "Trying this run again.",
   "API worker claimed the run.": "Oppulence Cloud started this run.",
   "Building API-native task artifact.": "Preparing the result.",
   "Waiting for human approval.": "Waiting for approval.",
@@ -323,6 +324,11 @@ const INFRASTRUCTURE_EVENT_COPY: Record<string, string> = {
   "Run completed without artifact changes.": "Finished without changing the result.",
   "Artifact updated.": "Result updated.",
   "Cancellation requested.": "Stopping this run.",
+  "Dead-lettered before Temporal start.": "This run did not start.",
+  "Abandoned before Temporal start confirmation.": "This run did not start. Try again.",
+  "Abandoned: workflow stopped heartbeating.": "This run stopped responding. Try again.",
+  "Temporal start failed.": "Workflows cannot be started right now. Try again later.",
+  "Temporal retry start failed.": "This run could not be tried again.",
 };
 
 function rewriteInfrastructureEvent(value: string): string {
@@ -332,12 +338,62 @@ function rewriteInfrastructureEvent(value: string): string {
 }
 
 /**
+ * A failed run stores a short worker error beside a code. The runs list and
+ * the transcript use the same sentence. An unknown code keeps its message.
+ */
+export function runStoredFailureCopy(message: string, code: string): string {
+  const friendly = friendlyAgentError(message, "run");
+  if (friendly !== message) return friendly;
+  switch (code) {
+    case "workflow_canceled":
+      return "This run was stopped.";
+    case "activity_timeout":
+    case "runtime_deadline_exceeded":
+      return "This run took too long. Try again.";
+    case "db_error":
+      return "This run could not be saved. Try again.";
+    case "artifact_write_failed":
+      return "The result could not be saved. Try again.";
+    case "task_not_found":
+      return "This workflow could not be found.";
+    case "task_invalid":
+      return "This workflow could not be read. Try again.";
+    case "temporal_signal_failed":
+      return "This run could not be updated. Try again.";
+    case "temporal_cancel_failed":
+      return "This run could not be stopped. Try again.";
+    case "temporal_unavailable":
+    case "temporal_start_failed":
+      return "Workflows cannot be started right now. Try again later.";
+    case "admission_backpressure":
+      return "Too many workflows are running right now. Try again in a moment.";
+    case "admission_rate_limited":
+      return "Too many requests were sent from this workspace. Wait a moment, then try again.";
+    case "llm_call_failed":
+      return "The model could not be reached. Try again.";
+    case "tool_invoke_failed":
+      return "A tool could not finish. Try again.";
+    case "tool_not_allowed":
+      return "This tool is not available in this run.";
+    case "connector_unavailable":
+      return "Connect the account this run needs, then try again.";
+    case "internal":
+    case "activity_failed":
+      return "This run could not finish. Please try again.";
+    default:
+      return code ? `${code}: ${message}` : message;
+  }
+}
+
+/**
  * The progress line stores the worker sentence. The run uses the same words
  * as the transcript, so a queued workflow does not say "API worker".
  */
 export function workflowProgressCopy(message: string): string {
   const raw = message.trim();
   if (!raw) return "";
+  const explained = runStoredFailureCopy(raw, "");
+  if (explained !== raw) return explained;
   return rewriteInfrastructureEvent(raw);
 }
 
@@ -586,13 +642,18 @@ export function runEventBody(event: { type?: string; event: unknown }): string {
   const message = ["message", "summary", "content"]
     .map((key) => eventStringField(record, key))
     .find(Boolean);
-  if (message && message !== "Failed.") return rewriteInfrastructureEvent(message);
+  const error = eventStringField(record, "error");
+  const code = eventStringField(record, "errorCode");
+  if (message && message !== "Failed.") {
+    const explained = runStoredFailureCopy(message, code);
+    if (explained !== message) return explained;
+    return rewriteInfrastructureEvent(message);
+  }
   const toolCopy = toolTranscriptCopy(type, record);
   if (toolCopy) return toolCopy;
   const desktopCopy = desktopTranscriptCopy(type, record);
   if (desktopCopy) return desktopCopy;
-  const error = eventStringField(record, "error");
-  if (error) return friendlyAgentError(error, "run");
+  if (error || code) return runStoredFailureCopy(error, code);
   if (message) return "This run could not finish.";
   if (type === "runtime.final_artifact_ready") return "The result is ready.";
   if (type === "runtime.limit_exceeded") return runLimitCopy();

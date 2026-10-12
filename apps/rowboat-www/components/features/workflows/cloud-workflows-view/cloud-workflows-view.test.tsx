@@ -299,7 +299,7 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("triggerLabel(run.trigger)");
     expect(source).not.toContain("{readableEnum(run.trigger)}");
     expect(source).toContain("workflowName={taskTitle(task)}");
-    expect(source).toContain('friendlyAgentError(message, "run")');
+    expect(source).toContain("runStoredFailureCopy(message, code)");
     expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(7);
     expect(
       shownWorkflowError(new Error("Workflow request failed (500)"), "Could not create workflow"),
@@ -596,6 +596,59 @@ describe("CloudWorkflowsView", () => {
         },
       }),
     ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
+    expect(
+      runEventBody({
+        type: "temporal.dead_lettered",
+        event: {
+          message: "cloud run queue is at global capacity",
+          errorCode: "admission_backpressure",
+          trigger: "schedule",
+          runId: "run-1",
+        },
+      }),
+    ).toBe("Too many workflows are running right now. Try again in a moment.");
+    expect(
+      runEventBody({
+        type: "temporal.dead_lettered",
+        event: {
+          message: "insufficient credits for cloud run preflight",
+          errorCode: "insufficient_credits",
+        },
+      }),
+    ).toBe(
+      "This workspace is out of AI credits. Ask an administrator to add credits, then try again.",
+    );
+    expect(
+      runEventBody({
+        type: "temporal.failed",
+        event: { message: "Failed.", error: "timeout", errorCode: "activity_timeout" },
+      }),
+    ).toBe("This run took too long. Try again.");
+    expect(
+      runEventBody({
+        type: "temporal.failed",
+        event: {
+          message: "Failed.",
+          error: "write artifact",
+          errorCode: "artifact_write_failed",
+        },
+      }),
+    ).toBe("The result could not be saved. Try again.");
+    expect(
+      runEventBody({
+        type: "temporal.retry_requested",
+        event: { message: "Retry requested.", retryOfRunId: "run-0", attempt: 2 },
+      }),
+    ).toBe("Trying this run again.");
+    expect(workflowProgressCopy("Dead-lettered before Temporal start.")).toBe(
+      "This run did not start.",
+    );
+    expect(workflowProgressCopy("Abandoned: workflow stopped heartbeating.")).toBe(
+      "This run stopped responding. Try again.",
+    );
+    expect(workflowProgressCopy("Temporal start failed.")).toBe(
+      "Workflows cannot be started right now. Try again later.",
+    );
     expect(
       runEventBody({ type: "runtime.unknown", event: { prompt_version: "cloud-runtime-v1" } }),
     ).toBe("Recorded an update.");
