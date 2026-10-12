@@ -1016,6 +1016,9 @@ describe("RelationshipsView", () => {
     expect(governanceDeletionLabel("scheduled_after_transcription")).toBe(
       "Scheduled to be deleted after transcription",
     );
+    expect(governanceDeletionLabel("provider_deleted:2026-04-02T15:00:00.000Z")).toBe(
+      "The meeting service deleted the original.",
+    );
     expect(governanceExcerptLabel("not_retained")).toBe("No audio was kept");
     expect(mailThreadSubjectLabel("   ")).toBe("Email conversation");
     expect(mailThreadSubjectLabel("The quill invoice")).toBe("The quill invoice");

@@ -3089,6 +3089,7 @@ export function governanceDisclosureLabel(disclosure: string): string {
 /** What happened to the recording after it was used. */
 export function governanceDeletionLabel(outcome: string): string {
   if (outcome.startsWith("deleted:")) return "Deleted";
+  if (outcome.startsWith("provider_deleted:")) return "The meeting service deleted the original.";
   switch (outcome) {
     case "scheduled_after_transcription":
       return "Scheduled to be deleted after transcription";
