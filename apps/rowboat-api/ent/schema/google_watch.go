@@ -39,7 +39,7 @@ func (GoogleWatch) Fields() []ent.Field {
 		// time; webhook payloads resolve back through it.
 		field.String("account_email").NotEmpty(),
 		// channel_id / resource_id identify Calendar and Drive channels (Rowboat
-		// mints channel_id as "gcal:{email}:{uuid}" or "gdrive:{email}:{uuid}");
+		// mints channel_id with an encoded account and a unique renewal ID);
 		// empty for Gmail.
 		field.String("channel_id").Optional(),
 		field.String("resource_id").Optional(),
