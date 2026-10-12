@@ -1067,6 +1067,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if recorded := relationshipSheetActivityRecordMatch(needle); recorded != nil {
 			parts = append(parts, recorded)
 		}
+		if story := relationshipSheetActivityStoryMatch(needle); story != nil {
+			parts = append(parts, story)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -4293,6 +4296,336 @@ func observationSummaryAddedPerson() predicate.RelationshipObservation {
 			b.WriteString(")")
 		}))
 	})
+}
+
+// relationshipSheetActivityStoryMatch matches the activity row when the
+// stored summary is a mail thread, a reviewed conversation, a promise, an
+// attendance line, a promise update, or an outcome. The row says "4 messages
+// with acme.com" while the note still says "4-message thread with acme.com".
+func relationshipSheetActivityStoryMatch(needle string) predicate.Relationship {
+	var preds []predicate.RelationshipObservation
+	if count, who, ok := activityStoryMail(needle); ok {
+		preds = append(preds, observationSummaryEquals(fmt.Sprintf("%d message thread with %s", count, who)))
+	}
+	if title, lines, claims, ok := activityStoryConversation(needle); ok {
+		preds = append(preds, observationSummaryEquals(fmt.Sprintf("%s · %d segments · %d material claims", title, lines, claims)))
+	}
+	if text, dropped, ok := activityStoryOwnerRest(needle, "we made this promise"); ok {
+		for _, summary := range activityStoryCommittedSummaries("we", text, dropped) {
+			preds = append(preds, observationSummaryEquals(summary))
+		}
+	}
+	if text, dropped, ok := activityStoryOwnerRest(needle, "they made this promise"); ok {
+		preds = append(preds, observationSummaryTheyCommitted(text, dropped)...)
+	}
+	if name, text, dropped, ok := activityStoryNamedPromise(needle); ok {
+		for _, summary := range activityStoryCommittedSummaries(name, text, dropped) {
+			preds = append(preds, observationSummaryEquals(summary))
+		}
+	}
+	if count, title, ok := activityStoryAttendance(needle); ok {
+		preds = append(preds, observationSummaryEquals(fmt.Sprintf("%d external participant(s) on \"%s\"", count, title)))
+	}
+	if status, text, dropped, ok := activityStoryPromiseUpdate(needle); ok {
+		if dropped {
+			preds = append(preds, observationSummaryEquals("commitment marked "+status+": local user"))
+		} else {
+			preds = append(preds, observationSummaryEquals("commitment marked "+status+": "+text))
+		}
+	}
+	if kind, ok := activityStoryOutcomeLabels[needle]; ok {
+		preds = append(preds, observationSummaryEquals("action outcome observed: "+kind))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+var (
+	activityStoryMailPattern         = regexp.MustCompile(`^(\d+) messages? with (.+)$`)
+	activityStoryConversationPattern = regexp.MustCompile(`^(.+) · (\d+) lines? in the transcript · (\d+) claims?$`)
+	activityStoryPeoplePattern       = regexp.MustCompile(`^(\d+) people from outside the company on (.+)$`)
+)
+
+var activityStoryOutcomeLabels = map[string]string{
+	"message sent":             "sent",
+	"delivered":                "delivered",
+	"bounced":                  "bounced",
+	"they replied":             "replied",
+	"meeting booked":           "meeting booked",
+	"won":                      "won",
+	"lost":                     "lost",
+	"dismissed":                "dismissed",
+	"not a good suggestion":    "bad recommendation",
+	"deal moved forward":       "deal advanced",
+	"onboarding moved forward": "onboarding progressed",
+	"renewed":                  "renewed",
+	"escalated":                "escalated",
+	"they left":                "churned",
+	"corrected":                "corrected",
+}
+
+func activityStoryCount(raw string) (int, bool) {
+	count, err := strconv.Atoi(raw)
+	if err != nil || count < 0 || raw != strconv.Itoa(count) {
+		return 0, false
+	}
+	return count, true
+}
+
+func activityStoryMail(needle string) (int, string, bool) {
+	match := activityStoryMailPattern.FindStringSubmatch(needle)
+	if match == nil {
+		return 0, "", false
+	}
+	count, ok := activityStoryCount(match[1])
+	if !ok {
+		return 0, "", false
+	}
+	who := strings.TrimSpace(match[2])
+	switch who {
+	case "", "local user", "meeting counterparty", "an external contact":
+		return 0, "", false
+	case "someone outside the company":
+		who = "an external contact"
+	}
+	return count, who, true
+}
+
+func activityStoryConversation(needle string) (string, int, int, bool) {
+	match := activityStoryConversationPattern.FindStringSubmatch(needle)
+	if match == nil {
+		return "", 0, 0, false
+	}
+	title := strings.TrimSpace(match[1])
+	lines, linesOK := activityStoryCount(match[2])
+	claims, claimsOK := activityStoryCount(match[3])
+	if title == "" || title == "local user" || !linesOK || !claimsOK {
+		return "", 0, 0, false
+	}
+	return title, lines, claims, true
+}
+
+func activityStoryOwnerRest(needle, phrase string) (string, bool, bool) {
+	if needle == phrase {
+		return "", true, true
+	}
+	prefix := phrase + ": "
+	if !strings.HasPrefix(needle, prefix) {
+		return "", false, false
+	}
+	text := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+	if text == "" || text == "local user" || text == "meeting counterparty" {
+		return "", false, false
+	}
+	return text, false, true
+}
+
+func activityStoryCommittedSummaries(who, text string, dropped bool) []string {
+	if !dropped {
+		return []string{who + " committed to: " + text}
+	}
+	return []string{
+		who + " committed to: local user",
+		who + " committed to: meeting counterparty",
+	}
+}
+
+func activityStoryNamedPromise(needle string) (string, string, bool, bool) {
+	const marker = " made this promise"
+	index := strings.Index(needle, marker)
+	if index <= 0 {
+		return "", "", false, false
+	}
+	name := strings.TrimSpace(needle[:index])
+	if name == "" || name == "we" || name == "they" || addedPersonToken(name) || activityStoryUnnamedOwner(name) {
+		return "", "", false, false
+	}
+	rest := needle[index+len(marker):]
+	if rest == "" {
+		return name, "", true, true
+	}
+	if !strings.HasPrefix(rest, ": ") {
+		return "", "", false, false
+	}
+	text := strings.TrimSpace(rest[len(": "):])
+	if text == "" || text == "local user" || text == "meeting counterparty" {
+		return "", "", false, false
+	}
+	return name, text, false, true
+}
+
+func activityStoryUnnamedOwner(name string) bool {
+	switch name {
+	case "local user", "meeting counterparty", "other", "unknown speaker":
+		return true
+	}
+	return activityStorySpeaker(name)
+}
+
+func activityStorySpeaker(name string) bool {
+	const prefix = "speaker "
+	if !strings.HasPrefix(name, prefix) {
+		return false
+	}
+	digits := name[len(prefix):]
+	if digits == "" {
+		return false
+	}
+	for _, r := range digits {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func observationSummaryTheyCommitted(text string, dropped bool) []predicate.RelationshipObservation {
+	suffixes := []string{" committed to: " + text}
+	if dropped {
+		suffixes = []string{" committed to: local user", " committed to: meeting counterparty"}
+	}
+	var preds []predicate.RelationshipObservation
+	for _, who := range []string{"local user", "meeting counterparty", "other", "unknown speaker"} {
+		for _, suffix := range suffixes {
+			preds = append(preds, observationSummaryEquals(who+suffix))
+		}
+	}
+	for _, suffix := range suffixes {
+		preds = append(preds, observationSummaryCommittedUnnamed(suffix))
+	}
+	return preds
+}
+
+func observationSummaryCommittedUnnamed(suffix string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(length(")
+			writeNormalizedSummary(b, s)
+			b.WriteString(") > length(")
+			b.Arg(suffix)
+			b.WriteString(") AND substr(")
+			writeNormalizedSummary(b, s)
+			b.WriteString(", length(")
+			writeNormalizedSummary(b, s)
+			b.WriteString(") - length(")
+			b.Arg(suffix)
+			b.WriteString(") + 1) = ")
+			b.Arg(suffix)
+			b.WriteString(" AND ")
+			writeCommittedWhoUnnamed(b, s, suffix)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeCommittedWho(b *sql.Builder, s *sql.Selector, suffix string) {
+	b.WriteString("substr(")
+	writeNormalizedSummary(b, s)
+	b.WriteString(", 1, length(")
+	writeNormalizedSummary(b, s)
+	b.WriteString(") - length(")
+	b.Arg(suffix)
+	b.WriteString("))")
+}
+
+func writeCommittedWhoUnnamed(b *sql.Builder, s *sql.Selector, suffix string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("((")
+		writeCommittedWho(b, s, suffix)
+		b.WriteString(" ~ ")
+		b.Arg(`^speaker [0-9]+$`)
+		b.WriteString(") OR ((")
+		writeCommittedWho(b, s, suffix)
+		b.WriteString(" ~ ")
+		b.Arg(`^[a-z0-9_:]+$`)
+		b.WriteString(") AND (")
+		writeCommittedWho(b, s, suffix)
+		b.WriteString(") <> ")
+		b.Arg("we")
+		b.WriteString("))")
+		return
+	}
+	b.WriteString("((length(")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(") > 8 AND substr(")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(", 1, 8) = ")
+	b.Arg("speaker ")
+	b.WriteString(" AND substr(")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(", 9) <> '' AND substr(")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(", 9) NOT GLOB ")
+	b.Arg("*[^0-9]*")
+	b.WriteString(") OR ((")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(") <> '' AND (")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(") <> ")
+	b.Arg("we")
+	b.WriteString(" AND (")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(") NOT GLOB ")
+	b.Arg("*[^a-z0-9_:]*")
+	b.WriteString("))")
+}
+
+func activityStoryAttendance(needle string) (int, string, bool) {
+	const nobody = "no one from outside the company on "
+	const one = "1 person from outside the company on "
+	if strings.HasPrefix(needle, nobody) {
+		title := strings.TrimSpace(strings.TrimPrefix(needle, nobody))
+		if title == "" || title == "local user" {
+			return 0, "", false
+		}
+		return 0, title, true
+	}
+	if strings.HasPrefix(needle, one) {
+		title := strings.TrimSpace(strings.TrimPrefix(needle, one))
+		if title == "" || title == "local user" {
+			return 0, "", false
+		}
+		return 1, title, true
+	}
+	match := activityStoryPeoplePattern.FindStringSubmatch(needle)
+	if match == nil {
+		return 0, "", false
+	}
+	count, ok := activityStoryCount(match[1])
+	title := strings.TrimSpace(match[2])
+	if !ok || count < 2 || title == "" || title == "local user" {
+		return 0, "", false
+	}
+	return count, title, true
+}
+
+func activityStoryPromiseUpdate(needle string) (string, string, bool, bool) {
+	labels := []struct{ phrase, status string }{
+		{"this promise was kept", "fulfilled"},
+		{"this promise was called off", "cancelled"},
+		{"this promise is still open", "open"},
+	}
+	for _, label := range labels {
+		if needle == label.phrase {
+			return label.status, "", true, true
+		}
+		prefix := label.phrase + ": "
+		if !strings.HasPrefix(needle, prefix) {
+			continue
+		}
+		text := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+		if text == "" || text == "local user" {
+			return "", "", false, false
+		}
+		return label.status, text, false, true
+	}
+	return "", "", false, false
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {

@@ -2431,6 +2431,74 @@ func TestRelationshipSearchFindsTheActivityRecord(t *testing.T) {
 	assertCompanyQuery("You chose the current value.")
 }
 
+func TestRelationshipSearchFindsTheActivityStory(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, source, event, summary string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(name).SetEventType(event).
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(`{}`).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Story Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Story Mail", "gmail", "email_exchanged", "4-message thread with acme.com")
+	saveRow("Story Outside", "gmail", "email_exchanged", "1-message thread with an external contact")
+	saveRow("Story Talk", "meeting", "conversation_evidence_compiled", "Q3 review · 12 segments · 3 material claims")
+	saveRow("Story We", "meeting", "commitment_confirmed", "We committed to: Send the proposal")
+	saveRow("Story They", "meeting", "commitment_confirmed", "local-user committed to: Send the proposal")
+	saveRow("Story Ada", "meeting", "commitment_confirmed", "Ada Mesa committed to: Send the proposal")
+	saveRow("Story Room", "calendar", "meeting_attendance_recorded", `2 external participant(s) on "Q3 review"`)
+	saveRow("Story Kept", "meeting", "commitment_status_changed", "Commitment marked fulfilled: Send the proposal")
+	saveRow("Story Booked", "desktop_note", "note", "Action outcome observed: meeting booked.")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("4 messages with acme.com", "Story Mail")
+	assertCompanyQuery("1 message with someone outside the company", "Story Outside")
+	assertCompanyQuery("Q3 review · 12 lines in the transcript · 3 claims", "Story Talk")
+	assertCompanyQuery("We made this promise: Send the proposal", "Story We")
+	assertCompanyQuery("They made this promise: Send the proposal", "Story They")
+	assertCompanyQuery("Ada Mesa made this promise: Send the proposal", "Story Ada")
+	assertCompanyQuery("2 people from outside the company on Q3 review", "Story Room")
+	assertCompanyQuery("This promise was kept: Send the proposal", "Story Kept")
+	assertCompanyQuery("Meeting booked", "Story Booked")
+	assertCompanyQuery("4 messages with local-user")
+}
+
 func TestRelationshipSearchFindsTheActivityDirection(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
