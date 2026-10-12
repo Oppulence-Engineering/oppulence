@@ -3398,9 +3398,9 @@ export function uncertainClaimCopy(count: number): string {
 
 /**
  * Missing-detail text is stored for the model. The sheet says what the person
- * can do about it. A review reason that still says "User", and a HubSpot
- * lifecycle stage, are rewritten. Any other supported detail keeps the reason
- * that was recorded.
+ * can do about it. A review reason that still says "User", a HubSpot lifecycle
+ * stage, and a conversation claim that names the quote's millisecond range are
+ * rewritten. Any other supported detail keeps the reason that was recorded.
  */
 const DETAIL_REASON_COPY: Record<string, string> = {
   "User corrected focused conversation evidence.": "You corrected what was said.",
@@ -3413,6 +3413,9 @@ const DETAIL_REASON_COPY: Record<string, string> = {
   "HubSpot company lifecycle stage.": "Taken from HubSpot.",
 };
 
+const CONVERSATION_CLAIM_REASON =
+  /^Conversation claim .+, supported by the exact quote at \d+-\d+ ms\.$/;
+
 export function detailEvidenceCopy(item: {
   supported: boolean;
   reason?: string;
@@ -3420,7 +3423,9 @@ export function detailEvidenceCopy(item: {
 }): string {
   if (item.supported) {
     const reason = item.reason?.trim() ?? "";
-    return DETAIL_REASON_COPY[reason] ?? reason;
+    if (DETAIL_REASON_COPY[reason]) return DETAIL_REASON_COPY[reason];
+    if (CONVERSATION_CLAIM_REASON.test(reason)) return "Taken from what was said.";
+    return reason;
   }
   const missing = item.missingReason?.trim() ?? "";
   if (missing === "" || missing.includes("asOf boundary")) {

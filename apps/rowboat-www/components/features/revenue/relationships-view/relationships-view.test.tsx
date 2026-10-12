@@ -1340,6 +1340,13 @@ describe("RelationshipsView", () => {
     expect(
       detailEvidenceCopy({ supported: true, reason: "HubSpot company lifecycle stage." }),
     ).toBe("Taken from HubSpot.");
+    expect(
+      detailEvidenceCopy({
+        supported: true,
+        reason:
+          "Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms.",
+      }),
+    ).toBe("Taken from what was said.");
     expect(source).toContain("detailEvidenceCopy(item)");
     expect(source).not.toContain("{item.reason || item.missingReason}");
     expect(
