@@ -1,0 +1,52 @@
+name: Deploy rowboat-www to App Platform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/rowboat-www/**"
+      - "packages/ui/**"
+      - "packages/relationship-contract/**"
+      - "packages/eslint-plugin-oppulence-web/**"
+      - "scripts/rowboat-www-smoke.sh"
+      - ".do/rowboat-www-production.yaml"
+      - ".github/workflows/rowboat-www-app-platform.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/rowboat-www/package-lock.json
+      - run: npm ci
+        working-directory: apps/rowboat-www
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/rowboat-www
+      - run: npm run verify:ci
+        working-directory: apps/rowboat-www
+
+  deploy:
+    needs: quality
+    uses: Oppulence-Engineering/shared-workflows/.github/workflows/digitalocean-app-platform.yml@71f3fa14444b21e57753b490746667b58421a452 # v1.1.2
+    with:
+      app_id: ${{ vars.ROWBOAT_WWW_APP_ID }}
+      app_spec_path: .do/rowboat-www-production.yaml
+      deploy_ref: refs/heads/main
+      environment: production
+      timeout_minutes: 90
+      healthcheck_url: ${{ vars.ROWBOAT_WWW_HEALTHCHECK_URL }}
+      healthcheck_attempts: 30
+      healthcheck_interval_seconds: 10
+    secrets:
+      digitalocean_token: ${{ secrets.DIGITALOCEAN_PRODUCTION_TOKEN }}
