@@ -275,6 +275,9 @@ describe("CloudWorkflowsView", () => {
     expect(triggerLabel("cron")).toBe("Scheduled");
     expect(triggerLabel("event")).toBe("Incoming event");
     expect(triggerLabel("manual")).toBe("Started by hand");
+    expect(triggerLabel("retry")).toBe("Tried again");
+    expect(source).toContain('onClick={onRetry} size="sm">');
+    expect(source).not.toContain("\n                Retry\n");
     expect(runRowDetail("failed", "cron")).toBe("Failed · Scheduled");
     expect(runRowDetail("failed", "window")).toBe("Failed · Time window");
     expect(source).toContain("runRowDetail(run.status, run.trigger)");

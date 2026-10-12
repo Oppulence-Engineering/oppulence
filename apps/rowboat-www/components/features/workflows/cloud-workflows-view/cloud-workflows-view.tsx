@@ -1215,7 +1215,7 @@ function RunInspector({
             {(run.status === "failed" || run.status === "stopped") &&
             taskExecutionTarget === "api" ? (
               <Button className="rounded-none" disabled={busy} onClick={onRetry} size="sm">
-                Retry
+                Try again
               </Button>
             ) : null}
           </div>

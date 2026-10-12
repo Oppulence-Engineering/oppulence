@@ -213,7 +213,7 @@ export function triggerLabel(value: string): string {
     case "manual":
       return "Started by hand";
     case "retry":
-      return "Retry";
+      return "Tried again";
     default:
       return readableEnum(value);
   }
