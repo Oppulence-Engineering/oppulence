@@ -1,3 +1,4 @@
+---
 alerts:
 - rule: DEPLOYMENT_FAILED
 - rule: DOMAIN_FAILED
@@ -14,12 +15,11 @@ ingress:
       name: rowboat-www
     match:
       path:
-        prefix: /
+        prefix: "/"
 name: rowboat-www-production
 region: nyc
 services:
-- dockerfile_path: apps/rowboat-www/Dockerfile
-  envs:
+- envs:
   - key: ROWBOAT_WWW_SESSION_SECRET
     scope: RUN_TIME
     type: SECRET
@@ -39,14 +39,14 @@ services:
   - key: ROWBOAT_WWW_WORKOS_PROVIDER
     scope: RUN_TIME
     value: GoogleOAuth
-  github:
-    branch: main
-    deploy_on_push: false
-    repo: Oppulence-Engineering/oppulence
   health_check:
-    http_path: /readyz
+    http_path: "/readyz"
   http_port: 8080
   instance_count: 2
   instance_size_slug: apps-s-1vcpu-1gb
   name: rowboat-www
-  source_dir: /
+  image:
+    registry_type: GHCR
+    registry: oppulence-engineering
+    repository: rowboat-www
+    tag: ci-placeholder

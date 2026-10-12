@@ -3,18 +3,17 @@
   "services": [
     {
       "name": "rowboat-api",
-      "github": {
-        "repo": "Oppulence-Engineering/oppulence",
-        "branch": "main",
-        "deploy_on_push": false
-      },
-      "dockerfile_path": "apps/rowboat-api/Dockerfile",
-      "source_dir": "/",
       "instance_size_slug": "apps-s-1vcpu-1gb",
       "instance_count": 2,
       "http_port": 8080,
       "health_check": {
         "http_path": "/readyz"
+      },
+      "image": {
+        "registry_type": "GHCR",
+        "registry": "oppulence-engineering",
+        "repository": "desktop-assistant-rowboat-api",
+        "tag": "ci-placeholder"
       }
     }
   ],
@@ -457,13 +456,6 @@
   ],
   "workers": [
     {
-      "dockerfile_path": "apps/rowboat-api/Dockerfile",
-      "github": {
-        "repo": "Oppulence-Engineering/oppulence",
-        "branch": "main",
-        "deploy_on_push": false
-      },
-      "source_dir": "/",
       "name": "rowboat-api-worker",
       "run_command": "/rowboat-api-worker",
       "instance_count": 1,
@@ -482,16 +474,15 @@
         "period_seconds": 15,
         "timeout_seconds": 5,
         "failure_threshold": 6
+      },
+      "image": {
+        "registry_type": "GHCR",
+        "registry": "oppulence-engineering",
+        "repository": "desktop-assistant-rowboat-api",
+        "tag": "ci-placeholder"
       }
     },
     {
-      "dockerfile_path": "apps/rowboat-api/Dockerfile",
-      "github": {
-        "repo": "Oppulence-Engineering/oppulence",
-        "branch": "main",
-        "deploy_on_push": false
-      },
-      "source_dir": "/",
       "name": "rowboat-api-scheduler",
       "run_command": "/rowboat-api-scheduler",
       "instance_count": 1,
@@ -525,23 +516,28 @@
         "period_seconds": 15,
         "timeout_seconds": 5,
         "failure_threshold": 6
+      },
+      "image": {
+        "registry_type": "GHCR",
+        "registry": "oppulence-engineering",
+        "repository": "desktop-assistant-rowboat-api",
+        "tag": "ci-placeholder"
       }
     }
   ],
   "jobs": [
     {
-      "dockerfile_path": "apps/rowboat-api/Dockerfile",
-      "github": {
-        "repo": "Oppulence-Engineering/oppulence",
-        "branch": "main",
-        "deploy_on_push": false
-      },
-      "source_dir": "/",
       "name": "rowboat-api-migrate",
       "kind": "PRE_DEPLOY",
       "run_command": "/rowboat-api-migrate apply",
       "instance_count": 1,
-      "instance_size_slug": "apps-s-1vcpu-1gb"
+      "instance_size_slug": "apps-s-1vcpu-1gb",
+      "image": {
+        "registry_type": "GHCR",
+        "registry": "oppulence-engineering",
+        "repository": "desktop-assistant-rowboat-api",
+        "tag": "ci-placeholder"
+      }
     }
   ]
 }
