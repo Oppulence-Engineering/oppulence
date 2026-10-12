@@ -579,6 +579,15 @@ it("names an overdue promise in an older attention sentence", () => {
     "A confirmed promise is overdue by 3 days.",
   );
   expect(attentionExplanationCopy("No reply in 14 days")).toBe("No reply in 14 days");
+  expect(attentionExplanationCopy("1 unresolved risk. This company is critical.")).toBe(
+    "1 risk is still open. This company is critical.",
+  );
+  expect(attentionExplanationCopy("2 unresolved risks. This company needs attention.")).toBe(
+    "2 risks are still open. This company needs attention.",
+  );
+  expect(attentionExplanationCopy("1 unresolved risk. Health is Healthy.")).toBe(
+    "1 risk is still open. Health is Healthy.",
+  );
   expect(
     attentionExplanationCopy(
       "Google evidence is incomplete, stale, rebuilding, or missing a required permission.",

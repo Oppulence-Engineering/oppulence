@@ -1059,6 +1059,14 @@ export function attentionExplanationCopy(explanation: string | null | undefined)
   }
   const outcome = attentionOutcomeCopy(raw);
   if (outcome) return outcome;
+  const openRisk =
+    /^(\d+) unresolved risks?\. (This company is critical\.|This company needs attention\.|Health is .+\.)$/.exec(
+      raw,
+    );
+  if (openRisk?.[1] && openRisk[2]) {
+    const noun = openRisk[1] === "1" ? "risk is still open" : "risks are still open";
+    return `${openRisk[1]} ${noun}. ${openRisk[2]}`;
+  }
   return actionReasonCopy(raw);
 }
 
