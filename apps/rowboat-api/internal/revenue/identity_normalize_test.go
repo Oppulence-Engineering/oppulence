@@ -6330,7 +6330,8 @@ func TestRelationshipSearchFindsTheQuietAccount(t *testing.T) {
 	assertCompanyQuery("No recorded interaction", "Quill Atelier", "Lumen Packet")
 	assertCompanyQuery("Prospects are usually contacted again within 30 days", "Quill Atelier")
 	assertCompanyQuery("mail to that address is no longer delivered", "Mesa Clay")
-	assertCompanyQuery("because there is nobody here to reply", "Mesa Clay")
+	assertCompanyQuery("because nobody here can reply", "Mesa Clay")
+	assertCompanyQuery("because there is nobody here to reply")
 }
 
 func TestRelationshipSearchFindsTheUnresolvedRisk(t *testing.T) {

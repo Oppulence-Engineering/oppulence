@@ -2136,7 +2136,7 @@ func relationshipSheetQuietMatch(needle string, now time.Time) predicate.Relatio
 		}
 	}
 	if sheetPhraseMatches("mail to that address is no longer delivered", needle) ||
-		sheetPhraseMatches("because there is nobody here to reply", needle) {
+		sheetPhraseMatches("because nobody here can reply", needle) {
 		preds = append(preds, relationshipShowsDepartedQuiet(now))
 	}
 	switch len(preds) {
