@@ -1,0 +1,40 @@
+name: Deploy rowboat-api passive App Platform service
+
+# The Fly deployment still runs production migrations, the Temporal worker,
+# and the scheduler. This App Platform service is manual until those roles and
+# the public API hostname have a reviewed cutover plan.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - run: go test ./... -count=1 -timeout=30m
+        working-directory: apps/rowboat-api
+      - run: go vet ./...
+        working-directory: apps/rowboat-api
+
+  deploy:
+    needs: quality
+    uses: Oppulence-Engineering/shared-workflows/.github/workflows/digitalocean-app-platform.yml@71f3fa14444b21e57753b490746667b58421a452 # v1.1.2
+    with:
+      app_id: ${{ vars.ROWBOAT_API_APP_ID }}
+      app_spec_path: .do/rowboat-api-production.json
+      deploy_ref: refs/heads/main
+      environment: production
+      timeout_minutes: 90
+      healthcheck_url: ${{ vars.ROWBOAT_API_HEALTHCHECK_URL }}
+      healthcheck_attempts: 30
+      healthcheck_interval_seconds: 10
+    secrets:
+      digitalocean_token: ${{ secrets.DIGITALOCEAN_PRODUCTION_TOKEN }}

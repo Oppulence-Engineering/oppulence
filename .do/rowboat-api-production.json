@@ -1,0 +1,452 @@
+{
+  "name": "rowboat-api-production",
+  "services": [
+    {
+      "name": "rowboat-api",
+      "github": {
+        "repo": "Oppulence-Engineering/oppulence",
+        "branch": "main",
+        "deploy_on_push": false
+      },
+      "dockerfile_path": "apps/rowboat-api/Dockerfile",
+      "source_dir": "/",
+      "envs": [
+        {
+          "key": "ANTHROPIC_API_KEY",
+          "value": "EV[1:zVK8yTQQecr6Ug9EGFXjit5Joi/TYMKc:4dIifPJAj1t/vah3KPGPEEuxzp131fMwXI/03GZGfFS87l6vuHVg7q+qFc3KLhKw9Kc8ut4WE5rgyMODe+woBJDFLVYLwCXsbTlJbar9szzzzR9oxbnT5LK785banAgoUk+5RnvEF67garEhaAD81tbQy/5wbguJTmFmJw==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "APP_URL",
+          "value": "https://oppulence.io",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "AUTO_MIGRATE",
+          "value": "false",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "BROKER_TOKEN_ISSUER",
+          "value": "https://api.oppulence.io",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "BROKER_TOKEN_KEYRING_JSON",
+          "value": "EV[1:2OQwuoZA/vsFEdH2EGPHyBZzmL+8Ta9w:HoRLr4Oz2P9mC9A5hmhBXaTI0GCvm/VZqvLrmBmp0CC2R7N7u++eprgt5jjEyIBOpUeMyWp+J+eMzlfgwYSFTmuyQsbueFVDo3qvByFgj+Z/gNHL1K5jtL608hD79+exnC704j98X8lpwVZIBhZXmjfMTC231jvmHWBjPF2pvG5bJJb8rvV5GncSJNPXjbVatTfAkpkD6qoeg1qLoQsh4I+OdZ6P0pBAeog8LR2U6nRbhD/NOJ5eaCgGyHWTMhnuyjdPXe8d2cpiwyd/+WlGf77b2yhRZDfospCmfcspIa02RNHxm67FBmf4d0T6KY22qLKsllIS2N2+QLsng+wRYkkYVFq81//WY1wPvDVcTA5Q9F8DoB1oQRLkZXM1m9dmWPD7U4PuexQqKYsKxKpbgo+0qEhVWpw4ooq8TBpyQlb/EO8yfW4bzKSR29N8OkxK/O7/6PuEIqC0xIAQqHHUcR21tV7EMEuJjzYBGtlzLFjySGONw2hG6QCbwP+WoJjiwmltDdaRFSGYgB+wzIH9QAxRL7OE3Ofmzknl7OcCvkprRktzzbLg6ju6NESB8Q+5NTBvQ/m6SC1bs75fQ2Eu7sfcnha2bqO0Go682uCYEUF46B/g9HflcC7mtTDwnISOX7gT+hgd4tSbEOUMcYanTmk=]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "BROKER_TOKEN_KEY_ID",
+          "value": "rowboat-broker-1",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "BROKER_TOKEN_PRIVATE_KEY_PEM",
+          "value": "EV[1:hczGC+s2/RjBdgkY3IlAkGk1eQnE5RUh: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]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "CLOUD_EVENTS_ROUTER_MODEL",
+          "value": "openai/gpt-4.1-mini",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "CLOUD_EVENTS_ROUTING_ENABLED",
+          "value": "true",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "CLOUD_RUNTIME_MODEL",
+          "value": "openai/gpt-4.1-mini",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "CLOUD_SCHEDULER_ENABLED",
+          "value": "false",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "COMPOSIO_API_KEY",
+          "value": "EV[1:H/Af3sw/z2iFiF5MCGhyRAMq0l5lnZ5S:Qaj7BteHIR+dt5o76geANQvoLicfg1jX5esQLEugI8xlNjTkuxVS]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "CONNECTOR_EMERGENCY_DISABLED",
+          "value": "canvas,corinthian,cadence,conduit,eigen,wispr,github,linear,notion,stripe",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "CONNECTOR_INVALIDATION_PRINCIPALS_JSON",
+          "value": "EV[1:mbtqtHbURcJ7Qbc9VcisTbzjKwMc7jqB:jqF475OTCpKA5u22vXqk6MTXuAIMI/WFi9JKfC/Fl9rg7IhVnJk9m4zIa7O2Ey0dHCx+CGGm87jNH06mnghr0ECu2vQVNUXQec7O8Zu1xELtytpTAR/i0wSyYWEFWifW3tom0mdxr7dM34/uMi/D+dAiJaX9eM3hiak3w8mYzDbNunD44P6pd6fkdzWxvVx2vbcNQlwxzuXc5SEogoSjTnI=]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "CONNECTOR_OAUTH_LEGACY_STATE_WRITE",
+          "value": "false",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "CONNECTOR_REDIRECT_ALLOWLIST",
+          "value": "solomon-ai://connection-complete,https://oppulence.io/api/connectors/oauth/callback",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "CORS_ALLOWED_ORIGINS",
+          "value": "https://oppulence.io",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "DATABASE_URL",
+          "value": "EV[1:EOal8OvN134ijgnxvLvMa/ZYyA+f87BU:hAiY8h89K+fioYbYw23BS9tZ9hCNL62qWchYKm8ylGsb8MmOj//YmsJvDCiFIuWZeue5mfxhvh29oIl5hPBXll8efsnuisyJSPFXpRAgaAS+q4EMH/zb6lkDSUiuYVscf8xrhlpqp6RLVtCJPBQ4PkEjUIKTUNh9e/Eeb0k6SuJYkwn9fVL+y/Ql0qVZtv/hsrKAVLOdzzba+8Xucy2Da0ZDrVM=]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "DB_ENCRYPTION_KEY",
+          "value": "EV[1:TOwC0TfbiKp/Z6wCHTxtvFEw/DwvlaZF:uy5Ix4fk/48+cI3MZAeRyfU2MB7k9I7bOHFSqrhnWrFizRYmfH65izqn52CR/fggSo2HHrEFrjRwU6rW4OjRpaqJQHdiV5sdAjZj9qp9sQw=]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "DB_MAX_OPEN_CONNS",
+          "value": "5",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "ELEVENLABS_API_KEY",
+          "value": "EV[1:+da+6y4sit5gAOsFu9nHRLwcKLC1ykQQ:G84cast3ASKZnOJ0AkibdycipICAZIhsfhDPsyiA+eys3Rdag24wEUO93IFNegXH5obSBeASqsCfVX+6kQ5ofe2PAg==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "ENVIRONMENT",
+          "value": "production",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "EXA_API_KEY",
+          "value": "EV[1:GAMp+7y2+vgy/tM+t4UX4vz6sWIbENsW:muCWhb514fwJXvzJSF+/CO03KSSUIHc1OLZ6pcSv2UiAa+Fc+3bSS9egwdgBrV0Ee7FGeg==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "GOOGLE_API_KEY",
+          "value": "EV[1:BlQnjU+mSGz/vIfSALiGapk+puiaFnj5:sOeEa2daI0OYkAbGuB8iExKlXhy/XKXa5wgPYg8ho02Nv6mZpPVMKiYNCItv30Zbzv90i5ktg2Q/VCfzubfFW8yfb7GQ]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "GOOGLE_OAUTH_CLIENT_ID",
+          "value": "EV[1:jnKuKIr0jYQrTFYgrrCT9NIOvo+LZrV3:BIhVAii8maDVcpEuCxyXPn0bQ3x0rzUG+L6QSjKLn7jlD/t5V+GoZaed/Hbyt6OdZVpU5op+9OOhZqxM+PCI2o1OmHTTf+gx26tKvFpTYkb5QG9GYLHOnA==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "GOOGLE_OAUTH_CLIENT_SECRET",
+          "value": "EV[1:rjvZbDD0by7boFREu9gXW4brWxgST2bh:BK6Nh83J04yEi6fL1ujTkmYsto8wmpv44MeIHKvM3x3TRlRWd8SXps24M/fLNrhVdYFG]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "GOOGLE_REDIRECT_URI",
+          "value": "https://api.oppulence.io/oauth/google/callback",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "GOOGLE_WATCH_ENABLED",
+          "value": "false",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "GOOGLE_WEBHOOK_TOKEN",
+          "value": "EV[1:rQIkgHygkEv4uuE52xRl7nex1OAfODHu:YWL5gcGhvA/MwasZyk5OL5iqRlA3bJvszo7x8AHpgTvXUAGRpyUcubj6E5j/19qk+jqu4xShE4BIMOkYOPVNkQ==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "GOOGLE_WEB_RETURN_URL",
+          "value": "https://oppulence.io/app/settings?settings=connections",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "GRPC_ADDR",
+          "value": ":8081",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "HOOK_HMAC_SECRET",
+          "value": "EV[1:DSFosl7sFrZvjcF4+5AWNMTM/TTIQTnX:ncNOMRmjvyzP4lLqzCtz4PQJZSuOzbRGC2ktNelKoOmkq7rhzFVMtGAXYIIVQ5biBLFmc1qABz9dt8yBaoz1+z/sLSQoNmW+j6E/ZLvbUno=]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "HTTP_ADDR",
+          "value": ":8080",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "INFISICAL_ENABLED",
+          "value": "false",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "INTERNAL_API_SECRET",
+          "value": "EV[1:zQP81B2i2A4rDeMwc5ZKyj3z9pf9Jp7p:NSDFs6susjO54H3LK+U4UtOIphX7LvnWZSPh2WR/ljotaj4vlA0df1eavozOL3xEa56w0ttFkAMxYIOMyvRbT0JG34ySB7HQQ0varQvftnU=]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "JWKS_URL",
+          "value": "EV[1:TG+JQvVlnUsXHSW/PH74uA/uiLWPqrRY:LE40p1BPu7E90Ovncl+sLzu/4p7AUmWhJujoTJCm6iVKdIDq1N/WnI/p0N7tqYZLW951YGQYHN0a8L72eEEGipCpJetlspXT9Drw1PHnEKDI]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "LLM_ALLOWED_MODELS",
+          "value": "openai/gpt-4.1-mini,openai/gpt-4.1,anthropic/claude-haiku-4-5,anthropic/claude-sonnet-4-5,google/gemini-3.1-flash-lite,openai/text-embedding-3-small",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "LOG_LEVEL",
+          "value": "info",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "METRICS_ADDR",
+          "value": ":9090",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "MIGRATION_DATABASE_URL",
+          "value": "EV[1:ouGTRiGVRmn0xywTKv/gnykPrRGy1wOP:RdCD4prM4mjHjlM3rHbqvmHevQ08QnlkwKBbOvt9qjvDAENxIyaJc9R2HajaK85Nxket/4M9kbpP+ySiW2L2wVsZPSn+mSTVODnvZAa3JVUg+hMsz5xB5PauM7T0PzmGrLBLAZ1T32+FyDivW3FTVgHOTO0DGcOiFO4rruH8GHQ0II3728krzD+Br/DYK0e58+2zGO92b3ekhQcBBaxb]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "OIDC_ISSUER_URL",
+          "value": "https://agile-glow-66.authkit.app",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "OPENAI_API_KEY",
+          "value": "EV[1:IDTYCP1csX39CqJOaTRfy1NHvJerqpFM:73/oref3A3vENNacWnd/CmFZBB9ctLoshH9qdKkp8TxNtgLN8Gg86nZ/FS3DQtQhLhME9hqYiTs7CjH7astoyTvWGkeJuPIdub/hQqS8qXvpe9Aif6+521llE70XyINV34CCoJoDZ0n6EssDP8slNHX4n2rj+ti3umKlSo8BnEl95NdMeby96cCPGdd8s4+WV5M1cfX5s5YDvawAj8tgmsOnYY+SxuTo3mjRTlHdt0PWXRY/]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "OPENROUTER_API_KEY",
+          "value": "EV[1:1tjxLHsCKoeeUJ/tDF7DyNH2c+htOhIC:87Uiw5MIJFGi/lrsHa3ZnGC2Obu+of2+7SgCtY8qFGVtbgFouVABVd5EDNKm/XPVYs9S5pLF8AqqBdqBALdCLJpHhqtY4tEpEYT9U6dHbM7OlazGNpUR1s8=]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "ORY_BROKER_CLIENT_ID",
+          "value": "solomon-connector-broker",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "ORY_BROKER_CLIENT_SECRET",
+          "value": "EV[1:LIpb9i5X+dPaqXRALz5vGagHCoUdoR28:4RAcEwNH4tMtyilPXdEtb0gcE+O5jhE8Zfg=]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "PARALLEL_API_KEY",
+          "value": "EV[1:EC/hY5AFiWRcUupA8gAHTZQQsiA8ox7L:fvwkhInPawj4gTchQoZMVIhxec7dmMCFnXQw4GObGaPw9et8vVp2tI8Gbcede5KWYptVW/Ei5Ok=]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "PLAIN_API_KEY",
+          "value": "EV[1:9PRKn9h5EYrwNvdOdHd9QW1Zu0gb2UiO:2g7kYVrlDvfVmsCVtWxlbD4tQfxY38mkrd9i6GFEM1ew9GLAIzS8oXL8M6ltLrgWG+xasp8ZjaHopr3r8sYZaMj1wQTJW0g=]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "PUBLIC_BASE_URL",
+          "value": "https://api.oppulence.io",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "REDIS_URL",
+          "value": "EV[1:d7kk3ABIMIYajf2zQHAMrKHqdzXK2LkF:G92X2het+PCSujGVBtpzTtCjYkNke5WAczrN5Jqy8ZAUsgfWhZ4bd4RtilIkfzZ0PzgRFLE3oCF2aJBBovW3br7/2BnpivtPAj+hdeqemko4pQfoRZ2hTvG3cLe+NrYNocc90LEhcoJmKiMYjFVCLdEf9ddbf4iPpv2MTOnig4d/]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "REVENUE_AUTO_SCAN_ENABLED",
+          "value": "false",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "REVENUE_MAIL_PUSH_SYNC_ENABLED",
+          "value": "false",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "SLACK_CLIENT_ID",
+          "value": "EV[1:LbnrkPL88mPr/FPXGqYQBTO6CKQWfWm3:MQbE98vRDqhRqjKip7weL82grnatM49I9syG7N2VmmpqKle7MIVxhtTwoA==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "SLACK_CLIENT_SECRET",
+          "value": "EV[1:4B5IxUIXChkU+PTuDxx/CZSFo4q4eaaS:KSXpG0Jhj9/WYpUaUxfSaq0BbcW0b+zgedWVAMKOUG/SmZTTF+iuVdLdl4+Y/msV]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "SLACK_REDIRECT_URI",
+          "value": "https://api.oppulence.io/oauth/slack/callback",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "SLACK_SIGNING_SECRET",
+          "value": "EV[1:WXxPLyZJzYtVfwqX5PdL0W+srN4vaRDf:SOj5SERVSChYQAWm7P7hlWtOb/JAhppQbkqG9AJsPxJh9NUvscMPyA03YE+aDV9n]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "STRIPE_INTELLIGENCE_PRICE_ID",
+          "value": "EV[1:hZPpPSpyl9lUWWhZOwOR6IfqJEwrJbvp:gDm6n33yDRvMeVRq7saUgXWzB/mRvgOlYUV+WYZeSJ0RjFTAlnv4nMWsRihnxA==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "STRIPE_PRO_PRICE_ID",
+          "value": "EV[1:4LbPs6U50ktxVFm0kg8scfHWkbKp1m3K:jQNi5hnO1Qo4X6l6Wj/x+F3aPkiFkkD51vgaH7DejLYD/XIcCdVx5Tk1lfvrdw==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "STRIPE_SECRET_KEY",
+          "value": "EV[1:YM3+fyOoY7gONwTlDX138bnwnOI15nCE:iHiB4juYG/3dZSZHhiEVZBGdGqu0DVB+4h2MsMOwBpXHrrWRn7V/BHHpqCgEkVQwd4tIZ8ST7kgGgxoa/kLeYsBURGOrlzR6ZAKrJ2+dcFmQEyO1jCM23tJOC9FdR44xlstvAV8yC/kGuaVnj38vxm2wf8vDcm2Ms3VH]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "STRIPE_STARTER_PRICE_ID",
+          "value": "EV[1:b9jvm+zCTeWIwuNtEaea+UlKPvry6aBl:SfQHzNrM9Dm5ww9KcRSQ85aMMeusG/ccWXzF3kriCp2z/Tfs6z5gqnEmiQwrbg==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "STRIPE_WEBHOOK_SECRET",
+          "value": "EV[1:rvL+hyMH0s+iyMJGPZUXfO1+UKlDPrL2:UCNvK4Uj3QQbMj9reLtjR1XiVfdgMXnIEa1/CJBKLAYB7KKW82zLzw92vQ4qUywkjpMLuk6J]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "TEMPORAL_ADDRESS",
+          "value": "rowboat-production.kpisa.tmprl.cloud:7233",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "TEMPORAL_API_KEY",
+          "value": "EV[1:5/aYWjp4dKLth6tWuqwtgQFZIcQJgdrQ:o/U1q+nAHqdPRDd2ELKPCFUhNrdg8pfMhQe2GLAFxI+Hb+ymBGH8Z0TWzKmSNbJBorlMzpqLQfKB0XMjlr50r8SXUn02NBfGxu/y1LTYbvTb2drWu4uTSe7QTrjl4LrhKOr2HAKVHjc9eg4eL+XNstgPBUAxXtYcgGRFeYJGxemKL6PpYYHC5Ph9AIdCI4mRy+sWL+Xh0Wr19RDMYHWUBpm90FuXaDJVtngKXQA/LjIjnkHeNYRvY0X68d+uMC7v83QABQ4GlP3yCM728XeZKw/fKNhtc5nya8Ql/iKFV/fd0gazFZQ/ENVEoUcZiGcRYXd7/U/f2evOs/vQyTNHZe8HvNrHIdPmI8M882rRHeC8KM+diW4QEDQOWaJELV6NNcEuzkCSlLOaxMM8Y/8QROQnWPthv6PvPA3RGl1tN10oe5C9ZXyXy0oWUKbf0Wq2ozwyy0j52XOP1x3wdJv6qWJeMdASPfLjybO4OVYzjCJMGy0UvJ9fwuj0Fl+Rw9RhxRfZkJqw0ILXspsH1oq9Ty4+QfZyPlMAvfYl5ve0ZQJxA72fqhayRgGreyBtjw==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "TEMPORAL_ENABLED",
+          "value": "true",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "TEMPORAL_NAMESPACE",
+          "value": "rowboat-production.kpisa",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "TEMPORAL_TASK_QUEUE",
+          "value": "rowboat-api-background-tasks",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "TEMPORAL_TLS_ENABLED",
+          "value": "true",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "TEMPORAL_WORKER_ENABLED",
+          "value": "false",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "TOKEN_AUDIENCE",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "TOKEN_ISSUER",
+          "value": "https://api.workos.com",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "TRANSCRIPTION_MEETING_DEFAULT",
+          "value": "solomon",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "TRANSCRIPTION_VOICE_DEFAULT",
+          "value": "solomon",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "WEBSOCKET_API_URL",
+          "value": "wss://api.oppulence.io",
+          "scope": "RUN_TIME"
+        },
+        {
+          "key": "WORKOS_API_KEY",
+          "value": "EV[1:6JNE79jhCKppEDmN7kqYiPSiSoXp4CFn:OIN8DcCzNXbM+sHnb95fo6kLGS30H+Ndhj80y6eTEImU9BnI0JBDyNnJ9aK+/317fxS4iiLm8dpWSVJvl7fUjxCqIMBjU981GPno8dlq8RhOrFZh0d8mZSIbbOIrgA==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        },
+        {
+          "key": "WORKOS_CLIENT_ID",
+          "value": "EV[1:ur2En9JmoaHJaZZyZto0Gs/FBpaVyw7w:oKk+t3g21jo6xmzmpuyE1A4kMoP/lIWit9y/1Dq9i58K4clc9CoOHKPkIwENAo4LYg==]",
+          "scope": "RUN_TIME",
+          "type": "SECRET"
+        }
+      ],
+      "instance_size_slug": "apps-s-1vcpu-1gb",
+      "instance_count": 2,
+      "http_port": 8080,
+      "health_check": {
+        "http_path": "/readyz"
+      }
+    }
+  ],
+  "region": "nyc",
+  "alerts": [
+    {
+      "rule": "DEPLOYMENT_FAILED"
+    },
+    {
+      "rule": "DOMAIN_FAILED"
+    }
+  ],
+  "ingress": {
+    "rules": [
+      {
+        "match": {
+          "path": {
+            "prefix": "/"
+          }
+        },
+        "component": {
+          "name": "rowboat-api"
+        }
+      }
+    ]
+  },
+  "features": [
+    "buildpack-stack=ubuntu-22"
+  ]
+}
