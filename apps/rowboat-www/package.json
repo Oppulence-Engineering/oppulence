@@ -84,7 +84,7 @@
     "@tiptap/react": "^3.31.1",
     "@tiptap/starter-kit": "^3.31.1",
     "@types/mdx": "^2.0.14",
-    "@xyflow/react": "^12.10.0",
+    "@xyflow/react": "12.11.3",
     "ai": "^7.0.73",
     "class-variance-authority": "^0.7.1",
     "client-only": "^0.0.1",
