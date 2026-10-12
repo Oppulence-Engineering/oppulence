@@ -119,7 +119,7 @@ function ReportBody() {
   const health = relationshipSourceHealth(sourcesQuery.data ?? []);
   const connectGate = health === "not_connected" || health === "needs_reconnect";
   const knownPromises = useQuery({
-    queryKey: [...commitmentKeys.lists(), "report-known"],
+    queryKey: commitmentKeys.knownForReport(),
     queryFn: ({ signal }) =>
       fetchCommitments({ state: ["open", "at_risk"], limit: REGISTER_PAGE_SIZE }, signal),
     enabled: connectGate,
@@ -131,12 +131,7 @@ function ReportBody() {
   );
 
   const scansQuery = useReportScanList();
-  const {
-    earlierAuditsError,
-    hasMoreAudits,
-    loadEarlierAudits,
-    loadingEarlierAudits,
-  } = scansQuery;
+  const { earlierAuditsError, hasMoreAudits, loadEarlierAudits, loadingEarlierAudits } = scansQuery;
   const effectiveScanId = scanId ?? latestCompletedScan(scansQuery.data ?? [])?.id ?? null;
 
   const scanQuery = useReportScan(effectiveScanId, {
@@ -299,7 +294,9 @@ function ReportBody() {
         both until the source list is in the cache, so the connect step is
         not hydrated over this loading line.
       */}
-      {sourcesQuery.isPending || (!scanId && scansQuery.isPending) || (connectGate && knownPromises.isPending) ? (
+      {sourcesQuery.isPending ||
+      (!scanId && scansQuery.isPending) ||
+      (connectGate && knownPromises.isPending) ? (
         <p className="flex items-center gap-2 text-[13px] text-primary/55">
           <CircleNotchIcon className="size-4 animate-spin" /> Loading your report.
         </p>
@@ -474,11 +471,7 @@ function GoogleConnectionStep({
           {busy ? "Connecting…" : reconnect ? "Reconnect Google" : "Connect Gmail & Calendar"}
         </Button>
       }
-      description={reportConnectDescription(
-        reconnect,
-        knownCopy,
-        REVENUE_EVIDENCE_LOOKBACK_LABEL,
-      )}
+      description={reportConnectDescription(reconnect, knownCopy, REVENUE_EVIDENCE_LOOKBACK_LABEL)}
       image="openPromises"
       learnMore={[
         { label: "See the message each promise came from" },

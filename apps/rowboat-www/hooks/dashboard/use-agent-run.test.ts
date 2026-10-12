@@ -10,9 +10,7 @@ describe("useAgentRun", () => {
     expect(source).toContain('shownAgentError(error, "Failed to send message")');
     expect(source).toContain('shownAgentError(error, "Could not stop the run")');
     expect(source).toContain('shownAgentError(error, "Could not resolve the approval")');
-    expect(source).toContain(
-      'shownAgentError(new Error(message), "Could not load conversation")',
-    );
+    expect(source).toContain('shownAgentError(new Error(message), "Could not load conversation")');
     expect(source).toContain("const explained = friendlyAgentError(message);");
     expect(source).toContain("runLimitCopy()");
     expect(source).toContain("runFailedCopy()");

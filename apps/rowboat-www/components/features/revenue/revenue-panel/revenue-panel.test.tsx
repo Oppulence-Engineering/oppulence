@@ -19,7 +19,7 @@ describe("RevenuePanel", () => {
     expect(source).toContain("subscribeDueCommitments");
     expect(source).toContain("dismissDueCommitments()");
     expect(source).toContain("overdueOnly={Boolean(overdueBefore)}");
-    expect(source).toContain("dueBefore: overdueBefore ?? \"\"");
+    expect(source).toContain('dueBefore: overdueBefore ?? ""');
   });
 
   it("opens the company named on a note", () => {

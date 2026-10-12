@@ -182,7 +182,9 @@ export function ComposioConnections({
                     {composioProductName(toolkit.name, toolkit.slug)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {connection ? composioConnectionStatusLabel(connection.status) : "Not connected"}
+                    {connection
+                      ? composioConnectionStatusLabel(connection.status)
+                      : "Not connected"}
                   </p>
                 </div>
                 {connection ? (

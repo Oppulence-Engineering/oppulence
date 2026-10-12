@@ -99,9 +99,9 @@ describe("synced console preferences", () => {
 
     renderPreferences();
 
-    expect(await screen.findByRole("combobox", { name: "Default agent, Assistant" })).toHaveTextContent(
-      "Assistant",
-    );
+    expect(
+      await screen.findByRole("combobox", { name: "Default agent, Assistant" }),
+    ).toHaveTextContent("Assistant");
   });
 
   it("associates the display name field with its label", async () => {

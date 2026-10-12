@@ -494,4 +494,3 @@ function RejectDialog({
     </Dialog>
   );
 }
-

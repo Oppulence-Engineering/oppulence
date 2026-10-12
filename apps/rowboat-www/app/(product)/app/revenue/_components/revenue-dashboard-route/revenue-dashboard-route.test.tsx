@@ -29,7 +29,10 @@ describe("RevenueDashboardRoute", () => {
     const route = screen.getByRole("region", { name: "Revenue" });
     expect(route).toHaveAttribute("data-slot", "revenue-dashboard-route");
     expect(route).toHaveTextContent("Revenue");
-    const source = fs.readFileSync(path.join(import.meta.dirname, "revenue-dashboard-route.tsx"), "utf8");
+    const source = fs.readFileSync(
+      path.join(import.meta.dirname, "revenue-dashboard-route.tsx"),
+      "utf8",
+    );
     expect(source).toContain("onOpenCompany={openCompany}");
   });
 });

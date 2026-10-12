@@ -121,7 +121,10 @@ describe("validated console adapter", () => {
   it("names a console resource failure without the stored phrase", async () => {
     dashboard.dashboardRequest.mockResolvedValue(
       new Response(
-        JSON.stringify({ code: "console_resource_not_found", detail: "console resource not found" }),
+        JSON.stringify({
+          code: "console_resource_not_found",
+          detail: "console resource not found",
+        }),
         { status: 404 },
       ),
     );
@@ -132,7 +135,9 @@ describe("validated console adapter", () => {
       }),
     );
     expect(consoleFailureCopy("console resource already exists")).toBe("This is already saved.");
-    expect(consoleFailureCopy("request body exceeds 262144 bytes")).toBe("This is too large to save.");
+    expect(consoleFailureCopy("request body exceeds 262144 bytes")).toBe(
+      "This is too large to save.",
+    );
     expect(consoleFailureCopy("Try later")).toBeNull();
   });
 });

@@ -470,7 +470,9 @@ export function AgentsView({
                   <div>
                     <p className="text-xs text-muted-foreground">Model</p>
                     <p className="mt-1 text-sm">
-                      {selected.model?.trim() ? calledModelLabel(selected.model) : "Workspace default"}
+                      {selected.model?.trim()
+                        ? calledModelLabel(selected.model)
+                        : "Workspace default"}
                     </p>
                   </div>
                 </dl>
@@ -519,7 +521,9 @@ export function AgentsView({
                       <p className="text-xs text-muted-foreground">Required connections</p>
                       <p className="mt-1 text-sm">
                         {selected.connectorReqs?.length
-                          ? selected.connectorReqs.map((name) => agentConnectionLabel(name)).join(", ")
+                          ? selected.connectorReqs
+                              .map((name) => agentConnectionLabel(name))
+                              .join(", ")
                           : "None"}
                       </p>
                     </div>

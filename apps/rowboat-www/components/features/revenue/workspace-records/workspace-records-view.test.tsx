@@ -1560,11 +1560,13 @@ describe("empty note template heading", () => {
 
   it("names the template links instead of a generic actions heading", () => {
     expect(source).toContain('aria-label="Notes and templates"');
-    expect(source).toContain("uppercase tracking-wide text-primary/45\">\n                Templates");
+    expect(source).toContain(
+      'uppercase tracking-wide text-primary/45">\n                Templates',
+    );
     expect(source).toContain("<Plus /> New template");
     expect(source).not.toContain("<Plus /> Create template");
     expect(source).not.toContain(
-      "uppercase tracking-wide text-primary/45\">\n                Actions",
+      'uppercase tracking-wide text-primary/45">\n                Actions',
     );
     expect(source).toContain(
       '{ label: "Heading 2", icon: TextHTwo, run: () => editor.tf.toggleBlock("h2") }',
@@ -1608,9 +1610,7 @@ describe("people directory copy", () => {
     );
     expect(source).toContain("notesTimelineUnread(");
     expect(source).toContain("notesTimelineFailureCopy()");
-    expect(source).toContain(
-      "peopleListEmptyCopy(directoryTitle.filtered, gmailConnected)",
-    );
+    expect(source).toContain("peopleListEmptyCopy(directoryTitle.filtered, gmailConnected)");
     expect(source).toContain("listNeverLoaded(peopleQuery.isError, peopleQuery.data)");
     expect(source).toContain('listRefreshFailureCopy("people")');
     expect(source).toContain("listNeverLoaded(notesQuery.isError, notesQuery.data)");
@@ -1645,9 +1645,7 @@ describe("people directory copy", () => {
     expect(source).not.toContain("{person.relationshipCount}");
     expect(source).toContain("personSeniorityLabel(person.seniority)");
     expect(source).toContain("personFactValue(attribute.dimension, attribute.value)");
-    expect(source).toContain(
-      'personFactValue("employment_status", person.employmentStatus)',
-    );
+    expect(source).toContain('personFactValue("employment_status", person.employmentStatus)');
     expect(source).toContain('person.employmentStatus === "departed"');
     expect(source).not.toContain("{person.seniority}");
     expect(source).not.toContain("{attribute.value}");
@@ -1656,7 +1654,7 @@ describe("people directory copy", () => {
     expect(source).toContain("personKnownFact(person.location)");
     expect(source).toContain("personLastInteractionLabel(person.lastInteractionAt)");
     expect(source).toContain('["Company", personCompanyTitle(person) || undefined]');
-    expect(source).not.toContain("{person.orgName || \"—\"}");
+    expect(source).not.toContain('{person.orgName || "—"}');
     expect(source).toContain("personSheetDetail(label, value)");
     expect(source).not.toContain('{value || "Not known"}');
     expect(source).toContain('["Role", personDirectoryRole(person)]');
@@ -1690,9 +1688,7 @@ describe("people directory copy", () => {
     expect(source).toContain('errMessage(error, "Could not remove this person.")');
     expect(source).toContain("removePersonConfirmCopy(person.displayName)");
     expect(source).not.toContain("window.confirm");
-    expect(removePersonConfirmCopy("Morgan Hale")).toContain(
-      "later sync will not recreate them",
-    );
+    expect(removePersonConfirmCopy("Morgan Hale")).toContain("later sync will not recreate them");
     expect(source).not.toContain("Could not load profile evidence.");
   });
 

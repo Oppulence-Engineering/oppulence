@@ -163,7 +163,9 @@ describe("source product copy", () => {
       "Quote: I will send the proposal.",
     ]);
     const joined = lines.join("\n");
-    expect(joined).not.toMatch(/promised_by_me|user_confirmed|session-1|local-user|meeting-counterparty|true/);
+    expect(joined).not.toMatch(
+      /promised_by_me|user_confirmed|session-1|local-user|meeting-counterparty|true/,
+    );
     expect(
       activityEvidenceLines(null, {
         commitment_text: "Send the quay quote",
@@ -183,9 +185,9 @@ describe("source product copy", () => {
         "User decided a proposed conversation change.",
       ),
     ).toEqual(["Promise: Send the proposal", "Quote: I will send the proposal."]);
-    expect(
-      activityEvidenceLines(null, { commitment_direction: "promised_by_them" }),
-    ).toEqual(["Direction: They owe us"]);
+    expect(activityEvidenceLines(null, { commitment_direction: "promised_by_them" })).toEqual([
+      "Direction: They owe us",
+    ]);
     expect(activityEvidenceLines(null, { commitment_direction: "mutual" })).toEqual([
       "Direction: We both owe",
     ]);
@@ -210,20 +212,27 @@ describe("source product copy", () => {
       "They said: by Friday",
       "Direction: We owe them",
     ]);
-    expect(activityEvidenceLines(null, { commitment_owner: "them", commitment_status: "dropped" })).toEqual([
-      "They made this promise",
-      "This promise was dropped",
+    expect(
+      activityEvidenceLines(null, { commitment_owner: "them", commitment_status: "dropped" }),
+    ).toEqual(["They made this promise", "This promise was dropped"]);
+    expect(
+      activityEvidenceLines(null, {
+        commitment_owner: "local-user",
+        commitment_status: "fulfilled",
+      }),
+    ).toEqual(["We made this promise", "This promise was kept"]);
+    expect(activityEvidenceLines(null, { commitment_status: "done" })).toEqual([
+      "This promise is done",
     ]);
-    expect(activityEvidenceLines(null, { commitment_owner: "local-user", commitment_status: "fulfilled" })).toEqual([
-      "We made this promise",
-      "This promise was kept",
-    ]);
-    expect(activityEvidenceLines(null, { commitment_status: "done" })).toEqual(["This promise is done"]);
     expect(activityEvidenceLines(null, { commitment_status: "cancelled" })).toEqual([
       "This promise was called off",
     ]);
-    expect(activityEvidenceLines(null, { commitment_status: "missed" })).toEqual(["This promise was missed"]);
-    expect(activityEvidenceLines(null, { commitment_status: "waived" })).toEqual(["This promise was waived"]);
+    expect(activityEvidenceLines(null, { commitment_status: "missed" })).toEqual([
+      "This promise was missed",
+    ]);
+    expect(activityEvidenceLines(null, { commitment_status: "waived" })).toEqual([
+      "This promise was waived",
+    ]);
     expect(activityEvidenceLines(null, { commitment_status: "superseded" })).toEqual([
       "This promise was replaced",
     ]);
@@ -326,11 +335,9 @@ describe("source product copy", () => {
     );
     expect(sourceLastErrorCopy("cursor_lost")).toBe("Reading stopped. Reconnect or try again.");
     expect(sourceLastErrorCopy("   ")).toBe("");
-    expect(
-      sourceLastErrorCopy(
-        "Account monitoring is paused for this workspace.",
-      ),
-    ).toBe("Account monitoring is paused for this workspace.");
+    expect(sourceLastErrorCopy("Account monitoring is paused for this workspace.")).toBe(
+      "Account monitoring is paused for this workspace.",
+    );
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     expect(sourceLastLookedTitle(twoHoursAgo)).toBe("Last looked 2 hours ago");
     expect(sourceLastLookedTitle("")).toBe("");
@@ -359,9 +366,9 @@ describe("source product copy", () => {
       }),
     ).toEqual(["No attachments", "First email in this thread", "Subject was left blank"]);
     expect(activityEvidenceLines(null, { has_attachments: 1 })).toEqual(["Has Attachments: 1"]);
-    expect(activityLinesBesideSummary(["Includes an attachment"], "Includes an attachment")).toEqual(
-      [],
-    );
+    expect(
+      activityLinesBesideSummary(["Includes an attachment"], "Includes an attachment"),
+    ).toEqual([]);
     expect(activityLinesBesideSummary(["Includes an attachment"], "true")).toEqual([
       "Includes an attachment",
     ]);
@@ -529,7 +536,9 @@ describe("source product copy", () => {
       "Preview: The harbor quote is attached.",
     ]);
     expect(mail.join("\n")).not.toMatch(/9c8dfa9b|thread-1|SENT|InteractionType|sizeBytes/);
-    expect(activityEvidenceLines({ visibility: "private" }, null)).toEqual(["Only you can see this"]);
+    expect(activityEvidenceLines({ visibility: "private" }, null)).toEqual([
+      "Only you can see this",
+    ]);
     expect(activityEvidenceLines({ visibility: "full" }, null)).toEqual(["The message is saved"]);
     const reply = activityEvidenceLines(null, {
       mutual_action_plan_response: {
@@ -569,15 +578,15 @@ describe("source product copy", () => {
         },
       }),
     ).toEqual(["Corrected to: Avery", "Calendar attendee confirmed the speaker."]);
-    expect(activityEvidenceLines(null, { mutual_action_plan_response: { kind: "confirm" } })).toEqual([
-      "They confirmed the plan",
-    ]);
-    expect(activityEvidenceLines(null, { mutual_action_plan_response: { kind: "blocked" } })).toEqual([
-      "They said this is blocked",
-    ]);
-    expect(activityEvidenceLines(null, { mutual_action_plan_response: { kind: "completed" } })).toEqual([
-      "They marked this done",
-    ]);
+    expect(
+      activityEvidenceLines(null, { mutual_action_plan_response: { kind: "confirm" } }),
+    ).toEqual(["They confirmed the plan"]);
+    expect(
+      activityEvidenceLines(null, { mutual_action_plan_response: { kind: "blocked" } }),
+    ).toEqual(["They said this is blocked"]);
+    expect(
+      activityEvidenceLines(null, { mutual_action_plan_response: { kind: "completed" } }),
+    ).toEqual(["They marked this done"]);
     expect(
       activityEvidenceLines(null, {
         mutual_action_plan_response: { kind: "comment", comment: "Looks right." },
@@ -695,7 +704,10 @@ describe("source product copy", () => {
     ).toEqual(["Corrected to: Security review is complete", "The customer stated this directly."]);
     expect(
       activityEvidenceLines(null, {
-        review_decision: { kind: "approve", reason: "User decided a proposed conversation change." },
+        review_decision: {
+          kind: "approve",
+          reason: "User decided a proposed conversation change.",
+        },
       }),
     ).toEqual(["You approved this"]);
     expect(
@@ -768,7 +780,7 @@ describe("source product copy", () => {
           "ada@acme.com": 0.9,
           "sam@acme.com": 0.6,
           "local-user": 0.9,
-          "speaker_2": 0.6,
+          speaker_2: 0.6,
         },
         capture_caveats: [
           "Attendance comes from the invite alone.",
@@ -867,9 +879,12 @@ describe("source product copy", () => {
       "The microphone was silent",
     ]);
     expect(lines.join("\n")).not.toMatch(/sess-18|fp-18|untilTranscribed|Session Id/);
-    expect(activityEvidenceLines(null, { audio_retention: "always", transcript_payload_truncated: false })).toEqual([
-      "The recording is kept",
-    ]);
+    expect(
+      activityEvidenceLines(null, {
+        audio_retention: "always",
+        transcript_payload_truncated: false,
+      }),
+    ).toEqual(["The recording is kept"]);
     expect(activityEvidenceLines(null, { audio_retention: "never" })).toEqual([
       "The recording is not kept",
     ]);
@@ -1018,7 +1033,9 @@ describe("source product copy", () => {
       "Avery: Security review may slip.",
       "We should look at the renewal.",
     ]);
-    expect(spoken.join("\n")).not.toMatch(/sess-18|fp-18|speaker_2|local-user|speakerConfidence|startMs/);
+    expect(spoken.join("\n")).not.toMatch(
+      /sess-18|fp-18|speaker_2|local-user|speakerConfidence|startMs/,
+    );
   });
 
   it("names a reviewed conversation without the claim id", () => {
@@ -1060,7 +1077,12 @@ describe("source product copy", () => {
           speakerLabel: "You",
         },
         { id: "claim:review", kind: "claim", value: "one", confidence: 0.2 },
-        { id: "claim:again", kind: "risk", value: "Security review may slip", speakerLabel: "Avery" },
+        {
+          id: "claim:again",
+          kind: "risk",
+          value: "Security review may slip",
+          speakerLabel: "Avery",
+        },
       ],
       participant_resolution: [
         {
@@ -1102,9 +1124,9 @@ describe("source product copy", () => {
     expect(lines.join("\n")).not.toMatch(
       /claim:|speaker_2|Speaker 1|former_customer|\bone\b|calendar_contact|anonymous:|0\.9/,
     );
-    expect(activityEvidenceLines(null, { conversation_claims: [{ kind: "risk", value: "local-user" }] })).toEqual([
-      "Nothing else was saved with this activity.",
-    ]);
+    expect(
+      activityEvidenceLines(null, { conversation_claims: [{ kind: "risk", value: "local-user" }] }),
+    ).toEqual(["Nothing else was saved with this activity."]);
   });
 
   it("names a proposed follow-up without the action id", () => {
@@ -1142,7 +1164,8 @@ describe("source product copy", () => {
         {
           actionType: "crm_update",
           channel: "crm",
-          reason: "Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.",
+          reason:
+            "Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.",
           proposedMessage: "- lifecycle: renewal",
         },
         { actionType: "local-user", reason: "This is not a known follow-up." },
@@ -1202,7 +1225,9 @@ describe("source product copy", () => {
     expect(lines.join("\n")).not.toMatch(/fulfilled|cancelled|session-1|Commitment Updates/);
     expect(
       activityEvidenceLines(null, {
-        commitment_updates: [{ commitmentId: "only-an-id", status: "local-user", text: "local-user" }],
+        commitment_updates: [
+          { commitmentId: "only-an-id", status: "local-user", text: "local-user" },
+        ],
       }),
     ).toEqual(["Nothing else was saved with this activity."]);
   });
@@ -1238,17 +1263,16 @@ describe("source product copy", () => {
         direction: "outbound",
       }),
     ).toEqual(["Provider: Gmail", "Direction: Outbound"]);
-    expect(activityEvidenceLines(null, { provider: "desktop_note", direction: "inbound" })).toEqual([
-      "Provider: A note",
-      "Direction: Inbound",
-    ]);
+    expect(activityEvidenceLines(null, { provider: "desktop_note", direction: "inbound" })).toEqual(
+      ["Provider: A note", "Direction: Inbound"],
+    );
     expect(activityEvidenceLines(null, { provider: "hubspot" })).toEqual(["Provider: HubSpot"]);
-    expect(activityEvidenceLines(null, { provider: "local-user", direction: "meeting-counterparty" })).toEqual([
-      "Nothing else was saved with this activity.",
-    ]);
-    expect(activityLinesBesideSummary(["Provider: Gmail", "Direction: Outbound"], "Gmail")).toEqual([
-      "Direction: Outbound",
-    ]);
+    expect(
+      activityEvidenceLines(null, { provider: "local-user", direction: "meeting-counterparty" }),
+    ).toEqual(["Nothing else was saved with this activity."]);
+    expect(activityLinesBesideSummary(["Provider: Gmail", "Direction: Outbound"], "Gmail")).toEqual(
+      ["Direction: Outbound"],
+    );
   });
 
   it("names who speaks next without the stored reply token", () => {

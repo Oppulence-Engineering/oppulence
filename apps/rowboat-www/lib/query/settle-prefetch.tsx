@@ -1,6 +1,11 @@
 "use client";
 
-import { hydrate, useQueryClient, type DehydratedState, type QueryClient } from "@tanstack/react-query";
+import {
+  hydrate,
+  useQueryClient,
+  type DehydratedState,
+  type QueryClient,
+} from "@tanstack/react-query";
 import { useMemo, type ReactNode } from "react";
 
 /**

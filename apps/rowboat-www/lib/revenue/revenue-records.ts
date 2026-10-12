@@ -59,9 +59,7 @@ export function attentionWithCompanyTitles<
   }[],
 ): T[] {
   const titles = new Map(
-    companies
-      .filter((row) => row.kind !== "person")
-      .map((row) => [row.id, companyName(row)]),
+    companies.filter((row) => row.kind !== "person").map((row) => [row.id, companyName(row)]),
   );
   return items.map((item) => {
     const title = titles.get(item.relationshipId);
@@ -185,10 +183,7 @@ function earlierNoteTime(left?: string, right?: string): string | undefined {
 }
 
 /** The day buckets follow the first write. A later save stays on the card. */
-export function workspaceNoteCreatedAt(note: {
-  createdAt?: string;
-  occurredAt: string;
-}): string {
+export function workspaceNoteCreatedAt(note: { createdAt?: string; occurredAt: string }): string {
   return note.createdAt?.trim() || note.occurredAt;
 }
 
@@ -339,7 +334,9 @@ export function detectorsWithoutTasks<
 
 export function exposureReasons<T extends { reason: string; relationships: number }>(
   reasons: readonly T[] | undefined,
-  attention: readonly { relationshipId: string; reasonCode?: string; recommendationId?: string }[] | undefined,
+  attention:
+    | readonly { relationshipId: string; reasonCode?: string; recommendationId?: string }[]
+    | undefined,
   actions: readonly { id: string; actionType?: string; channel?: string }[] | undefined,
 ): T[] {
   const list = [...(reasons ?? [])];

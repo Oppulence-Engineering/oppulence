@@ -348,9 +348,12 @@ const PROJECTION_GAP_REASONS: Record<string, string> = {
 };
 
 export function projectionReasonCopy(reason: string): string {
-  return reason.replace(/No active ([a-z][a-z ]*) assertion at evaluation time\./g, (full, key: string) => {
-    return PROJECTION_GAP_REASONS[key] ?? full;
-  });
+  return reason.replace(
+    /No active ([a-z][a-z ]*) assertion at evaluation time\./g,
+    (full, key: string) => {
+      return PROJECTION_GAP_REASONS[key] ?? full;
+    },
+  );
 }
 
 const HIDDEN_ACTIVITY_KEYS = new Set([
@@ -502,7 +505,8 @@ export function activityConversationSummary(summary: string): string | null {
   const claims = Number(match[3]);
   if (!title || title === "local-user") return null;
   if (!Number.isInteger(lines) || lines < 0 || !Number.isInteger(claims) || claims < 0) return null;
-  const lineLabel = lines === 1 ? "1 line in the transcript" : `${String(lines)} lines in the transcript`;
+  const lineLabel =
+    lines === 1 ? "1 line in the transcript" : `${String(lines)} lines in the transcript`;
   const claimLabel = claims === 1 ? "1 claim" : `${String(claims)} claims`;
   return `${title} · ${lineLabel} · ${claimLabel}`;
 }
@@ -620,7 +624,12 @@ export function activitySourceSnapshotSummary(summary: string): string | null {
   const calendar = /^Calendar meeting observed with (.+)$/.exec(summary.trim());
   if (calendar?.[1]) {
     const who = calendar[1].trim();
-    if (!who || who === "local-user" || who === "meeting-counterparty" || /^[a-z0-9_:-]+$/.test(who)) {
+    if (
+      !who ||
+      who === "local-user" ||
+      who === "meeting-counterparty" ||
+      /^[a-z0-9_:-]+$/.test(who)
+    ) {
       return "Meeting";
     }
     return `Meeting with ${who}`;
@@ -628,13 +637,15 @@ export function activitySourceSnapshotSummary(summary: string): string | null {
   const hubspot = /^HubSpot company snapshot: ?(.*)$/.exec(summary.trim());
   if (hubspot) {
     const name = (hubspot[1] ?? "").trim();
-    if (!name || name === "local-user" || /^HubSpot company /.test(name)) return "Company from HubSpot";
+    if (!name || name === "local-user" || /^HubSpot company /.test(name))
+      return "Company from HubSpot";
     return `Company from HubSpot: ${name}`;
   }
   const slack = /^Slack message observed in #(.+)$/.exec(summary.trim());
   if (slack?.[1]) {
     const channel = slack[1].trim();
-    if (!channel || channel === "local-user" || /^Slack channel /.test(channel)) return "Message in Slack";
+    if (!channel || channel === "local-user" || /^Slack channel /.test(channel))
+      return "Message in Slack";
     return `Message in #${channel}`;
   }
   return null;
@@ -1039,7 +1050,8 @@ function activityClaimSpeaker(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const label = value.trim();
   if (!label || label === "local-user" || label === "meeting-counterparty") return null;
-  if (label === "Other" || label === "Unknown speaker" || /^speaker\s+\d+$/i.test(label)) return null;
+  if (label === "Other" || label === "Unknown speaker" || /^speaker\s+\d+$/i.test(label))
+    return null;
   if (/^[a-z0-9_:-]+$/.test(label)) return null;
   return label;
 }
@@ -1167,7 +1179,10 @@ function activityOutsideDomain(item: unknown): string | null {
   const raw =
     typeof item === "string"
       ? item
-      : item && typeof item === "object" && !Array.isArray(item) && typeof (item as { domain?: unknown }).domain === "string"
+      : item &&
+          typeof item === "object" &&
+          !Array.isArray(item) &&
+          typeof (item as { domain?: unknown }).domain === "string"
         ? (item as { domain: string }).domain
         : "";
   const domain = raw.trim();
@@ -1410,7 +1425,8 @@ function activitySnapshotLine(key: string, value: unknown): string | null {
   if (key === "last_modified_at" || key === "hs_lastmodifieddate") {
     return activityMessageDayLine("Last change", value) ?? "";
   }
-  if (key === "lifecycle_stage" || key === "lifecyclestage") return activityHubSpotStage(value) ?? "";
+  if (key === "lifecycle_stage" || key === "lifecyclestage")
+    return activityHubSpotStage(value) ?? "";
   if (key === "industry") {
     const shown = activityReadableToken(activityScalar(value));
     return shown ? `Industry: ${shown}` : "";
@@ -1616,7 +1632,8 @@ function activityContradictionLines(value: unknown): string[] {
   if (!record) return [];
   const lines: string[] = [];
   const dimension = activityScalar(record.dimension);
-  const label = ACTIVITY_DIMENSION_LABELS[dimension] ?? (dimension ? enumLabel(dimension) : "Detail");
+  const label =
+    ACTIVITY_DIMENSION_LABELS[dimension] ?? (dimension ? enumLabel(dimension) : "Detail");
   const sides = Array.isArray(record.sides) ? record.sides : [];
   for (const side of sides) {
     const reading = activitySideReading(side);

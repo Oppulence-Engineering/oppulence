@@ -130,7 +130,8 @@ const API_REFERENCE_DESCRIPTIONS: Record<string, string> = {
     "Lists built-in workflow templates. Each one includes instructions and a start time you can use as-is.",
   "List task run logs":
     "Returns the events for a run, in order. Pass the last event you have seen to fetch only newer ones.",
-  "Append task run logs": "Adds events to a run. Sending the same event again does not create a duplicate.",
+  "Append task run logs":
+    "Adds events to a run. Sending the same event again does not create a duplicate.",
   "Stream task run progress": "Streams events for a run until it finishes or you disconnect.",
   "Poll task run status": "Returns a short status for one run.",
   "Get background task template":
@@ -301,7 +302,10 @@ const API_REFERENCE_FIELD_NOTES: ReadonlyArray<readonly [string, string]> = [
     "Default task slug used when instantiating this template.",
     "Default name used when creating a workflow from this template.",
   ],
-  ["Task slug override. Defaults to template.taskSlug.", "Name override. Uses the template name when empty."],
+  [
+    "Task slug override. Defaults to template.taskSlug.",
+    "Name override. Uses the template name when empty.",
+  ],
   ["Stable logical artifact id.", "Id for this capture."],
   ["Artifact kind.", "Capture type."],
   ["Artifact schema version.", "Capture version."],
@@ -355,7 +359,10 @@ const API_REFERENCE_FIELD_NOTES: ReadonlyArray<readonly [string, string]> = [
     "AES-GCM sealed OAuth handoff payload. Internal storage field.",
     "Stored sign-in handoff. This field is internal.",
   ],
-  ["Hash of summary, facts, and sealed payload.", "Hash of the summary, the stored facts, and the saved payload."],
+  [
+    "Hash of summary, facts, and sealed payload.",
+    "Hash of the summary, the stored facts, and the saved payload.",
+  ],
   [
     "Preflight state. Facade unavailability keeps pending (fail closed).",
     "Sending check. If the check is unavailable, the action stays pending.",
@@ -415,12 +422,18 @@ const API_REFERENCE_FIELD_NOTES: ReadonlyArray<readonly [string, string]> = [
     "Requests or retries the sending check for the current revision and stores the immutable decision snapshot. A fresh unexpired decision for the same revision is returned without provider cost. Facade unavailability keeps the action pending (fail closed).",
     "Runs the sending check again for this revision and keeps the decision. A recent decision for the same revision is reused. If the check is unavailable, the action stays pending.",
   ],
-  ["Policy facade unavailable; the action stays pending.", "The sending check is unavailable, so the action stays pending."],
+  [
+    "Policy facade unavailable; the action stays pending.",
+    "The sending check is unavailable, so the action stays pending.",
+  ],
   [
     "Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.",
     "Returns this workspace's sending setup, and creates a local workspace the first time.",
   ],
-  ["Policy facade unavailable; the link fails closed.", "The sending check is unavailable, so the link is not saved."],
+  [
+    "Policy facade unavailable; the link fails closed.",
+    "The sending check is unavailable, so the link is not saved.",
+  ],
   [
     "Receives arbitrary normalized webhook events, verified via X-Webhook-Signature HMAC over X-Webhook-Timestamp plus the raw body using WEBHOOK_SIGNING_SECRET. The Unix timestamp must be within five minutes of the server clock to prevent replay. The request names the owning userId; source defaults to webhook and may be mcp, github, linear, or stripe for connector/provider gateways. Payload is sealed, and routing uses the same cloud event router as provider webhooks.",
     "Receives a signed event from a connected service. The signature and time are checked, and the contents are stored.",
@@ -489,9 +502,15 @@ function presentReferenceProse(value: string): string {
       "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
       "When this task starts. That can be a schedule or an incoming event. An empty value clears it.",
     )
-    .replaceAll("Server timestamp for the last mirrored task update.", "When this task was last updated.")
+    .replaceAll(
+      "Server timestamp for the last mirrored task update.",
+      "When this task was last updated.",
+    )
     .replaceAll("Task instructions mirrored from task.yaml.", "Instructions for this task.")
-    .replaceAll("Mirrored background tasks visible to this user.", "Background tasks for this person.")
+    .replaceAll(
+      "Mirrored background tasks visible to this user.",
+      "Background tasks for this person.",
+    )
     .replaceAll(
       "Mirrored run state for one desktop background task execution or queued remote trigger.",
       "One background run, including a run waiting to start.",
@@ -512,11 +531,20 @@ function presentReferenceProse(value: string): string {
       "Control signal sent to a Temporal-backed API-worker run.",
       "Pause, resume, or update sent to a cloud run.",
     )
-    .replaceAll("Background task artifact mirrors owned by the user.", "Workflow notes for this person.")
-    .replaceAll("Background task run event mirrors owned by the user.", "Run events for this person.")
+    .replaceAll(
+      "Background task artifact mirrors owned by the user.",
+      "Workflow notes for this person.",
+    )
+    .replaceAll(
+      "Background task run event mirrors owned by the user.",
+      "Run events for this person.",
+    )
     .replaceAll("Background task run mirrors owned by the user.", "Runs for this person.")
     .replaceAll("Background task mirrors owned by the user.", "Background tasks for this person.")
-    .replaceAll("Mirrored JSONL event from a background task run log.", "One event from a background run.")
+    .replaceAll(
+      "Mirrored JSONL event from a background task run log.",
+      "One event from a background run.",
+    )
     .replaceAll(
       "Zero-based sequence number for a mirrored JSONL run event.",
       "Event number, starting at zero.",
@@ -579,9 +607,7 @@ const OPERATION_VALUE_LABELS: Record<string, string> = {
 
 /** The values listed beside an operation field, as one sentence. */
 export function operationFieldCopy(values: readonly string[]): string {
-  const labels = values.map(
-    (value) => OPERATION_VALUE_LABELS[value] ?? value.replaceAll("_", " "),
-  );
+  const labels = values.map((value) => OPERATION_VALUE_LABELS[value] ?? value.replaceAll("_", " "));
   if (labels.length === 0) return OPERATION_WITHOUT_VALUES;
   const sentence =
     labels.length === 1
