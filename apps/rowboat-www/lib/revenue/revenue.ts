@@ -1040,8 +1040,8 @@ const SOURCE_DEGRADATION =
 
 /**
  * Older attention rows said commitment. A source that stopped reading lists
- * four internal states. The queue names the promise, or says to read that
- * source again.
+ * four internal states. Someone who left is named without the stored
+ * semicolon. The queue names the promise, or says to read that source again.
  */
 export function attentionExplanationCopy(explanation: string | null | undefined): string {
   const raw = explanation?.trim() ?? "";
@@ -1067,7 +1067,21 @@ export function attentionExplanationCopy(explanation: string | null | undefined)
     const noun = openRisk[1] === "1" ? "risk is still open" : "risks are still open";
     return `${openRisk[1]} ${noun}. ${openRisk[2]}`;
   }
+  const departed = departedContactCopy(raw);
+  if (departed) return departed;
   return actionReasonCopy(raw);
+}
+
+/** A departed contact stores a semicolon and "Quiet for N days". The queue says the mail stopped. */
+function departedContactCopy(raw: string): string | null {
+  const match =
+    /^(.+) has left; mail to that address is no longer delivered\. Quiet for (\d+) days because there is nobody here to reply\.$/.exec(
+      raw,
+    );
+  if (!match?.[1] || !match[2]) return null;
+  const who = match[1];
+  const verb = /\band\b/.test(who) ? "have" : "has";
+  return `${who} ${verb} left, so mail to that address is no longer delivered. It has been quiet for ${countedDays(match[2])} because nobody here can reply.`;
 }
 
 /** Slack and CRM are names. A manual review is a person looking at the action. */

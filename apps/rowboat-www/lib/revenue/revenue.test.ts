@@ -616,6 +616,20 @@ it("names an overdue promise in an older attention sentence", () => {
       "The slack action needs a manual review before it can be tried again.",
     ),
   ).toBe("The Slack action needs a person to review it before you try again.");
+  expect(
+    attentionExplanationCopy(
+      "Sarah Chen has left; mail to that address is no longer delivered. Quiet for 12 days because there is nobody here to reply.",
+    ),
+  ).toBe(
+    "Sarah Chen has left, so mail to that address is no longer delivered. It has been quiet for 12 days because nobody here can reply.",
+  );
+  expect(
+    attentionExplanationCopy(
+      "Sarah Chen and Ada Lovelace has left; mail to that address is no longer delivered. Quiet for 1 days because there is nobody here to reply.",
+    ),
+  ).toBe(
+    "Sarah Chen and Ada Lovelace have left, so mail to that address is no longer delivered. It has been quiet for 1 day because nobody here can reply.",
+  );
 });
 
 it("names a shared plan without the stored hash or a redacted owner", () => {
