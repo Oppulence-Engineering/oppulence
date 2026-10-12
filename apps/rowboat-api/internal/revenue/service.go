@@ -6556,10 +6556,11 @@ func relationshipRowCountAbove(table, column string, n int, visibleOnly bool) pr
 }
 
 // relationshipSheetSuggestionMatch matches suggestion titles the sheet prints
-// from the company stage or from a conversation claim. A risk is not an objection.
+// from the company stage or from a conversation claim. A renewal suggestion
+// says "Up for renewal". A risk is not an objection.
 func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
-	if sheetPhraseMatches("renewal context", needle) {
+	if sheetPhraseMatches("up for renewal", needle) {
 		preds = append(preds, relationship.LifecycleEQ("renewal"))
 	}
 	if sheetPhraseMatches("unresolved objection", needle) {

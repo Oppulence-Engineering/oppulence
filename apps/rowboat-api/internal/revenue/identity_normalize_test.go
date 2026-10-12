@@ -9174,7 +9174,7 @@ func TestRelationshipSearchFindsSuggestionTitles(t *testing.T) {
 	}
 	assertCompanyQuery("Unresolved objection", "Quill Atelier")
 	assertCompanyQuery("Risk raised in a conversation", "Cedar Mill")
-	assertCompanyQuery("Renewal context", "Harbor Ledger")
+	assertCompanyQuery("Up for renewal", "Harbor Ledger")
 	_ = harbor
 }
 
