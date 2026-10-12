@@ -65,7 +65,9 @@ describe("VisualWorkflowBuilder", () => {
     ).toBe(
       "A Gmail, Calendar, or HubSpot event materially changes a customer relationship, commitment, objection, decision, or next step.",
     );
-    expect(component).toHaveTextContent("Read the company, the people on it, and its open promises.");
+    expect(component).toHaveTextContent(
+      "Read the company, the people on it, and its open promises.",
+    );
     expect(component).not.toHaveTextContent("evidence");
     expect(component).toHaveTextContent("Step 1");
     expect(component).toHaveTextContent("Step 2");
@@ -103,8 +105,12 @@ describe("VisualWorkflowBuilder", () => {
       />,
     );
 
-    expect(screen.getByRole("combobox", { name: "Start when, Scheduled time" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "How often, Every 15 minutes" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Start when, Scheduled time" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "How often, Every 15 minutes" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("How often")).toBeInTheDocument();
     expect(screen.getAllByText("Run on a repeating schedule.")).toHaveLength(2);
     expect(screen.queryByText(/cadence/i)).not.toBeInTheDocument();

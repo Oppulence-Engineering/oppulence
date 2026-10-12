@@ -44,10 +44,7 @@ import {
   searchWithoutCompanyGraph,
   withoutPersonDirectoryRecords,
 } from "@/components/features/revenue/relationship-graph/relationship-graph";
-import type {
-  RelationshipGraphEdge,
-  RelationshipGraphNode,
-} from "@/lib/revenue/types";
+import type { RelationshipGraphEdge, RelationshipGraphNode } from "@/lib/revenue/types";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "relationship-graph.tsx"), "utf8");
 
@@ -93,7 +90,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("setActionError(message)");
     expect(source).toContain("Could not propose a follow-up.");
     expect(source).toContain("actionError={actionError}");
-    expect(source).toContain('{actionError ? (');
+    expect(source).toContain("{actionError ? (");
     expect(source).toContain("graphQuery.error && !loadedGraph");
     expect(source).toContain("graphQuery.error && loadedGraph");
     expect(source).toContain('listRefreshFailureCopy("the company graph")');
@@ -160,7 +157,9 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphNodeFieldLabel("source", "status", "live")).toBe("Active");
     expect(graphNodeFieldLabel("source", "status", "connected")).toBe("Active");
     expect(graphNodeFieldLabel("source", "status", "stale")).toBe("Out of date");
-    expect(graphNodeFieldLabel("source", "status", "reconnect_required")).toBe("Reconnect required");
+    expect(graphNodeFieldLabel("source", "status", "reconnect_required")).toBe(
+      "Reconnect required",
+    );
     expect(graphNodeFieldLabel("source", "status", "backfilling")).toBe("Syncing");
     expect(graphNodeSummaryLabel({ kind: "source", status: "stale" })).toBe("Out of date");
     expect(graphNodeFieldLabel("commitment", "status", "open")).toBe("Open");
@@ -176,7 +175,9 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphPromiseDirection("")).toBeUndefined();
     expect(source).toContain("graphPromiseDirection(node.metadata.direction)");
     expect(source).toContain("personResearchConfidenceLabel(node.confidence)");
-    expect(source).not.toContain('node.confidence === undefined ? "" : `${Math.round(node.confidence * 100)}%`');
+    expect(source).not.toContain(
+      'node.confidence === undefined ? "" : `${Math.round(node.confidence * 100)}%`',
+    );
     expect(source).toContain("promiseDueDay(node.dueAt)");
     expect(source).not.toContain("node.dueAt ? new Date(node.dueAt).toLocaleDateString()");
     expect(graphNodeFieldLabel("action", "status", "open")).toBe("Held");
@@ -199,9 +200,9 @@ describe("RelationshipGraphWorkspace", () => {
       graphNodeSummaryLabel({ kind: "action", status: "open", approvalStatus: "pending" }),
     ).toBe("Awaiting approval");
     expect(graphNodeSummaryLabel({ kind: "action", status: "open" })).toBe("Held");
-    expect(
-      graphNodeSummaryLabel({ kind: "source", status: "live", freshness: "current" }),
-    ).toBe("Up to date");
+    expect(graphNodeSummaryLabel({ kind: "source", status: "live", freshness: "current" })).toBe(
+      "Up to date",
+    );
     expect(
       graphNodeSummaryLabel({ kind: "source", status: "not_connected", freshness: "current" }),
     ).toBe("Not connected");
@@ -212,9 +213,7 @@ describe("RelationshipGraphWorkspace", () => {
         freshness: "current",
       }),
     ).toBe("Up to date");
-    expect(
-      graphNodeSummaryLabel({ kind: "commitment", status: "open" }),
-    ).toBe("Open");
+    expect(graphNodeSummaryLabel({ kind: "commitment", status: "open" })).toBe("Open");
     expect(
       graphNodeSummaryLabel({
         kind: "relationship",
@@ -250,16 +249,16 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("node.changedDimensions.join");
     expect(source).toContain('aria-label="Ask this graph"');
     expect(source).not.toContain("Ask graph");
-    expect(source).toContain("disabled={\n              !graphAskChanges(queryDraft,");
+    expect(source).toMatch(/disabled=\{\s*!graphAskChanges\(queryDraft,/);
     expect(graphAskChanges("  ", { query: "", focusDepth: 0 })).toBe(false);
     expect(graphAskChanges("overdue promises", { query: "", focusDepth: 0 })).toBe(true);
     expect(graphAskChanges("", { query: "overdue promises", focusDepth: 0 })).toBe(true);
     expect(graphAskChanges("overdue promises", { query: "overdue promises", focusDepth: 0 })).toBe(
       false,
     );
-    expect(
-      graphAskChanges("", { query: "", focusDepth: 0, selectedNodeId: "company-1" }),
-    ).toBe(true);
+    expect(graphAskChanges("", { query: "", focusDepth: 0, selectedNodeId: "company-1" })).toBe(
+      true,
+    );
     expect(graphAskChanges("", { query: "", focusDepth: 1 })).toBe(true);
     expect(source).not.toContain("Changed since review");
     expect(source).not.toContain("Changed since your last review");
@@ -279,8 +278,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphSavedViewChoice(undefined)).toBe("Saved views");
     expect(nextSavedViewsLabel()).toBe("Show the next saved views");
     expect(source).toContain("remoteSavedViews.length + extraSavedViews.length");
-    expect(source).toContain('comboboxFilterName(\n                  "Company",');
-    expect(source).toContain('comboboxFilterName(\n                  "Saved view",');
+    expect(source).toMatch(/comboboxFilterName\(\s*"Company",/);
+    expect(source).toMatch(/comboboxFilterName\(\s*"Saved view",/);
     expect(source).toContain('placeholder="Choose a company"');
     expect(source).toContain("One company");
     expect(source).not.toContain("Account graph");
@@ -309,19 +308,21 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphCanReset(fresh, "overdue promises")).toBe(true);
     expect(graphCanReset(fresh, "", "saved-view")).toBe(true);
     expect(source).toContain("disabled={!graphCanReset(viewState, queryDraft, activeSavedViewId)}");
-    expect(graphFiltersCleared({
-      ...fresh,
-      scope: "relationship",
-      relationshipId: "company-1",
-      query: "quillhaven",
-      hideIsolated: true,
-      changedSinceReview: true,
-      focusDepth: 2,
-      selectedNodeId: "node-1",
-      asOf: "2026-09-01T15:00:00.000Z",
-      layout: "radial",
-      density: 1,
-    })).toEqual({
+    expect(
+      graphFiltersCleared({
+        ...fresh,
+        scope: "relationship",
+        relationshipId: "company-1",
+        query: "quillhaven",
+        hideIsolated: true,
+        changedSinceReview: true,
+        focusDepth: 2,
+        selectedNodeId: "node-1",
+        asOf: "2026-09-01T15:00:00.000Z",
+        layout: "radial",
+        density: 1,
+      }),
+    ).toEqual({
       ...fresh,
       scope: "relationship",
       relationshipId: "company-1",
@@ -349,7 +350,9 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryAnswer("0 relationships match lifecycle: renewal.", 0)).toBe(
       "No companies are in this graph yet.",
     );
-    expect(graphQueryAnswer("1 relationship matches the query.", 2)).toBe("1 company matches the query.");
+    expect(graphQueryAnswer("1 relationship matches the query.", 2)).toBe(
+      "1 company matches the query.",
+    );
     expect(graphQueryAnswer("1 relationship matches text: dogfood.", 2)).toBe(
       "1 company matches Dogfood.",
     );
@@ -389,7 +392,9 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("sources: gmail, desktop_note")).toBe("Sources: Gmail, A note");
     expect(graphQueryFilterLabel("sources: voice_note")).toBe("Sources: A voice note");
     expect(graphQueryFilterLabel("approval: pending")).toBe("Approval: Awaiting approval");
-    expect(graphQueryFilterLabel("nodes: relationship, evidence")).toBe("Included: Company, Detail");
+    expect(graphQueryFilterLabel("nodes: relationship, evidence")).toBe(
+      "Included: Company, Detail",
+    );
     expect(graphQueryFilterLabel("nodes: commitment")).toBe("Included: Promise");
     expect(graphQueryFilterLabel("edges: blocks")).toBe("Connections: Blocks");
     expect(graphQueryFilterLabel("edges: has_commitment")).toBe("Connections: Has promise");
@@ -632,17 +637,20 @@ describe("RelationshipGraphWorkspace", () => {
     };
     expect(graphDetailNodes(confirmation, [confirmation])).toEqual([]);
     expect(
-      graphDetailNodes(
-        { id: "commitment:promise", evidenceRefs: ["quote"] },
-        [{ id: "evidence:quote", kind: "evidence", evidenceRefs: ["quote"], label: "The quote" }],
-      ).map((item) => item.id),
+      graphDetailNodes({ id: "commitment:promise", evidenceRefs: ["quote"] }, [
+        { id: "evidence:quote", kind: "evidence", evidenceRefs: ["quote"], label: "The quote" },
+      ]).map((item) => item.id),
     ).toEqual(["evidence:quote"]);
     expect(source).toContain("graphDetailNodes(node, graph.nodes)");
-    expect(graphInspectorSummary({ label: "Send the quay echo", summary: "Send the quay echo" })).toBeUndefined();
-    expect(graphInspectorSummary({ label: "Send the quay echo", summary: "  Send the quay echo  " })).toBeUndefined();
-    expect(graphInspectorSummary({ label: "Promise confirmed", summary: "Send the quay echo" })).toBe(
-      "Send the quay echo",
-    );
+    expect(
+      graphInspectorSummary({ label: "Send the quay echo", summary: "Send the quay echo" }),
+    ).toBeUndefined();
+    expect(
+      graphInspectorSummary({ label: "Send the quay echo", summary: "  Send the quay echo  " }),
+    ).toBeUndefined();
+    expect(
+      graphInspectorSummary({ label: "Promise confirmed", summary: "Send the quay echo" }),
+    ).toBe("Send the quay echo");
     expect(
       graphInspectorSummary({
         label: "Promise confirmed",
@@ -754,7 +762,16 @@ describe("RelationshipGraphWorkspace", () => {
       graphEdge("e5", "person:shared", "relationship:company"),
     ];
     const filtered = withoutPersonDirectoryRecords(
-      [company, personRecord, directoryPerson, sharedPerson, evidence, userSource, untouched, unlabeled],
+      [
+        company,
+        personRecord,
+        directoryPerson,
+        sharedPerson,
+        evidence,
+        userSource,
+        untouched,
+        unlabeled,
+      ],
       edges,
     );
 
@@ -794,8 +811,7 @@ describe("RelationshipGraphWorkspace", () => {
 });
 
 function graphNode(
-  overrides: Pick<RelationshipGraphNode, "id" | "kind" | "label"> &
-    Partial<RelationshipGraphNode>,
+  overrides: Pick<RelationshipGraphNode, "id" | "kind" | "label"> & Partial<RelationshipGraphNode>,
 ): RelationshipGraphNode {
   return {
     relationshipIds: [],

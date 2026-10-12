@@ -450,9 +450,7 @@ function RelationshipEnrichment({
     try {
       await setResearchConsent(consented);
       setResult(null);
-      onNotice(
-        consented ? "Public research is on." : "Public research is off.",
-      );
+      onNotice(consented ? "Public research is on." : "Public research is off.");
       await load();
     } catch (error) {
       onError(errMessage(error, "Could not update public research."));
@@ -546,9 +544,7 @@ function RelationshipEnrichment({
         <div className="mt-3 flex flex-col justify-between gap-3 border-t border-border pt-3 sm:flex-row sm:items-center">
           <div className="text-xs text-primary/65">
             {(personEstimate?.people ?? 0) + (companyEstimate?.companies ?? 0) === 0 ? (
-              <p>
-                Profiles are current. New contacts and company changes are checked daily.
-              </p>
+              <p>Profiles are current. New contacts and company changes are checked daily.</p>
             ) : personEstimate && companyEstimate ? (
               <p>
                 {companyEstimate.companies ?? 0} companies · {personEstimate.people ?? 0} people ·
@@ -588,12 +584,7 @@ function RelationshipEnrichment({
                 </div>
               </div>
             ) : (
-              <Button
-                disabled={busy}
-                onClick={() => setConfirming(true)}
-                size="sm"
-                type="button"
-              >
+              <Button disabled={busy} onClick={() => setConfirming(true)} size="sm" type="button">
                 {busy ? <Spinner className="size-4" /> : <Sparkle />}
                 Fill in companies and people
               </Button>
@@ -608,7 +599,6 @@ function RelationshipEnrichment({
     </section>
   );
 }
-
 
 /**
  * Public research fills in a company from names and domains. It does not
@@ -648,7 +638,8 @@ export function enrichmentAvailabilityCopy(status: {
       ? `Available on the ${plan} plan.`
       : "This workspace plan does not include public research.";
   }
-  if (status.reason === "capability_disabled") return "Cloud research is disabled for this workspace.";
+  if (status.reason === "capability_disabled")
+    return "Cloud research is disabled for this workspace.";
   return "Public research stays off until you allow it.";
 }
 
@@ -698,9 +689,7 @@ export function companyDirectoryRemainderLabel(): string {
  * The categories cell used to print only the first tag. A company filed under
  * two categories looked like it had one.
  */
-export function companyCategoriesLabel(
-  categories: readonly string[] | null | undefined,
-): string {
+export function companyCategoriesLabel(categories: readonly string[] | null | undefined): string {
   const names = (categories ?? []).map((item) => item.trim()).filter(Boolean);
   if (names.length === 0) return "Not filled in";
   return names.join(", ");
@@ -1002,7 +991,9 @@ export function RelationshipsView({
     setLifecycle("all");
   };
   const personIds = new Set(
-    rows.filter((relationship) => relationship.kind === "person").map((relationship) => relationship.id),
+    rows
+      .filter((relationship) => relationship.kind === "person")
+      .map((relationship) => relationship.id),
   );
   const companyAttention = attentionWithCompanyTitles(
     attentionForCompanyDirectory(
@@ -1088,7 +1079,13 @@ export function RelationshipsView({
     } finally {
       setLoadingMoreAttention(false);
     }
-  }, [attentionPage.length, extraAttention.length, hasMoreAttention, loadingMoreAttention, onError]);
+  }, [
+    attentionPage.length,
+    extraAttention.length,
+    hasMoreAttention,
+    loadingMoreAttention,
+    onError,
+  ]);
   const loadMoreDuplicates = React.useCallback(async () => {
     if (loadingMoreDuplicates || !hasMoreDuplicates) return;
     setLoadingMoreDuplicates(true);
@@ -1249,9 +1246,7 @@ export function RelationshipsView({
       {relationshipsQuery.isError && relationshipsQuery.data != null ? (
         <ListRefreshFailure
           message={listRefreshFailureCopy("companies")}
-          onRetry={() =>
-            void refetchClearingBanner(() => relationshipsQuery.refetch(), onError)
-          }
+          onRetry={() => void refetchClearingBanner(() => relationshipsQuery.refetch(), onError)}
         />
       ) : null}
       {companiesMissing ? (
@@ -1795,9 +1790,8 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
  * duplicate reviews are not sources, so they do not add to this number.
  */
 export function sourcesNeedingRepair(statuses: readonly { status: string }[]): number {
-  return statuses.filter(
-    (source) => !["connected", "backfilling", "live"].includes(source.status),
-  ).length;
+  return statuses.filter((source) => !["connected", "backfilling", "live"].includes(source.status))
+    .length;
 }
 
 export function sourcesAttentionLabel(count: number): string {
@@ -1967,7 +1961,10 @@ function SourceConnectionCards({
               </div>
               <p className="text-xs text-primary/55">{copy.explanation}</p>
               <details className="text-[11px] text-primary/55">
-                <summary aria-label={`Permissions for ${item.displayName}`} className="cursor-pointer">
+                <summary
+                  aria-label={`Permissions for ${item.displayName}`}
+                  className="cursor-pointer"
+                >
                   Permissions
                 </summary>
                 <p className="mt-1">
@@ -2746,7 +2743,8 @@ export function focusedReviewIntro(): string {
 const REVIEW_CAVEAT_COPY: Record<string, string> = {
   "speaker assignment requires review": "Who spoke is not confirmed.",
   "commitment acceptance requires review": "Who accepted this promise is not confirmed.",
-  "deterministic fallback candidate requires review": "This came from a rule. Check it before saving.",
+  "deterministic fallback candidate requires review":
+    "This came from a rule. Check it before saving.",
 };
 
 /**
@@ -3004,7 +3002,8 @@ export function recoveryExplanationCopy(classification: string, explanation: str
     return "A connected source is out of date, so this promise cannot be checked yet.";
   }
   const suggested = /^Fresh evidence suggests ([a-z0-9_]+); human review is required\.$/.exec(raw);
-  if (suggested) return `${recoveryClassificationLabel(suggested[1] ?? classification)}. Review it before acting.`;
+  if (suggested)
+    return `${recoveryClassificationLabel(suggested[1] ?? classification)}. Review it before acting.`;
   if (raw === "Fresh explicit source evidence proves fulfillment.") {
     return "A newer source shows this promise was kept.";
   }
@@ -3117,9 +3116,7 @@ export function communicationTimelineTitle(
   failed = false,
 ): string {
   if (failed && shown === 0) return "Email & meeting timeline";
-  return hasMore
-    ? `Email & meeting timeline (${shown}+)`
-    : `Email & meeting timeline (${shown})`;
+  return hasMore ? `Email & meeting timeline (${shown}+)` : `Email & meeting timeline (${shown})`;
 }
 
 export function earlierMailLabel(): string {
@@ -3563,7 +3560,8 @@ function MissionControlOverview({
                 <p className="mt-1 text-primary/40">
                   {item.evidence
                     .map(
-                      (ref) => `${activitySourceLabel(ref.source)} · ${relativeTime(ref.observedAt)}`,
+                      (ref) =>
+                        `${activitySourceLabel(ref.source)} · ${relativeTime(ref.observedAt)}`,
                     )
                     .join("; ")}
                 </p>
@@ -3673,8 +3671,8 @@ function ImportedTranscriptPublisher({
     >
       <SectionTitle title="Publish an imported transcript" />
       <p className="text-xs text-primary/55">
-        Paste reviewed transcript text. Prefix lines with a speaker name and colon when known.
-        The text stays with this company. It is not treated as a confirmed detail until you review it.
+        Paste reviewed transcript text. Prefix lines with a speaker name and colon when known. The
+        text stays with this company. It is not treated as a confirmed detail until you review it.
       </p>
       <Input
         value={title}
@@ -4360,9 +4358,7 @@ export function RelationshipSheet({
                     {companyCategoriesLabel(data.relationship.categories)}
                   </dd>
                   <dt className="text-primary/40">Description</dt>
-                  <dd className="text-primary/75">
-                    {companyDescriptionCopy(data.relationship)}
-                  </dd>
+                  <dd className="text-primary/75">{companyDescriptionCopy(data.relationship)}</dd>
                   <dt className="text-primary/40">LinkedIn</dt>
                   <dd className="text-primary/75">
                     <a
@@ -4553,10 +4549,7 @@ export function RelationshipSheet({
                         data.missionControl.evidence.sentiment,
                       ),
                     ],
-                    [
-                      "Last activity",
-                      companyLastActivityLabel(data.relationship.lastTouchAt),
-                    ],
+                    ["Last activity", companyLastActivityLabel(data.relationship.lastTouchAt)],
                     ["People", String(data.participants.length)],
                     ["Email threads", String(data.emailThreads.length)],
                     ["Open promises", String(openCommitmentCount(data.commitments))],
@@ -4728,9 +4721,7 @@ export function RelationshipSheet({
                     data-capability="privacy-deletion"
                   >
                     <details>
-                      <summary className="cursor-pointer font-medium text-primary">
-                        Privacy
-                      </summary>
+                      <summary className="cursor-pointer font-medium text-primary">Privacy</summary>
                       <div className="mt-2 grid gap-1 sm:grid-cols-2">
                         <Badge className="justify-start font-normal" variant="secondary">
                           Capture: {capturePolicyLabel(data.intelligence.effectivePolicy.capture)}
@@ -4739,7 +4730,9 @@ export function RelationshipSheet({
                           Retention: {data.intelligence.effectivePolicy.retentionDays} days
                         </Badge>
                         <Badge className="justify-start font-normal" variant="secondary">
-                          {evidencePublicationLabel(data.intelligence.effectivePolicy.publishEvidence)}
+                          {evidencePublicationLabel(
+                            data.intelligence.effectivePolicy.publishEvidence,
+                          )}
                         </Badge>
                         <Badge className="justify-start font-normal" variant="secondary">
                           {externalPlanShareLabel(data.intelligence.effectivePolicy.externalShare)}
@@ -4750,7 +4743,8 @@ export function RelationshipSheet({
                       </p>
                       {data.intelligence.deletionReceipts[0] ? (
                         <p className="mt-1">
-                          Last deletion: {deletionReceiptStatusLabel(data.intelligence.deletionReceipts[0].status)}
+                          Last deletion:{" "}
+                          {deletionReceiptStatusLabel(data.intelligence.deletionReceipts[0].status)}
                         </p>
                       ) : null}
                     </details>
@@ -4803,7 +4797,9 @@ export function RelationshipSheet({
                         </Button>
                       )
                     ) : (
-                      <p className="mt-3 text-[11px] text-primary/45">No mail or meeting data to delete.</p>
+                      <p className="mt-3 text-[11px] text-primary/45">
+                        No mail or meeting data to delete.
+                      </p>
                     )}
                   </div>
                 ) : null}
@@ -4839,7 +4835,10 @@ export function RelationshipSheet({
                             {recoveryClassificationLabel(evaluation.classification)}
                           </p>
                           <p className="mt-1 text-primary/60">
-                            {recoveryExplanationCopy(evaluation.classification, evaluation.explanation)}
+                            {recoveryExplanationCopy(
+                              evaluation.classification,
+                              evaluation.explanation,
+                            )}
                           </p>
                         </li>
                       ))}
@@ -4862,7 +4861,8 @@ export function RelationshipSheet({
                         >
                           {evaluation.factors.map((factor) => (
                             <li key={factor.factor}>
-                              {rankingFactorLabel(factor.factor)}: {factor.contribution >= 0 ? "+" : ""}
+                              {rankingFactorLabel(factor.factor)}:{" "}
+                              {factor.contribution >= 0 ? "+" : ""}
                               {factor.contribution} · {rankingFactorReason(factor.reason)}
                             </li>
                           ))}
@@ -4883,7 +4883,8 @@ export function RelationshipSheet({
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <p className="text-sm font-medium text-primary">
-                                {ACTION_TYPE_LABELS[action.actionType] ?? humanize(action.actionType)}
+                                {ACTION_TYPE_LABELS[action.actionType] ??
+                                  humanize(action.actionType)}
                               </p>
                               <p className="mt-1 text-xs text-primary/60">
                                 {actionReasonCopy(action.reason)}
@@ -4907,9 +4908,7 @@ export function RelationshipSheet({
                               <summary className="cursor-pointer">Inspect supporting words</summary>
                               <ul className="mt-2 space-y-1 border-l border-border pl-3">
                                 {action.evidence.map((item) => (
-                                  <li key={item.id}>
-                                    “{evidenceExcerptLabel(item.excerpt)}”
-                                  </li>
+                                  <li key={item.id}>“{evidenceExcerptLabel(item.excerpt)}”</li>
                                 ))}
                               </ul>
                             </details>
@@ -5018,9 +5017,7 @@ export function RelationshipSheet({
                                   ) : null}
                                 </p>
                                 <p className="mt-1 text-primary/60">
-                                  {profile.length
-                                    ? profile.join(" · ")
-                                    : "No profile details yet"}
+                                  {profile.length ? profile.join(" · ") : "No profile details yet"}
                                 </p>
                                 <p className="mt-1 text-[10px] uppercase tracking-wide text-primary/40">
                                   {profile.length}/4 profile fields
@@ -5040,7 +5037,9 @@ export function RelationshipSheet({
                                           : {personFactValue(attribute.dimension, attribute.value)}
                                           {` · ${personResearchConfidenceLabel(attribute.confidence)}`}
                                           {(attribute.citations ?? [])
-                                            .map((citation) => safeResearchCitationURL(citation.url))
+                                            .map((citation) =>
+                                              safeResearchCitationURL(citation.url),
+                                            )
                                             .filter((url): url is string => Boolean(url))
                                             .map((url, index) => (
                                               <a
@@ -5126,9 +5125,7 @@ export function RelationshipSheet({
 
                 {data.commitmentDependencies.length ? (
                   <section>
-                    <SectionTitle
-                      title={promiseLinkTitle(data.commitmentDependencies.length)}
-                    />
+                    <SectionTitle title={promiseLinkTitle(data.commitmentDependencies.length)} />
                     <ul className="mt-2 space-y-2 text-xs">
                       {data.commitmentDependencies.map((dependency) => {
                         const from = data.commitments.find(
@@ -5139,15 +5136,11 @@ export function RelationshipSheet({
                         );
                         return (
                           <li key={dependency.dependencyId} className="border border-border p-3">
-                            <Label className="font-normal">
-                              {promiseLinkEndLabel(from?.text)}
-                            </Label>
+                            <Label className="font-normal">{promiseLinkEndLabel(from?.text)}</Label>
                             <Badge variant="secondary" className="mx-2">
                               {promiseLinkKindLabel(dependency.kind)}
                             </Badge>
-                            <Label className="font-normal">
-                              {promiseLinkEndLabel(to?.text)}
-                            </Label>
+                            <Label className="font-normal">{promiseLinkEndLabel(to?.text)}</Label>
                           </li>
                         );
                       })}
@@ -5276,7 +5269,8 @@ export function RelationshipSheet({
                             {relationshipChangeLabel(change.dimension)}
                           </p>
                           <p className="mt-1 text-xs text-primary/60">
-                            {relationshipDeltaValue(change.before)} → {relationshipDeltaValue(change.after)}
+                            {relationshipDeltaValue(change.before)} →{" "}
+                            {relationshipDeltaValue(change.after)}
                           </p>
                           {change.reason ? (
                             <p className="mt-1 text-[11px] text-primary/40">
@@ -5298,7 +5292,11 @@ export function RelationshipSheet({
                             ? `Choose the current value from ${item.sides.length} sources.`
                             : contradictionReasonCopy(item.reason)}
                           <Badge className="ml-1 font-normal text-primary/40" variant="secondary">
-                            ({item.sides.map((side) => contradictionSourceLabel(side.source)).join(" vs ")})
+                            (
+                            {item.sides
+                              .map((side) => contradictionSourceLabel(side.source))
+                              .join(" vs ")}
+                            )
                           </Badge>
                           {item.status === "open" ? (
                             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -5381,9 +5379,7 @@ export function RelationshipSheet({
 
                 {sheetReceipts.length ? (
                   <section>
-                    <SectionTitle
-                      title={`Consent and governance (${sheetReceipts.length})`}
-                    />
+                    <SectionTitle title={`Consent and governance (${sheetReceipts.length})`} />
                     <ul className="flex flex-col gap-2">
                       {(governanceExpanded
                         ? sheetReceipts
@@ -5450,7 +5446,7 @@ export function RelationshipSheet({
                       {communicationTimeline.map((item) => (
                         <li key={item.id} className="p-3">
                           <div className="flex items-center justify-between gap-2">
-                              <Label className="text-xs font-medium text-primary">
+                            <Label className="text-xs font-medium text-primary">
                               {activitySourceLabel(item.source)} · {humanize(item.interactionType)}
                             </Label>
                             <Badge
@@ -5589,9 +5585,7 @@ function CorrectionReview({
     >
       <SectionTitle title={focusedReviewTitle(items.length, hasMore)} />
       <p className="mb-3 text-xs text-primary/55">
-        {items.length === 0
-          ? "Older conversations may still need review."
-          : focusedReviewIntro()}
+        {items.length === 0 ? "Older conversations may still need review." : focusedReviewIntro()}
       </p>
       <ul className="flex flex-col gap-3">
         {items.map((item) => {
@@ -5599,7 +5593,9 @@ function CorrectionReview({
           return (
             <li key={item.id} className="rounded-none border border-border bg-background p-3">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-primary">{reviewItemLabelCopy(item.label)}</p>
+                <p className="text-xs font-medium text-primary">
+                  {reviewItemLabelCopy(item.label)}
+                </p>
                 <Badge className="text-[11px] font-normal text-primary/40" variant="secondary">
                   {Math.round(item.confidence * 100)}% · {reviewEvidenceKindLabel(item.kind)}
                 </Badge>
@@ -5743,7 +5739,10 @@ function StateCorrection({
           </SelectContent>
         </Select>
         <Select value={value} onValueChange={setValue}>
-          <SelectTrigger aria-label={comboboxFilterName("Value", companyRecordLabel(value))} size="sm">
+          <SelectTrigger
+            aria-label={comboboxFilterName("Value", companyRecordLabel(value))}
+            size="sm"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="app-shell rounded-none">

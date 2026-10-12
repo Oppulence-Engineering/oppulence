@@ -30,7 +30,10 @@ describe("WorkflowsDashboardRoute", () => {
     const route = screen.getByRole("region", { name: "Workflows" });
     expect(route).toHaveAttribute("data-slot", "workflows-dashboard-route");
     expect(route).toHaveTextContent("Workflows");
-    const source = fs.readFileSync(path.join(import.meta.dirname, "workflows-dashboard-route.tsx"), "utf8");
+    const source = fs.readFileSync(
+      path.join(import.meta.dirname, "workflows-dashboard-route.tsx"),
+      "utf8",
+    );
     expect(source).toContain("const { workflowFocus } = useProductRouteState()");
     expect(source).toContain("focus={activeFocus}");
   });

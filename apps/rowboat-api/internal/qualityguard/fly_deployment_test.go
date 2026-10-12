@@ -60,14 +60,11 @@ func TestFlyDeploymentContract(t *testing.T) {
 	}
 }
 
-func TestFlyDeploymentWorkflowContract(t *testing.T) {
+func TestDeploymentWorkflowContract(t *testing.T) {
 	root := filepath.Clean(filepath.Join("..", ".."))
-	workflow := readRepositoryFile(t, root, "../../.github/workflows/rowboat-api-fly-deploy.yml")
+	flyWorkflow := readRepositoryFile(t, root, "../../.github/workflows/rowboat-api-fly-deploy.yml")
 
 	for _, required := range []string{
-		`push:`,
-		`branches: [main]`,
-		`- "apps/rowboat-api/**"`,
 		`workflow_dispatch:`,
 		`environment: production`,
 		`ROWBOAT_API_FLY_API_TOKEN`,
@@ -77,8 +74,27 @@ func TestFlyDeploymentWorkflowContract(t *testing.T) {
 		`/readyz`,
 		`flyctl logs`,
 	} {
-		if !strings.Contains(workflow, required) {
-			t.Errorf("Fly workflow missing deployment invariant %q", required)
+		if !strings.Contains(flyWorkflow, required) {
+			t.Errorf("Fly rollback workflow missing deployment invariant %q", required)
+		}
+	}
+	if strings.Contains(flyWorkflow, "push:") {
+		t.Error("Fly rollback workflow must not deploy on push")
+	}
+
+	appPlatformWorkflow := readRepositoryFile(t, root, "../../.github/workflows/rowboat-api-app-platform.yml")
+	for _, required := range []string{
+		`push:`,
+		`branches: [main]`,
+		`- "apps/rowboat-api/**"`,
+		`workflow_dispatch:`,
+		`environment: production`,
+		`ROWBOAT_API_APP_ID`,
+		`ROWBOAT_API_HEALTHCHECK_URL`,
+		`DIGITALOCEAN_PRODUCTION_TOKEN`,
+	} {
+		if !strings.Contains(appPlatformWorkflow, required) {
+			t.Errorf("App Platform workflow missing deployment invariant %q", required)
 		}
 	}
 }

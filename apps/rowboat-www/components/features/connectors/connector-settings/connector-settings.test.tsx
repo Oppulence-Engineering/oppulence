@@ -330,9 +330,7 @@ describe("hosted connector settings", () => {
     );
     renderWithQuery(<ConnectorSettings />);
 
-    expect(
-      await screen.findByText("Connected."),
-    ).toBeVisible();
+    expect(await screen.findByText("Connected.")).toBeVisible();
     const row = await screen.findByTestId("connector-google");
     expect(within(row).getByRole("button", { name: "Disconnect Google" })).toBeVisible();
     expect(within(row).getByText("Active")).toBeVisible();

@@ -120,9 +120,7 @@ export function PriorityBreakdown({ action }: { action: RevenueAction }) {
         <ul className="flex flex-col gap-1">
           {entries.map(([key, value]) => (
             <li key={key} className="flex items-center justify-between text-xs">
-              <Label className="font-normal text-primary/60">
-                {priorityComponentLabel(key)}
-              </Label>
+              <Label className="font-normal text-primary/60">{priorityComponentLabel(key)}</Label>
               <Badge
                 className={cn(
                   "tabular-nums font-normal",
@@ -372,13 +370,7 @@ export function listRefreshFailureCopy(noun: string): string {
   return `Could not refresh ${noun}. Try again.`;
 }
 
-export function ListRefreshFailure({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry: () => void;
-}) {
+export function ListRefreshFailure({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
       <p className="text-[13px] text-primary/70">{message}</p>

@@ -301,9 +301,7 @@ export function registerElsewhereCopy(
     if (!located) return null;
     return {
       title:
-        view === "overdue"
-          ? "No promises are past due"
-          : "No promises changed in the last 7 days",
+        view === "overdue" ? "No promises are past due" : "No promises changed in the last 7 days",
       detail: located,
     };
   }
@@ -702,11 +700,10 @@ export function registerConfidenceLabel(score: number): string {
  * The row Status is the same word as the open record. "Confirmed" is the
  * acceptance step, so an open promise must not wear it in this column.
  */
-export function registerRowStatus(item: {
-  state: string;
-  acceptance: string;
-  urgency?: string;
-}): { label: string; variant: "green" | "amber" | "red" } {
+export function registerRowStatus(item: { state: string; acceptance: string; urgency?: string }): {
+  label: string;
+  variant: "green" | "amber" | "red";
+} {
   const label = commitmentDetailStatus(item);
   if (item.acceptance === "candidate" || label === "Review") {
     return { label, variant: "amber" };
@@ -729,9 +726,12 @@ export function commitmentSearchText(item: CommitmentQueueItem): string {
   const gap = evidenceGapFact(item.missingEvidence);
   const evidence =
     item.missingEvidence.length > 0
-      ? [gap.label, missing, `${item.missingEvidence.length} items missing`, `Missing ${missing}`].join(
-          " ",
-        )
+      ? [
+          gap.label,
+          missing,
+          `${item.missingEvidence.length} items missing`,
+          `Missing ${missing}`,
+        ].join(" ")
       : `${gap.label} ${gap.value}`;
   return [
     item.relationshipName,
@@ -1604,10 +1604,7 @@ export function CommitmentQueue({
               <dl className="space-y-4 text-[13px]">
                 <Fact label="Promised by" value={selected.owner} />
                 <Fact label="To" value={selected.counterparty} />
-                <Fact
-                  label="Due date"
-                  value={promiseDueDay(selected.dueAt) ?? "Missing"}
-                />
+                <Fact label="Due date" value={promiseDueDay(selected.dueAt) ?? "Missing"} />
                 <div>
                   <dt className="text-[12px] text-primary/45">Status</dt>
                   <dd className="mt-1">
@@ -1657,9 +1654,7 @@ export function CommitmentQueue({
                   <DetailCard label="Recipient" value={selected.counterparty} />
                   <DetailCard
                     label="Due"
-                    value={
-                      promiseDueDay(selected.dueAt) ?? "Not confirmed"
-                    }
+                    value={promiseDueDay(selected.dueAt) ?? "Not confirmed"}
                   />
                 </div>
                 <section className="mt-8">

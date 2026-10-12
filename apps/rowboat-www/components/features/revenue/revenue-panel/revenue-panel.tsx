@@ -135,7 +135,7 @@ export function RevenuePanel({
   const connectBeforeAudit = auditLaunch === "connect";
   const waitingOnGoogle = reconnectBeforeAudit || connectBeforeAudit;
   const auditKnownPromises = useQuery({
-    queryKey: [...commitmentKeys.lists(), "audit-known"],
+    queryKey: commitmentKeys.knownForAudit(),
     queryFn: ({ signal }) =>
       fetchCommitments({ state: ["open", "at_risk"], limit: REGISTER_PAGE_SIZE }, signal),
     enabled:

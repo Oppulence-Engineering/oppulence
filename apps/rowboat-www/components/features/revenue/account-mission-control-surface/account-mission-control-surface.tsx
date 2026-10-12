@@ -99,7 +99,8 @@ export function atRiskPromiseCount(
   commitments: readonly RelationshipCommitment[],
   now = Date.now(),
 ): number {
-  return commitments.filter((item) => commitmentTimelineStatus(item, now).label === "At risk").length;
+  return commitments.filter((item) => commitmentTimelineStatus(item, now).label === "At risk")
+    .length;
 }
 
 /** Past due is already late. Due soon is still inside the 72-hour window. */

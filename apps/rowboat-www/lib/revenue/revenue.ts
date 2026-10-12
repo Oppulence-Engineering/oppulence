@@ -354,10 +354,7 @@ export const startScan = (lookbackDays?: number) =>
 
 export const getScan = fetchReportScan;
 
-export async function listScans(
-  signal?: AbortSignal,
-  offset = 0,
-): Promise<RevenueLeakScan[]> {
+export async function listScans(signal?: AbortSignal, offset = 0): Promise<RevenueLeakScan[]> {
   return auditRows(await fetchReportScans(signal, offset));
 }
 
@@ -1019,8 +1016,7 @@ const ATTENTION_REASON_LABELS: Record<string, string> = {
   recommendation: "Suggested follow-up",
 };
 
-const STORED_OVERDUE_PROMISE =
-  /^A confirmed commitment is overdue by (\d+) day(s?)\.$/;
+const STORED_OVERDUE_PROMISE = /^A confirmed commitment is overdue by (\d+) day(s?)\.$/;
 
 /** Older attention rows said commitment. The company sheet says promise. */
 export function attentionExplanationCopy(explanation: string | null | undefined): string {

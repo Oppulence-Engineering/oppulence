@@ -1160,9 +1160,7 @@ function ConnectSection({
         description={sessionWorkspaceCopy(organizationId).connect}
         title="Oppulence Connect"
       />
-      <div className="settings-inline-notice">
-        {sessionOrganizationNotice(organizationId)}
-      </div>
+      <div className="settings-inline-notice">{sessionOrganizationNotice(organizationId)}</div>
       <Button onClick={() => onNavigate("connections")} type="button" variant="outline">
         Open connections
       </Button>

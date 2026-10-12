@@ -30,9 +30,9 @@ describe("AgentsView", () => {
     expect(source).toContain("agentConnectionLabel(name)");
     expect(source).not.toContain('selected.connectorReqs?.join(", ")');
     expect(source).toContain("calledModelLabel(selected.model)");
-    expect(source).not.toContain("{selected.provider || \"Workspace default\"}");
-    expect(source).not.toContain("{selected.model || \"Workspace default\"}");
-    expect(source).toContain('shownAgentError(\n          agentsQuery.error,');
+    expect(source).not.toContain('{selected.provider || "Workspace default"}');
+    expect(source).not.toContain('{selected.model || "Workspace default"}');
+    expect(source).toContain("shownAgentError(\n          agentsQuery.error,");
     expect(source).toContain('"Could not refresh agents. Try again."');
     expect(source).toContain('"Could not load agents."');
     expect(source).toContain('shownAgentError(cause, "Could not delete this agent.")');
@@ -64,9 +64,9 @@ describe("AgentsView", () => {
       "Enter a display name and a short name.",
     );
     expect(agentCreateFailureCopy("invalid limits")).toBe("Those limits could not be saved.");
-    expect(
-      agentCreateFailureCopy('unknown tool "shell" (not in the capability registry)'),
-    ).toBe("That tool is not available.");
+    expect(agentCreateFailureCopy('unknown tool "shell" (not in the capability registry)')).toBe(
+      "That tool is not available.",
+    );
     expect(agentCreateFailureCopy("could not create agent")).toBeNull();
   });
 

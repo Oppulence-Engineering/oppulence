@@ -814,12 +814,7 @@ function CreateWorkflowDialog({
                     <p className="text-xs text-muted-foreground">
                       {workflowTemplatesRefreshCopy()}
                     </p>
-                    <Button
-                      onClick={onRetryTemplates}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
+                    <Button onClick={onRetryTemplates} size="sm" type="button" variant="outline">
                       Try again
                     </Button>
                   </div>
@@ -867,12 +862,7 @@ function CreateWorkflowDialog({
                       <p className="text-xs text-muted-foreground">
                         {workflowTemplatesFailureCopy()}
                       </p>
-                      <Button
-                        onClick={onRetryTemplates}
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                      >
+                      <Button onClick={onRetryTemplates} size="sm" type="button" variant="outline">
                         Try again
                       </Button>
                     </div>
@@ -1035,9 +1025,7 @@ function WorkflowLibrary({
                 const lastRunMark = workflowLastRunMark(task, pageRun);
                 const lastRunReason = workflowLastRunReason(task, pageRun);
                 const lastRunLabel = lastRunAt
-                  ? `${scheduleMomentLabel(lastRunAt)}${
-                      lastRunMark ? ` · ${lastRunMark}` : ""
-                    }`
+                  ? `${scheduleMomentLabel(lastRunAt)}${lastRunMark ? ` · ${lastRunMark}` : ""}`
                   : "Never";
                 return (
                   <TableRow
@@ -2092,8 +2080,7 @@ export function CloudWorkflowsView({
           setEvents((current) => {
             const pageIds = new Set(nextEvents.events.map((event) => event.id));
             const later = current.filter((event) => !pageIds.has(event.id));
-            const merged =
-              later.length > 0 ? [...nextEvents.events, ...later] : nextEvents.events;
+            const merged = later.length > 0 ? [...nextEvents.events, ...later] : nextEvents.events;
             transcriptCache.current.set(selectedRunID, {
               events: merged,
               nextSeq: nextEvents.nextSeq,
@@ -2133,12 +2120,7 @@ export function CloudWorkflowsView({
   }, [clearTranscriptNotice, queryClient, selectedRunID, selectedRunSlug, selectedRunStatus]);
 
   const loadMoreEvents = async () => {
-    if (
-      !selectedRunSlug ||
-      !selectedRunID ||
-      transcriptNextSeq == null ||
-      loadingMoreEvents
-    ) {
+    if (!selectedRunSlug || !selectedRunID || transcriptNextSeq == null || loadingMoreEvents) {
       return;
     }
     setLoadingMoreEvents(true);

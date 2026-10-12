@@ -182,9 +182,7 @@ export function AttentionQueueSurface({
       onChanged();
       setDismissing(false);
     } catch (error) {
-      onActionError(
-        shownRequestError(error, "Could not update the attention item."),
-      );
+      onActionError(shownRequestError(error, "Could not update the attention item."));
     } finally {
       setBusy(null);
     }

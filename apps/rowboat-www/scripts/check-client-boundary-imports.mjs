@@ -16,6 +16,11 @@ const SERVER_SAFE_FILES = [
   path.join(appRoot, "lib", "api", "request-json.server.ts"),
 ];
 
+// PrefetchHydration is a Server Component that renders this explicit client
+// boundary to seed pending queries during hydration.
+const HYDRATION_CLIENT_MODULE = path.join(appRoot, "lib", "query", "settle-prefetch.tsx");
+const HYDRATION_SERVER_MODULE = path.join(appRoot, "lib", "query", "prefetch-hydration.tsx");
+
 function walk(root, predicate = () => true) {
   if (!fs.existsSync(root)) return [];
   return fs.readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
@@ -86,14 +91,19 @@ for (const filename of serverSensitiveFiles()) {
   const source = fs.readFileSync(filename, "utf8");
   const relative = path.relative(appRoot, filename).replaceAll(path.sep, "/");
   if (isClientModule(source)) {
-    failures.push(`${relative} is a server-sensitive module but starts with "use client"`);
+    if (filename !== HYDRATION_CLIENT_MODULE) {
+      failures.push(`${relative} is a server-sensitive module but starts with "use client"`);
+    }
     continue;
   }
   for (const match of source.matchAll(IMPORT_FROM)) {
     const resolved = resolveImport(filename, match[1]);
     if (!resolved) continue;
     const imported = fs.readFileSync(resolved, "utf8");
-    if (isClientModule(imported)) {
+    if (
+      isClientModule(imported) &&
+      !(filename === HYDRATION_SERVER_MODULE && resolved === HYDRATION_CLIENT_MODULE)
+    ) {
       failures.push(
         `${relative} imports client module ${path.relative(appRoot, resolved).replaceAll(path.sep, "/")}`,
       );

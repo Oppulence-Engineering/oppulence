@@ -38,9 +38,7 @@ import type { RegisterEntry } from "@/lib/revenue/types";
  * that was honestly empty. A failed first load has no known page to keep.
  */
 export function keptRegisterPage<T>(
-  previous:
-    | { entries: readonly T[]; hasMore: boolean; entriesKnown?: boolean }
-    | undefined,
+  previous: { entries: readonly T[]; hasMore: boolean; entriesKnown?: boolean } | undefined,
   entriesFailed: boolean,
 ): { entries: readonly T[]; hasMore: boolean } | null {
   if (!entriesFailed || !previous) return null;
@@ -78,9 +76,7 @@ export function registerLoadNotice(reason: unknown, hadPage: boolean): string {
     const friendly = friendlyRevenueError(reason.message);
     if (friendly !== reason.message) return friendly;
   }
-  return hadPage
-    ? "Could not refresh promises. Try again."
-    : "Promises could not be loaded.";
+  return hadPage ? "Could not refresh promises. Try again." : "Promises could not be loaded.";
 }
 
 export function useCommitmentRegister(

@@ -117,9 +117,7 @@ export default function PlanResponsePage() {
               return (
                 <li key={item.itemId} className="border border-border p-4">
                   <p className="font-medium">{item.title}</p>
-                  {detail ? (
-                    <p className="mt-1 text-sm text-muted-foreground">{detail}</p>
-                  ) : null}
+                  {detail ? <p className="mt-1 text-sm text-muted-foreground">{detail}</p> : null}
                 </li>
               );
             })}
@@ -157,9 +155,7 @@ export default function PlanResponsePage() {
               </div>
             </>
           )}
-          <p className="text-xs text-muted-foreground">
-            This link shows only this plan.
-          </p>
+          <p className="text-xs text-muted-foreground">This link shows only this plan.</p>
         </section>
       ) : null}
     </main>

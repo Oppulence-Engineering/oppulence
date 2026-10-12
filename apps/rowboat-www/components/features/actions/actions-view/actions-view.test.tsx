@@ -17,7 +17,9 @@ describe("ActionsView", () => {
   });
 
   it("describes approvals without implementation tokens", () => {
-    expect(source).toContain("Actions an agent proposes wait here. Nothing happens until you approve one.");
+    expect(source).toContain(
+      "Actions an agent proposes wait here. Nothing happens until you approve one.",
+    );
     expect(source).not.toContain("Finance actions");
     expect(source).not.toContain("every finance action");
     expect(source).toContain("Actions an agent wants to take");
@@ -34,9 +36,9 @@ describe("ActionsView", () => {
     expect(source).not.toContain("Approve & execute");
     expect(source).toContain("this action cannot run yet");
     expect(source).not.toContain("actionFailure(proposalsQuery.error");
-    expect(source).toContain("actionFailure(e, \"Could not approve the action.\")");
-    expect(source).toContain("actionFailure(e, \"Execution failed.\")");
-    expect(source).toContain("actionFailure(e, \"Could not reject the action.\")");
+    expect(source).toContain('actionFailure(e, "Could not approve the action.")');
+    expect(source).toContain('actionFailure(e, "Execution failed.")');
+    expect(source).toContain('actionFailure(e, "Could not reject the action.")');
     expect(source).toContain("signedInProblemCopy(message)");
     expect(source).toContain("return friendlyRevenueError(message)");
     expect(source).toContain("actionStatusLabel(status)");

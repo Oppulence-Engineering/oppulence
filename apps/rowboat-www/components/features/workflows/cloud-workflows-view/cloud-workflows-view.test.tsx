@@ -554,11 +554,14 @@ describe("CloudWorkflowsView", () => {
     expect(createWorkflowIntro()).toBe(
       "Name the workflow and what it should accomplish. The schedule and the steps come next.",
     );
+    expect(templateRequirementCopy(["google"], { connected: new Set(), failed: false })).toBe(
+      "Connect Gmail and Calendar before this template can run.",
+    );
     expect(
-      templateRequirementCopy(["google"], { connected: new Set(), failed: false }),
-    ).toBe("Connect Gmail and Calendar before this template can run.");
-    expect(
-      templateRequirementCopy(["google", "slack"], { connected: new Set(["google"]), failed: false }),
+      templateRequirementCopy(["google", "slack"], {
+        connected: new Set(["google"]),
+        failed: false,
+      }),
     ).toBe("Connect Slack before this template can run.");
     expect(
       templateRequirementCopy(["google", "hubspot"], { connected: new Set(), failed: false }),
@@ -677,8 +680,7 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("workflowLastRunMark(");
     expect(source).toContain("workflowLastRunReason(");
     expect(source).not.toContain("lastRunError}");
-    const apiKey =
-      "The model rejected the API key for this workspace. Nothing was charged.";
+    const apiKey = "The model rejected the API key for this workspace. Nothing was charged.";
     const denied = {
       lastRunAt: "2026-10-02T07:45:00.234Z",
       lastRunError:
@@ -698,8 +700,7 @@ describe("CloudWorkflowsView", () => {
       workflowLibrarySearchText(denied as CloudTask, [], {
         createdAt: "2026-10-02T08:00:00Z",
         status: "succeeded",
-      })
-        .toLowerCase(),
+      }).toLowerCase(),
     ).not.toContain("api key");
     expect(
       workflowLastRunReason(
@@ -903,9 +904,7 @@ describe("workflow revision conflict", () => {
     expect(workflowConflictCopy("remove")).toBe(
       "This workflow changed. Open it again, then remove it.",
     );
-    expect(workflowConflictCopy("save")).toBe(
-      "This workflow changed. Open it again, then save.",
-    );
+    expect(workflowConflictCopy("save")).toBe("This workflow changed. Open it again, then save.");
     expect(workflowSource).toContain('workflowConflictCopy("remove")');
     expect(workflowSource).toContain('workflowConflictCopy("save")');
     expect(workflowSource).toContain("workflowFailureCopy(detail)");
@@ -927,8 +926,6 @@ describe("workflow revision conflict", () => {
       "Workflows cannot be started right now. Try again later.",
     );
     expect(workflowFailureCopy("could not list runs")).toBeNull();
-    expect(workflowsUnavailableCopy()).toBe(
-      "Workflows are not available in this workspace yet.",
-    );
+    expect(workflowsUnavailableCopy()).toBe("Workflows are not available in this workspace yet.");
   });
 });

@@ -97,7 +97,9 @@ vi.mock("@/lib/analytics/analytics", async (importOriginal) => ({
   capture: vi.fn(),
 }));
 vi.mock("@/components/features/revenue/review-sheet/review-sheet", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/components/features/revenue/review-sheet/review-sheet")>()),
+  ...(await importOriginal<
+    typeof import("@/components/features/revenue/review-sheet/review-sheet")
+  >()),
   ReviewSheet: () => null,
 }));
 vi.mock("@/components/features/revenue/audit-sheet/audit-sheet", () => ({

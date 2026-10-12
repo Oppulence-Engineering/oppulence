@@ -133,27 +133,27 @@ function TagEditor({
           {values.map((value) => {
             const label = format ? format(value) : value;
             return (
-            <Badge
-              className="gap-1.5 py-1 pl-2.5 pr-1 font-normal"
-              key={value}
-              variant="secondary"
-            >
-              {/* The badge already shows the product name. A tooltip with the
+              <Badge
+                className="gap-1.5 py-1 pl-2.5 pr-1 font-normal"
+                key={value}
+                variant="secondary"
+              >
+                {/* The badge already shows the product name. A tooltip with the
                   stored id (run_history.read) is what a person sees on hover. */}
-              {label}
-              {!disabled ? (
-                <Button
-                  aria-label={`Remove ${label}`}
-                  className="size-auto rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
-                  onClick={() => onChange(values.filter((candidate) => candidate !== value))}
-                  size="icon-xs"
-                  type="button"
-                  variant="ghost"
-                >
-                  <X className="size-3" />
-                </Button>
-              ) : null}
-            </Badge>
+                {label}
+                {!disabled ? (
+                  <Button
+                    aria-label={`Remove ${label}`}
+                    className="size-auto rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
+                    onClick={() => onChange(values.filter((candidate) => candidate !== value))}
+                    size="icon-xs"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <X className="size-3" />
+                  </Button>
+                ) : null}
+              </Badge>
             );
           })}
         </div>
@@ -211,9 +211,7 @@ export function agentToolsHint(readOnly: boolean): string {
 /** "Included" is only true when a tool sits outside the catalog. */
 export function agentExtraToolsHint(readOnly: boolean, extraCount: number): string {
   if (!readOnly) return "Add another tool Oppulence has approved for this workspace.";
-  return extraCount > 0
-    ? "These are included with this agent."
-    : "No other tools are included.";
+  return extraCount > 0 ? "These are included with this agent." : "No other tools are included.";
 }
 
 export function AgentConfigurationForm({

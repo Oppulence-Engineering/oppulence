@@ -123,10 +123,7 @@ function renderToolOutput(value: unknown): string {
 }
 
 /** A missed load is not an unknown count. The em dash used to read as "no number". */
-export function pulseFigureValue(
-  loaded: boolean,
-  failed: boolean,
-): "loading" | "failed" | "ready" {
+export function pulseFigureValue(loaded: boolean, failed: boolean): "loading" | "failed" | "ready" {
   if (!loaded) return failed ? "failed" : "loading";
   return "ready";
 }
@@ -187,37 +184,37 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
           {notice}
         </button>
       ) : null}
-      {figure === "failed" ? null : (
-        HOME_STATS.map((stat, index) => (
-          <span className="inline-flex items-center gap-3" key={stat.tab}>
-            {index > 0 ? (
-              <span aria-hidden className="text-[var(--border)]">
-                ·
-              </span>
-            ) : null}
-            <button
-              className={[
-                "inline-flex items-baseline gap-1.5 font-normal transition-colors",
-                "hover:text-[var(--text-secondary)]",
-              ].join(" ")}
-              onClick={() => {
-                // Past-due promises, in every direction. The register opens on that slice.
-                if (stat.tab === "commitments") requestDueCommitments();
-                onOpenTab(stat.tab);
-              }}
-              type="button"
-            >
-              <span className="font-mono tabular-nums text-[var(--text-secondary)]">
-                <PulseFigure
-                  state={figure}
-                  value={stat.label === "recovery" ? recovery : impact ? stat.read(impact) : 0}
-                />
-              </span>
-              <span>{stat.label}</span>
-            </button>
-          </span>
-        ))
-      )}
+      {figure === "failed"
+        ? null
+        : HOME_STATS.map((stat, index) => (
+            <span className="inline-flex items-center gap-3" key={stat.tab}>
+              {index > 0 ? (
+                <span aria-hidden className="text-[var(--border)]">
+                  ·
+                </span>
+              ) : null}
+              <button
+                className={[
+                  "inline-flex items-baseline gap-1.5 font-normal transition-colors",
+                  "hover:text-[var(--text-secondary)]",
+                ].join(" ")}
+                onClick={() => {
+                  // Past-due promises, in every direction. The register opens on that slice.
+                  if (stat.tab === "commitments") requestDueCommitments();
+                  onOpenTab(stat.tab);
+                }}
+                type="button"
+              >
+                <span className="font-mono tabular-nums text-[var(--text-secondary)]">
+                  <PulseFigure
+                    state={figure}
+                    value={stat.label === "recovery" ? recovery : impact ? stat.read(impact) : 0}
+                  />
+                </span>
+                <span>{stat.label}</span>
+              </button>
+            </span>
+          ))}
     </footer>
   );
 }
@@ -285,7 +282,9 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                           type="tool-call"
                         />
                         <ToolContent>
-                          {toolArgumentsVisible(item.input) ? <ToolInput input={item.input} /> : null}
+                          {toolArgumentsVisible(item.input) ? (
+                            <ToolInput input={item.input} />
+                          ) : null}
                           {item.result != null ? (
                             item.status === "error" ? (
                               <ToolOutput

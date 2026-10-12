@@ -71,9 +71,9 @@ describe("company titles shared with people and attention", () => {
         orgDomain: "dogfood-label.example",
       }),
     ).toBe("Dogfood Label");
-    expect(personCompanyTitle({ orgName: "Dogfood Order Co", orgDomain: "dogfood-order.example" })).toBe(
-      "Dogfood Order Co",
-    );
+    expect(
+      personCompanyTitle({ orgName: "Dogfood Order Co", orgDomain: "dogfood-order.example" }),
+    ).toBe("Dogfood Order Co");
     expect(personCompanyTitle({ orgName: "", orgDomain: "northwind.example" })).toBe("");
     expect(
       attentionWithCompanyTitles(
@@ -164,28 +164,34 @@ describe("local due dates", () => {
       relationshipId: "company-2",
       reasonCode: "overdue_commitment",
     };
+    expect(attentionWithoutTasks([taskAttention, overdueAttention], new Set(["task-1"]))).toEqual([
+      overdueAttention,
+    ]);
     expect(
-      attentionWithoutTasks([taskAttention, overdueAttention], new Set(["task-1"])),
-    ).toEqual([overdueAttention]);
-    expect(atRiskPulseCount(1, [taskAttention], [{ id: "task-1", actionType: "follow_up_task", channel: "task" }])).toBe(0);
+      atRiskPulseCount(
+        1,
+        [taskAttention],
+        [{ id: "task-1", actionType: "follow_up_task", channel: "task" }],
+      ),
+    ).toBe(0);
     expect(
-      atRiskPulseCount(2, [taskAttention, overdueAttention], [
-        { id: "task-1", actionType: "follow_up_task", channel: "task" },
-      ]),
+      atRiskPulseCount(
+        2,
+        [taskAttention, overdueAttention],
+        [{ id: "task-1", actionType: "follow_up_task", channel: "task" }],
+      ),
     ).toBe(1);
     expect(atRiskPulseCount(1, undefined, [])).toBeNull();
     expect(
       digestWithoutTasks(
-        [{ detector: "Manual", reason: "Call the harbor" }, { detector: "Waiting on you", reason: "Send the note" }],
+        [
+          { detector: "Manual", reason: "Call the harbor" },
+          { detector: "Waiting on you", reason: "Send the note" },
+        ],
         [{ actionType: "follow_up_task", channel: "task", reason: "Call the harbor" }],
       ),
     ).toEqual([{ detector: "Waiting on you", reason: "Send the note" }]);
-    expect(
-      detectorsWithoutTasks(
-        [{ detector: "manual", surfaced: 1, handled: 0 }],
-        1,
-      ),
-    ).toEqual([]);
+    expect(detectorsWithoutTasks([{ detector: "manual", surfaced: 1, handled: 0 }], 1)).toEqual([]);
     expect(exposureRiskScore(30, 0)).toBe(0);
     expect(exposureRiskScore(30, 2)).toBe(30);
     expect(

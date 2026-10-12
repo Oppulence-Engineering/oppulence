@@ -766,7 +766,9 @@ function Inspector({
             [
               "Direction",
               "other",
-              node.kind === "commitment" ? graphPromiseDirection(node.metadata.direction) : undefined,
+              node.kind === "commitment"
+                ? graphPromiseDirection(node.metadata.direction)
+                : undefined,
             ],
             ["Health", "health", node.health],
             ["Lifecycle", "lifecycle", node.lifecycle],
@@ -1186,7 +1188,11 @@ export function graphInspectorSummary(node: {
  * leave that off, so an open promise had a status and no side.
  */
 export function graphPromiseDirection(direction: unknown): string | undefined {
-  if (direction !== "promised_by_me" && direction !== "promised_by_them" && direction !== "mutual") {
+  if (
+    direction !== "promised_by_me" &&
+    direction !== "promised_by_them" &&
+    direction !== "mutual"
+  ) {
     return undefined;
   }
   const label = promiseDirectionLabel(direction);
@@ -1354,10 +1360,7 @@ function graphExecutionMode(metadata: { executionMode?: unknown } | undefined): 
 }
 
 /** A send that has not started yet stays off the inspector. Pending is the default. */
-export function graphExecutionLabel(
-  status: string | undefined,
-  mode?: string,
-): string | undefined {
+export function graphExecutionLabel(status: string | undefined, mode?: string): string | undefined {
   switch (status) {
     case undefined:
     case "":
@@ -1755,16 +1758,13 @@ export function RelationshipGraphWorkspace({
     ];
     const visible = withoutPersonDirectoryRecords(nodes, edges);
     const titles = new Map(
-      relationships
-        .filter((row) => row.kind !== "person")
-        .map((row) => [row.id, companyName(row)]),
+      relationships.filter((row) => row.kind !== "person").map((row) => [row.id, companyName(row)]),
     );
     return {
       ...loadedGraph,
       ...visible,
       hasMore: laterHasMore ?? loadedGraph.hasMore,
-      observationHasMore:
-        evidenceHasMore ?? companyPages.some((page) => page.observationHasMore),
+      observationHasMore: evidenceHasMore ?? companyPages.some((page) => page.observationHasMore),
       nodes: visible.nodes.map((node) => {
         if (node.kind === "evidence") {
           const label = activityRowSummary(node.label);
@@ -1801,8 +1801,7 @@ export function RelationshipGraphWorkspace({
     if (!graph?.observationHasMore || loadingEarlierEvidence) return;
     setLoadingEarlierEvidence(true);
     try {
-      const observationOffset =
-        (laterEvidence.length + 1) * graphEvidencePage(viewState.scope);
+      const observationOffset = (laterEvidence.length + 1) * graphEvidencePage(viewState.scope);
       const base = {
         scope: viewState.scope,
         relationshipId: viewState.relationshipId,
@@ -1861,10 +1860,7 @@ export function RelationshipGraphWorkspace({
         remoteSavedViews.length + extraSavedViews.length,
       );
       setLaterSavedViewsHasMore(consoleResourcePageHasMore(page));
-      setExtraSavedViews((current) => [
-        ...current,
-        ...graphSavedViews(consoleResourceRows(page)),
-      ]);
+      setExtraSavedViews((current) => [...current, ...graphSavedViews(consoleResourceRows(page))]);
     } catch (error) {
       onError(errMessage(error, "Could not load more saved views."));
     } finally {
@@ -1879,12 +1875,12 @@ export function RelationshipGraphWorkspace({
     savedViewsQuery.isError && savedViewResources.length === 0
       ? legacyViews
       : savedViewResources.map((resource) => ({
-        id: resource.id,
-        label: resource.name,
-        createdAt: resource.createdAt,
-        updatedAt: resource.updatedAt,
-        state: resource.payload.state,
-      }));
+          id: resource.id,
+          label: resource.name,
+          createdAt: resource.createdAt,
+          updatedAt: resource.updatedAt,
+          state: resource.payload.state,
+        }));
   const saveViewMutation = useMutation({
     mutationFn: ({ label, state }: { label: string; state: RelationshipGraphSavedViewState }) =>
       createConsoleResource({
@@ -2314,59 +2310,59 @@ export function RelationshipGraphWorkspace({
         {/* Ask, layout, and filters read a built graph. An account graph with no
             company has nothing for them to change. */}
         {graphEnabled ? (
-        <form
-          className="mt-3 flex flex-col gap-2 lg:flex-row"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (
-              !graphAskChanges(queryDraft, {
-                query: viewState.query,
-                focusDepth: viewState.focusDepth,
-                selectedNodeId: viewState.selectedNodeId,
-              })
-            ) {
-              return;
-            }
-            updateState({ query: queryDraft.trim(), selectedNodeId: undefined, focusDepth: 0 });
-          }}
-        >
-          <div className="relative min-w-0 flex-1">
-            <Sparkle className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-oppulence-orange" />
-            <Input
-              value={queryDraft}
-              onChange={(event) => setQueryDraft(event.target.value)}
-              className="pl-8"
-              aria-label="Ask this graph"
-              placeholder="Ask about a company or a promise."
-            />
-          </div>
-          <Button
-            disabled={
-              !graphAskChanges(queryDraft, {
-                query: viewState.query,
-                focusDepth: viewState.focusDepth,
-                selectedNodeId: viewState.selectedNodeId,
-              })
-            }
-            type="submit"
-            size="sm"
+          <form
+            className="mt-3 flex flex-col gap-2 lg:flex-row"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (
+                !graphAskChanges(queryDraft, {
+                  query: viewState.query,
+                  focusDepth: viewState.focusDepth,
+                  selectedNodeId: viewState.selectedNodeId,
+                })
+              ) {
+                return;
+              }
+              updateState({ query: queryDraft.trim(), selectedNodeId: undefined, focusDepth: 0 });
+            }}
           >
-            Ask
-          </Button>
-          {viewState.query ? (
+            <div className="relative min-w-0 flex-1">
+              <Sparkle className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-oppulence-orange" />
+              <Input
+                value={queryDraft}
+                onChange={(event) => setQueryDraft(event.target.value)}
+                className="pl-8"
+                aria-label="Ask this graph"
+                placeholder="Ask about a company or a promise."
+              />
+            </div>
             <Button
-              type="button"
-              variant="ghost"
+              disabled={
+                !graphAskChanges(queryDraft, {
+                  query: viewState.query,
+                  focusDepth: viewState.focusDepth,
+                  selectedNodeId: viewState.selectedNodeId,
+                })
+              }
+              type="submit"
               size="sm"
-              onClick={() => {
-                setQueryDraft("");
-                updateState({ query: "" });
-              }}
             >
-              <X /> Clear
+              Ask
             </Button>
-          ) : null}
-        </form>
+            {viewState.query ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setQueryDraft("");
+                  updateState({ query: "" });
+                }}
+              >
+                <X /> Clear
+              </Button>
+            ) : null}
+          </form>
         ) : null}
 
         {queryResult ? (
@@ -2376,11 +2372,7 @@ export function RelationshipGraphWorkspace({
           >
             <Sparkle className="size-4 shrink-0 text-oppulence-orange" />
             <Label className="mr-auto font-normal">
-              {graphQueryAnswer(
-                queryResult.answer,
-                relationships.length,
-                Boolean(graph?.hasMore),
-              )}
+              {graphQueryAnswer(queryResult.answer, relationships.length, Boolean(graph?.hasMore))}
             </Label>
             {relationships.length === 0
               ? null
@@ -2402,171 +2394,171 @@ export function RelationshipGraphWorkspace({
       </div>
 
       {graphEnabled ? (
-      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <ToggleGroup
-          type="single"
-          value={mode}
-          onValueChange={(value) => value && setMode(value as "canvas" | "table")}
-          variant="outline"
-          size="sm"
-          aria-label="Graph presentation"
-        >
-          <ToggleGroupItem value="canvas" className="data-[state=on]:bg-primary/10">
-            <Graph /> Diagram
-          </ToggleGroupItem>
-          <ToggleGroupItem value="table" className="data-[state=on]:bg-primary/10">
-            <ListBullets /> Table
-          </ToggleGroupItem>
-        </ToggleGroup>
-        {/* Grouped, Circle, and By time place the diagram. The table uses the same rows. */}
-        {mode === "canvas" ? (
-          <Select
-            value={viewState.layout}
-            onValueChange={(layout: RelationshipGraphSavedViewState["layout"]) =>
-              updateState({ layout })
-            }
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+          <ToggleGroup
+            type="single"
+            value={mode}
+            onValueChange={(value) => value && setMode(value as "canvas" | "table")}
+            variant="outline"
+            size="sm"
+            aria-label="Graph presentation"
           >
-            <SelectTrigger
-              aria-label={comboboxFilterName("Layout", graphLayoutLabel(viewState.layout))}
-              size="sm"
-              className="w-32"
+            <ToggleGroupItem value="canvas" className="data-[state=on]:bg-primary/10">
+              <Graph /> Diagram
+            </ToggleGroupItem>
+            <ToggleGroupItem value="table" className="data-[state=on]:bg-primary/10">
+              <ListBullets /> Table
+            </ToggleGroupItem>
+          </ToggleGroup>
+          {/* Grouped, Circle, and By time place the diagram. The table uses the same rows. */}
+          {mode === "canvas" ? (
+            <Select
+              value={viewState.layout}
+              onValueChange={(layout: RelationshipGraphSavedViewState["layout"]) =>
+                updateState({ layout })
+              }
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="app-shell rounded-[2px]">
-              <SelectItem value="force">{graphLayoutLabel("force")}</SelectItem>
-              <SelectItem value="radial">{graphLayoutLabel("radial")}</SelectItem>
-              <SelectItem value="timeline">{graphLayoutLabel("timeline")}</SelectItem>
-            </SelectContent>
-          </Select>
-        ) : null}
-        <label className="flex items-center gap-2 text-xs text-primary/50">
-          How many to show
-          <Slider
-            min={0.25}
-            max={1}
-            step={0.05}
-            value={[viewState.density]}
-            onValueChange={(value) => updateState({ density: value[0] ?? DEFAULT_STATE.density })}
-            className="w-20"
-            aria-label="How many to show"
-          />
-        </label>
-        <label className="flex items-center gap-1.5 text-xs text-primary/55">
-          <Checkbox
-            checked={viewState.hideIsolated}
-            onCheckedChange={(checked) => updateState({ hideIsolated: checked === true })}
-          />
-          Hide unconnected
-        </label>
-        <label className="flex items-center gap-1.5 text-xs text-primary/55">
-          <Checkbox
-            checked={viewState.changedSinceReview}
-            onCheckedChange={(checked) => updateState({ changedSinceReview: checked === true })}
-          />
-          Changed since you last looked
-        </label>
-        <DateTimePicker
-          value={viewState.asOf}
-          onChange={(value) =>
-            updateState({
-              asOf: value || undefined,
-              selectedNodeId: undefined,
-              focusDepth: 0,
-            })
-          }
-          aria-label="View the graph as of a date"
-          placeholder="As of a date"
-          className="w-64"
-        />
-        <div className="ml-auto flex items-center gap-1">
-          {savedViewsQuery.isLoading ? (
-            <Badge variant="outline">
-              <CircleNotch className="animate-spin" /> Loading views
-            </Badge>
-          ) : null}
-          {savedViewsQuery.isError ? (
-            <Button
-              onClick={() => void savedViewsQuery.refetch()}
-              size="sm"
-              title="Saved views on this computer stay readable until Oppulence is reachable again."
-              variant="outline"
-            >
-              <WarningDiamond /> Saved views unavailable · Retry
-            </Button>
-          ) : null}
-          {savedViews.length ? (
-            <Select value={activeSavedViewId} onValueChange={applySavedView}>
               <SelectTrigger
-                aria-label={comboboxFilterName(
-                  "Saved view",
-                  graphSavedViewChoice(
-                    savedViews.find((view) => view.id === activeSavedViewId)?.label,
-                  ),
-                )}
+                aria-label={comboboxFilterName("Layout", graphLayoutLabel(viewState.layout))}
                 size="sm"
-                className="w-36"
+                className="w-32"
               >
-                <SelectValue placeholder="Saved views" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">
-                {savedViews.map((view) => (
-                  <SelectItem key={view.id} value={view.id}>
-                    {view.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="force">{graphLayoutLabel("force")}</SelectItem>
+                <SelectItem value="radial">{graphLayoutLabel("radial")}</SelectItem>
+                <SelectItem value="timeline">{graphLayoutLabel("timeline")}</SelectItem>
               </SelectContent>
             </Select>
           ) : null}
-          {hasMoreSavedViews ? (
-            <Button
-              disabled={loadingMoreSavedViews}
-              onClick={() => void loadMoreSavedViews()}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              {loadingMoreSavedViews ? "Loading…" : nextSavedViewsLabel()}
-            </Button>
-          ) : null}
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={openSaveDialog}
-            disabled={
-              !graph?.permissions.canSaveViews ||
-              savedViewsQuery.isError ||
-              saveViewMutation.isPending
+          <label className="flex items-center gap-2 text-xs text-primary/50">
+            How many to show
+            <Slider
+              min={0.25}
+              max={1}
+              step={0.05}
+              value={[viewState.density]}
+              onValueChange={(value) => updateState({ density: value[0] ?? DEFAULT_STATE.density })}
+              className="w-20"
+              aria-label="How many to show"
+            />
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-primary/55">
+            <Checkbox
+              checked={viewState.hideIsolated}
+              onCheckedChange={(checked) => updateState({ hideIsolated: checked === true })}
+            />
+            Hide unconnected
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-primary/55">
+            <Checkbox
+              checked={viewState.changedSinceReview}
+              onCheckedChange={(checked) => updateState({ changedSinceReview: checked === true })}
+            />
+            Changed since you last looked
+          </label>
+          <DateTimePicker
+            value={viewState.asOf}
+            onChange={(value) =>
+              updateState({
+                asOf: value || undefined,
+                selectedNodeId: undefined,
+                focusDepth: 0,
+              })
             }
-          >
-            <FloppyDisk /> Save
-          </Button>
-          {activeSavedViewId ? (
+            aria-label="View the graph as of a date"
+            placeholder="As of a date"
+            className="w-64"
+          />
+          <div className="ml-auto flex items-center gap-1">
+            {savedViewsQuery.isLoading ? (
+              <Badge variant="outline">
+                <CircleNotch className="animate-spin" /> Loading views
+              </Badge>
+            ) : null}
+            {savedViewsQuery.isError ? (
+              <Button
+                onClick={() => void savedViewsQuery.refetch()}
+                size="sm"
+                title="Saved views on this computer stay readable until Oppulence is reachable again."
+                variant="outline"
+              >
+                <WarningDiamond /> Saved views unavailable · Retry
+              </Button>
+            ) : null}
+            {savedViews.length ? (
+              <Select value={activeSavedViewId} onValueChange={applySavedView}>
+                <SelectTrigger
+                  aria-label={comboboxFilterName(
+                    "Saved view",
+                    graphSavedViewChoice(
+                      savedViews.find((view) => view.id === activeSavedViewId)?.label,
+                    ),
+                  )}
+                  size="sm"
+                  className="w-36"
+                >
+                  <SelectValue placeholder="Saved views" />
+                </SelectTrigger>
+                <SelectContent className="app-shell rounded-[2px]">
+                  {savedViews.map((view) => (
+                    <SelectItem key={view.id} value={view.id}>
+                      {view.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+            {hasMoreSavedViews ? (
+              <Button
+                disabled={loadingMoreSavedViews}
+                onClick={() => void loadMoreSavedViews()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {loadingMoreSavedViews ? "Loading…" : nextSavedViewsLabel()}
+              </Button>
+            ) : null}
             <Button
-              disabled={deleteViewMutation.isPending || savedViewsQuery.isError}
               type="button"
               size="sm"
               variant="ghost"
-              onClick={deleteSavedView}
+              onClick={openSaveDialog}
+              disabled={
+                !graph?.permissions.canSaveViews ||
+                savedViewsQuery.isError ||
+                saveViewMutation.isPending
+              }
             >
-              <X /> Delete
+              <FloppyDisk /> Save
             </Button>
-          ) : null}
-          <Button type="button" size="sm" variant="ghost" onClick={() => void shareView()}>
-            <Link /> Share
-          </Button>
-          <Button
-            disabled={!graphCanReset(viewState, queryDraft, activeSavedViewId)}
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={reset}
-          >
-            <ArrowCounterClockwise /> Reset
-          </Button>
+            {activeSavedViewId ? (
+              <Button
+                disabled={deleteViewMutation.isPending || savedViewsQuery.isError}
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={deleteSavedView}
+              >
+                <X /> Delete
+              </Button>
+            ) : null}
+            <Button type="button" size="sm" variant="ghost" onClick={() => void shareView()}>
+              <Link /> Share
+            </Button>
+            <Button
+              disabled={!graphCanReset(viewState, queryDraft, activeSavedViewId)}
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={reset}
+            >
+              <ArrowCounterClockwise /> Reset
+            </Button>
+          </div>
         </div>
-      </div>
       ) : null}
 
       {graphRefreshError ? (
