@@ -6179,13 +6179,16 @@ func TestRelationshipSearchFindsTheSourceWarning(t *testing.T) {
 			}
 		}
 	}
-	hubspot := "HubSpot evidence is incomplete, stale, rebuilding, or missing a required permission."
-	slack := "Slack evidence is incomplete, stale, rebuilding, or missing a required permission."
-	combined := "Google and Slack evidence is incomplete, stale, rebuilding, or missing a required permission."
+	hubspot := "HubSpot needs to be read again or reconnected."
+	slack := "Slack needs to be read again or reconnected."
+	combined := "Google and Slack need to be read again or reconnected."
 	assertCompanyQuery("Source needs reconnecting", "Quill Atelier", "Cedar Mill", "Lumen Packet")
 	assertCompanyQuery(hubspot, "Quill Atelier")
 	assertCompanyQuery(slack, "Cedar Mill")
 	assertCompanyQuery(combined, "Lumen Packet")
+	assertCompanyQuery("HubSpot evidence is incomplete, stale, rebuilding, or missing a required permission.")
+	assertCompanyQuery("Slack evidence is incomplete, stale, rebuilding, or missing a required permission.")
+	assertCompanyQuery("Google and Slack evidence is incomplete, stale, rebuilding, or missing a required permission.")
 	assertCompanyQuery("Google evidence is incomplete, stale, rebuilding, or missing a required permission.")
 	assertCompanyQuery("HubSpot and Slack evidence is incomplete, stale, rebuilding, or missing a required permission.")
 	assertCompanyQuery("reconnecting", "Quill Atelier", "Cedar Mill", "Lumen Packet")

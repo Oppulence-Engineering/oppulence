@@ -2027,9 +2027,9 @@ func relationshipShowsMissingNextStep() predicate.Relationship {
 }
 
 // relationshipSheetSourceDegradationMatch matches the attention sentence for a
-// connector that is incomplete, stale, rebuilding, or missing a permission.
-// The joined sentence is exact: "Slack evidence…" stays off a company whose
-// warning actually says "Google and Slack evidence…".
+// connector that stopped reading. The queue says "HubSpot needs to be read
+// again or reconnected." The joined sentence is exact: "Slack needs…" stays
+// off a company whose warning says "Google and Slack need…".
 func relationshipSheetSourceDegradationMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	if sheetPhraseMatches("source needs reconnecting", needle) {
@@ -2049,7 +2049,7 @@ func relationshipSheetSourceDegradationMatch(needle string) predicate.Relationsh
 			}
 		}
 		warnings = append(warnings, sourceWarning{
-			phrase: normalizePersonSearch(sourceDegradationExplanation(sources)),
+			phrase: normalizePersonSearch(attentionSourceWarningSentence(sources)),
 			pred:   relationshipDegradedCanonicalSet(sources),
 		})
 	}
@@ -2076,6 +2076,25 @@ func relationshipSheetSourceDegradationMatch(needle string) predicate.Relationsh
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// attentionSourceWarningSentence is the line the attention queue prints. The
+// stored explanation still lists the internal states. The queue says to read
+// the source again.
+func attentionSourceWarningSentence(sources []string) string {
+	labels := make([]string, 0, len(sources))
+	for _, source := range sources {
+		labels = append(labels, attentionSourceLabel(source))
+	}
+	who := joinAttentionLabels(labels)
+	if who == "Source" {
+		who = "A source"
+	}
+	verb := "needs"
+	if strings.Contains(who, " and ") || strings.Contains(who, ",") {
+		verb = "need"
+	}
+	return who + " " + verb + " to be read again or reconnected."
 }
 
 // relationshipSheetQuietMatch matches the quiet-account sentence. The day count
