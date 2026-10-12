@@ -175,12 +175,25 @@ const SOURCE_LAST_ERRORS: Record<string, string> = {
   "Provider authorization was canceled.": "The connection was canceled.",
   "Provider authorization failed; reconnect is required.":
     "The connection failed. Reconnect to try again.",
+  "Account monitoring stopped early because this workspace reached its research budget for the period.":
+    "Public research stopped because this workspace used its research budget.",
+  "Account monitoring is not running because the subscription does not currently include cloud research.":
+    "Public research is part of the Intelligence plan. This workspace does not include it.",
+  "Account monitoring is not running because cloud research consent has been withdrawn.":
+    "Public research stays off until you allow it.",
+  "Account monitoring is paused for this workspace.":
+    "Public research is paused for this workspace.",
+  "Account monitoring is not running because no research provider is configured.":
+    "Public research is not available in this workspace.",
+  "Account monitoring did not finish its last run.":
+    "Public research did not finish its last check.",
 };
 
 /**
  * A source stores a safe error that still names the worker, the cursor, or
- * the provider. The card says what stopped and what to do. A research
- * sentence that is already plain stays. The stored error stays on the API.
+ * the provider. The card says what stopped and what to do. A public-research
+ * failure uses the same words as the research panel. The stored error stays
+ * on the API.
  */
 export function sourceLastErrorCopy(error: string | null | undefined): string {
   const raw = error?.trim() ?? "";

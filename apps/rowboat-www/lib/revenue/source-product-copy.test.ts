@@ -328,9 +328,30 @@ describe("source product copy", () => {
     expect(sourceLastErrorCopy("   ")).toBe("");
     expect(
       sourceLastErrorCopy(
-        "Account monitoring is paused for this workspace.",
+        "Account monitoring stopped early because this workspace reached its research budget for the period.",
       ),
-    ).toBe("Account monitoring is paused for this workspace.");
+    ).toBe("Public research stopped because this workspace used its research budget.");
+    expect(
+      sourceLastErrorCopy(
+        "Account monitoring is not running because the subscription does not currently include cloud research.",
+      ),
+    ).toBe("Public research is part of the Intelligence plan. This workspace does not include it.");
+    expect(
+      sourceLastErrorCopy(
+        "Account monitoring is not running because cloud research consent has been withdrawn.",
+      ),
+    ).toBe("Public research stays off until you allow it.");
+    expect(sourceLastErrorCopy("Account monitoring is paused for this workspace.")).toBe(
+      "Public research is paused for this workspace.",
+    );
+    expect(
+      sourceLastErrorCopy(
+        "Account monitoring is not running because no research provider is configured.",
+      ),
+    ).toBe("Public research is not available in this workspace.");
+    expect(sourceLastErrorCopy("Account monitoring did not finish its last run.")).toBe(
+      "Public research did not finish its last check.",
+    );
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     expect(sourceLastLookedTitle(twoHoursAgo)).toBe("Last looked 2 hours ago");
     expect(sourceLastLookedTitle("")).toBe("");

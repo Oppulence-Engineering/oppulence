@@ -664,7 +664,7 @@ describe("RelationshipsView", () => {
       enrichmentAvailabilityCopy({ available: true, reason: "plan_required", requiredPlan: "pro" }),
     ).toBe("Available on the Pro plan.");
     expect(enrichmentAvailabilityCopy({ available: true, reason: "capability_disabled" })).toBe(
-      "Cloud research is disabled for this workspace.",
+      "Public research is paused for this workspace.",
     );
   });
 

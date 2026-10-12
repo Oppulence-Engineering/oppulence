@@ -648,7 +648,7 @@ export function enrichmentAvailabilityCopy(status: {
       ? `Available on the ${plan} plan.`
       : "This workspace plan does not include public research.";
   }
-  if (status.reason === "capability_disabled") return "Cloud research is disabled for this workspace.";
+  if (status.reason === "capability_disabled") return "Public research is paused for this workspace.";
   return "Public research stays off until you allow it.";
 }
 

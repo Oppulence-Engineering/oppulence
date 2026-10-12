@@ -91,7 +91,7 @@ export function signedInProblemCopy(detail: string): string | null {
     case "an identical research request is already in flight":
       return "That research is already running.";
     case "revenue: workspace capability is disabled":
-      return "Cloud research is disabled for this workspace.";
+      return "Public research is paused for this workspace.";
     case "action destination depends on unresolved identity":
       return "This action needs a known recipient before it can run.";
     case "required source evidence is incomplete or stale":
