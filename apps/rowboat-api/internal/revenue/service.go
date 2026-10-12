@@ -1061,6 +1061,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) && !contradictionSentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
 		}
+		if row := relationshipSheetActivityRowMatch(needle); row != nil {
+			parts = append(parts, row)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -4100,6 +4103,93 @@ func writeNormalizedLabeledFact(b *sql.Builder, s *sql.Selector, facts, key stri
 		b.WriteString(", '  ', ' ')")
 	}
 	b.WriteString(")")
+}
+
+// relationshipSheetActivityRowMatch matches the sentence on the activity
+// row. Gmail, Calendar, HubSpot, and Slack still store "observed". The row
+// says Mail, Meeting with, Company from HubSpot, or Message in. A placeholder
+// name stays the short sentence. "Mail" and "Meeting" stay the headings.
+func relationshipSheetActivityRowMatch(needle string) predicate.Relationship {
+	var preds []predicate.RelationshipObservation
+	if rest, ok := activityRowRest(needle, "mail: "); ok {
+		preds = append(preds, observationSummaryEquals("gmail thread observed: "+rest))
+	}
+	if rest, ok := activityRowRest(needle, "meeting with "); ok {
+		preds = append(preds, observationSummaryEquals("calendar meeting observed with "+rest))
+	}
+	if rest, ok := activityRowRest(needle, "company from hubspot: "); ok && !strings.HasPrefix(rest, "hubspot company ") {
+		preds = append(preds, observationSummaryEquals("hubspot company snapshot: "+rest))
+	}
+	if rest, ok := activityRowRest(needle, "message in #"); ok && !strings.HasPrefix(rest, "slack channel ") {
+		preds = append(preds, observationSummaryEquals("slack message observed in #"+rest))
+	}
+	if needle == "company from hubspot" {
+		preds = append(preds,
+			observationSummaryEquals("hubspot company snapshot:"),
+			observationSummaryEquals("hubspot company snapshot: local-user"),
+			observationSummaryHasPrefix("hubspot company snapshot: hubspot company "),
+		)
+	}
+	if needle == "message in slack" {
+		preds = append(preds,
+			observationSummaryEquals("slack message observed in #"),
+			observationSummaryEquals("slack message observed in #local-user"),
+			observationSummaryHasPrefix("slack message observed in #slack channel "),
+		)
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+func activityRowRest(needle, prefix string) (string, bool) {
+	if !strings.HasPrefix(needle, prefix) {
+		return "", false
+	}
+	rest := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+	if rest == "" || rest == "local-user" || rest == "meeting-counterparty" {
+		return "", false
+	}
+	return rest, true
+}
+
+func observationSummaryEquals(normalized string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeNormalizedSummary(b, s)
+			b.WriteString(" = ")
+			b.Arg(normalized)
+		}))
+	})
+}
+
+func observationSummaryHasPrefix(normalizedPrefix string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeNormalizedSummary(b, s)
+			b.WriteString(" LIKE ")
+			b.Arg(escapePersonSearchLike(normalizedPrefix) + "%")
+			b.WriteString(" ESCAPE '!'")
+		}))
+	})
+}
+
+func writeNormalizedSummary(b *sql.Builder, s *sql.Selector) {
+	column := s.C(relationshipobservation.FieldSummary)
+	trim := "trim"
+	if s.Dialect() == dialect.Postgres {
+		trim = "btrim"
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	b.WriteString(trim)
+	b.WriteString("(coalesce(")
+	b.WriteString(column)
+	b.WriteString(", ''))), '-', ' '), '_', ' '), '.', ' ')")
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {

@@ -2301,6 +2301,72 @@ func TestRelationshipSearchFindsTheActivitySubject(t *testing.T) {
 	assertCompanyQuery("subject")
 }
 
+func TestRelationshipSearchFindsTheActivityRow(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, source, event, summary string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(name).SetEventType(event).
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(`{}`).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Row Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Row Mail", "gmail", "thread.snapshot", "Gmail thread observed: Sandbox login")
+	saveRow("Row Plain", "gmail", "thread.snapshot", "Sandbox login")
+	saveRow("Row Meet", "calendar", "meeting.snapshot", "Calendar meeting observed with ada@acme.com")
+	saveRow("Row Hub", "hubspot", "company.snapshot", "HubSpot company snapshot: Northwind")
+	saveRow("Row Hub ID", "hubspot", "company.snapshot", "HubSpot company snapshot: HubSpot company 99")
+	saveRow("Row Slack", "slack", "message.snapshot", "Slack message observed in #launch")
+	saveRow("Row Slack ID", "slack", "message.snapshot", "Slack message observed in #Slack channel C1")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Mail: Sandbox login", "Row Mail")
+	assertCompanyQuery("Meeting with ada@acme.com", "Row Meet")
+	assertCompanyQuery("Company from HubSpot: Northwind", "Row Hub")
+	assertCompanyQuery("Message in #launch", "Row Slack")
+	assertCompanyQuery("Company from HubSpot", "Row Hub ID")
+	assertCompanyQuery("Message in Slack", "Row Slack ID")
+	assertCompanyQuery("Mail: local-user")
+	assertCompanyQuery("Company from HubSpot: HubSpot company 99")
+	assertCompanyQuery("Message in #Slack channel C1")
+	assertCompanyQuery("Sandbox login")
+}
+
 func TestRelationshipSearchFindsTheActivityDirection(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
