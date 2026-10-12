@@ -44,6 +44,7 @@ jobs:
       app_spec_path: .do/rowboat-www-production.yaml
       deploy_ref: refs/heads/main
       environment: production
+      doctl_version: 1.183.0
       timeout_minutes: 90
       healthcheck_url: ${{ vars.ROWBOAT_WWW_HEALTHCHECK_URL }}
       healthcheck_attempts: 30

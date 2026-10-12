@@ -1,9 +1,13 @@
-name: Deploy rowboat-api passive App Platform service
+name: Deploy rowboat-api to App Platform
 
-# The Fly deployment still runs production migrations, the Temporal worker,
-# and the scheduler. This App Platform service is manual until those roles and
-# the public API hostname have a reviewed cutover plan.
 on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/rowboat-api/**"
+      - "packages/oauth-resource-server-go/**"
+      - ".do/rowboat-api-production.json"
+      - ".github/workflows/rowboat-api-app-platform.yml"
   workflow_dispatch:
 
 permissions:
@@ -32,6 +36,7 @@ jobs:
       app_spec_path: .do/rowboat-api-production.json
       deploy_ref: refs/heads/main
       environment: production
+      doctl_version: 1.183.0
       timeout_minutes: 90
       healthcheck_url: ${{ vars.ROWBOAT_API_HEALTHCHECK_URL }}
       healthcheck_attempts: 30
