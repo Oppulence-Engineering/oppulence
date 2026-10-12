@@ -258,6 +258,7 @@ const RUN_EVENT_LABELS: Record<string, string> = {
   artifact_updated: "Result updated",
   final_artifact_ready: "Result ready",
   dead_lettered: "Could not start",
+  signal: "Update",
   cancel_requested: "Cancellation requested",
   retry_requested: "Retry requested",
   run_processing_start: "Run started",
@@ -346,6 +347,24 @@ export function completedRunCopy(summary: string): string {
   }
   if (!raw || raw === "Completed.") return "Finished.";
   return raw;
+}
+
+/** A signal stores its name and payload. The transcript names the action. */
+export function signalTranscriptCopy(signal: string): string {
+  switch (signal.trim()) {
+    case "pause":
+      return "Paused.";
+    case "resume":
+      return "Running again.";
+    case "update_context":
+      return "Updated what this run knows.";
+    case "approve_tool":
+      return "Approved.";
+    case "deny_tool":
+      return "This tool was not approved.";
+    default:
+      return "Recorded an update.";
+  }
 }
 
 function rewriteInfrastructureEvent(value: string): string {
@@ -662,6 +681,7 @@ export function runEventBody(event: { type?: string; event: unknown }): string {
   const error = eventStringField(record, "error");
   const code = eventStringField(record, "errorCode");
   if (message === "Completed.") return completedRunCopy(eventStringField(record, "summary"));
+  if (eventKind(type) === "signal") return signalTranscriptCopy(eventStringField(record, "signal"));
   if (message && message !== "Failed.") {
     const explained = runStoredFailureCopy(message, code);
     if (explained !== message) return explained;

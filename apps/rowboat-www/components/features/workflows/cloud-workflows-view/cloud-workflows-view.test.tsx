@@ -337,6 +337,7 @@ describe("CloudWorkflowsView", () => {
     expect(runEventLabel("runtime.final_artifact_ready")).toBe("Result ready");
     expect(runEventLabel("temporal.artifact_updated")).toBe("Result updated");
     expect(runEventLabel("temporal.dead_lettered")).toBe("Could not start");
+    expect(runEventLabel("temporal.signal")).toBe("Update");
     expect(runEventLabel("desktop.ask_human_request")).toBe("Asked for a decision");
     expect(runEventLabel("desktop.spawn_subflow")).toBe("Started a related run");
     expect(runEventLabel("runtime.limit_exceeded")).toBe("Run limit reached");
@@ -670,6 +671,30 @@ describe("CloudWorkflowsView", () => {
       runEventBody({ type: "temporal.completed", event: { message: "Completed.", progress: 100 } }),
     ).toBe("Finished.");
     expect(runEventBody({ event: "Completed." })).toBe("Finished.");
+    expect(
+      runEventBody({
+        type: "temporal.signal",
+        event: { signal: "pause", payload: { note: "hold" } },
+      }),
+    ).toBe("Paused.");
+    expect(runEventBody({ type: "temporal.signal", event: { signal: "resume" } })).toBe(
+      "Running again.",
+    );
+    expect(runEventBody({ type: "temporal.signal", event: { signal: "update_context" } })).toBe(
+      "Updated what this run knows.",
+    );
+    expect(runEventBody({ type: "temporal.signal", event: { signal: "approve_tool" } })).toBe(
+      "Approved.",
+    );
+    expect(runEventBody({ type: "temporal.signal", event: { signal: "deny_tool" } })).toBe(
+      "This tool was not approved.",
+    );
+    expect(
+      runEventBody({
+        type: "temporal.signal",
+        event: { signal: "custom", payload: { token: "secret" } },
+      }),
+    ).toBe("Recorded an update.");
     expect(
       runEventBody({ type: "runtime.unknown", event: { prompt_version: "cloud-runtime-v1" } }),
     ).toBe("Recorded an update.");
