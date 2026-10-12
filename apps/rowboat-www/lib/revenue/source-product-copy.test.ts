@@ -1120,6 +1120,7 @@ describe("source product copy", () => {
           value: "I will send the proposal.",
           speakerLabel: "You",
         },
+        { id: "claim:person", kind: "stakeholder", value: "Avery Chen is the champion" },
         { id: "claim:review", kind: "claim", value: "one", confidence: 0.2 },
         { id: "claim:again", kind: "risk", value: "Security review may slip", speakerLabel: "Avery" },
       ],
@@ -1157,6 +1158,7 @@ describe("source product copy", () => {
       "Sentiment: Negative",
       "Decision: We decided to renew.",
       "Promise: I will send the proposal. — You",
+      "Person: Avery Chen is the champion",
       "Named from the guest list: Avery",
       "A speaker was not named",
     ]);

@@ -1111,7 +1111,7 @@ function activityClaimTitle(kind: string): string | null {
     case "milestone":
       return "Milestone";
     case "stakeholder":
-      return "Stakeholder";
+      return "Person";
     case "commitment":
       return "Promise";
     case "lifecycle":
