@@ -1,6 +1,6 @@
 # Reusable DigitalOcean App Platform workflow
 
-The reusable workflow is published in the public [Oppulence shared-workflows repository](https://github.com/Oppulence-Engineering/shared-workflows/blob/main/.github/workflows/digitalocean-app-platform.yml), with its current release at [v1.1.2](https://github.com/Oppulence-Engineering/shared-workflows/releases/tag/v1.1.2). Each app repository calls that workflow. This monorepo has production App Platform callers for rowboat-www and the passive rowboat-api service. The existing Kubernetes and Fly deployments remain in place.
+The reusable workflow is published in the public [Oppulence shared-workflows repository](https://github.com/Oppulence-Engineering/shared-workflows/blob/main/.github/workflows/digitalocean-app-platform.yml), with its current release at [v1.1.2](https://github.com/Oppulence-Engineering/shared-workflows/releases/tag/v1.1.2). Each app repository calls that workflow. This monorepo has production App Platform callers for rowboat-www and rowboat-api, including the API worker, scheduler, and predeploy migration job. See the [production operations runbook](../runbooks/app-platform-production.md) for rollout, verification, and rollback.
 
 A **public** repository can host this workflow even when callers are private, if the organization's Actions policy permits public reusable workflows. Public workflow code and commit history are visible to everyone. Keep DigitalOcean tokens and app runtime secrets in the calling repository's GitHub secrets or DigitalOcean App Platform, never in the workflow repository. Pin the called workflow to a reviewed commit SHA in production; a branch or mutable tag can change the code that receives the deployment token. The reusable workflow also pins its nested `digitalocean/action-doctl` action to commit `3cb3953159719656269e044e0e24ca16dd2a690f` (v2.5.2).
 
@@ -30,7 +30,7 @@ services:
     instance_size_slug: apps-s-1vcpu-0.5gb
 ```
 
-For this monorepo, a Dockerfile such as `apps/rowboat-www/Dockerfile` copies shared packages from the repository root. Its App Platform spec therefore needs `source_dir: /` and `dockerfile_path: apps/rowboat-www/Dockerfile`, followed by its real routes, environment variables, health check, and instance size. Review each app's current deployment contract before using App Platform; the API's migrations, workers, scheduler, secrets, and staging gates require app-specific work.
+For this monorepo, a Dockerfile such as `apps/rowboat-www/Dockerfile` copies shared packages from the repository root. Its App Platform spec therefore needs `source_dir: /` and `dockerfile_path: apps/rowboat-www/Dockerfile`, followed by its real routes, environment variables, health check, and instance size. The API app spec also defines background workers and a predeploy migration job. Its encrypted app-level environment values are inherited by all components.
 
 ## Provisioned production apps
 
@@ -39,11 +39,9 @@ For this monorepo, a Dockerfile such as `apps/rowboat-www/Dockerfile` copies sha
 | rowboat-www | `f2e91ead-9963-46be-b205-4fb7518dea2d` | https://rowboat-www-production-gmmbn.ondigitalocean.app | `.do/rowboat-www-production.yaml` | `.github/workflows/rowboat-www-app-platform.yml` |
 | rowboat-api | `dd11bce0-097b-459a-9c36-c66f3562cd5a` | https://rowboat-api-production-w59vj.ondigitalocean.app | `.do/rowboat-api-production.json` | `.github/workflows/rowboat-api-app-platform.yml` |
 
-Both apps are active in DigitalOcean's Solomon-AI project. Their `/readyz` and `/healthz` endpoints returned HTTP 200 at the default URLs above. They cost an estimated $24/month each at two 1 GB instances. Neither production hostname has been moved to App Platform. The repository holds `ROWBOAT_WWW_APP_ID`, `ROWBOAT_API_APP_ID`, `ROWBOAT_WWW_HEALTHCHECK_URL`, and `ROWBOAT_API_HEALTHCHECK_URL` as GitHub variables, and a scoped `DIGITALOCEAN_PRODUCTION_TOKEN` repository secret. Rotate the token before its October 12, 2027 expiry.
+The apps are in DigitalOcean's Solomon-AI project. Their production domains are `oppulence.io` (with `www.oppulence.io` as an alias) and `api.oppulence.io`. The web app costs an estimated $24/month and the API app with background components costs an estimated $53/month at their configured sizes; usage-based charges may be additional. The repository holds `ROWBOAT_WWW_APP_ID`, `ROWBOAT_API_APP_ID`, `ROWBOAT_WWW_HEALTHCHECK_URL`, and `ROWBOAT_API_HEALTHCHECK_URL` as GitHub variables, and a scoped `DIGITALOCEAN_PRODUCTION_TOKEN` repository secret. Rotate the token before its October 12, 2027 expiry.
 
-The API App Platform app runs only the request service. Its Temporal worker, scheduler, Google watch, and revenue scan flags are disabled so it does not duplicate the current Fly background fleet. Its caller is manual until migrations, background roles, and hostname cutover are designed and tested. The exported API spec contains encrypted App Platform values for the existing production Infisical secrets; never replace them with plaintext in Git.
-
-GitHub Actions is currently disabled on the `oppulence` repository. The caller workflows cannot run until Actions is enabled in repository settings. Review the existing production workflows before enabling Actions because that setting applies to every workflow in the repository.
+The exported API spec contains encrypted App Platform values for the existing production Infisical secrets; never replace them with plaintext in Git. The App Platform callers deploy on relevant pushes to `main` and through manual dispatch. The Fly callers are manual rollback workflows and do not deploy on push.
 
 ## Caller: one app, production
 
