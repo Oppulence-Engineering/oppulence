@@ -346,8 +346,10 @@ export function relationshipDeltaValue(value: unknown): string {
 
 /**
  * A projection with nothing selected stores "No active next action assertion
- * at evaluation time." What changed and the recommendation reason say which
- * field is missing. The stored sentence stays on the record.
+ * at evaluation time." A correction, a HubSpot stage, and a quote-backed
+ * claim store the sentence the model used. What changed and the
+ * recommendation reason say what the person did or where the detail came
+ * from. The stored sentence stays on the record.
  */
 const PROJECTION_GAP_REASONS: Record<string, string> = {
   "next action": "No next step is recorded.",
@@ -360,10 +362,29 @@ const PROJECTION_GAP_REASONS: Record<string, string> = {
   milestone: "No milestone is recorded.",
 };
 
+const RECORDED_CHANGE_REASONS: Record<string, string> = {
+  "User corrected focused conversation evidence.": "You corrected what was said.",
+  "User corrected conversation evidence during focused review.": "You corrected what was said.",
+  "User decided a proposed conversation change.": "You decided a suggested change.",
+  "User selected the current value from a focused contradiction case.": "You chose the current value.",
+  "User confirmed this commitment from the cited meeting transcript.":
+    "You confirmed this promise from the meeting.",
+  "HubSpot company lifecycle stage.": "Taken from HubSpot.",
+};
+
+const CONVERSATION_CLAIM_REASON =
+  /Conversation claim .+?, supported by the exact quote at \d+-\d+ ms\./g;
+
 export function projectionReasonCopy(reason: string): string {
-  return reason.replace(/No active ([a-z][a-z ]*) assertion at evaluation time\./g, (full, key: string) => {
-    return PROJECTION_GAP_REASONS[key] ?? full;
-  });
+  const fromQuote = reason.replace(CONVERSATION_CLAIM_REASON, "Taken from what was said.");
+  const named = Object.entries(RECORDED_CHANGE_REASONS).reduce(
+    (text, [stored, copy]) => text.replaceAll(stored, copy),
+    fromQuote,
+  );
+  return named.replace(
+    /No active ([a-z][a-z ]*) assertion at evaluation time\./g,
+    (full, key: string) => PROJECTION_GAP_REASONS[key] ?? full,
+  );
 }
 
 const HIDDEN_ACTIVITY_KEYS = new Set([

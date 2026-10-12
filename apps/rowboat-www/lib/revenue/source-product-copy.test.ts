@@ -106,6 +106,35 @@ describe("source product copy", () => {
       ),
     ).toBe("Supporting evidence changed. Lifecycle is not recorded.");
     expect(projectionReasonCopy("The account is healthy.")).toBe("The account is healthy.");
+    expect(projectionReasonCopy("Confirmed in the last meeting.")).toBe(
+      "Confirmed in the last meeting.",
+    );
+    expect(projectionReasonCopy("User corrected focused conversation evidence.")).toBe(
+      "You corrected what was said.",
+    );
+    expect(
+      projectionReasonCopy("User corrected conversation evidence during focused review."),
+    ).toBe("You corrected what was said.");
+    expect(projectionReasonCopy("User decided a proposed conversation change.")).toBe(
+      "You decided a suggested change.",
+    );
+    expect(
+      projectionReasonCopy("User selected the current value from a focused contradiction case."),
+    ).toBe("You chose the current value.");
+    expect(
+      projectionReasonCopy("User confirmed this commitment from the cited meeting transcript."),
+    ).toBe("You confirmed this promise from the meeting.");
+    expect(projectionReasonCopy("HubSpot company lifecycle stage.")).toBe("Taken from HubSpot.");
+    expect(
+      projectionReasonCopy(
+        "Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms.",
+      ),
+    ).toBe("Taken from what was said.");
+    expect(
+      projectionReasonCopy(
+        "Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms. No active lifecycle assertion at evaluation time.",
+      ),
+    ).toBe("Taken from what was said. Lifecycle is not recorded.");
   });
 
   it("reads a saved note instead of the empty payload", () => {

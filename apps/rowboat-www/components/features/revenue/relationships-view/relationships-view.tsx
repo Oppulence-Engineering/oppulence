@@ -3398,35 +3398,15 @@ export function uncertainClaimCopy(count: number): string {
 
 /**
  * Missing-detail text is stored for the model. The sheet says what the person
- * can do about it. A review reason that still says "User", a HubSpot lifecycle
- * stage, and a conversation claim that names the quote's millisecond range are
- * rewritten. Any other supported detail keeps the reason that was recorded.
+ * can do about it. A supported detail uses the same words as What changed.
+ * Any other supported detail keeps the reason that was recorded.
  */
-const DETAIL_REASON_COPY: Record<string, string> = {
-  "User corrected focused conversation evidence.": "You corrected what was said.",
-  "User corrected conversation evidence during focused review.": "You corrected what was said.",
-  "User decided a proposed conversation change.": "You decided a suggested change.",
-  "User selected the current value from a focused contradiction case.":
-    "You chose the current value.",
-  "User confirmed this commitment from the cited meeting transcript.":
-    "You confirmed this promise from the meeting.",
-  "HubSpot company lifecycle stage.": "Taken from HubSpot.",
-};
-
-const CONVERSATION_CLAIM_REASON =
-  /^Conversation claim .+, supported by the exact quote at \d+-\d+ ms\.$/;
-
 export function detailEvidenceCopy(item: {
   supported: boolean;
   reason?: string;
   missingReason?: string;
 }): string {
-  if (item.supported) {
-    const reason = item.reason?.trim() ?? "";
-    if (DETAIL_REASON_COPY[reason]) return DETAIL_REASON_COPY[reason];
-    if (CONVERSATION_CLAIM_REASON.test(reason)) return "Taken from what was said.";
-    return reason;
-  }
+  if (item.supported) return projectionReasonCopy(item.reason?.trim() ?? "");
   const missing = item.missingReason?.trim() ?? "";
   if (missing === "" || missing.includes("asOf boundary")) {
     return "Nothing connected has filled this in.";
