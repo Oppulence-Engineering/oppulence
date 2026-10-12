@@ -1057,7 +1057,41 @@ export function attentionExplanationCopy(explanation: string | null | undefined)
     const verb = who === "A source" || !/\band\b|,/.test(who) ? "needs" : "need";
     return `${who} ${verb} to be read again or reconnected.`;
   }
+  const outcome = attentionOutcomeCopy(raw);
+  if (outcome) return outcome;
   return raw;
+}
+
+/** Slack and CRM are names. A manual review is a person looking at the action. */
+function attentionActionName(kind: string): string {
+  switch (kind) {
+    case "slack":
+      return "Slack";
+    case "crm":
+      return "CRM";
+    case "crm task":
+      return "CRM task";
+    default:
+      return kind;
+  }
+}
+
+function attentionOutcomeCopy(raw: string): string | null {
+  const failed = /^The (.+) action failed\. Review it before trying again\.$/.exec(raw);
+  if (failed?.[1]) {
+    return `The ${attentionActionName(failed[1])} action failed. Review it before trying again.`;
+  }
+  const ambiguous =
+    /^The (.+) action may have gone through\. Review it before trying again\.$/.exec(raw);
+  if (ambiguous?.[1]) {
+    return `The ${attentionActionName(ambiguous[1])} action may have gone through. Review it before trying again.`;
+  }
+  const review =
+    /^The (.+) action needs a manual review before it can be tried again\.$/.exec(raw);
+  if (review?.[1]) {
+    return `The ${attentionActionName(review[1])} action needs a person to review it before you try again.`;
+  }
+  return null;
 }
 
 /** Impact lists attention reason codes. The queue already has a sentence. */

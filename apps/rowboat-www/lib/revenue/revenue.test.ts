@@ -594,6 +594,19 @@ it("names an overdue promise in an older attention sentence", () => {
       "Source evidence is incomplete, stale, rebuilding, or missing a required permission.",
     ),
   ).toBe("A source needs to be read again or reconnected.");
+  expect(
+    attentionExplanationCopy("The email action failed. Review it before trying again."),
+  ).toBe("The email action failed. Review it before trying again.");
+  expect(
+    attentionExplanationCopy(
+      "The crm task action may have gone through. Review it before trying again.",
+    ),
+  ).toBe("The CRM task action may have gone through. Review it before trying again.");
+  expect(
+    attentionExplanationCopy(
+      "The slack action needs a manual review before it can be tried again.",
+    ),
+  ).toBe("The Slack action needs a person to review it before you try again.");
 });
 
 it("names a shared plan without the stored hash or a redacted owner", () => {
