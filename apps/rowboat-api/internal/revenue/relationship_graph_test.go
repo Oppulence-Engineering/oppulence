@@ -379,6 +379,24 @@ func TestGraphSourceLabelUsesTheProductTitle(t *testing.T) {
 	if got := graphEventLabel("relationship_contradiction_resolved"); got != "Detail chosen" {
 		t.Fatalf("relationship_contradiction_resolved label = %q", got)
 	}
+	if got := graphEventLabel("commitment_status_changed"); got != "Promise updated" {
+		t.Fatalf("commitment_status_changed label = %q", got)
+	}
+	if got := graphEventLabel("commitment_created"); got != "Promise added" {
+		t.Fatalf("commitment_created label = %q", got)
+	}
+	if got := graphEventLabel("contact_departed"); got != "Contact left" {
+		t.Fatalf("contact_departed label = %q", got)
+	}
+	if got := graphEventLabel("crm.activity"); got != "CRM activity" {
+		t.Fatalf("crm.activity label = %q", got)
+	}
+	if got := graphEventLabel("action.outcome.churned"); got != "They left" {
+		t.Fatalf("action.outcome.churned label = %q", got)
+	}
+	if got := graphEventLabel("action.outcome.sent"); got != "Message sent" {
+		t.Fatalf("action.outcome.sent label = %q", got)
+	}
 }
 
 func TestRelationshipGraphPagesPastTheNewestCompanies(t *testing.T) {
