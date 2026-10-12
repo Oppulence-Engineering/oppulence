@@ -2367,6 +2367,70 @@ func TestRelationshipSearchFindsTheActivityRow(t *testing.T) {
 	assertCompanyQuery("Sandbox login")
 }
 
+func TestRelationshipSearchFindsTheActivityRecord(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, source, event, summary string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(name).SetEventType(event).
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(`{}`).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Record Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Record Buyer", "user", "person_added", "Jordan Buyer added by the user")
+	saveRow("Record Token", "user", "person_added", "local-user added by the user")
+	saveRow("Record Ada", "user", "person_added", "Ada added by the user.")
+	saveRow("Record Corrected", "user", "conversation_evidence_corrected", "User corrected reviewed conversation evidence.")
+	saveRow("Record Chose", "user", "relationship_contradiction_resolved", "User resolved a typed relationship contradiction.")
+	saveRow("Record Decided", "user", "conversation_review_decided", "User decided a proposed conversation change.")
+	saveRow("Record Plan", "browser", "mutual_action_plan_response_received", "Counterparty responded to a shared mutual action plan.")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("You added Jordan Buyer.", "Record Buyer")
+	assertCompanyQuery("You added a person.", "Record Token", "Record Ada")
+	assertCompanyQuery("You added Ada.")
+	assertCompanyQuery("You corrected what was said.", "Record Corrected")
+	assertCompanyQuery("You chose which detail is current.", "Record Chose")
+	assertCompanyQuery("You decided a suggested change.", "Record Decided")
+	assertCompanyQuery("They responded to the shared plan.", "Record Plan")
+	assertCompanyQuery("You chose the current value.")
+}
+
 func TestRelationshipSearchFindsTheActivityDirection(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

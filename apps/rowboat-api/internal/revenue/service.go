@@ -1064,6 +1064,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if row := relationshipSheetActivityRowMatch(needle); row != nil {
 			parts = append(parts, row)
 		}
+		if recorded := relationshipSheetActivityRecordMatch(needle); recorded != nil {
+			parts = append(parts, recorded)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -4185,11 +4188,111 @@ func writeNormalizedSummary(b *sql.Builder, s *sql.Selector) {
 	if s.Dialect() == dialect.Postgres {
 		trim = "btrim"
 	}
-	b.WriteString("replace(replace(replace(lower(")
+	b.WriteString(trim)
+	b.WriteString("(replace(replace(replace(lower(")
 	b.WriteString(trim)
 	b.WriteString("(coalesce(")
 	b.WriteString(column)
-	b.WriteString(", ''))), '-', ' '), '_', ' '), '.', ' ')")
+	b.WriteString(", ''))), '-', ' '), '_', ' '), '.', ' '))")
+}
+
+// relationshipSheetActivityRecordMatch matches a person you added and a
+// decision on the activity row. The stored summary still says "added by the
+// user" or names the model sentence. A one-word name is "You added a person."
+func relationshipSheetActivityRecordMatch(needle string) predicate.Relationship {
+	var preds []predicate.RelationshipObservation
+	if rest, ok := addedPersonRest(needle); ok {
+		preds = append(preds, observationSummaryEquals(rest+" added by the user"))
+	}
+	if needle == "you added a person" {
+		preds = append(preds, observationSummaryAddedPerson())
+	}
+	recorded := map[string]string{
+		"you corrected what was said":       "user corrected reviewed conversation evidence",
+		"you chose which detail is current": "user resolved a typed relationship contradiction",
+		"you decided a suggested change":    "user decided a proposed conversation change",
+		"they responded to the shared plan": "counterparty responded to a shared mutual action plan",
+	}
+	if stored, ok := recorded[needle]; ok {
+		preds = append(preds, observationSummaryEquals(stored))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+func addedPersonRest(needle string) (string, bool) {
+	const prefix = "you added "
+	if !strings.HasPrefix(needle, prefix) {
+		return "", false
+	}
+	rest := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+	if rest == "" || rest == "a person" || addedPersonToken(rest) {
+		return "", false
+	}
+	return rest, true
+}
+
+func addedPersonToken(name string) bool {
+	if name == "" {
+		return true
+	}
+	for _, r := range name {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '_', r == ':', r == '-':
+			continue
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func observationSummaryAddedPerson() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationshipobservation.FieldSummary)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+				b.WriteString(column)
+				b.WriteString(", ''))) ~ ")
+				b.Arg(`^[a-z0-9_:-]* added by the user\.?$`)
+				return
+			}
+			b.WriteString("((lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", ''))) GLOB ")
+			b.Arg("* added by the user")
+			b.WriteString(" OR lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", ''))) GLOB ")
+			b.Arg("* added by the user.")
+			b.WriteString(") AND (CASE WHEN lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", ''))) GLOB ")
+			b.Arg("* added by the user.")
+			b.WriteString(" THEN substr(lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", ''))), 1, length(lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", '')))) - length(")
+			b.Arg(" added by the user.")
+			b.WriteString(")) ELSE substr(lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", ''))), 1, length(lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", '')))) - length(")
+			b.Arg(" added by the user")
+			b.WriteString(")) END) NOT GLOB ")
+			b.Arg("*[^a-z0-9_:-]*")
+			b.WriteString(")")
+		}))
+	})
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {
