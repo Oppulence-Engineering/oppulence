@@ -2,7 +2,7 @@
 
 The reusable workflow is published in the public [Oppulence shared-workflows repository](https://github.com/Oppulence-Engineering/shared-workflows/blob/main/.github/workflows/digitalocean-app-platform.yml), with its current release at [v1.1.0](https://github.com/Oppulence-Engineering/shared-workflows/releases/tag/v1.1.0). Each app repository calls that workflow. No DigitalOcean caller has been activated in this monorepo; its Kubernetes and Fly deployments remain in place.
 
-A **public** repository can host this workflow even when callers are private, if the organization's Actions policy permits public reusable workflows. Public workflow code and commit history are visible to everyone. Keep DigitalOcean tokens and app runtime secrets in the calling repository's GitHub secrets or DigitalOcean App Platform, never in the workflow repository. Pin the called workflow to a reviewed commit SHA in production; a branch or mutable tag can change the code that receives the deployment token.
+A **public** repository can host this workflow even when callers are private, if the organization's Actions policy permits public reusable workflows. Public workflow code and commit history are visible to everyone. Keep DigitalOcean tokens and app runtime secrets in the calling repository's GitHub secrets or DigitalOcean App Platform, never in the workflow repository. Pin the called workflow to a reviewed commit SHA in production; a branch or mutable tag can change the code that receives the deployment token. The reusable workflow also pins its nested `digitalocean/action-doctl` action to commit `3cb3953159719656269e044e0e24ca16dd2a690f` (v2.5.2).
 
 ## Per-app setup
 
@@ -27,7 +27,7 @@ services:
     source_dir: /
     dockerfile_path: Dockerfile
     http_port: 8080
-    instance_size_slug: basic-xxs
+    instance_size_slug: apps-s-1vcpu-0.5gb
 ```
 
 For this monorepo, a Dockerfile such as `apps/rowboat-www/Dockerfile` copies shared packages from the repository root. Its App Platform spec therefore needs `source_dir: /` and `dockerfile_path: apps/rowboat-www/Dockerfile`, followed by its real routes, environment variables, health check, and instance size. Review each app's current deployment contract before using App Platform; the API's migrations, workers, scheduler, secrets, and staging gates require app-specific work.
