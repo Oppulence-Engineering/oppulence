@@ -324,12 +324,29 @@ const INFRASTRUCTURE_EVENT_COPY: Record<string, string> = {
   "Run completed without artifact changes.": "Finished without changing the result.",
   "Artifact updated.": "Result updated.",
   "Cancellation requested.": "Stopping this run.",
+  "Completed.": "Finished.",
   "Dead-lettered before Temporal start.": "This run did not start.",
   "Abandoned before Temporal start confirmation.": "This run did not start. Try again.",
   "Abandoned: workflow stopped heartbeating.": "This run stopped responding. Try again.",
   "Temporal start failed.": "Workflows cannot be started right now. Try again later.",
   "Temporal retry start failed.": "This run could not be tried again.",
 };
+
+/**
+ * A finished run stores "Completed." and, beside it, the summary. The worker
+ * fallback names the API worker and the trigger. The transcript says the run
+ * finished, or shows the summary the model wrote.
+ */
+export function completedRunCopy(summary: string): string {
+  const raw = summary.trim();
+  const worker = /^API worker completed (.*?) via \S+ trigger\.(?: Context: [\s\S]*)?$/.exec(raw);
+  if (worker) {
+    const name = worker[1].trim().replace(/[.!?]+$/, "");
+    return name ? `Finished ${name}.` : "Finished.";
+  }
+  if (!raw || raw === "Completed.") return "Finished.";
+  return raw;
+}
 
 function rewriteInfrastructureEvent(value: string): string {
   const step = /^Agent step (\d+)\.$/.exec(value);
@@ -644,6 +661,7 @@ export function runEventBody(event: { type?: string; event: unknown }): string {
     .find(Boolean);
   const error = eventStringField(record, "error");
   const code = eventStringField(record, "errorCode");
+  if (message === "Completed.") return completedRunCopy(eventStringField(record, "summary"));
   if (message && message !== "Failed.") {
     const explained = runStoredFailureCopy(message, code);
     if (explained !== message) return explained;

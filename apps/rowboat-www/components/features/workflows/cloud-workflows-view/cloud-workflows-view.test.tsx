@@ -650,6 +650,27 @@ describe("CloudWorkflowsView", () => {
       "Workflows cannot be started right now. Try again later.",
     );
     expect(
+      runEventBody({
+        type: "temporal.completed",
+        event: {
+          message: "Completed.",
+          progress: 100,
+          summary:
+            "API worker completed Daily Account Summary via cron trigger. Context: Scheduled cron trigger fired.",
+        },
+      }),
+    ).toBe("Finished Daily Account Summary.");
+    expect(
+      runEventBody({
+        type: "temporal.completed",
+        event: { message: "Completed.", summary: "Found 4 open customer follow-ups." },
+      }),
+    ).toBe("Found 4 open customer follow-ups.");
+    expect(
+      runEventBody({ type: "temporal.completed", event: { message: "Completed.", progress: 100 } }),
+    ).toBe("Finished.");
+    expect(runEventBody({ event: "Completed." })).toBe("Finished.");
+    expect(
       runEventBody({ type: "runtime.unknown", event: { prompt_version: "cloud-runtime-v1" } }),
     ).toBe("Recorded an update.");
     expect(runEventBody({ event: "Agent step 1." })).toBe("Step 1.");
