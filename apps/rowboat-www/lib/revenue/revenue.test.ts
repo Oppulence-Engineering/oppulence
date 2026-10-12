@@ -630,6 +630,14 @@ it("names an overdue promise in an older attention sentence", () => {
   ).toBe(
     "Sarah Chen and Ada Lovelace have left, so mail to that address is no longer delivered. It has been quiet for 1 day because nobody here can reply.",
   );
+  expect(
+    attentionExplanationCopy(
+      "Acme announced a Series B. Your last contact there was Sarah Chen (VP Engineering). Source: https://press.example/acme",
+    ),
+  ).toBe(
+    "Acme announced a Series B. Your last contact there was Sarah Chen (VP Engineering). Reported at https://press.example/acme.",
+  );
+  expect(attentionExplanationCopy("Acme launched v2.")).toBe("Acme launched v2.");
 });
 
 it("names a shared plan without the stored hash or a redacted owner", () => {

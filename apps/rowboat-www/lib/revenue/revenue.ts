@@ -1069,7 +1069,18 @@ export function attentionExplanationCopy(explanation: string | null | undefined)
   }
   const departed = departedContactCopy(raw);
   if (departed) return departed;
+  const outside = externalTriggerCopy(raw);
+  if (outside) return outside;
   return actionReasonCopy(raw);
+}
+
+/** A public-research event stores "Source: https://…". The queue says where it was reported. */
+function externalTriggerCopy(raw: string): string | null {
+  const match = /^(.*) Source: (https?:\/\/\S+)$/.exec(raw);
+  if (!match?.[1] || !match[2]) return null;
+  const body = match[1].trim();
+  if (!body) return null;
+  return `${body} Reported at ${match[2]}.`;
 }
 
 /** A departed contact stores a semicolon and "Quiet for N days". The queue says the mail stopped. */
