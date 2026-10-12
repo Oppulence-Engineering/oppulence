@@ -242,6 +242,19 @@ export function scheduleHealthLabel(value: string): string {
 }
 
 /**
+ * A failed schedule stores a Temporal summary or the cron text. The settings
+ * page says whether the schedule could be saved or read. The expression and
+ * the worker error stay off the page.
+ */
+export function scheduleSyncFailureCopy(error: string | null | undefined): string {
+  const raw = error?.trim() ?? "";
+  if (/^invalid cron expression\b/i.test(raw)) {
+    return "This schedule could not be read. Open the workflow and save it again.";
+  }
+  return "The schedule could not be saved. Try again later.";
+}
+
+/**
  * Transcript types are dotted tokens. The prefix is the emitter. A result is
  * not an artifact, and a question to the person is not an "ask human" event.
  */

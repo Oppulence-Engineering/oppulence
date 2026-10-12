@@ -57,6 +57,7 @@ import {
   runEventLabel,
   runReference,
   scheduleHealthLabel,
+  scheduleSyncFailureCopy,
   compileVisualWorkflow,
   scheduleMomentLabel,
   workflowListSummary,
@@ -330,6 +331,21 @@ describe("CloudWorkflowsView", () => {
   it("names schedule health and transcript events", () => {
     expect(scheduleHealthLabel("current")).toBe("In sync");
     expect(scheduleHealthLabel("failed")).toBe("Needs repair");
+    expect(scheduleSyncFailureCopy("temporal unreachable (timed out)")).toBe(
+      "The schedule could not be saved. Try again later.",
+    );
+    expect(scheduleSyncFailureCopy("temporal schedule operation failed")).toBe(
+      "The schedule could not be saved. Try again later.",
+    );
+    expect(scheduleSyncFailureCopy("temporal schedule upsert failed")).toBe(
+      "The schedule could not be saved. Try again later.",
+    );
+    expect(scheduleSyncFailureCopy('invalid cron expression "not a cron"')).toBe(
+      "This schedule could not be read. Open the workflow and save it again.",
+    );
+    expect(scheduleSyncFailureCopy("")).toBe("The schedule could not be saved. Try again later.");
+    expect(source).toContain("scheduleSyncFailureCopy(task.scheduleSyncError)");
+    expect(source).not.toContain("{task.scheduleSyncError}");
     expect(runEventLabel("temporal.failed")).toBe("Failed");
     expect(runEventLabel("runtime.tool_call_started")).toBe("Tool call started");
     expect(runEventLabel("runtime.llm_call_started")).toBe("Model call started");

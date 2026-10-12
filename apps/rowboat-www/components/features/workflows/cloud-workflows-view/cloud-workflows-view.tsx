@@ -90,6 +90,7 @@ import {
   workflowProgressCopy,
   runReference,
   scheduleHealthLabel,
+  scheduleSyncFailureCopy,
   scheduleMomentLabel,
   workflowListSummary,
   triggerCloudRun,
@@ -1832,6 +1833,11 @@ function WorkflowEditor({
                   {scheduleHealthLabel(schedule?.health || task.scheduleSyncState)}
                 </Badge>
               </div>
+              {(schedule?.health || task.scheduleSyncState) === "failed" ? (
+                <p className="text-[12px] text-destructive">
+                  {scheduleSyncFailureCopy(task.scheduleSyncError)}
+                </p>
+              ) : null}
               {task.systemManaged ? (
                 <p className="text-[11px] text-muted-foreground">{maintainedWorkflowNotice()}</p>
               ) : null}
