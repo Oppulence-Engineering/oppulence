@@ -3408,6 +3408,8 @@ const DETAIL_REASON_COPY: Record<string, string> = {
   "User decided a proposed conversation change.": "You decided a suggested change.",
   "User selected the current value from a focused contradiction case.":
     "You chose the current value.",
+  "User confirmed this commitment from the cited meeting transcript.":
+    "You confirmed this promise from the meeting.",
   "HubSpot company lifecycle stage.": "Taken from HubSpot.",
 };
 

@@ -1309,6 +1309,12 @@ describe("RelationshipsView", () => {
       }),
     ).toBe("You chose the current value.");
     expect(
+      detailEvidenceCopy({
+        supported: true,
+        reason: "User confirmed this commitment from the cited meeting transcript.",
+      }),
+    ).toBe("You confirmed this promise from the meeting.");
+    expect(
       detailEvidenceCopy({ supported: true, reason: "HubSpot company lifecycle stage." }),
     ).toBe("Taken from HubSpot.");
     expect(source).toContain("detailEvidenceCopy(item)");
