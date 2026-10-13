@@ -7546,6 +7546,70 @@ func TestRelationshipSearchFindsTheSourceHistory(t *testing.T) {
 	assertCompanyQuery("50 percent of history synced")
 }
 
+func TestRelationshipSearchFindsTheSourceReconnectCopy(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Card", "slack:channel:harbor")
+	save("Birch Live", "hubspot:company:birch")
+	save("Cedar Closed", "google:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("default").
+		SetStatus("connected").SetCompleteness("disconnected").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("live").SetCompleteness("disconnected").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("google").SetSourceAccountID("default").
+		SetStatus("disconnected").SetCompleteness("disconnected").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("A source needs to be reconnected", "Harbor Card")
+	assertCompanyQuery("A source needs to be reconnected.", "Harbor Card")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

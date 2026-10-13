@@ -1145,6 +1145,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if history := relationshipSheetSourceHistoryMatch(needle); history != nil {
 			parts = append(parts, history)
 		}
+		if reconnect := relationshipSheetSourceReconnectCopyMatch(needle); reconnect != nil {
+			parts = append(parts, reconnect)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -6663,6 +6666,21 @@ func writeSourceHistoryPercent(b *sql.Builder, s *sql.Selector) {
 		return
 	}
 	b.WriteString(fmt.Sprintf("cast(round((%s * 100.0) / %s) as integer)", completed, total))
+}
+
+// relationshipSheetSourceReconnectCopyMatch is the completeness line on a
+// source card. The company sheet uses a different sentence for the same fact.
+func relationshipSheetSourceReconnectCopyMatch(needle string) predicate.Relationship {
+	if needle != normalizePersonSearch("A source needs to be reconnected") {
+		return nil
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeSourceLagShown(b, s)
+		b.WriteString(" AND src.")
+		b.WriteString(relationshipsourcestatus.FieldCompleteness)
+		b.WriteString(" = ")
+		b.Arg("disconnected")
+	})
 }
 
 // relationshipSheetSourceLookedMatch is the hover on a source badge.
