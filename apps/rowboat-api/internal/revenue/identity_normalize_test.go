@@ -6050,6 +6050,115 @@ func TestRelationshipSearchFindsTheActivityMeeting(t *testing.T) {
 	assertCompanyQuery("Location: local-user")
 }
 
+func TestRelationshipSearchFindsTheActivitySnapshot(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, source, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(name).SetEventType("snapshot").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Quill Mail", "gmail", "Gmail thread observed: Harbor quote", `{
+		"threadId":"18abc","lastMessageId":"18def","lastOutbound":true,
+		"subject":"Harbor quote"
+	}`)
+	saveNote("Birch Mail", "gmail", "Gmail thread observed: Birch quote", `{"lastOutbound":false}`)
+	saveNote("Cedar Direction", "gmail", "The last message was sent from this mailbox", `{"lastOutbound":true}`)
+	saveNote("Harbor Guest", "calendar", "Calendar meeting observed with ada@acme.com", `{
+		"eventId":"evt_1","iCalUID":"uid@google",
+		"startsAt":"2026-10-04T15:04:05.123Z","endsAt":"2026-10-04T16:00:00Z",
+		"organizer":"ada@acme.com","summary":"Q3 review","responseStatus":"needsAction"
+	}`)
+	saveNote("Birch Guest", "calendar", "A saved note", `{"responseStatus":"accepted"}`)
+	saveNote("Cedar Guest", "calendar", "A saved note", `{"responseStatus":"declined"}`)
+	saveNote("Maple Guest", "calendar", "A saved note", `{"responseStatus":"tentative"}`)
+	saveNote("Quill Guest", "calendar", "A saved note", `{"responseStatus":"needs_action"}`)
+	saveNote("Hidden Guest", "calendar", "They accepted the invite", `{"responseStatus":"accepted"}`)
+	saveNote("Birch Date", "calendar", "A saved note", `{"startsAt":"2026-10-05","endsAt":"2026-10-06"}`)
+	saveNote("Hidden Day", "calendar", "Oct 4, 2026", `{"startsAt":"2026-10-04T15:00:00Z"}`)
+	saveNote("Harbor Soft", "hubspot", "HubSpot company snapshot: Acme", `{
+		"company_id":"company-1","industry":"COMPUTER_SOFTWARE",
+		"lifecycle_stage":"marketing_qualified_lead",
+		"last_modified_at":"2026-07-31T12:00:00.123456789Z"
+	}`)
+	saveNote("Birch Soft", "hubspot", "A saved note", `{"industry":"Robotics"}`)
+	saveNote("Hidden Soft", "hubspot", "Computer Software", `{"industry":"COMPUTER_SOFTWARE"}`)
+	saveNote("Cedar Stage", "hubspot", "A saved note", `{"lifecyclestage":"former_customer"}`)
+	saveNote("Maple Stage", "hubspot", "A saved note", `{"lifecycle_stage":"customer"}`)
+	saveNote("Hidden Stage", "hubspot", "Customer", `{"lifecycle_stage":"customer"}`)
+	saveNote("Hidden Change", "hubspot", "Jul 31, 2026", `{"hs_lastmodifieddate":"2026-07-31T08:00:00Z"}`)
+	saveNote("Quill Channel", "slack", "Slack message observed in #general", `{
+		"channel_id":"C1","channel_name":"general","message_ts":"1710000000.000100","author_ref":"U1"
+	}`)
+	saveNote("Birch Channel", "slack", "A saved note", `{"channel_name":"#ops-room"}`)
+	saveNote("Cedar Channel", "slack", "A saved note", `{"channel_name":"Slack channel C1"}`)
+	saveNote("Maple Channel", "slack", "A saved note", `{"channel_name":"local-user"}`)
+	saveNote("Hidden Channel", "slack", "#general", `{"channel_name":"general"}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("The last message was sent from this mailbox", "Quill Mail")
+	assertCompanyQuery("The last message came from them", "Birch Mail")
+	assertCompanyQuery("They have not answered the invite", "Harbor Guest", "Quill Guest")
+	assertCompanyQuery("They accepted the invite", "Birch Guest")
+	assertCompanyQuery("They declined the invite", "Cedar Guest")
+	assertCompanyQuery("They replied maybe", "Maple Guest")
+	assertCompanyQuery("Starts: Oct 4, 2026", "Harbor Guest")
+	assertCompanyQuery("Ends: Oct 4, 2026", "Harbor Guest")
+	assertCompanyQuery("Starts: Oct 5, 2026", "Birch Date")
+	assertCompanyQuery("Ends: Oct 6, 2026", "Birch Date")
+	assertCompanyQuery("Organizer: ada@acme.com", "Harbor Guest")
+	assertCompanyQuery("Industry: Computer Software", "Harbor Soft")
+	assertCompanyQuery("Industry: Robotics", "Birch Soft")
+	assertCompanyQuery("HubSpot stage: Marketing qualified lead", "Harbor Soft")
+	assertCompanyQuery("HubSpot stage: Former customer", "Cedar Stage")
+	assertCompanyQuery("HubSpot stage: Customer", "Maple Stage")
+	assertCompanyQuery("Last change: Jul 31, 2026", "Harbor Soft")
+	assertCompanyQuery("Channel: #general", "Quill Channel")
+	assertCompanyQuery("Channel: #ops-room", "Birch Channel")
+	assertCompanyQuery("Channel: #Slack channel C1")
+	assertCompanyQuery("Channel: #local-user")
+	assertCompanyQuery("18abc")
+	assertCompanyQuery("evt_1")
+	assertCompanyQuery("company-1")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

@@ -1091,6 +1091,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if seen := relationshipSheetActivityVisibilityMatch(needle); seen != nil {
 			parts = append(parts, seen)
 		}
+		if snapshot := relationshipSheetActivitySnapshotMatch(needle); snapshot != nil {
+			parts = append(parts, snapshot)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -4200,6 +4203,253 @@ func writeMeetingDay(b *sql.Builder, s *sql.Selector, expr string) {
 	b.WriteString(") AS INTEGER) || ', ' || strftime('%Y', ")
 	b.WriteString(expr)
 	b.WriteString(") END)")
+}
+
+// relationshipSheetActivitySnapshotMatch is a synced Gmail, calendar, HubSpot,
+// or Slack snapshot. The activity names the last message, their invite reply,
+// the meeting days, the industry, the stage, and the channel. Ids stay hidden.
+// A line that repeats the row summary stays hidden.
+func relationshipSheetActivitySnapshotMatch(needle string) predicate.Relationship {
+	switch needle {
+	case "the last message was sent from this mailbox":
+		return relationship.HasObservationsWith(observationFactFlagSentence("lastOutbound", "true", needle))
+	case "the last message came from them":
+		return relationship.HasObservationsWith(observationFactFlagSentence("lastOutbound", "false", needle))
+	case "they accepted the invite":
+		return relationship.HasObservationsWith(observationFactCompactToken("responseStatus", "accepted", needle))
+	case "they declined the invite":
+		return relationship.HasObservationsWith(observationFactCompactToken("responseStatus", "declined", needle))
+	case "they replied maybe":
+		return relationship.HasObservationsWith(observationFactCompactToken("responseStatus", "tentative", needle))
+	case "they have not answered the invite":
+		return relationship.HasObservationsWith(observationFactCompactToken("responseStatus", "needsaction", needle))
+	}
+	if strings.HasPrefix(needle, "industry: ") {
+		value := strings.TrimSpace(needle[len("industry: "):])
+		if value == "" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationIndustry(value))
+	}
+	if strings.HasPrefix(needle, "hubspot stage: ") {
+		token, ok := activityHubSpotStageToken(strings.TrimSpace(needle[len("hubspot stage: "):]))
+		if !ok {
+			return nil
+		}
+		label := strings.TrimSpace(needle[len("hubspot stage: "):])
+		return relationship.HasObservationsWith(relationshipobservation.Or(
+			observationFactCompactToken("lifecycle_stage", token, label),
+			observationFactCompactToken("lifecyclestage", token, label),
+		))
+	}
+	if strings.HasPrefix(needle, "channel: ") {
+		name := strings.TrimSpace(needle[len("channel: "):])
+		if name == "" || name == "#" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationChannel(name))
+	}
+	if strings.HasPrefix(needle, "organizer: ") {
+		who := strings.TrimSpace(needle[len("organizer: "):])
+		if who == "" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationFactLine("organizer", who))
+	}
+	if day, printed, ok := snapshotDay(needle, "last change: "); ok {
+		return relationship.HasObservationsWith(relationshipobservation.Or(
+			observationFactDay("last_modified_at", day, printed),
+			observationFactDay("hs_lastmodifieddate", day, printed),
+		))
+	}
+	if day, printed, ok := snapshotDay(needle, "starts: "); ok {
+		return relationship.HasObservationsWith(observationFactDay("startsAt", day, printed))
+	}
+	if day, printed, ok := snapshotDay(needle, "ends: "); ok {
+		return relationship.HasObservationsWith(observationFactDay("endsAt", day, printed))
+	}
+	return nil
+}
+
+func activityHubSpotStageToken(label string) (string, bool) {
+	stages := map[string]string{
+		"subscriber":               "subscriber",
+		"lead":                     "lead",
+		"marketing qualified lead": "marketingqualifiedlead",
+		"sales qualified lead":     "salesqualifiedlead",
+		"opportunity":              "opportunity",
+		"customer":                 "customer",
+		"evangelist":               "evangelist",
+		"other":                    "other",
+		"former customer":          "formercustomer",
+	}
+	token, ok := stages[label]
+	return token, ok
+}
+
+func snapshotDay(needle, marker string) (string, string, bool) {
+	if !strings.HasPrefix(needle, marker) {
+		return "", "", false
+	}
+	rest := strings.TrimSpace(needle[len(marker):])
+	_, printed, ok := activityMessageDay(marker+rest, marker)
+	if !ok || strings.ToLower(printed) != rest {
+		return "", "", false
+	}
+	return strings.ToLower(printed), printed, true
+}
+
+func observationFactCompactToken(key, token, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(replace(lower(")
+			writeActivityFactTrim(b, s, facts, key)
+			b.WriteString("), '_', '') = ")
+			b.Arg(token)
+			b.WriteString(" AND lower(")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func observationIndustry(value string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeActivityFactTrim(b, s, facts, "industry")
+			b.WriteString(" <> '' AND ")
+			writeActivityFactTrim(b, s, facts, "industry")
+			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
+			writeNormalizedActivityFact(b, s, facts, "industry")
+			b.WriteString(" = ")
+			b.Arg(value)
+			b.WriteString(" AND ((")
+			writeIndustryEnum(b, s, facts)
+			b.WriteString(" AND lower(")
+			writeSummaryTrim(b, s, summary)
+			b.WriteString(") <> ")
+			b.Arg(value)
+			b.WriteString(") OR (NOT (")
+			writeIndustryEnum(b, s, facts)
+			b.WriteString(") AND lower(")
+			writeSummaryTrim(b, s, summary)
+			b.WriteString(") <> lower(")
+			writeActivityFactTrim(b, s, facts, "industry")
+			b.WriteString("))))")
+		}))
+	})
+}
+
+func writeIndustryEnum(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		writeActivityFactTrim(b, s, facts, "industry")
+		b.WriteString(" ~ '^[A-Z0-9_]+$' AND strpos(")
+		writeActivityFactTrim(b, s, facts, "industry")
+		b.WriteString(", '_') > 0")
+		return
+	}
+	writeActivityFactTrim(b, s, facts, "industry")
+	b.WriteString(" <> '' AND ")
+	writeActivityFactTrim(b, s, facts, "industry")
+	b.WriteString(" NOT GLOB '*[^A-Z0-9_]*' AND ")
+	writeActivityFactTrim(b, s, facts, "industry")
+	b.WriteString(" GLOB '*_*'")
+}
+
+func writeSummaryTrim(b *sql.Builder, s *sql.Selector, summary string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+	} else {
+		b.WriteString("trim(coalesce(")
+	}
+	b.WriteString(summary)
+	b.WriteString(", ''))")
+}
+
+func observationChannel(shown string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeChannelName(b, s, facts)
+			b.WriteString(" <> '' AND ")
+			writeChannelName(b, s, facts)
+			b.WriteString(" <> 'local-user' AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("strpos(")
+			} else {
+				b.WriteString("instr(")
+			}
+			writeChannelName(b, s, facts)
+			b.WriteString(", 'Slack channel ') <> 1 AND ")
+			writeNormalizedExpr(b, s, channelDisplayedSQL(s, facts))
+			b.WriteString(" = ")
+			b.Arg(shown)
+			b.WriteString(" AND ")
+			writeSummaryTrim(b, s, summary)
+			b.WriteString(" <> ")
+			b.WriteString(channelDisplayedSQL(s, facts))
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeChannelName(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'channel_name', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.channel_name'), ''))")
+}
+
+func channelDisplayedSQL(s *sql.Selector, facts string) string {
+	name := "trim(coalesce(json_extract(" + facts + ", '$.channel_name'), ''))"
+	if s.Dialect() == dialect.Postgres {
+		name = "btrim(coalesce(" + facts + "::jsonb->>'channel_name', ''))"
+	}
+	return "(CASE WHEN " + name + " LIKE '#%' THEN " + name + " ELSE '#' || " + name + " END)"
+}
+
+func observationFactDay(key, day, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeMeetingDay(b, s, factJSONExpr(s, facts, key))
+			b.WriteString(" = ")
+			b.Arg(day)
+			b.WriteString(" AND ")
+			writeSummaryTrim(b, s, summary)
+			b.WriteString(" <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func factJSONExpr(s *sql.Selector, facts, key string) string {
+	if s.Dialect() == dialect.Postgres {
+		return facts + "::jsonb->>'" + key + "'"
+	}
+	return "json_extract(" + facts + ", '$." + key + "')"
 }
 
 // relationshipSheetActivityVisibilityMatch is who can see an opened activity.
