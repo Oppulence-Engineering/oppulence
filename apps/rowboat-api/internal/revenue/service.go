@@ -1103,6 +1103,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if recoveryLine := relationshipSheetActivityRecoveryMatch(needle); recoveryLine != nil {
 			parts = append(parts, recoveryLine)
 		}
+		if contradictionLine := relationshipSheetActivityContradictionMatch(needle); contradictionLine != nil {
+			parts = append(parts, contradictionLine)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -5698,6 +5701,186 @@ func writeRecoveryKind(b *sql.Builder, s *sql.Selector) {
 		return
 	}
 	b.WriteString("json_extract(evidence.value, '$.kind')")
+}
+
+// relationshipSheetActivityContradictionMatch is a resolved contradiction on
+// the opened activity. Each side names the field and the reading. A case id
+// and an assertion id stay hidden. The canned choice sentence stays hidden.
+// A line that repeats the row summary stays hidden.
+func relationshipSheetActivityContradictionMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationContradictionLine(needle))
+}
+
+func observationContradictionLine(needle string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			writeContradictionObject(b, s, facts)
+			b.WriteString(" AND (")
+			writeContradictionSideMatch(b, s, facts, needle)
+			b.WriteString(" OR ")
+			writeContradictionReasonMatch(b, s, facts, needle)
+			b.WriteString("))")
+		}))
+	})
+}
+
+func writeContradictionObject(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'contradiction_resolution') = 'object'")
+		return
+	}
+	b.WriteString("json_valid(")
+	b.WriteString(facts)
+	b.WriteString(") AND json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.contradiction_resolution') = 'object'")
+}
+
+func writeContradictionSideMatch(b *sql.Builder, s *sql.Selector, facts, needle string) {
+	b.WriteString("(")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'contradiction_resolution'->'sides') = 'array' AND EXISTS (SELECT 1 FROM (SELECT btrim(coalesce(CASE WHEN jsonb_typeof(side->'value') = 'object' AND jsonb_typeof(side->'value'->'value') = 'string' THEN side->'value'->>'value' WHEN jsonb_typeof(side->'value') = 'string' THEN side->>'value' ELSE NULL END, '')) AS reading FROM jsonb_array_elements(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'contradiction_resolution'->'sides') AS side) AS parsed WHERE ")
+	} else {
+		b.WriteString("json_type(")
+		b.WriteString(facts)
+		b.WriteString(", '$.contradiction_resolution.sides') = 'array' AND EXISTS (SELECT 1 FROM (SELECT trim(coalesce(CAST(CASE WHEN json_type(side.value, '$.value') = 'object' AND json_type(side.value, '$.value.value') = 'text' THEN json_extract(side.value, '$.value.value') WHEN json_type(side.value, '$.value') = 'text' THEN json_extract(side.value, '$.value') ELSE NULL END AS TEXT), '')) AS reading FROM json_each(")
+		b.WriteString(facts)
+		b.WriteString(", '$.contradiction_resolution.sides') AS side) AS parsed WHERE ")
+	}
+	b.WriteString("parsed.reading <> '' AND parsed.reading <> 'local-user' AND parsed.reading <> 'meeting-counterparty' AND ")
+	writeReadingKept(b, s, "parsed.reading")
+	b.WriteString(" AND (")
+	writeContradictionDimensionNorm(b, s, facts)
+	b.WriteString(" || ': ' || ")
+	writeShownReadingNorm(b, s, "parsed.reading")
+	b.WriteString(") = ")
+	b.Arg(needle)
+	b.WriteString(" AND ")
+	writeNormalizedSQLText(b, s, summaryTrim(s))
+	b.WriteString(" <> ")
+	writeShownReadingNorm(b, s, "parsed.reading")
+	b.WriteString("))")
+}
+
+func writeContradictionReasonMatch(b *sql.Builder, s *sql.Selector, facts, needle string) {
+	reason := contradictionReasonText(s, facts)
+	b.WriteString("(")
+	writeContradictionReasonTextCheck(b, s, facts)
+	b.WriteString(" AND ")
+	b.WriteString(reason)
+	b.WriteString(" <> 'local-user' AND ")
+	b.WriteString(reason)
+	b.WriteString(" <> 'meeting-counterparty' AND ")
+	b.WriteString(reason)
+	b.WriteString(" <> 'User selected the current value from a focused contradiction case.' AND ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(reason)
+		b.WriteString(" !~ '^[a-z0-9_:-]+$'")
+	} else {
+		b.WriteString(reason)
+		b.WriteString(" GLOB '*[^a-z0-9_:-]*'")
+	}
+	b.WriteString(" AND ")
+	writeNormalizedSQLText(b, s, reason)
+	b.WriteString(" = ")
+	b.Arg(needle)
+	b.WriteString(" AND ")
+	writeNormalizedSQLText(b, s, summaryTrim(s))
+	b.WriteString(" <> ")
+	writeNormalizedSQLText(b, s, contradictionReasonHide(s, reason))
+	b.WriteString(")")
+}
+
+func writeContradictionReasonTextCheck(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'contradiction_resolution'->'reason') = 'string' AND btrim(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'contradiction_resolution'->>'reason') <> ''")
+		return
+	}
+	b.WriteString("json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.contradiction_resolution.reason') = 'text' AND trim(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.contradiction_resolution.reason')) <> ''")
+}
+
+func contradictionReasonText(s *sql.Selector, facts string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(" + facts + "::jsonb->'contradiction_resolution'->>'reason')"
+	}
+	return "trim(json_extract(" + facts + ", '$.contradiction_resolution.reason'))"
+}
+
+func contradictionReasonHide(s *sql.Selector, reason string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "(CASE WHEN strpos(" + reason + ", ': ') > 0 THEN substring(" + reason + " from strpos(" + reason + ", ': ') + 2) ELSE " + reason + " END)"
+	}
+	return "(CASE WHEN instr(" + reason + ", ': ') > 0 THEN substr(" + reason + ", instr(" + reason + ", ': ') + 2) ELSE " + reason + " END)"
+}
+
+func writeContradictionDimensionNorm(b *sql.Builder, s *sql.Selector, facts string) {
+	text := contradictionDimensionText(s, facts)
+	b.WriteString("(CASE WHEN ")
+	b.WriteString(text)
+	b.WriteString(" = '' THEN 'detail' ELSE replace(replace(lower(")
+	b.WriteString(text)
+	b.WriteString("), '_', ' '), '.', ' ') END)")
+}
+
+func contradictionDimensionText(s *sql.Selector, facts string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "(CASE WHEN jsonb_typeof(" + facts + "::jsonb->'contradiction_resolution'->'dimension') = 'string' THEN btrim(" + facts + "::jsonb->'contradiction_resolution'->>'dimension') ELSE '' END)"
+	}
+	return "(CASE WHEN json_type(" + facts + ", '$.contradiction_resolution.dimension') = 'text' THEN trim(json_extract(" + facts + ", '$.contradiction_resolution.dimension')) ELSE '' END)"
+}
+
+func writeShownReadingNorm(b *sql.Builder, s *sql.Selector, reading string) {
+	b.WriteString("(CASE WHEN ")
+	b.WriteString(reading)
+	b.WriteString(" <> '' AND ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(reading)
+		b.WriteString(" ~ '^[a-z0-9_]+$'")
+	} else {
+		b.WriteString(reading)
+		b.WriteString(" NOT GLOB '*[^a-z0-9_]*'")
+	}
+	b.WriteString(" THEN CASE ")
+	b.WriteString(reading)
+	b.WriteString(" WHEN 'unknown' THEN 'not known' WHEN 'historical_unknown' THEN 'not recorded for this date' WHEN 'review_required' THEN 'needs review' WHEN 'stale' THEN 'out of date' ELSE replace(")
+	b.WriteString(reading)
+	b.WriteString(", '_', ' ') END ELSE ")
+	writeNormalizedSQLText(b, s, reading)
+	b.WriteString(" END)")
+}
+
+func writeReadingKept(b *sql.Builder, s *sql.Selector, reading string) {
+	b.WriteString("NOT (length(")
+	b.WriteString(reading)
+	b.WriteString(") = 36 AND ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(reading)
+		b.WriteString(" ~* '^[0-9a-f-]{36}$'")
+	} else {
+		b.WriteString("lower(")
+		b.WriteString(reading)
+		b.WriteString(") NOT GLOB '*[^0-9a-f-]*'")
+	}
+	b.WriteString(")")
 }
 
 // relationshipSheetActivityClaimMatch is a reviewed conversation on the

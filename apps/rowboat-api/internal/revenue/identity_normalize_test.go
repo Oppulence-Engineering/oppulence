@@ -6393,6 +6393,157 @@ func TestRelationshipSearchFindsTheActivityRecovery(t *testing.T) {
 	assertCompanyQuery("9c8dfa9b-a7b2-46ea-982c-622a914c00e5")
 }
 
+func TestRelationshipSearchFindsTheActivityContradiction(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Harbor Sides", "A saved note", `{
+		"contradiction_resolution":{
+			"caseId":"case-1",
+			"relationshipId":"9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+			"dimension":"health",
+			"status":"user_resolved",
+			"reason":"User selected the current value from a focused contradiction case.",
+			"sides":[
+				{"assertionId":"a-1","value":{"value":"needs_attention"}},
+				{"assertionId":"a-2","value":"healthy"},
+				{"assertionId":"a-3","value":"local-user"},
+				{"assertionId":"a-4","value":"9c8dfa9b-a7b2-46ea-982c-622a914c00e5"}
+			]
+		}
+	}`)
+	saveNote("Birch Risk", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"risk",
+			"reason":"The customer stated this directly.",
+			"sides":[{"value":{"value":"Security review"}}]
+		}
+	}`)
+	saveNote("Hidden Health", "Needs attention", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"needs_attention"}}]
+		}
+	}`)
+	saveNote("Full Line", "Health: Needs attention", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"needs_attention"}}]
+		}
+	}`)
+	saveNote("Detail Empty", "A saved note", `{
+		"contradiction_resolution":{"sides":[{"value":{"value":"healthy"}}]}
+	}`)
+	saveNote("Next Quote", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"next_action",
+			"sides":[{"value":{"value":"Send the quote"}}]
+		}
+	}`)
+	saveNote("Billing Owner", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"billing_owner",
+			"sides":[{"value":{"value":"active"}}]
+		}
+	}`)
+	saveNote("Not Known", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"unknown"}}]
+		}
+	}`)
+	saveNote("Not Recorded", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"historical_unknown"}}]
+		}
+	}`)
+	saveNote("Needs Review", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"review_required"}}]
+		}
+	}`)
+	saveNote("Out Of Date", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"stale"}}]
+		}
+	}`)
+	saveNote("Hidden Reason", "The customer stated this directly.", `{
+		"contradiction_resolution":{"dimension":"risk","reason":"The customer stated this directly.","sides":[]}
+	}`)
+	saveNote("Colon Reason", "Call Avery", `{
+		"contradiction_resolution":{"dimension":"summary","reason":"Note: Call Avery","sides":[{"value":{"value":"Renewal"}}]}
+	}`)
+	saveNote("Token Reason", "A saved note", `{
+		"contradiction_resolution":{"reason":"local-user","sides":[{"value":"follow_up"}]}
+	}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Health: Needs attention", "Harbor Sides", "Full Line")
+	assertCompanyQuery("Health: Healthy", "Harbor Sides")
+	assertCompanyQuery("Risk: Security review", "Birch Risk")
+	assertCompanyQuery("The customer stated this directly.", "Birch Risk")
+	assertCompanyQuery("Detail: Healthy", "Detail Empty")
+	assertCompanyQuery("Next action: Send the quote", "Next Quote")
+	assertCompanyQuery("Billing owner: Active", "Billing Owner")
+	assertCompanyQuery("Health: Not known", "Not Known")
+	assertCompanyQuery("Health: Not recorded for this date", "Not Recorded")
+	assertCompanyQuery("Health: Needs review", "Needs Review")
+	assertCompanyQuery("Health: Out of date", "Out Of Date")
+	assertCompanyQuery("Summary: Renewal", "Colon Reason")
+	assertCompanyQuery("Note: Call Avery")
+	assertCompanyQuery("Detail: Follow Up", "Token Reason")
+	assertCompanyQuery("which companies have health: needs attention")
+	assertCompanyQuery("User selected the current value from a focused contradiction case.")
+	assertCompanyQuery("case-1")
+	assertCompanyQuery("9c8dfa9b-a7b2-46ea-982c-622a914c00e5")
+	assertCompanyQuery("local-user")
+	assertCompanyQuery("follow_up")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
