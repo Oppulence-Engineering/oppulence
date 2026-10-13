@@ -7399,6 +7399,74 @@ func TestRelationshipSearchFindsTheSourceLag(t *testing.T) {
 	assertCompanyQuery("12 minute behind")
 }
 
+func TestRelationshipSearchFindsTheSourceLook(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Look", "slack:channel:harbor")
+	save("Birch Hide", "hubspot:company:birch")
+	save("Cedar Day", "google:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("default").
+		SetStatus("live").SetLastObservationAt(now.Add(-2 * time.Hour)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("live").SetLastObservationAt(now.Add(-2 * time.Hour)).
+		SetLastError("cursor_lost").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("google").SetSourceAccountID("default").
+		SetStatus("connected").SetLastObservationAt(now.Add(-26 * time.Hour)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Last looked 2 hours ago.", "Harbor Look")
+	assertCompanyQuery("Last looked 1 day ago.", "Cedar Day")
+	assertCompanyQuery("Last looked 2 hours from now.")
+	assertCompanyQuery("Last looked 2 hour ago.")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

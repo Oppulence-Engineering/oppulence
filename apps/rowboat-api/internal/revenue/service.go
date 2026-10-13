@@ -1139,6 +1139,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if lag := relationshipSheetSourceLagMatch(needle, searchedAt); lag != nil {
 			parts = append(parts, lag)
 		}
+		if looked := relationshipSheetSourceLookedMatch(needle, searchedAt); looked != nil {
+			parts = append(parts, looked)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -6612,6 +6615,87 @@ func writeSourceDisplayedLag(b *sql.Builder, now time.Time, lo, hi int64) {
 	b.WriteString(" <= ")
 	b.Arg(now.Add(-time.Duration(lo) * time.Second))
 	b.WriteString("))")
+}
+
+// relationshipSheetSourceLookedMatch is the hover on a source badge.
+// An error on that badge replaces the hover, so the look time stays hidden.
+func relationshipSheetSourceLookedMatch(needle string, now time.Time) predicate.Relationship {
+	kind, count, unit, ok := sourceLookedPhrase(needle)
+	if !ok {
+		return nil
+	}
+	lo, hi, ok := snoozeWakeWindow(count, unit)
+	if !ok {
+		return nil
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
+		b.WriteString("trim(coalesce(src.")
+		b.WriteString(relationshipsourcestatus.FieldLastError)
+		b.WriteString(", '')) = '' AND src.")
+		b.WriteString(relationshipsourcestatus.FieldLastObservationAt)
+		b.WriteString(" IS NOT NULL AND ")
+		writeSourceLookedWindow(b, now, kind, lo, hi)
+	})
+}
+
+func sourceLookedPhrase(needle string) (kind string, count int, unit time.Duration, ok bool) {
+	const prefix = "last looked "
+	if !strings.HasPrefix(needle, prefix) {
+		return "", 0, 0, false
+	}
+	rest := strings.TrimPrefix(needle, prefix)
+	switch {
+	case strings.HasSuffix(rest, " ago"):
+		return snoozeWakePhrase("snooze ended " + rest)
+	case strings.HasSuffix(rest, " from now"):
+		return snoozeWakePhrase("comes back " + rest)
+	default:
+		return "", 0, 0, false
+	}
+}
+
+func writeSourceLookedWindow(b *sql.Builder, now time.Time, kind string, lo, hi time.Duration) {
+	column := "src." + relationshipsourcestatus.FieldLastObservationAt
+	switch kind {
+	case "back":
+		if lo == 0 {
+			b.WriteString(column)
+			b.WriteString(" > ")
+			b.Arg(now.UTC())
+			b.WriteString(" AND ")
+			b.WriteString(column)
+			b.WriteString(" < ")
+			b.Arg(now.Add(hi).UTC())
+			return
+		}
+		b.WriteString(column)
+		b.WriteString(" >= ")
+		b.Arg(now.Add(lo).UTC())
+		b.WriteString(" AND ")
+		b.WriteString(column)
+		b.WriteString(" < ")
+		b.Arg(now.Add(hi).UTC())
+	case "ended":
+		if lo == 0 {
+			b.WriteString(column)
+			b.WriteString(" <= ")
+			b.Arg(now.UTC())
+			b.WriteString(" AND ")
+			b.WriteString(column)
+			b.WriteString(" > ")
+			b.Arg(now.Add(-hi).UTC())
+			return
+		}
+		b.WriteString(column)
+		b.WriteString(" <= ")
+		b.Arg(now.Add(-lo).UTC())
+		b.WriteString(" AND ")
+		b.WriteString(column)
+		b.WriteString(" > ")
+		b.Arg(now.Add(-hi).UTC())
+	default:
+		b.WriteString("0")
+	}
 }
 
 // relationshipSheetUncertainSendMatch is the review for a send that might
