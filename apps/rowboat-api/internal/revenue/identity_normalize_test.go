@@ -5835,10 +5835,12 @@ func TestRelationshipSearchFindsTheActivityAttendance(t *testing.T) {
 		"invitee_count":3,
 		"external_count":2,
 		"declined_count":1,
-		"organizer_email":"ada@acme.com"
+		"organizer_email":"ada@acme.com",
+		"external_domains":[{"domain":"acme.com","count":2},{"domain":"birch.example","count":1},{"domain":"local-user","count":1}]
 	}`)
 	saveNote("Cedar Echo", "No recording was saved", `{"recorded":false}`)
 	saveNote("Cedar Size", "A small group was on the invite", `{"meeting_size":"small_group"}`)
+	saveNote("Birch Only", "A saved note", `{"external_domains":[{"domain":"birch.example","count":1},{"domain":"acme","count":4}]}`)
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -5865,6 +5867,9 @@ func TestRelationshipSearchFindsTheActivityAttendance(t *testing.T) {
 	assertCompanyQuery("1 person declined", "Quill Packet")
 	assertCompanyQuery("Meeting: Q3 review", "Quill Packet")
 	assertCompanyQuery("Organizer: ada@acme.com", "Quill Packet")
+	assertCompanyQuery("Outside domains: acme.com, birch.example", "Quill Packet")
+	assertCompanyQuery("Outside domains: birch.example", "Birch Only")
+	assertCompanyQuery("Outside domains: local-user")
 	assertCompanyQuery("Recorded: false")
 	assertCompanyQuery("evt_18")
 }

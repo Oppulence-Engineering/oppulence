@@ -3696,8 +3696,8 @@ func relationshipSheetActivityRosterMatch(needle string) predicate.Relationship 
 
 // relationshipSheetActivityAttendanceMatch is the opened calendar attendance
 // activity. The heading is "Calendar · Attendance". The meeting size, the
-// invite counts, and the recording are sentences. The calendar event id is
-// not printed. Outside domains are named on the activity and are not searched.
+// invite counts, the outside domains, and the recording are sentences. The
+// calendar event id is not printed.
 func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	if strings.Contains(needle, "taken from the invite") {
@@ -3740,6 +3740,13 @@ func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relations
 	if organizer := relationshipSheetActivityFactMatch(needle, "organizer: ", "organizer_email"); organizer != nil {
 		preds = append(preds, organizer)
 	}
+	const outsideMarker = "outside domains: "
+	if strings.HasPrefix(needle, outsideMarker) {
+		list := strings.TrimSpace(needle[len(outsideMarker):])
+		if list != "" {
+			preds = append(preds, relationship.HasObservationsWith(observationOutsideDomains(list)))
+		}
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -3748,6 +3755,105 @@ func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relations
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// observationOutsideDomains matches "Outside domains: acme.com, birch.example".
+// A token such as local-user is left off the line. The printed order is the
+// first time each domain appears.
+func observationOutsideDomains(list string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'external_domains') = 'array' AND coalesce((SELECT string_agg(shown.norm, ', ' ORDER BY shown.ord) FROM (SELECT MIN(raw.ord) AS ord, ")
+				writeNormalizedExpr(b, s, "btrim(raw.domain)")
+				b.WriteString(" AS norm FROM (SELECT ordinality AS ord, CASE WHEN jsonb_typeof(elem) = 'string' THEN elem #>> '{}' ELSE elem->>'domain' END AS domain FROM jsonb_array_elements(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'external_domains') WITH ORDINALITY AS domain_row(elem, ordinality)) AS raw WHERE ")
+				writeOutsideDomainShown(b, s, "raw.domain")
+				b.WriteString(" GROUP BY ")
+				writeNormalizedExpr(b, s, "btrim(raw.domain)")
+				b.WriteString(") AS shown), '') = ")
+			} else {
+				b.WriteString("json_valid(")
+				b.WriteString(facts)
+				b.WriteString(") AND json_type(")
+				b.WriteString(facts)
+				b.WriteString(", '$.external_domains') = 'array' AND coalesce((SELECT group_concat(shown.norm, ', ') FROM (SELECT norm, ord FROM (SELECT MIN(CAST(domain_row.key AS INTEGER)) AS ord, ")
+				writeNormalizedExpr(b, s, "trim(domain_row.domain)")
+				b.WriteString(" AS norm FROM (SELECT key, CASE WHEN type = 'object' THEN json_extract(value, '$.domain') WHEN type = 'string' THEN value ELSE NULL END AS domain FROM json_each(")
+				b.WriteString(facts)
+				b.WriteString(", '$.external_domains')) AS domain_row WHERE ")
+				writeOutsideDomainShown(b, s, "domain_row.domain")
+				b.WriteString(" GROUP BY ")
+				writeNormalizedExpr(b, s, "trim(domain_row.domain)")
+				b.WriteString(") AS grouped ORDER BY ord) AS shown), '') = ")
+			}
+			b.Arg(list)
+			b.WriteString(" AND ")
+			writeNormalizedExpr(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
+			b.Arg(list)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeOutsideDomainShown(b *sql.Builder, s *sql.Selector, domain string) {
+	trim := "btrim"
+	if s.Dialect() != dialect.Postgres {
+		trim = "trim"
+	}
+	b.WriteString(domain)
+	b.WriteString(" IS NOT NULL AND ")
+	b.WriteString(trim)
+	b.WriteString("(")
+	b.WriteString(domain)
+	b.WriteString(") <> '' AND lower(")
+	b.WriteString(trim)
+	b.WriteString("(")
+	b.WriteString(domain)
+	b.WriteString(")) NOT IN ('local-user', 'meeting-counterparty') AND ")
+	b.WriteString(trim)
+	b.WriteString("(")
+	b.WriteString(domain)
+	b.WriteString(") ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("!~ '^[a-z0-9_:-]+$'")
+		return
+	}
+	b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+}
+
+func summaryTrim(s *sql.Selector) string {
+	summary := s.C(relationshipobservation.FieldSummary)
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce(" + summary + ", ''))"
+	}
+	return "trim(coalesce(" + summary + ", ''))"
+}
+
+func writeNormalizedExpr(b *sql.Builder, s *sql.Selector, expr string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		b.WriteString(expr)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	b.WriteString(expr)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
 }
 
 // relationshipSheetActivityPromiseStateMatch is who made a confirmed promise,
