@@ -2442,6 +2442,11 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 			relationshipparticipant.HasPersonWith(personPrintsResearchVerifySource(count)),
 		))
 	}
+	// The profile line says the seniority band in words. Stored "ic" reads
+	// "Individual contributor" even when a title is already on that line.
+	if seniority := relationshipSheetPersonSeniorityMatch(needle); seniority != nil {
+		preds = append(preds, seniority)
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -2460,6 +2465,58 @@ func relationshipParticipantRoleMatch(needle string) predicate.Relationship {
 	return relationship.HasParticipantsWith(predicate.RelationshipParticipant(func(s *sql.Selector) {
 		s.Where(normalizedSearchLike(s, relationshipparticipant.FieldRole, like))
 	}))
+}
+
+// relationshipSheetPersonSeniorityMatch matches the seniority on a person
+// line. The sheet says "Individual contributor" when the stored band is ic.
+// A title beside that band still shows the words. The letters "ic" are not
+// that line. Any other band is shown as written, with underscores as spaces.
+func relationshipSheetPersonSeniorityMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	return relationship.HasParticipantsWith(
+		relationshipparticipant.HasPersonWith(personPrintsSeniorityLabel(needle)),
+	)
+}
+
+func personPrintsSeniorityLabel(needle string) predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeLabelPhraseMatch(b, s, needle, writePersonSeniorityLabel)
+		}))
+	})
+}
+
+func writePersonSeniorityLabel(b *sql.Builder, s *sql.Selector) {
+	trimmed := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(person.FieldSeniority))
+	if s.Dialect() == dialect.Postgres {
+		trimmed = fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(person.FieldSeniority))
+	}
+	b.WriteString("CASE WHEN ")
+	b.WriteString(trimmed)
+	b.WriteString(" = ")
+	b.Arg("ic")
+	b.WriteString(" THEN ")
+	b.Arg("individual contributor")
+	b.WriteString(" ELSE ")
+	writeNormalizedSQLText(b, s, trimmed)
+	b.WriteString(" END")
+}
+
+// writeLabelPhraseMatch is the company-search form of labelPhraseMatches.
+// The whole label has to be the query, or sit inside a longer question.
+// A shorter label, such as "VP", does not match from a few of its letters.
+func writeLabelPhraseMatch(b *sql.Builder, s *sql.Selector, needle string, writePhrase func(*sql.Builder, *sql.Selector)) {
+	b.WriteString("(")
+	writePhrase(b, s)
+	b.WriteString(" = ")
+	b.Arg(needle)
+	b.WriteString(" OR (length(")
+	writePhrase(b, s)
+	b.WriteString(") >= 8 AND ")
+	writeNeedleContainsSentence(b, s, needle, writePhrase)
+	b.WriteString("))")
 }
 
 // publicResearchDetailCount reads "Public research · 1 detail" and

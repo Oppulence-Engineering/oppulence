@@ -8128,6 +8128,90 @@ func TestRelationshipSearchFindsTheRenewalFallback(t *testing.T) {
 	assertCompanyQuery("Up for renewal", "Harbor Blank", "Harbor Token", "Harbor Party", "Harbor Widget", "Harbor June", "Harbor Title")
 }
 
+func TestRelationshipSearchFindsThePersonSeniority(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	addPerson := func(rel *ent.Relationship, name, seniority, title string) {
+		t.Helper()
+		create := f.client.Person.Create().
+			SetDisplayName(name).SetWorkspace(ws).SetUser(f.user)
+		if seniority != "" {
+			create.SetSeniority(seniority)
+		}
+		if title != "" {
+			create.SetTitle(title)
+		}
+		personRow, err := create.Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RelationshipParticipant.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetRelationship(rel).SetPerson(personRow).
+			SetDisplayName(name).SetRole("contact").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	addPerson(makeCompany("Harbor Band"), "Ada Mesa", "ic", "Engineer")
+	addPerson(makeCompany("Harbor Lead"), "North Wind", "manager", "")
+	addPerson(makeCompany("Harbor Chair"), "Riley Chen", "director", "Engineer")
+	addPerson(makeCompany("Harbor Rank"), "Jules Pike", "vp", "")
+	addPerson(makeCompany("Harbor Chief"), "Casey Quinn", "executive", "")
+	addPerson(makeCompany("Harbor Start"), "Mina Cole", "founder", "")
+	addPerson(makeCompany("Harbor Plus"), "Owen Blake", "staff_plus", "")
+	addPerson(makeCompany("Harbor Words"), "Sage Lind", "Principal Engineer", "")
+	addPerson(makeCompany("Harbor Caps"), "Theo Marsh", "IC", "")
+	addPerson(makeCompany("Harbor Quiet"), "No Band", "", "Engineer")
+	addPerson(makeCompany("Harbor Space"), "Blank Band", "   ", "")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Individual contributor", "Harbor Band")
+	assertCompanyQuery("individual contributor", "Harbor Band")
+	assertCompanyQuery("which companies list an individual contributor", "Harbor Band")
+	assertCompanyQuery("ic", "Harbor Caps")
+	assertCompanyQuery("Manager", "Harbor Lead")
+	assertCompanyQuery("which companies have a manager")
+	assertCompanyQuery("Director", "Harbor Chair")
+	assertCompanyQuery("which companies have a director", "Harbor Chair")
+	assertCompanyQuery("VP", "Harbor Rank")
+	assertCompanyQuery("which companies have a vp")
+	assertCompanyQuery("Executive", "Harbor Chief")
+	assertCompanyQuery("Founder", "Harbor Start")
+	assertCompanyQuery("which companies have a founder")
+	assertCompanyQuery("Staff Plus", "Harbor Plus")
+	assertCompanyQuery("Principal Engineer", "Harbor Words")
+	assertCompanyQuery("IC", "Harbor Caps")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
