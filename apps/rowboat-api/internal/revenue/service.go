@@ -1136,6 +1136,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if sourceError := relationshipSheetSourceErrorMatch(needle); sourceError != nil {
 			parts = append(parts, sourceError)
 		}
+		if lag := relationshipSheetSourceLagMatch(needle, searchedAt); lag != nil {
+			parts = append(parts, lag)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -6421,6 +6424,194 @@ func writeSourceErrorToken(b *sql.Builder, s *sql.Selector) {
 	b.WriteString(" NOT GLOB '*[^a-z0-9_:-]*' AND ")
 	b.WriteString(column)
 	b.WriteString(" <> ''")
+}
+
+// relationshipSheetSourceLagMatch is the lag on a source card. A live source
+// with nothing missing stays off that card, so its lag stays out of search.
+func relationshipSheetSourceLagMatch(needle string, now time.Time) predicate.Relationship {
+	count, unit, ok := sourceLagPhrase(needle)
+	if !ok {
+		return nil
+	}
+	lo, hi, ok := sourceLagBounds(count, unit)
+	if !ok {
+		return nil
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeSourceLagShown(b, s)
+		b.WriteString(" AND ")
+		writeSourceDisplayedLag(b, now, lo, hi)
+	})
+}
+
+// sourceLagPhrase reads the lag line on a source card. That line says
+// "minute" and "minutes". The snooze line says "min" and "mins".
+func sourceLagPhrase(needle string) (count int, unit time.Duration, ok bool) {
+	const suffix = " behind"
+	if !strings.HasSuffix(needle, suffix) {
+		return 0, 0, false
+	}
+	parts := strings.Fields(strings.TrimSuffix(needle, suffix))
+	if len(parts) != 2 {
+		return 0, 0, false
+	}
+	count, err := strconv.Atoi(parts[0])
+	if err != nil || count < 1 {
+		return 0, 0, false
+	}
+	switch parts[1] {
+	case "minute":
+		if count != 1 {
+			return 0, 0, false
+		}
+		return count, time.Minute, true
+	case "minutes":
+		if count < 2 {
+			return 0, 0, false
+		}
+		return count, time.Minute, true
+	case "hour":
+		if count != 1 {
+			return 0, 0, false
+		}
+		return count, time.Hour, true
+	case "hours":
+		if count < 2 {
+			return 0, 0, false
+		}
+		return count, time.Hour, true
+	case "day":
+		if count != 1 {
+			return 0, 0, false
+		}
+		return count, 24 * time.Hour, true
+	case "days":
+		if count < 2 {
+			return 0, 0, false
+		}
+		return count, 24 * time.Hour, true
+	default:
+		return 0, 0, false
+	}
+}
+
+func sourceLagBounds(count int, unit time.Duration) (lo, hi int64, ok bool) {
+	const minute int64 = 60
+	const hour int64 = 3600
+	const day int64 = 86400
+	switch unit {
+	case time.Minute:
+		switch {
+		case count == 1:
+			return 1, 89, true
+		case count >= 2 && count <= 59:
+			return int64(count)*minute - 30, int64(count)*minute + 30 - 1, true
+		case count == 60:
+			return 3570, 3599, true
+		default:
+			return 0, 0, false
+		}
+	case time.Hour:
+		switch {
+		case count == 1:
+			return hour, 5400 - 1, true
+		case count >= 2 && count <= 23:
+			return int64(count)*hour - 1800, int64(count)*hour + 1800 - 1, true
+		case count == 24:
+			return 84600, day - 1, true
+		default:
+			return 0, 0, false
+		}
+	case 24 * time.Hour:
+		switch {
+		case count == 1:
+			return day, day + day/2 - 1, true
+		case count >= 2:
+			return int64(count)*day - day/2, int64(count)*day + day/2 - 1, true
+		default:
+			return 0, 0, false
+		}
+	default:
+		return 0, 0, false
+	}
+}
+
+func writeSourceLagShown(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("NOT EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS earlier WHERE earlier.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = src.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" AND lower(earlier.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") = lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") AND lower(earlier.")
+	b.WriteString(relationshipsourcestatus.FieldSourceAccountID)
+	b.WriteString(") < lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSourceAccountID)
+	b.WriteString(")) AND EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS peer WHERE peer.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = src.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" AND lower(peer.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") = lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") AND (peer.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" <> 'live' OR NOT ")
+	writeAliasMissingScopesEmpty(b, s, "peer")
+	b.WriteString(")) AND (lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") NOT IN ('gmail', 'calendar', 'google') OR (src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" IN ('connected', 'backfilling', 'live', 'stale', 'rebuilding', 'degraded') AND ")
+	writeAliasMissingScopesEmpty(b, s, "src")
+	b.WriteString(" AND (lower(trim(src.")
+	b.WriteString(relationshipsourcestatus.FieldSourceAccountID)
+	b.WriteString(")) NOT IN ('', 'default') OR NOT ")
+	writeAliasJSONEmpty(b, s, "src", relationshipsourcestatus.FieldGrantedScopes)
+	b.WriteString(")))")
+}
+
+func writeAliasJSONEmpty(b *sql.Builder, s *sql.Selector, alias, field string) {
+	column := alias + "." + field
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb)) = 0", column))
+		return
+	}
+	b.WriteString(fmt.Sprintf("json_array_length(coalesce(%s, '[]')) = 0", column))
+}
+
+func writeSourceDisplayedLag(b *sql.Builder, now time.Time, lo, hi int64) {
+	now = now.UTC()
+	b.WriteString("(((src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" IN ('disconnected', 'not_connected', 'authorizing') OR src.")
+	b.WriteString(relationshipsourcestatus.FieldLastSuccessAt)
+	b.WriteString(" IS NULL) AND src.")
+	b.WriteString(relationshipsourcestatus.FieldLagSeconds)
+	b.WriteString(" BETWEEN ")
+	b.Arg(lo)
+	b.WriteString(" AND ")
+	b.Arg(hi)
+	b.WriteString(") OR (src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" NOT IN ('disconnected', 'not_connected', 'authorizing') AND src.")
+	b.WriteString(relationshipsourcestatus.FieldLastSuccessAt)
+	b.WriteString(" IS NOT NULL AND src.")
+	b.WriteString(relationshipsourcestatus.FieldLastSuccessAt)
+	b.WriteString(" > ")
+	b.Arg(now.Add(-time.Duration(hi+1) * time.Second))
+	b.WriteString(" AND src.")
+	b.WriteString(relationshipsourcestatus.FieldLastSuccessAt)
+	b.WriteString(" <= ")
+	b.Arg(now.Add(-time.Duration(lo) * time.Second))
+	b.WriteString("))")
 }
 
 // relationshipSheetUncertainSendMatch is the review for a send that might
