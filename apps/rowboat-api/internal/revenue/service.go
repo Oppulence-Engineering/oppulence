@@ -2452,6 +2452,11 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	if badge := relationshipSheetResearchBadgeMatch(needle); badge != nil {
 		preds = append(preds, badge)
 	}
+	// The same card prints the fact after the badge. Seniority and employment
+	// use the words on the card. A retracted fact leaves the card.
+	if value := relationshipSheetResearchValueMatch(needle); value != nil {
+		preds = append(preds, value)
+	}
 	// The profile line prints a title, a company, and a place. The title falls
 	// back to the membership title when the person has none.
 	if line := relationshipSheetPersonLineMatch(needle); line != nil {
@@ -2548,6 +2553,83 @@ func relationshipSheetPersonLineMatch(needle string) predicate.Relationship {
 			),
 		),
 	)
+}
+
+// relationshipSheetResearchValueMatch matches the words after a public-research
+// badge. A seniority of ic reads "Individual contributor". Employment reads
+// "Current" or "Left the company". Any other fact stays as written.
+func relationshipSheetResearchValueMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	like := "%" + escapePersonSearchLike(needle) + "%"
+	return relationship.HasParticipantsWith(
+		relationshipparticipant.HasPersonWith(
+			person.HasAttributesWith(
+				personattribute.SourceTypeEQ("external_research"),
+				personattribute.StatusNEQ("retracted"),
+				predicate.PersonAttribute(func(s *sql.Selector) {
+					s.Where(sql.P(func(b *sql.Builder) {
+						b.WriteString("(")
+						writeResearchFactShown(b, s)
+						b.WriteString(" <> '' AND ")
+						writeResearchFactShown(b, s)
+						b.WriteString(" LIKE ")
+						b.Arg(like)
+						b.WriteString(" ESCAPE '!')")
+					}))
+				}),
+			),
+		),
+	)
+}
+
+func writeResearchFactShown(b *sql.Builder, s *sql.Selector) {
+	dim := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(personattribute.FieldDimension))
+	val := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(personattribute.FieldValue))
+	if s.Dialect() == dialect.Postgres {
+		dim = fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(personattribute.FieldDimension))
+		val = fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(personattribute.FieldValue))
+	}
+	b.WriteString("CASE WHEN ")
+	b.WriteString(dim)
+	b.WriteString(" = ")
+	b.Arg("seniority")
+	b.WriteString(" THEN ")
+	writeSeniorityLabelExpr(b, s, val)
+	b.WriteString(" WHEN ")
+	b.WriteString(dim)
+	b.WriteString(" = ")
+	b.Arg("employment_status")
+	b.WriteString(" THEN ")
+	writeEmploymentLabelExpr(b, s, val)
+	b.WriteString(" ELSE ")
+	writeNormalizedSQLText(b, s, val)
+	b.WriteString(" END")
+}
+
+func writeEmploymentLabelExpr(b *sql.Builder, s *sql.Selector, trimmed string) {
+	b.WriteString("CASE WHEN ")
+	b.WriteString(trimmed)
+	b.WriteString(" = ")
+	b.Arg("active")
+	b.WriteString(" THEN ")
+	b.Arg("current")
+	b.WriteString(" WHEN ")
+	b.WriteString(trimmed)
+	b.WriteString(" = ")
+	b.Arg("departed")
+	b.WriteString(" THEN ")
+	b.Arg("left the company")
+	b.WriteString(" WHEN ")
+	b.WriteString(trimmed)
+	b.WriteString(" = ")
+	b.Arg("unknown")
+	b.WriteString(" THEN ")
+	b.Arg("not known")
+	b.WriteString(" ELSE ")
+	writeNormalizedSQLText(b, s, trimmed)
+	b.WriteString(" END")
 }
 
 // writeLabelPhraseMatch is the company-search form of labelPhraseMatches.

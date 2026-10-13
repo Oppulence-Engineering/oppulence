@@ -8268,6 +8268,27 @@ func TestRelationshipSearchFindsTheResearchBadge(t *testing.T) {
 	addAttribute(addPerson(makeCompany("Harbor Closed"), "Mina Cole"), "alias", "external_research", "retracted", "badge-closed")
 	addAttribute(addPerson(makeCompany("Harbor Owned"), "Owen Blake"), "alias", "source_fact", "active", "badge-owned")
 	addAttribute(addPerson(makeCompany("Harbor Linked"), "Sage Lind"), "linkedin_url", "external_research", "active", "badge-linked")
+	addAttribute(addPerson(makeCompany("Harbor Band"), "Theo Marsh"), "seniority", "external_research", "active", "badge-band")
+	if _, err := f.client.PersonAttribute.Update().
+		Where(personattribute.DedupeKeyEQ("badge-band")).
+		SetValue("ic").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	addAttribute(addPerson(makeCompany("Harbor Gone"), "Mina Cole"), "employment_status", "external_research", "active", "badge-gone")
+	if _, err := f.client.PersonAttribute.Update().
+		Where(personattribute.DedupeKeyEQ("badge-gone")).
+		SetValue("departed").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	addAttribute(addPerson(makeCompany("Harbor Now"), "Owen Blake"), "employment_status", "external_research", "active", "badge-now")
+	if _, err := f.client.PersonAttribute.Update().
+		Where(personattribute.DedupeKeyEQ("badge-now")).
+		SetValue("active").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 	makeCompany("Harbor Quiet")
 
 	assertCompanyQuery := func(query string, want ...string) {
@@ -8297,6 +8318,10 @@ func TestRelationshipSearchFindsTheResearchBadge(t *testing.T) {
 	assertCompanyQuery("timezone")
 	assertCompanyQuery("alias")
 	assertCompanyQuery("Name")
+	assertCompanyQuery("Individual contributor", "Harbor Band")
+	assertCompanyQuery("ic")
+	assertCompanyQuery("Left the company", "Harbor Gone")
+	assertCompanyQuery("Current", "Harbor Now")
 }
 
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
@@ -12908,6 +12933,9 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 	assertCompanyQuery("Verify source 3")
 	assertCompanyQuery("source")
 	assertCompanyQuery("verify")
+	assertCompanyQuery("Engineer", "Quay One", "Quay Two")
+	assertCompanyQuery("Director", "Quay Two")
+	assertCompanyQuery("Buyer")
 }
 
 func TestRelationshipSearchFindsTheDuplicateLines(t *testing.T) {
