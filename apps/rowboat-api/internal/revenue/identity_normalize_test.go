@@ -7854,6 +7854,97 @@ func TestRelationshipSearchFindsTheSuggestedReview(t *testing.T) {
 	assertCompanyQuery("A suggested waiting is promise")
 }
 
+func TestRelationshipSearchFindsTheReviewCaveat(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name string, caveats []string) (*ent.Relationship, *ent.RelationshipObservation) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := json.Marshal(map[string]any{
+			"conversation_claim_candidates": []map[string]any{{
+				"candidateId": "cand-" + name, "kind": "promise",
+				"displayValue": "Noted", "confidence": 0.4,
+				"caveats":  caveats,
+				"evidence": []map[string]any{{"exactQuote": "Noted"}},
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("A recorded note").SetNormalizedFactsJSON(string(body)).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rel, row
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	save("Accept Card", []string{"commitment acceptance requires review"})
+	save("Rule Card", []string{"deterministic fallback candidate requires review"})
+	save("Spoke Card", []string{"speaker assignment requires review"})
+	save("Noise Card", []string{"transcript payload was truncated"})
+	closedRel, closedObs := save("Closed Card", []string{"commitment acceptance requires review"})
+	decision, err := json.Marshal(map[string]any{
+		"review_decision": map[string]any{
+			"item_id": "review:closed-card", "kind": "reject",
+			"candidate_id": "cand-Closed Card", "observation_id": closedObs.ID.String(),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(closedRel).
+		SetSource("user").SetExternalID("closed-card").SetEventType("conversation_review_decided").
+		SetOccurredAt(now).SetReceivedAt(now).SetContentHash("closed-card").
+		SetSummary("A recorded decision").SetNormalizedFactsJSON(string(decision)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Who accepted this promise is not confirmed.", "Accept Card")
+	assertCompanyQuery("Who accepted this promise is not confirmed", "Accept Card")
+	assertCompanyQuery("This came from a rule. Check it before saving.", "Rule Card")
+	assertCompanyQuery("Who spoke is not confirmed.", "Spoke Card")
+	assertCompanyQuery("commitment acceptance requires review")
+	assertCompanyQuery("deterministic fallback candidate requires review")
+	assertCompanyQuery("speaker assignment requires review")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

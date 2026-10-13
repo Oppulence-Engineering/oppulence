@@ -1389,6 +1389,11 @@ func (s *Service) ListRelationshipsFiltered(
 		if suggested := relationshipSheetSuggestedReviewMatch(needle); suggested != nil {
 			parts = append(parts, suggested)
 		}
+		// The same card says why the suggestion is still waiting. Those
+		// sentences are the review caveats, not the capture notes.
+		if reviewCaveat := relationshipSheetReviewCardCaveatMatch(needle); reviewCaveat != nil {
+			parts = append(parts, reviewCaveat)
+		}
 		if uncertain := relationshipSheetUncertainClaimMatch(needle); uncertain != nil {
 			parts = append(parts, uncertain)
 		}
@@ -10779,6 +10784,39 @@ func writeSuggestedReviewSentence(b *sql.Builder, s *sql.Selector) {
 	b.WriteString(" END")
 }
 
+// relationshipSheetReviewCardCaveatMatch matches the reason under a proposed
+// review card. The card says "Who accepted this promise is not confirmed."
+// The stored caveat stays "commitment acceptance requires review". A capture
+// note with the same words is a different row. A closed suggestion hides the
+// line.
+func relationshipSheetReviewCardCaveatMatch(needle string) predicate.Relationship {
+	var stored []string
+	for phrase, value := range reviewCardCaveats {
+		if labelPhraseMatches(phrase, needle) {
+			stored = append(stored, value)
+		}
+	}
+	if len(stored) == 0 {
+		return nil
+	}
+	return relationshipHasOpenCandidate(func(b *sql.Builder, s *sql.Selector) {
+		b.WriteString("(")
+		for i, value := range stored {
+			if i > 0 {
+				b.WriteString(" OR ")
+			}
+			writeCandidateCaveatEquals(b, s, value)
+		}
+		b.WriteString(")")
+	})
+}
+
+var reviewCardCaveats = map[string]string{
+	"who spoke is not confirmed":                   "speaker assignment requires review",
+	"who accepted this promise is not confirmed":   "commitment acceptance requires review",
+	"this came from a rule check it before saving": "deterministic fallback candidate requires review",
+}
+
 func relationshipHasOpenCandidate(match func(*sql.Builder, *sql.Selector)) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
@@ -10849,6 +10887,18 @@ func writeOpenCandidateDecisionClosed(b *sql.Builder, s *sql.Selector) {
 	b.WriteString(", ")
 	b.Arg("reject")
 	b.WriteString("))")
+}
+
+func writeCandidateCaveatEquals(b *sql.Builder, s *sql.Selector, stored string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(candidate->'caveats') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(candidate->'caveats') AS caveat(value) WHERE caveat.value = ")
+		b.Arg(stored)
+		b.WriteString(")")
+		return
+	}
+	b.WriteString("json_type(candidate.value, '$.caveats') = 'array' AND EXISTS (SELECT 1 FROM json_each(candidate.value, '$.caveats') AS caveat WHERE caveat.value = ")
+	b.Arg(stored)
+	b.WriteString(")")
 }
 
 // relationshipSheetOlderReviewMatch matches "Older conversations may still
