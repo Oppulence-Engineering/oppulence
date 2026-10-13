@@ -1142,6 +1142,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if looked := relationshipSheetSourceLookedMatch(needle, searchedAt); looked != nil {
 			parts = append(parts, looked)
 		}
+		if history := relationshipSheetSourceHistoryMatch(needle); history != nil {
+			parts = append(parts, history)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -6615,6 +6618,51 @@ func writeSourceDisplayedLag(b *sql.Builder, now time.Time, lo, hi int64) {
 	b.WriteString(" <= ")
 	b.Arg(now.Add(-time.Duration(lo) * time.Second))
 	b.WriteString("))")
+}
+
+// relationshipSheetSourceHistoryMatch is the sync percent on a source card.
+// The card prints it only for the account it shows, and only when that
+// account has a history total.
+func relationshipSheetSourceHistoryMatch(needle string) predicate.Relationship {
+	percent, ok := sourceHistoryPhrase(needle)
+	if !ok {
+		return nil
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeSourceLagShown(b, s)
+		b.WriteString(" AND src.")
+		b.WriteString(relationshipsourcestatus.FieldBackfillTotal)
+		b.WriteString(" > 0 AND ")
+		writeSourceHistoryPercent(b, s)
+		b.WriteString(" = ")
+		b.Arg(percent)
+	})
+}
+
+func sourceHistoryPhrase(needle string) (int, bool) {
+	const suffix = " of history synced"
+	if !strings.HasSuffix(needle, suffix) {
+		return 0, false
+	}
+	head := strings.TrimSuffix(needle, suffix)
+	if !strings.HasSuffix(head, "%") || strings.Contains(head, " ") {
+		return 0, false
+	}
+	percent, err := strconv.Atoi(strings.TrimSuffix(head, "%"))
+	if err != nil || percent < 0 {
+		return 0, false
+	}
+	return percent, true
+}
+
+func writeSourceHistoryPercent(b *sql.Builder, s *sql.Selector) {
+	completed := "src." + relationshipsourcestatus.FieldBackfillCompleted
+	total := "src." + relationshipsourcestatus.FieldBackfillTotal
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(fmt.Sprintf("cast(round((%s::numeric * 100) / %s) as integer)", completed, total))
+		return
+	}
+	b.WriteString(fmt.Sprintf("cast(round((%s * 100.0) / %s) as integer)", completed, total))
 }
 
 // relationshipSheetSourceLookedMatch is the hover on a source badge.

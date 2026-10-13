@@ -7467,6 +7467,85 @@ func TestRelationshipSearchFindsTheSourceLook(t *testing.T) {
 	assertCompanyQuery("Last looked 2 hour ago.")
 }
 
+func TestRelationshipSearchFindsTheSourceHistory(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Half", "slack:channel:harbor")
+	save("Birch Third", "hubspot:company:birch")
+	save("North Live", "google:company:north")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("alpha").
+		SetStatus("connected").SetCompleteness("partial").
+		SetBackfillCompleted(1).SetBackfillTotal(2).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("beta").
+		SetStatus("connected").SetCompleteness("partial").
+		SetBackfillCompleted(1).SetBackfillTotal(8).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("disconnected").SetCompleteness("partial").
+		SetBackfillCompleted(1).SetBackfillTotal(3).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("google").SetSourceAccountID("default").
+		SetStatus("live").SetCompleteness("complete").
+		SetBackfillCompleted(1).SetBackfillTotal(2).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("50% of history synced", "Harbor Half")
+	assertCompanyQuery("33% of history synced", "Birch Third")
+	assertCompanyQuery("13% of history synced")
+	assertCompanyQuery("100% of history synced")
+	assertCompanyQuery("0% of history synced")
+	assertCompanyQuery("50 percent of history synced")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
