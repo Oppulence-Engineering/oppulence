@@ -2672,6 +2672,10 @@ func TestRelationshipSearchFindsTheActivityCaveat(t *testing.T) {
 	saveRow("Caveat Mic", `{"capture_caveats":["capture guardian: microphone_silent — The microphone track is advancing but contains no audible signal."]}`)
 	saveRow("Caveat Side", `{"capture_caveats":["capture guardian: microphone_missing — Your side of the conversation is not being captured."]}`)
 	saveRow("Caveat Echo", `{"capture_caveats":["mic_voice_processing_unavailable: echo cancellation unavailable — recording raw mic"]}`)
+	saveRow("Caveat Notes", `{"capture_caveats":["Granola supplied meeting notes rather than a timestamped verbatim transcript."]}`)
+	saveRow("Caveat Check", `{"capture_caveats":["Speaker attribution and wording require focused review before material use."]}`)
+	saveRow("Caveat Import", `{"capture_caveats":["Imported from Fireflies; capture consent and audio retention remain governed by the provider."]}`)
+	saveRow("Caveat Kept", `{"audio_retention":"always"}`)
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -2699,6 +2703,10 @@ func TestRelationshipSearchFindsTheActivityCaveat(t *testing.T) {
 	assertCompanyQuery("The microphone is on, but it is silent.", "Caveat Mic")
 	assertCompanyQuery("Your side of the conversation is not being captured.", "Caveat Side")
 	assertCompanyQuery("Echo cancellation was unavailable, so the microphone was recorded without it.", "Caveat Echo")
+	assertCompanyQuery("These are notes from Granola, not a word-for-word transcript.", "Caveat Notes")
+	assertCompanyQuery("Check who spoke and the wording before you rely on this.", "Caveat Check")
+	assertCompanyQuery("Imported from Fireflies. The meeting service still decides consent and how long the recording is kept.", "Caveat Import")
+	assertCompanyQuery("The recording is kept", "Caveat Kept")
 }
 
 func TestRelationshipSearchFindsTheActivityInvite(t *testing.T) {

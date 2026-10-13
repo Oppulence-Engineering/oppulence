@@ -4860,6 +4860,11 @@ func relationshipSheetActivityTranscriptMatch(needle string) predicate.Relations
 		{"the recording is kept", "always"},
 		{"the recording is not kept", "never"},
 	} {
+		// The Fireflies note says "how long the recording is kept". That is
+		// the import caveat, not an activity whose recording is kept.
+		if sentence.phrase == "the recording is kept" && labelPhraseMatches("imported from fireflies. the meeting service still decides consent and how long the recording is kept.", needle) {
+			continue
+		}
 		if strings.Contains(needle, sentence.phrase) {
 			preds = append(preds, relationship.HasObservationsWith(
 				observationFactExact("audio_retention", sentence.token, sentence.phrase),
@@ -7826,12 +7831,15 @@ func relationshipSheetActivityCaveatMatch(needle string) predicate.Relationship 
 }
 
 var activityCaveatExact = map[string]string{
-	"someone on the invite may not have joined":              "Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined.",
-	"who spoke is not confirmed":                             "speaker assignment requires review",
-	"the timed recording was not saved with this transcript": "renderer fallback: timed audio evidence was not retained",
-	"a long stretch was split into shorter excerpts":         "long source segments were split into bounded evidence excerpts",
-	"the transcript was shortened":                           "transcript was truncated at the canonical evidence size limit",
-	"speaker names apply only to this meeting":               "remote speaker labels are meeting-scoped",
+	"someone on the invite may not have joined":                                                            "Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined.",
+	"who spoke is not confirmed":                                                                           "speaker assignment requires review",
+	"the timed recording was not saved with this transcript":                                               "renderer fallback: timed audio evidence was not retained",
+	"a long stretch was split into shorter excerpts":                                                       "long source segments were split into bounded evidence excerpts",
+	"the transcript was shortened":                                                                         "transcript was truncated at the canonical evidence size limit",
+	"speaker names apply only to this meeting":                                                             "remote speaker labels are meeting-scoped",
+	"these are notes from granola, not a word for word transcript":                                         "Granola supplied meeting notes rather than a timestamped verbatim transcript.",
+	"check who spoke and the wording before you rely on this":                                              "Speaker attribution and wording require focused review before material use.",
+	"imported from fireflies the meeting service still decides consent and how long the recording is kept": "Imported from Fireflies; capture consent and audio retention remain governed by the provider.",
 }
 
 var activityCaveatPrefixes = map[string][]string{
