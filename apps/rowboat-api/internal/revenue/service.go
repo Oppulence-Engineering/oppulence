@@ -1118,6 +1118,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if execution := relationshipSheetGraphExecutionMatch(needle); execution != nil {
 			parts = append(parts, execution)
 		}
+		if failure := relationshipSheetSendFailureMatch(needle); failure != nil {
+			parts = append(parts, failure)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -5713,6 +5716,159 @@ func writeRecoveryKind(b *sql.Builder, s *sql.Selector) {
 		return
 	}
 	b.WriteString("json_extract(evidence.value, '$.kind')")
+}
+
+// relationshipSheetSendFailureMatch is the review for a send that stopped.
+// The heading is on every stored error. The line under it is the reason the
+// sheet prints. An unconfirmed send keeps that review instead.
+func relationshipSheetSendFailureMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	if needle == normalizePersonSearch("The last attempt did not send") {
+		return relationship.HasActionsWith(sendFailureVisible())
+	}
+	var earlier []predicate.RevenueAction
+	for _, rule := range sendFailureRules {
+		if needle != normalizePersonSearch(rule.phrase) {
+			earlier = append(earlier, rule.match)
+			continue
+		}
+		preds := []predicate.RevenueAction{sendFailureVisible(), rule.match}
+		for _, prior := range earlier {
+			preds = append(preds, revenueaction.Not(prior))
+		}
+		return relationship.HasActionsWith(revenueaction.And(preds...))
+	}
+	preds := []predicate.RevenueAction{sendFailureVisible(), executionErrorNormalizedEQ(needle)}
+	for _, prior := range earlier {
+		preds = append(preds, revenueaction.Not(prior))
+	}
+	return relationship.HasActionsWith(revenueaction.And(preds...))
+}
+
+type sendFailureRule struct {
+	phrase string
+	match  predicate.RevenueAction
+}
+
+var sendFailureRules = []sendFailureRule{
+	{"Sending is not set up for this workspace yet.", revenueaction.ExecutionErrorContainsFold("no execution backend configured")},
+	{"This channel cannot send yet.", revenueaction.ExecutionErrorContainsFold("no execution backend for channel")},
+	{"This channel is not set up to send yet.", executionErrorPattern("execution backend for channel", "is not configured")},
+	{"Add a recipient before sending.", revenueaction.ExecutionErrorContainsFold("has no recipient email")},
+	{"Write the message before sending.", revenueaction.ExecutionErrorContainsFold("has no proposed message")},
+	{"Slack cannot save a draft. Switch this to send after you review it.", revenueaction.ExecutionErrorContainsFold("Slack has no provider draft")},
+	{"Calendar cannot save a draft. Switch this to send after you review it.", revenueaction.ExecutionErrorContainsFold("Google Calendar has no provider draft")},
+	{"HubSpot cannot save a draft. Switch this to send after you review it.", revenueaction.ExecutionErrorContainsFold("HubSpot has no provider draft")},
+	{"Add a start time before creating the event.", revenueaction.ExecutionErrorContainsFold("needs dueAt")},
+	{"Calendar sending is not set up yet.", revenueaction.ExecutionErrorContainsFold("Google Calendar executor is not configured")},
+	{"Connect Google for the person who will send this, then try again.", revenueaction.ExecutionErrorContainsFold("google is not connected")},
+	{"Google is missing permission for this send. Reconnect, then try again.", executionErrorEither(
+		executionErrorPattern("missing the", "scope"),
+		revenueaction.ExecutionErrorContainsFold("reconnect Google"),
+	)},
+	{"Google stopped accepting the authorization. Reconnect, then try again.", revenueaction.ExecutionErrorContainsFold("refresh token is invalid")},
+	{"Google could not authorize this send. Reconnect, then try again.", revenueaction.ExecutionErrorContainsFold("could not obtain a google access token")},
+	{"Google refused this send. Reconnect Gmail, then try again.", revenueaction.ExecutionErrorContainsFold("returned 403")},
+	{"Choose the Slack channel before sending.", revenueaction.ExecutionErrorContainsFold("Slack action needs target")},
+	{"Link the HubSpot record before sending.", revenueaction.ExecutionErrorContainsFold("HubSpot action needs a relationship resource ref")},
+	{"Google is temporarily limiting Gmail reads for this account. Please try the audit again in about 15 minutes.", executionErrorAll(
+		revenueaction.ExecutionErrorContainsFold("gmail"),
+		executionErrorEither(
+			revenueaction.ExecutionErrorContainsFold("returned 429"),
+			revenueaction.ExecutionErrorContainsFold("user-rate limit exceeded"),
+		),
+	)},
+	{"Too many requests were sent from this workspace. Wait a moment, then try again.", executionErrorEither(
+		revenueaction.ExecutionErrorContainsFold("rate limit"),
+		revenueaction.ExecutionErrorContainsFold("too many requests"),
+		revenueaction.ExecutionErrorContainsFold("(429)"),
+	)},
+	{"Your session could not be refreshed. Sign out and sign in again.", executionErrorEither(
+		revenueaction.ExecutionErrorContainsFold("session refresh is temporarily unavailable"),
+		revenueaction.ExecutionErrorContainsFold("session_unavailable"),
+	)},
+	{"Oppulence could not be reached. Try again in a moment.", executionErrorEither(
+		revenueaction.ExecutionErrorContainsFold("rowboat-api is unreachable"),
+		revenueaction.ExecutionErrorContainsFold("upstream_unavailable"),
+	)},
+	{"Oppulence is temporarily unavailable. Try again in a moment.", executionErrorAll(
+		revenueaction.ExecutionErrorContainsFold("(503)"),
+		executionErrorEither(
+			revenueaction.ExecutionErrorContainsFold("failed"),
+			revenueaction.ExecutionErrorContainsFold("unreachable"),
+			revenueaction.ExecutionErrorContainsFold("unavailable"),
+		),
+	)},
+	{"The last attempt did not send. Fix the draft, then try again.", executionErrorPrefixFold("revenue:")},
+}
+
+func sendFailureVisible() predicate.RevenueAction {
+	return revenueaction.And(
+		revenueaction.ExecutionStatusIn(ExecPending, ExecFailed),
+		revenueaction.Or(
+			revenueaction.ReconciliationStatusIsNil(),
+			revenueaction.ReconciliationStatusNEQ("manual_review"),
+		),
+		executionErrorTrimmed(),
+	)
+}
+
+func executionErrorTrimmed() predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("trim(")
+			b.WriteString(s.C(revenueaction.FieldExecutionError))
+			b.WriteString(") <> ''")
+		}))
+	})
+}
+
+func executionErrorNormalizedEQ(needle string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeNormalizedSQLText(b, s, "trim("+s.C(revenueaction.FieldExecutionError)+")")
+			b.WriteString(" = ")
+			b.Arg(needle)
+		}))
+	})
+}
+
+func executionErrorPrefixFold(prefix string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("lower(trim(")
+			b.WriteString(s.C(revenueaction.FieldExecutionError))
+			b.WriteString(")) LIKE ")
+			b.Arg(strings.ToLower(prefix) + "%")
+		}))
+	})
+}
+
+func executionErrorPattern(parts ...string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := "lower(" + s.C(revenueaction.FieldExecutionError) + ")"
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(column)
+				b.WriteString(" ~ ")
+				b.Arg(strings.Join(parts, ".+"))
+				return
+			}
+			b.WriteString(column)
+			b.WriteString(" GLOB ")
+			b.Arg("*" + strings.Join(parts, "*") + "*")
+		}))
+	})
+}
+
+func executionErrorEither(preds ...predicate.RevenueAction) predicate.RevenueAction {
+	return revenueaction.Or(preds...)
+}
+
+func executionErrorAll(preds ...predicate.RevenueAction) predicate.RevenueAction {
+	return revenueaction.And(preds...)
 }
 
 // relationshipSheetUncertainSendMatch is the review for a send that might

@@ -6862,6 +6862,92 @@ func TestRelationshipSearchFindsTheGraphExecution(t *testing.T) {
 	assertCompanyQuery("Sending...")
 }
 
+func TestRelationshipSearchFindsTheSendFailure(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, execution, reconciliation, failure string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		create := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("warm_follow_up").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetExecutionStatus(execution).SetExecutionError(failure)
+		if reconciliation != "" {
+			create.SetReconciliationStatus(reconciliation)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Setup", ExecPending, "", "revenue: no execution backend configured")
+	save("Birch Channel", ExecFailed, "", "no execution backend for channel email")
+	save("Cedar Recipient", ExecPending, "", "action has no recipient email")
+	save("Maple Message", ExecPending, "", "action has no proposed message")
+	save("Quill Slack", ExecPending, "", "Slack has no provider draft")
+	save("Lane Calendar", ExecPending, "", "Google Calendar has no provider draft")
+	save("North Hub", ExecPending, "", "HubSpot has no provider draft")
+	save("West Clock", ExecPending, "", "needs dueAt before create")
+	save("Avery Google", ExecPending, "", "google is not connected for the assigned user")
+	save("Birch Refuse", ExecPending, "", "gmail returned 403")
+	save("Maple Burst", ExecPending, "", "revenue: mailbox exploded")
+	save("Quill Bounce", ExecPending, "", "The harbor mailbox bounced.")
+	save("Lane Hidden", ExecAmbiguous, "", "revenue: no execution backend configured")
+	save("West Review", ExecPending, "manual_review", "revenue: no execution backend configured")
+	save("Cedar Blank", ExecPending, "", "   ")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	visible := []string{
+		"Harbor Setup", "Birch Channel", "Cedar Recipient", "Maple Message", "Quill Slack",
+		"Lane Calendar", "North Hub", "West Clock", "Avery Google", "Birch Refuse",
+		"Maple Burst", "Quill Bounce",
+	}
+	assertCompanyQuery("The last attempt did not send", visible...)
+	assertCompanyQuery("Sending is not set up for this workspace yet.", "Harbor Setup")
+	assertCompanyQuery("This channel cannot send yet.", "Birch Channel")
+	assertCompanyQuery("Add a recipient before sending.", "Cedar Recipient")
+	assertCompanyQuery("Write the message before sending.", "Maple Message")
+	assertCompanyQuery("Slack cannot save a draft. Switch this to send after you review it.", "Quill Slack")
+	assertCompanyQuery("Calendar cannot save a draft. Switch this to send after you review it.", "Lane Calendar")
+	assertCompanyQuery("HubSpot cannot save a draft. Switch this to send after you review it.", "North Hub")
+	assertCompanyQuery("Add a start time before creating the event.", "West Clock")
+	assertCompanyQuery("Connect Google for the person who will send this, then try again.", "Avery Google")
+	assertCompanyQuery("Google refused this send. Reconnect Gmail, then try again.", "Birch Refuse")
+	assertCompanyQuery("The last attempt did not send. Fix the draft, then try again.", "Maple Burst")
+	assertCompanyQuery("The harbor mailbox bounced.", "Quill Bounce")
+	assertCompanyQuery("no execution backend configured")
+	assertCompanyQuery("revenue: mailbox exploded")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
