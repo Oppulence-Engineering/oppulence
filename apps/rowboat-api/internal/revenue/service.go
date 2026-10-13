@@ -1130,6 +1130,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if wake := relationshipSheetSnoozeWakeMatch(needle, searchedAt); wake != nil {
 			parts = append(parts, wake)
 		}
+		if badge := relationshipSheetSourceBadgeMatch(needle); badge != nil {
+			parts = append(parts, badge)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -6211,6 +6214,111 @@ func snoozeWakeWindow(count int, unit time.Duration) (lo, hi time.Duration, ok b
 	default:
 		return 0, 0, false
 	}
+}
+
+// relationshipSheetSourceBadgeMatch is the badge on a connected source.
+// The directory says "Reconnect required" or "Syncing". The stored status
+// stays on the row. A company matches when it depends on that source.
+func relationshipSheetSourceBadgeMatch(needle string) predicate.Relationship {
+	switch needle {
+	case "not connected":
+		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
+			writeSourceStatusEQ(b, "not_connected")
+		})
+	case "reconnect required":
+		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
+			writeSourceStatusEQ(b, "reconnect_required")
+		})
+	case "disconnected":
+		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
+			writeSourceStatusEQ(b, "disconnected")
+		})
+	case "syncing":
+		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
+			writeSourceBadgeSyncing(b)
+		})
+	case "sync incomplete":
+		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
+			writeSourceBadgeIncomplete(b)
+		})
+	case "active":
+		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
+			writeSourceBadgeActive(b)
+		})
+	default:
+		return nil
+	}
+}
+
+func writeSourceStatusEQ(b *sql.Builder, status string) {
+	b.WriteString("src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" = ")
+	b.Arg(status)
+}
+
+func writeSourceNotStopped(b *sql.Builder) {
+	b.WriteString("src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" NOT IN ('not_connected', 'reconnect_required', 'disconnected')")
+}
+
+func writeSourceSyncingFlag(b *sql.Builder) {
+	b.WriteString("(src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" IN ('backfilling', 'rebuilding') OR src.")
+	b.WriteString(relationshipsourcestatus.FieldBackfillPhase)
+	b.WriteString(" IN ('queued', 'running'))")
+}
+
+func writeSourceBadgeSyncing(b *sql.Builder) {
+	writeSourceNotStopped(b)
+	b.WriteString(" AND ")
+	writeSourceSyncingFlag(b)
+}
+
+func writeSourceBadgeIncomplete(b *sql.Builder) {
+	b.WriteString("lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN ('google', 'slack', 'hubspot') AND ")
+	writeSourceNotStopped(b)
+	b.WriteString(" AND NOT ")
+	writeSourceSyncingFlag(b)
+	b.WriteString(" AND src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" <> 'stale' AND src.")
+	b.WriteString(relationshipsourcestatus.FieldCompleteness)
+	b.WriteString(" <> 'complete'")
+}
+
+func writeSourceBadgeActive(b *sql.Builder) {
+	b.WriteString("src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" IN ('live', 'connected') AND NOT ")
+	writeSourceSyncingFlag(b)
+	b.WriteString(" AND NOT (lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN ('google', 'slack', 'hubspot') AND src.")
+	b.WriteString(relationshipsourcestatus.FieldCompleteness)
+	b.WriteString(" <> 'complete')")
+}
+
+func relationshipDependsOnSource(cond func(b *sql.Builder, s *sql.Selector)) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" AS src WHERE src.")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND ")
+			cond(b, s)
+			b.WriteString(" AND ")
+			writeDependentSource(b, s, "src")
+			b.WriteString(")")
+		}))
+	})
 }
 
 // relationshipSheetUncertainSendMatch is the review for a send that might

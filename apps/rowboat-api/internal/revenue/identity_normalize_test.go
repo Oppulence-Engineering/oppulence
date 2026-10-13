@@ -7151,6 +7151,125 @@ func TestRelationshipSearchFindsTheSnoozeWake(t *testing.T) {
 	assertCompanyQuery("Snooze ended 7 days ago.")
 }
 
+func TestRelationshipSearchFindsTheSourceBadge(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Grant", "google:company:harbor")
+	save("Birch Cut", "slack:channel:birch")
+	save("Cedar Spin", "hubspot:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, status := range []struct{ source, state, phase string }{
+		{"google", "reconnect_required", "idle"},
+		{"slack", "disconnected", "idle"},
+		{"hubspot", "live", "running"},
+	} {
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource(status.source).SetSourceAccountID("default").
+			SetStatus(status.state).SetBackfillPhase(status.phase).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Reconnect required", "Harbor Grant")
+	assertCompanyQuery("Disconnected", "Birch Cut")
+	assertCompanyQuery("Syncing", "Cedar Spin")
+	assertCompanyQuery("Not connected")
+	assertCompanyQuery("Sync incomplete")
+	assertCompanyQuery("Active")
+}
+
+func TestRelationshipSearchFindsTheOtherSourceBadges(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Off", "google:company:harbor")
+	save("Birch Gap", "hubspot:company:birch")
+	save("Cedar Ready", "slack:channel:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, status := range []struct{ source, state, completeness string }{
+		{"google", "not_connected", "partial"},
+		{"hubspot", "connected", "partial"},
+		{"slack", "live", "complete"},
+	} {
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource(status.source).SetSourceAccountID("default").
+			SetStatus(status.state).SetCompleteness(status.completeness).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Not connected", "Harbor Off")
+	assertCompanyQuery("Sync incomplete", "Birch Gap")
+	assertCompanyQuery("Active", "Cedar Ready")
+	assertCompanyQuery("Reconnect required")
+	assertCompanyQuery("Syncing")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
