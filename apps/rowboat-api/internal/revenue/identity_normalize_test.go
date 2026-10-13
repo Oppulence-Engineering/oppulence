@@ -1555,6 +1555,8 @@ func TestRelationshipSearchFindsTheEmptySheetSentences(t *testing.T) {
 
 	assertCompanyQuery("Nothing recorded yet.", "Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted")
 	assertCompanyQuery("which companies have nothing recorded yet", "Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted")
+	assertCompanyQuery("No activity recorded for this company yet.", "Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted")
+	assertCompanyQuery("which companies have no activity recorded for this company yet", "Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted")
 	assertCompanyQuery(
 		"No commitments recorded for this company yet.",
 		"Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted", "Quay Note", "Quay Meet", "Quay Calendar", "Quay Observed",

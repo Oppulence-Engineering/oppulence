@@ -935,7 +935,11 @@ func (s *Service) ListRelationshipsFiltered(
 		if labelPhraseMatches("show the next companies before saving.", needle) {
 			parts = append(parts, relationshipCompaniesSitPastTheDirectoryPage())
 		}
-		if labelPhraseMatches("no activity", needle) {
+		// "No activity" is the directory row. Activity history says
+		// "No activity recorded for this company yet." That longer sentence
+		// is an empty observation list, so it does not also mean a blank
+		// last touch.
+		if labelPhraseMatches("no activity", needle) && !labelPhraseMatches("no activity recorded for this company yet.", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
 		if labelPhraseMatches("no description yet", needle) {
@@ -1054,7 +1058,7 @@ func (s *Service) ListRelationshipsFiltered(
 			parts = append(parts, people)
 		}
 		// "Nothing recorded yet", "None recorded.", and the people, risks,
-		// and milestones empty lines contain "recorded". The
+		// milestones, and activity empty lines contain "recorded". The
 		// calendar sentence contains "calendar". Those words are also
 		// activity headings. The empty sentence is the company that prints
 		// it. "You chose the value from Calendar." is the closed
@@ -13675,7 +13679,7 @@ func relationshipSheetEmptyCopyMatch(needle string) predicate.Relationship {
 			relationship.Not(relationshipHasMeetingObservation()),
 		))
 	}
-	if labelPhraseMatches("nothing recorded yet.", needle) {
+	if labelPhraseMatches("nothing recorded yet.", needle) || labelPhraseMatches("no activity recorded for this company yet.", needle) {
 		preds = append(preds, relationship.Not(relationship.HasObservations()))
 	}
 	// Activity history shows fifty events, then "Show earlier activity".
@@ -13774,6 +13778,7 @@ func sheetEmptySentenceOwnsActivity(needle string) bool {
 		"no people recorded for this company yet.",
 		"no risks recorded for this company yet.",
 		"no milestones recorded for this company yet.",
+		"no activity recorded for this company yet.",
 		"none recorded.",
 		// "1 Gmail thread is linked." names the Gmail heading too. The sentence
 		// is the unsupported-detail paragraph, not every company with mail.
