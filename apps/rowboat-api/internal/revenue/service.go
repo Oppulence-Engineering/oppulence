@@ -1085,6 +1085,12 @@ func (s *Service) ListRelationshipsFiltered(
 		if guest := relationshipSheetActivityGuestMatch(needle); guest != nil {
 			parts = append(parts, guest)
 		}
+		if place := relationshipSheetActivityPlaceMatch(needle); place != nil {
+			parts = append(parts, place)
+		}
+		if seen := relationshipSheetActivityVisibilityMatch(needle); seen != nil {
+			parts = append(parts, seen)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -4002,6 +4008,234 @@ func writeSpeakerNumber(b *sql.Builder, s *sql.Selector, label string) {
 	b.WriteString(") GLOB 'speaker [0-9][0-9]' OR lower(")
 	b.WriteString(label)
 	b.WriteString(") GLOB 'speaker [0-9][0-9][0-9]')")
+}
+
+// relationshipSheetActivityPlaceMatch is the opened meeting: where it is,
+// when it starts and ends, the join link, and whether you answered. The
+// calendar id stays hidden. A private or deleted meeting is not on the activity.
+func relationshipSheetActivityPlaceMatch(needle string) predicate.Relationship {
+	switch {
+	case needle == "all day":
+		return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+			writeMeetingFlag(b, s, "allDay")
+			writeMeetingSubjectDiffers(b, s, needle)
+		})
+	case needle == "this meeting was cancelled":
+		return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+			b.WriteString("trim(coalesce(")
+			b.WriteString(interactionJSONExpr(s, "status"))
+			b.WriteString(", '')) = 'cancelled'")
+			writeMeetingSubjectDiffers(b, s, needle)
+		})
+	case needle == "you accepted the invite":
+		return relationshipHasMeetingReply(needle, "accepted")
+	case needle == "you declined the invite":
+		return relationshipHasMeetingReply(needle, "declined")
+	case needle == "you replied maybe":
+		return relationshipHasMeetingReply(needle, "tentative")
+	case needle == "you have not answered the invite":
+		return relationshipHasMeetingReply(needle, "needsaction")
+	case strings.HasPrefix(needle, "location: "):
+		place := strings.TrimSpace(needle[len("location: "):])
+		if place == "" {
+			return nil
+		}
+		return relationshipHasMeetingText("location", place, true)
+	case strings.HasPrefix(needle, "join: "):
+		link := strings.TrimSpace(needle[len("join: "):])
+		if link == "" {
+			return nil
+		}
+		return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+			expr := interactionJSONExpr(s, "conferenceLink")
+			b.WriteString("(lower(trim(coalesce(")
+			b.WriteString(expr)
+			b.WriteString(", ''))) LIKE 'http://%' OR lower(trim(coalesce(")
+			b.WriteString(expr)
+			b.WriteString(", ''))) LIKE 'https://%') AND ")
+			writeNormalizedExpr(b, s, "trim(coalesce("+expr+", ''))")
+			b.WriteString(" = ")
+			b.Arg(link)
+			writeMeetingSubjectDiffers(b, s, link)
+		})
+	case strings.HasPrefix(needle, "starts: "):
+		return relationshipHasMeetingDay(needle, "startsAt", strings.TrimSpace(needle[len("starts: "):]))
+	case strings.HasPrefix(needle, "ends: "):
+		return relationshipHasMeetingDay(needle, "endsAt", strings.TrimSpace(needle[len("ends: "):]))
+	case strings.HasPrefix(needle, "organizer: "):
+		who := strings.TrimSpace(needle[len("organizer: "):])
+		if who == "" || !strings.Contains(who, "@") {
+			return nil
+		}
+		return relationshipHasMeetingText("organizer", who, true)
+	default:
+		if needle == "" {
+			return nil
+		}
+		return relationshipHasMeetingText("description", needle, true)
+	}
+}
+
+func relationshipHasMeetingReply(needle, token string) predicate.Relationship {
+	return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+		expr := interactionJSONExpr(s, "selfResponseStatus")
+		b.WriteString("replace(lower(trim(coalesce(")
+		b.WriteString(expr)
+		b.WriteString(", ''))), '_', '') = ")
+		b.Arg(token)
+		writeMeetingSubjectDiffers(b, s, needle)
+	})
+}
+
+func relationshipHasMeetingDay(needle, key, day string) predicate.Relationship {
+	if day == "" {
+		return nil
+	}
+	return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+		writeMeetingDay(b, s, interactionJSONExpr(s, key))
+		b.WriteString(" = ")
+		b.Arg(day)
+		writeMeetingSubjectDiffers(b, s, day)
+	})
+}
+
+func relationshipHasMeetingText(key, value string, readable bool) predicate.Relationship {
+	if value == "" {
+		return nil
+	}
+	return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+		expr := "trim(coalesce(" + interactionJSONExpr(s, key) + ", ''))"
+		if readable {
+			writeReadableMeetingValue(b, s, expr)
+			b.WriteString(" AND ")
+		}
+		writeNormalizedExpr(b, s, expr)
+		b.WriteString(" = ")
+		b.Arg(value)
+		writeMeetingSubjectDiffers(b, s, value)
+	})
+}
+
+func relationshipHasMeetingDetail(apply func(b *sql.Builder, s *sql.Selector)) predicate.Relationship {
+	return relationship.HasCommunicationInteractionsWith(
+		communicationinteraction.DeletedEQ(false),
+		communicationinteraction.VisibilityNEQ("private"),
+		predicate.CommunicationInteraction(func(s *sql.Selector) {
+			s.Where(sql.P(func(b *sql.Builder) {
+				apply(b, s)
+			}))
+		}),
+	)
+}
+
+func interactionJSONExpr(s *sql.Selector, key string) string {
+	column := s.C(communicationinteraction.FieldMetadataJSON)
+	if s.Dialect() == dialect.Postgres {
+		return column + "::jsonb->>'" + key + "'"
+	}
+	return "json_extract(" + column + ", '$." + key + "')"
+}
+
+func writeMeetingFlag(b *sql.Builder, s *sql.Selector, key string) {
+	column := s.C(communicationinteraction.FieldMetadataJSON)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->'")
+		b.WriteString(key)
+		b.WriteString("' = 'true'::jsonb")
+		return
+	}
+	b.WriteString("json_type(")
+	b.WriteString(column)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("') = 'true'")
+}
+
+func writeMeetingSubjectDiffers(b *sql.Builder, s *sql.Selector, value string) {
+	subject := s.C(communicationinteraction.FieldSubject)
+	b.WriteString(" AND ")
+	if s.Dialect() == dialect.Postgres {
+		writeNormalizedExpr(b, s, "btrim(coalesce("+subject+", ''))")
+	} else {
+		writeNormalizedExpr(b, s, "trim(coalesce("+subject+", ''))")
+	}
+	b.WriteString(" <> ")
+	b.Arg(value)
+}
+
+func writeReadableMeetingValue(b *sql.Builder, s *sql.Selector, expr string) {
+	b.WriteString(expr)
+	b.WriteString(" <> '' AND lower(")
+	b.WriteString(expr)
+	b.WriteString(") NOT IN ('local-user', 'meeting-counterparty') AND ")
+	b.WriteString(expr)
+	b.WriteString(" ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("!~ '^[a-z0-9_:-]+$'")
+		return
+	}
+	b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+}
+
+func writeMeetingDay(b *sql.Builder, s *sql.Selector, expr string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("(CASE WHEN btrim(coalesce(")
+		b.WriteString(expr)
+		b.WriteString(", '')) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN to_char(btrim(")
+		b.WriteString(expr)
+		b.WriteString(")::date, 'FMmon FMDD, YYYY') WHEN btrim(coalesce(")
+		b.WriteString(expr)
+		b.WriteString(", '')) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T' THEN to_char((btrim(")
+		b.WriteString(expr)
+		b.WriteString(")::timestamptz AT TIME ZONE 'UTC'), 'FMmon FMDD, YYYY') ELSE '' END)")
+		return
+	}
+	b.WriteString("(CASE WHEN date(")
+	b.WriteString(expr)
+	b.WriteString(") IS NULL THEN '' ELSE CASE strftime('%m', ")
+	b.WriteString(expr)
+	b.WriteString(") WHEN '01' THEN 'jan' WHEN '02' THEN 'feb' WHEN '03' THEN 'mar' WHEN '04' THEN 'apr' WHEN '05' THEN 'may' WHEN '06' THEN 'jun' WHEN '07' THEN 'jul' WHEN '08' THEN 'aug' WHEN '09' THEN 'sep' WHEN '10' THEN 'oct' WHEN '11' THEN 'nov' WHEN '12' THEN 'dec' ELSE '' END || ' ' || CAST(strftime('%d', ")
+	b.WriteString(expr)
+	b.WriteString(") AS INTEGER) || ', ' || strftime('%Y', ")
+	b.WriteString(expr)
+	b.WriteString(") END)")
+}
+
+// relationshipSheetActivityVisibilityMatch is who can see an opened activity.
+// "The message is saved", "Only the subject and people are saved", and
+// "Only you can see this" are the stored visibility.
+func relationshipSheetActivityVisibilityMatch(needle string) predicate.Relationship {
+	var token string
+	switch needle {
+	case "the message is saved":
+		token = "full"
+	case "only the subject and people are saved":
+		token = "metadata"
+	case "only you can see this":
+		token = "private"
+	default:
+		return nil
+	}
+	preds := []predicate.Relationship{
+		relationship.HasObservationsWith(observationFactExact("visibility", token, needle)),
+	}
+	if token != "private" {
+		preds = append(preds, relationship.HasCommunicationInteractionsWith(
+			communicationinteraction.DeletedEQ(false),
+			communicationinteraction.VisibilityEQ(token),
+			predicate.CommunicationInteraction(func(s *sql.Selector) {
+				s.Where(sql.P(func(b *sql.Builder) {
+					b.WriteString("1 = 1")
+					writeMeetingSubjectDiffers(b, s, needle)
+				}))
+			}),
+		))
+	}
+	if len(preds) == 1 {
+		return preds[0]
+	}
+	return relationship.Or(preds...)
 }
 
 // relationshipSheetActivityPromiseStateMatch is who made a confirmed promise,

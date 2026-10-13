@@ -5938,6 +5938,118 @@ func TestRelationshipSearchFindsTheActivityGuest(t *testing.T) {
 	assertCompanyQuery("Named from the guest list: speaker_2")
 }
 
+func TestRelationshipSearchFindsTheActivityMeeting(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	company := func(name string) *ent.Relationship {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rel
+	}
+	harbor := company("Harbor Room")
+	cancelled := company("Cancelled Day")
+	declined := company("Declined Invite")
+	maybe := company("Maybe Invite")
+	hidden := company("Hidden Room")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 4, 15, 0, 0, 0, time.UTC)
+	internal := auth.WithInternal(context.Background())
+	save := func(rel *ent.Relationship, objectID, visibility, subject, meta string, deleted bool) {
+		t.Helper()
+		if _, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(rel.ID).
+			SetSource("calendar").SetSourceAccountID("owner@x.co").SetProviderObjectID(objectID).
+			SetInteractionType("meeting").SetDirection("").SetSubject(subject).
+			SetOccurredAt(at).SetReceivedAt(at).SetVisibility(visibility).
+			SetContentHash("sha256:" + objectID).SetMetadataJSON(meta).SetDeleted(deleted).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save(harbor, "harbor-room", "full", "Harbor review", `{
+		"location":"Harbor conference room",
+		"organizer":"avery@acme.com",
+		"selfResponseStatus":"accepted",
+		"startsAt":"2026-10-04T15:00:00Z",
+		"endsAt":"2026-10-04T16:00:00Z",
+		"description":"Discuss the harbor quote.",
+		"conferenceLink":"https://meet.example/abc",
+		"status":"confirmed"
+	}`, false)
+	save(cancelled, "cancelled-day", "metadata", "A saved note", `{
+		"allDay":true,
+		"status":"cancelled",
+		"selfResponseStatus":"needsAction",
+		"startsAt":"2026-10-05",
+		"endsAt":"2026-10-06",
+		"location":"local-user",
+		"organizer":"calendar-id"
+	}`, false)
+	save(declined, "declined-invite", "full", "A saved note", `{"selfResponseStatus":"declined"}`, false)
+	save(maybe, "maybe-invite", "full", "A saved note", `{"selfResponseStatus":"tentative"}`, false)
+	save(hidden, "secret-room", "private", "A saved note", `{"location":"Secret room"}`, false)
+	save(hidden, "gone-room", "full", "A saved note", `{"location":"Gone room"}`, true)
+	now := time.Now().UTC()
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(hidden).
+		SetSource("calendar").SetExternalID("hidden-see").SetEventType("meeting").
+		SetOccurredAt(now).SetReceivedAt(now).SetContentHash("hidden-see").
+		SetSummary("A saved note").
+		SetNormalizedFactsJSON(`{"visibility":"private"}`).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Location: Harbor conference room", "Harbor Room")
+	assertCompanyQuery("Join: https://meet.example/abc", "Harbor Room")
+	assertCompanyQuery("Starts: Oct 4, 2026", "Harbor Room")
+	assertCompanyQuery("Ends: Oct 4, 2026", "Harbor Room")
+	assertCompanyQuery("Organizer: avery@acme.com", "Harbor Room")
+	assertCompanyQuery("You accepted the invite", "Harbor Room")
+	assertCompanyQuery("Discuss the harbor quote.", "Harbor Room")
+	assertCompanyQuery("The message is saved", "Harbor Room", "Declined Invite", "Maybe Invite")
+	assertCompanyQuery("All day", "Cancelled Day")
+	assertCompanyQuery("This meeting was cancelled", "Cancelled Day")
+	assertCompanyQuery("You have not answered the invite", "Cancelled Day")
+	assertCompanyQuery("Starts: Oct 5, 2026", "Cancelled Day")
+	assertCompanyQuery("Ends: Oct 6, 2026", "Cancelled Day")
+	assertCompanyQuery("Only the subject and people are saved", "Cancelled Day")
+	assertCompanyQuery("You declined the invite", "Declined Invite")
+	assertCompanyQuery("You replied maybe", "Maybe Invite")
+	assertCompanyQuery("Only you can see this", "Hidden Room")
+	assertCompanyQuery("Location: Secret room")
+	assertCompanyQuery("Location: Gone room")
+	assertCompanyQuery("Location: local-user")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
