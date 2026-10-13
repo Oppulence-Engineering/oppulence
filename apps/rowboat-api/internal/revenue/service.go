@@ -9972,6 +9972,10 @@ func writeClaimSplicedReason(b *sql.Builder, s *sql.Selector) {
 // A saved excerpt matches the words on that line, including the quotes.
 func relationshipSheetEvidenceExcerptMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
+	// The disclosure is on the sheet whenever a recommendation carries evidence.
+	if labelPhraseMatches("inspect supporting words", needle) {
+		preds = append(preds, relationship.HasActionsWith(revenueaction.HasEvidences()))
+	}
 	if labelPhraseMatches("evidence excerpt unavailable", needle) {
 		preds = append(preds, relationship.HasActionsWith(revenueaction.HasEvidencesWith(evidenceExcerptBlank())))
 	}

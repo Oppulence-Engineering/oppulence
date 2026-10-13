@@ -2105,6 +2105,8 @@ func TestRelationshipSearchFindsUnavailableEvidenceExcerpts(t *testing.T) {
 	}
 	assertCompanyQuery("Evidence excerpt unavailable", "Excerpt Blank", "Excerpt Missing")
 	assertCompanyQuery("“Evidence excerpt unavailable”", "Excerpt Blank", "Excerpt Missing")
+	assertCompanyQuery("Inspect supporting words", "Excerpt Quoted", "Excerpt Blank", "Excerpt Missing")
+	assertCompanyQuery("which recommendation says Inspect supporting words", "Excerpt Quoted", "Excerpt Blank", "Excerpt Missing")
 	assertCompanyQuery("The harbor sentence.", "Excerpt Quoted")
 	assertCompanyQuery("“The harbor sentence.”", "Excerpt Quoted")
 	assertCompanyQuery("harbor")
