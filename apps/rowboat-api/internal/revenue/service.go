@@ -3824,6 +3824,18 @@ func relationshipSheetActivityTranscriptMatch(needle string) predicate.Relations
 	if model := relationshipSheetActivityFactMatch(needle, "model: ", "transcription_model"); model != nil {
 		preds = append(preds, model)
 	}
+	if engines, ok := activityTranscriptEngines[needle]; ok {
+		preds = append(preds, relationship.HasObservationsWith(observationFactLowerIn("transcription_engine", engines)))
+	}
+	if models, ok := activityTranscriptModels[needle]; ok {
+		preds = append(preds, relationship.HasObservationsWith(observationFactLowerIn("transcription_model", models)))
+	}
+	if needle == "the microphone was silent" {
+		preds = append(preds, relationship.HasObservationsWith(observationSilentTrack("mic")))
+	}
+	if needle == "the other side was silent" {
+		preds = append(preds, relationship.HasObservationsWith(observationSilentTrack("system")))
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -3832,6 +3844,75 @@ func relationshipSheetActivityTranscriptMatch(needle string) predicate.Relations
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// The activity names Whisper, Parakeet, Deepgram, and Oppulence Cloud. The
+// stored engine stays whisper.cpp, whisper-local, or solomon.
+var activityTranscriptEngines = map[string][]string{
+	"transcribed with parakeet":                   {"parakeet"},
+	"transcribed with whisper":                    {"whisper", "whisper.cpp", "whisper-local"},
+	"transcribed with deepgram":                   {"deepgram"},
+	"transcribed with oppulence cloud (deepgram)": {"solomon"},
+}
+
+// Settings name the downloaded model. The activity says that name. The stored
+// fact stays the checkpoint filename.
+var activityTranscriptModels = map[string][]string{
+	"model: tiny · english":                                 {"tiny.en-q5_1"},
+	"model: base · english (recommended)":                   {"base.en-q5_1"},
+	"model: base · multilingual":                            {"base-q5_1"},
+	"model: small · english":                                {"small.en-q5_1"},
+	"model: small · multilingual":                           {"small-q5_1"},
+	"model: large v3 turbo · multilingual (fast, accurate)": {"large-v3-turbo-q5_0"},
+	"model: large v3 · multilingual (max accuracy)":         {"large-v3-q5_0"},
+	"model: parakeet v3":                                    {"parakeet-tdt-0.6b-v3", "parakeet-tdt-0.6b-v3-coreml"},
+	"model: parakeet v2":                                    {"parakeet-tdt-0.6b-v2", "parakeet-tdt-0.6b-v2-coreml"},
+	"model: nova 3":                                         {"nova-3"},
+}
+
+func observationFactLowerIn(key string, tokens []string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("lower(")
+			writeActivityFactTrim(b, s, facts, key)
+			b.WriteString(") IN (")
+			for i, token := range tokens {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				b.Arg(strings.ToLower(token))
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func observationSilentTrack(id string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'tracks') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'tracks') AS track WHERE track->>'id' = ")
+				b.Arg(id)
+				b.WriteString(" AND track->>'silent' = 'true')")
+				return
+			}
+			b.WriteString("json_valid(")
+			b.WriteString(facts)
+			b.WriteString(") AND json_type(")
+			b.WriteString(facts)
+			b.WriteString(", '$.tracks') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
+			b.WriteString(facts)
+			b.WriteString(", '$.tracks') AS track WHERE json_extract(track.value, '$.id') = ")
+			b.Arg(id)
+			b.WriteString(" AND json_type(track.value, '$.silent') = 'true')")
+		}))
+	})
 }
 
 // A status change stores open, fulfilled, or cancelled inside commitment_updates.
