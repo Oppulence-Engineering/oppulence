@@ -6544,6 +6544,119 @@ func TestRelationshipSearchFindsTheActivityContradiction(t *testing.T) {
 	assertCompanyQuery("follow_up")
 }
 
+func TestRelationshipSearchFindsTheGraphFreshness(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	saveObservation := func(name, externalID string, occurredAt time.Time) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("meeting_note").
+			SetOccurredAt(occurredAt).SetReceivedAt(now).SetContentHash(externalID).
+			SetSummary("A saved note").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveEvidence := func(name string, occurredAt time.Time) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		action, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+			DedupeKey: name, Reason: "Send the weekly note", ExecutionMode: ExecModeDraft, PriorityScore: 40,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		evidence, err := f.client.RevenueEvidence.Create().
+			SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+			SetSource("gmail").SetSourceRecordID(name).
+			SetContentHash("sha256:" + name).
+			SetExcerpt("The weekly note.").
+			SetOccurredAt(occurredAt).SetObservedAt(now).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := action.Update().AddEvidences(evidence).Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveObservation("Harbor Fresh", "harbor-fresh", now.Add(-time.Hour))
+	saveObservation("Birch Older", "birch-older", now.Add(-5*24*time.Hour))
+	saveObservation("Cedar Stale", "cedar-stale", now.Add(-40*24*time.Hour))
+	saveObservation("Avery Ahead", "avery-ahead", now.Add(time.Hour))
+	saveEvidence("Quill Evidence", now.Add(-2*time.Hour))
+	saveEvidence("North Quote", now.Add(-6*24*time.Hour))
+	lane, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lane Both",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range []struct {
+		id   string
+		when time.Time
+	}{
+		{"lane-both-fresh", now.Add(-time.Hour)},
+		{"lane-both-aging", now.Add(-5 * 24 * time.Hour)},
+	} {
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(lane).
+			SetSource("meeting").SetExternalID(item.id).SetEventType("meeting_note").
+			SetOccurredAt(item.when).SetReceivedAt(now).SetContentHash(item.id).
+			SetSummary("A saved note").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Up to date", "Harbor Fresh", "Avery Ahead", "Quill Evidence", "Lane Both")
+	assertCompanyQuery("Up to date.", "Harbor Fresh", "Avery Ahead", "Quill Evidence", "Lane Both")
+	assertCompanyQuery("Getting old", "Birch Older", "North Quote", "Lane Both")
+	assertCompanyQuery("Getting old.", "Birch Older", "North Quote", "Lane Both")
+	assertCompanyQuery("Out of date")
+	assertCompanyQuery("The details you can open are up to date.")
+	assertCompanyQuery("current")
+	assertCompanyQuery("aging")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

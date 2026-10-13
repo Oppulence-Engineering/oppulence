@@ -1106,6 +1106,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if contradictionLine := relationshipSheetActivityContradictionMatch(needle); contradictionLine != nil {
 			parts = append(parts, contradictionLine)
 		}
+		if freshness := relationshipSheetGraphFreshnessMatch(needle, searchedAt); freshness != nil {
+			parts = append(parts, freshness)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -5701,6 +5704,38 @@ func writeRecoveryKind(b *sql.Builder, s *sql.Selector) {
 		return
 	}
 	b.WriteString("json_extract(evidence.value, '$.kind')")
+}
+
+// relationshipSheetGraphFreshnessMatch is the State word on a graph evidence
+// node. A meeting or a quoted source from the last 72 hours, including one
+// still ahead of the search, is "Up to date". One older than that and still
+// inside 30 days is "Getting old". Evidence older than 30 days keeps the
+// State word the other searches already use.
+func relationshipSheetGraphFreshnessMatch(needle string, searchedAt time.Time) predicate.Relationship {
+	currentSince := searchedAt.Add(-72 * time.Hour)
+	agingSince := searchedAt.Add(-30 * 24 * time.Hour)
+	switch needle {
+	case "up to date":
+		return relationship.Or(
+			relationship.HasObservationsWith(relationshipobservation.OccurredAtGTE(currentSince)),
+			relationship.HasActionsWith(revenueaction.HasEvidencesWith(
+				revenueevidence.OccurredAtGTE(currentSince),
+			)),
+		)
+	case "getting old":
+		return relationship.Or(
+			relationship.HasObservationsWith(
+				relationshipobservation.OccurredAtLT(currentSince),
+				relationshipobservation.OccurredAtGTE(agingSince),
+			),
+			relationship.HasActionsWith(revenueaction.HasEvidencesWith(
+				revenueevidence.OccurredAtLT(currentSince),
+				revenueevidence.OccurredAtGTE(agingSince),
+			)),
+		)
+	default:
+		return nil
+	}
 }
 
 // relationshipSheetActivityContradictionMatch is a resolved contradiction on
