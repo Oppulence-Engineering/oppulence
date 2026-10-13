@@ -7674,6 +7674,76 @@ func TestRelationshipSearchFindsTheSourceCopy(t *testing.T) {
 	assertCompanyQuery("On approval: Notes and tasks")
 }
 
+func TestRelationshipSearchFindsTheSourceMissing(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Gap", "slack:channel:harbor")
+	save("Birch Note", "hubspot:company:birch")
+	save("Cedar Send", "google:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("default").
+		SetStatus("live").SetCompleteness("partial").
+		SetMissingScopes([]string{"chat:write", "https://example.com/auth/custom.scope"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("connected").SetCompleteness("partial").
+		SetMissingScopes([]string{"crm.objects.notes.write", "crm.objects.tasks.write"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("google").SetSourceAccountID("default").
+		SetStatus("connected").SetCompleteness("partial").
+		SetMissingScopes([]string{"https://www.googleapis.com/auth/gmail.send"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Missing: Post a message, Custom Scope", "Harbor Gap")
+	assertCompanyQuery("Missing: Notes, Tasks", "Birch Note")
+	assertCompanyQuery("Missing: Sending")
+	assertCompanyQuery("Missing: Tasks, Notes")
+	assertCompanyQuery("Missing: Post a message")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

@@ -1151,6 +1151,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if copy := relationshipSheetSourceCopyMatch(needle); copy != nil {
 			parts = append(parts, copy)
 		}
+		if missing := relationshipSheetSourceMissingMatch(needle); missing != nil {
+			parts = append(parts, missing)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -6773,6 +6776,92 @@ func writeSourceFamilyIn(b *sql.Builder, family string) {
 	default:
 		b.WriteString("('')")
 	}
+}
+
+// relationshipSheetSourceMissingMatch is the missing-permission line on a
+// source card. The line names the permissions, not the stored scope ids.
+// A Google account with a missing permission is hidden, so that line stays
+// out of search.
+func relationshipSheetSourceMissingMatch(needle string) predicate.Relationship {
+	const prefix = "missing: "
+	if !strings.HasPrefix(needle, prefix) {
+		return nil
+	}
+	labels := strings.TrimPrefix(needle, prefix)
+	if labels == "" || strings.HasPrefix(labels, ",") || strings.HasSuffix(labels, ",") {
+		return nil
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeSourceLagShown(b, s)
+		b.WriteString(" AND ")
+		writeSourceMissingLabels(b, s)
+		b.WriteString(" = ")
+		b.Arg(labels)
+	})
+}
+
+func writeSourceMissingLabels(b *sql.Builder, s *sql.Selector) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("(SELECT string_agg(label, ', ' ORDER BY ord) FROM (SELECT label, min(ord) AS ord FROM (SELECT ")
+		writeSourceScopeLabel(b, s, "trim(scope.value)")
+		b.WriteString(" AS label, scope.ord FROM jsonb_array_elements_text(coalesce(src.")
+		b.WriteString(relationshipsourcestatus.FieldMissingScopes)
+		b.WriteString(", '[]'::jsonb)) WITH ORDINALITY AS scope(value, ord)) AS mapped WHERE label <> '' GROUP BY label) AS unique_labels)")
+		return
+	}
+	b.WriteString("(SELECT group_concat(label, ', ') FROM (SELECT label FROM (SELECT label, min(ord) AS ord FROM (SELECT ")
+	writeSourceScopeLabel(b, s, "trim(scope.value)")
+	b.WriteString(" AS label, cast(scope.key AS integer) AS ord FROM json_each(coalesce(src.")
+	b.WriteString(relationshipsourcestatus.FieldMissingScopes)
+	b.WriteString(", '[]')) AS scope) AS mapped WHERE label <> '' GROUP BY label) AS unique_labels ORDER BY ord))")
+}
+
+func writeSourceScopeLabel(b *sql.Builder, s *sql.Selector, value string) {
+	b.WriteString("CASE ")
+	b.WriteString(value)
+	for _, item := range sourceScopeLabels {
+		b.WriteString(" WHEN ")
+		b.Arg(item.scope)
+		b.WriteString(" THEN ")
+		b.Arg(item.label)
+	}
+	b.WriteString(" ELSE ")
+	writeSourceScopeFallbackLabel(b, s, value)
+	b.WriteString(" END")
+}
+
+func writeSourceScopeFallbackLabel(b *sql.Builder, s *sql.Selector, value string) {
+	bare := fmt.Sprintf("CASE WHEN instr(%s, '/') > 0 THEN replace(%s, rtrim(%s, replace(%s, '/', '')), '') ELSE %s END", value, value, value, value, value)
+	if s.Dialect() == dialect.Postgres {
+		bare = fmt.Sprintf("CASE WHEN position('/' in %s) > 0 THEN regexp_replace(%s, '^.*/', '') ELSE %s END", value, value, value)
+		b.WriteString(fmt.Sprintf("lower(trim(regexp_replace(regexp_replace(%s, '[._:-]+', ' ', 'g'), '\\s+', ' ', 'g')))", bare))
+		return
+	}
+	spaced := bare
+	for _, mark := range []string{".", "_", ":", "-"} {
+		spaced = fmt.Sprintf("replace(%s, '%s', ' ')", spaced, mark)
+	}
+	for i := 0; i < 4; i++ {
+		spaced = fmt.Sprintf("replace(%s, '  ', ' ')", spaced)
+	}
+	b.WriteString(fmt.Sprintf("lower(trim(%s))", spaced))
+}
+
+var sourceScopeLabels = []struct{ scope, label string }{
+	{"https://www.googleapis.com/auth/gmail.readonly", "mail"},
+	{"https://www.googleapis.com/auth/gmail.compose", "drafts"},
+	{"https://www.googleapis.com/auth/gmail.send", "sending"},
+	{"https://www.googleapis.com/auth/calendar.events.readonly", "calendar"},
+	{"https://www.googleapis.com/auth/calendar.events", "calendar changes"},
+	{"channels:history", "channel history"},
+	{"channels:read", "channels"},
+	{"users:read", "people"},
+	{"chat:write", "post a message"},
+	{"crm.objects.companies.read", "companies"},
+	{"crm.objects.contacts.read", "contacts"},
+	{"crm.objects.deals.read", "deals"},
+	{"crm.objects.notes.write", "notes"},
+	{"crm.objects.tasks.write", "tasks"},
 }
 
 // relationshipSheetSourceLookedMatch is the hover on a source badge.
