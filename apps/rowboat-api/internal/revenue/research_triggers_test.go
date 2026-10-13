@@ -92,6 +92,31 @@ func TestAccountTriggerWritesCitedMilestoneAndRaisesAttention(t *testing.T) {
 	if !strings.Contains(item.Explanation, "https://techpress.example/acme-series-b") {
 		t.Fatalf("explanation carried no clickable source: %q", item.Explanation)
 	}
+	const marker = " Source: "
+	sourceAt := strings.LastIndex(item.Explanation, marker)
+	if sourceAt < 0 {
+		t.Fatalf("explanation = %q", item.Explanation)
+	}
+	shown := strings.TrimSpace(item.Explanation[:sourceAt]) + " Reported at " + item.Explanation[sourceAt+len(marker):] + "."
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := rf.svc.ListRelationshipsFiltered(rf.ctx, rf.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery(shown, rel.DisplayName)
+	assertCompanyQuery("which queue says "+shown, rel.DisplayName)
+	assertCompanyQuery(item.Explanation)
 }
 
 // An uncited event is a rumour. It must not become a milestone and must not

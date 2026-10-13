@@ -1314,6 +1314,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if quiet := relationshipSheetQuietMatch(needle, searchedAt); quiet != nil {
 			parts = append(parts, quiet)
 		}
+		if reported := relationshipSheetReportedAtMatch(needle, searchedAt); reported != nil {
+			parts = append(parts, reported)
+		}
 		if risk := relationshipSheetRiskMatch(needle); risk != nil {
 			parts = append(parts, risk)
 		}
@@ -2404,6 +2407,180 @@ func departedPluralSQL(name string) string {
 	return `(names GLOB '*[^A-Za-z0-9_]and[^A-Za-z0-9_]*' OR names GLOB 'and[^A-Za-z0-9_]*' OR names GLOB '*[^A-Za-z0-9_]and' OR names = 'and')`
 }
 
+// relationshipSheetReportedAtMatch matches the outside-event sentence on the
+// attention queue. The queue says where the event was reported. The stored
+// "Source:" line stays out of search.
+func relationshipSheetReportedAtMatch(needle string, now time.Time) predicate.Relationship {
+	if !strings.Contains(needle, " reported at ") {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM (SELECT ")
+			writeNormalizedSQLText(b, s, reportedAtSentenceSQL(s))
+			b.WriteString(" AS shown FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" AS trigger_row WHERE trigger_row.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND trigger_row.")
+			b.WriteString(relationshipassertion.FieldDimension)
+			b.WriteString(" = 'milestone' AND trigger_row.")
+			b.WriteString(relationshipassertion.FieldSourceType)
+			b.WriteString(" = ")
+			b.Arg(researchSourceType)
+			b.WriteString(" AND trigger_row.")
+			b.WriteString(relationshipassertion.FieldStatus)
+			b.WriteString(" IN (")
+			b.Arg(relationshipAssertionStatusAccepted)
+			b.WriteString(", ")
+			b.Arg(relationshipAssertionStatusLegacyActive)
+			b.WriteString(") AND trigger_row.")
+			b.WriteString(relationshipassertion.FieldValidFrom)
+			b.WriteString(" <= ")
+			b.Arg(now.UTC())
+			b.WriteString(" AND (trigger_row.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" IS NULL OR trigger_row.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" > ")
+			b.Arg(now.UTC())
+			b.WriteString(") AND NOT EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" AS newer WHERE newer.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = trigger_row.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" AND newer.")
+			b.WriteString(relationshipassertion.FieldDimension)
+			b.WriteString(" = 'milestone' AND newer.")
+			b.WriteString(relationshipassertion.FieldSourceType)
+			b.WriteString(" = ")
+			b.Arg(researchSourceType)
+			b.WriteString(" AND newer.")
+			b.WriteString(relationshipassertion.FieldStatus)
+			b.WriteString(" IN (")
+			b.Arg(relationshipAssertionStatusAccepted)
+			b.WriteString(", ")
+			b.Arg(relationshipAssertionStatusLegacyActive)
+			b.WriteString(") AND newer.")
+			b.WriteString(relationshipassertion.FieldValidFrom)
+			b.WriteString(" <= ")
+			b.Arg(now.UTC())
+			b.WriteString(" AND (newer.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" IS NULL OR newer.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" > ")
+			b.Arg(now.UTC())
+			b.WriteString(") AND newer.")
+			b.WriteString(relationshipassertion.FieldValidFrom)
+			b.WriteString(" > trigger_row.")
+			b.WriteString(relationshipassertion.FieldValidFrom)
+			b.WriteString(")) AS sentence WHERE shown <> '' AND (shown = ")
+			b.Arg(needle)
+			b.WriteString(" OR ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("strpos(")
+				b.Arg(needle)
+				b.WriteString(", shown) > 0")
+			} else {
+				b.WriteString("instr(")
+				b.Arg(needle)
+				b.WriteString(", shown) > 0")
+			}
+			b.WriteString("))")
+		}))
+	})
+}
+
+func reportedAtSentenceSQL(s *sql.Selector) string {
+	url := reportedAtURLSQL(s.Dialect())
+	names := reportedAtContactNamesSQL(s)
+	event := reportedAtEventSQL(s.Dialect())
+	urlOK := "(cited GLOB 'https://*' OR cited GLOB 'http://*') AND cited NOT GLOB '* *'"
+	if s.Dialect() == dialect.Postgres {
+		urlOK = `cited ~ '^https?://\S+$'`
+	}
+	body := fmt.Sprintf(
+		"%s || CASE WHEN %s IS NOT NULL AND %s <> '' THEN ' Your last contact there was ' || %s || '.' ELSE '' END",
+		event, names, names, names,
+	)
+	return fmt.Sprintf(
+		"(SELECT body || ' Reported at ' || cited || '.' FROM (SELECT %s AS body, %s AS cited) AS parts WHERE body <> '' AND cited <> '' AND %s)",
+		body, url, urlOK,
+	)
+}
+
+func reportedAtEventSQL(name string) string {
+	value := "trim(trigger_row." + relationshipassertion.FieldValue + ")"
+	if name == dialect.Postgres {
+		value = "btrim(trigger_row." + relationshipassertion.FieldValue + ")"
+		return fmt.Sprintf(
+			"CASE WHEN %s = '' THEN '' WHEN right(%s, 1) = '.' THEN %s ELSE %s || '.' END",
+			value, value, value, value,
+		)
+	}
+	return fmt.Sprintf(
+		"CASE WHEN %s = '' THEN '' WHEN substr(%s, -1, 1) = '.' THEN %s ELSE %s || '.' END",
+		value, value, value, value,
+	)
+}
+
+func reportedAtURLSQL(name string) string {
+	column := "trigger_row." + relationshipassertion.FieldCitationsJSON
+	if name == dialect.Postgres {
+		return fmt.Sprintf(
+			"(SELECT btrim(cite->>'url') FROM jsonb_array_elements(CASE WHEN %s IS NULL OR btrim(%s) = '' THEN '[]'::jsonb ELSE %s::jsonb END) AS cite WHERE btrim(coalesce(cite->>'url', '')) <> '' LIMIT 1)",
+			column, column, column,
+		)
+	}
+	return fmt.Sprintf(
+		"(SELECT trim(json_extract(cite.value, '$.url')) FROM json_each(CASE WHEN json_valid(%s) THEN %s ELSE '[]' END) AS cite WHERE trim(coalesce(json_extract(cite.value, '$.url'), '')) <> '' LIMIT 1)",
+		column, column,
+	)
+}
+
+func reportedAtContactNamesSQL(s *sql.Selector) string {
+	part := relationshipparticipant.Table
+	people := person.Table
+	rel := "trigger_row." + relationshipassertion.RelationshipColumn
+	label := fmt.Sprintf(
+		"trim(who.%s) || CASE WHEN coalesce(who.%s, '') <> '' THEN ' (' || who.%s || ')' ELSE '' END",
+		person.FieldDisplayName, person.FieldTitle, person.FieldTitle,
+	)
+	where := fmt.Sprintf(
+		"member.%s = %s AND who.%s = 'active' AND coalesce(who.%s, '') <> 'departed' AND trim(coalesce(who.%s, '')) <> ''",
+		relationshipparticipant.RelationshipColumn,
+		rel,
+		person.FieldStatus,
+		person.FieldEmploymentStatus,
+		person.FieldDisplayName,
+	)
+	if s.Dialect() == dialect.Postgres {
+		label = fmt.Sprintf(
+			"btrim(who.%s) || CASE WHEN coalesce(who.%s, '') <> '' THEN ' (' || who.%s || ')' ELSE '' END",
+			person.FieldDisplayName, person.FieldTitle, person.FieldTitle,
+		)
+		where = fmt.Sprintf(
+			"member.%s = %s AND who.%s = 'active' AND coalesce(who.%s, '') <> 'departed' AND btrim(coalesce(who.%s, '')) <> ''",
+			relationshipparticipant.RelationshipColumn,
+			rel,
+			person.FieldStatus,
+			person.FieldEmploymentStatus,
+			person.FieldDisplayName,
+		)
+		return fmt.Sprintf(
+			`(SELECT string_agg(name, ' and ' ORDER BY name COLLATE "C") FROM (SELECT name FROM (SELECT %s AS name FROM %s AS member JOIN %s AS who ON who.%s = member.%s WHERE %s GROUP BY 1) AS unique_names ORDER BY name COLLATE "C" LIMIT 2) AS capped)`,
+			label, part, people, person.FieldID, relationshipparticipant.PersonColumn, where,
+		)
+	}
+	return fmt.Sprintf(
+		`(SELECT group_concat(name, ' and ') FROM (SELECT name FROM (SELECT name FROM (SELECT %s AS name FROM %s AS member JOIN %s AS who ON who.%s = member.%s WHERE %s) AS labeled GROUP BY name) AS unique_names ORDER BY name LIMIT 2))`,
+		label, part, people, person.FieldID, relationshipparticipant.PersonColumn, where,
+	)
+}
 
 func departedContactNamesSQL(s *sql.Selector) string {
 	relID := s.C(relationship.FieldID)
