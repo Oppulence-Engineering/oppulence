@@ -1124,6 +1124,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if dismissed := relationshipSheetDismissReasonMatch(needle); dismissed != nil {
 			parts = append(parts, dismissed)
 		}
+		if check := relationshipSheetReconciliationCheckMatch(needle); check != nil {
+			parts = append(parts, check)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -5923,6 +5926,140 @@ func dismissReasonShown(needle string) predicate.RevenueAction {
 			writeNormalizedSQLText(b, s, column)
 			b.WriteString(" END) = ")
 			b.Arg(needle)
+		}))
+	})
+}
+
+// relationshipSheetReconciliationCheckMatch is the extra line on an
+// unconfirmed send. It names the check, and how many times that check ran.
+// A settled send stays off both sentences. A hidden provider marker stays hidden.
+func relationshipSheetReconciliationCheckMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	if count, ok := reconciliationCheckedCount(needle); ok {
+		return relationship.HasActionsWith(
+			uncertainSendAction(),
+			revenueaction.ReconciliationAttemptsEQ(count),
+		)
+	}
+	var earlier []predicate.RevenueAction
+	for _, rule := range reconciliationCheckRules {
+		if needle != normalizePersonSearch(rule.phrase) {
+			earlier = append(earlier, rule.match)
+			continue
+		}
+		preds := []predicate.RevenueAction{uncertainSendAction(), rule.match}
+		for _, prior := range earlier {
+			preds = append(preds, revenueaction.Not(prior))
+		}
+		return relationship.HasActionsWith(revenueaction.And(preds...))
+	}
+	preds := []predicate.RevenueAction{
+		uncertainSendAction(),
+		reconciliationErrorNormalizedEQ(needle),
+		revenueaction.Not(revenueaction.ReconciliationErrorEQ("provider marker was not found after bounded reconciliation attempts")),
+		revenueaction.Not(revenueaction.ReconciliationErrorEQ("The provider could not confirm this send.")),
+	}
+	for _, prior := range earlier {
+		preds = append(preds, revenueaction.Not(prior))
+	}
+	return relationship.HasActionsWith(revenueaction.And(preds...))
+}
+
+func reconciliationCheckedCount(needle string) (int, bool) {
+	if !strings.HasPrefix(needle, "checked ") {
+		return 0, false
+	}
+	parts := strings.Fields(strings.TrimPrefix(needle, "checked "))
+	if len(parts) != 2 {
+		return 0, false
+	}
+	count, err := strconv.Atoi(parts[0])
+	if err != nil || count < 1 {
+		return 0, false
+	}
+	if count == 1 && parts[1] == "time" {
+		return 1, true
+	}
+	if count > 1 && parts[1] == "times" {
+		return count, true
+	}
+	return 0, false
+}
+
+func uncertainSendAction() predicate.RevenueAction {
+	return revenueaction.Or(
+		revenueaction.ExecutionStatusEQ(ExecAmbiguous),
+		revenueaction.ReconciliationStatusEQ("manual_review"),
+	)
+}
+
+type reconciliationCheckRule struct {
+	phrase string
+	match  predicate.RevenueAction
+}
+
+var reconciliationCheckRules = []reconciliationCheckRule{
+	{"This send has no receipt to check.", executionErrorEither(
+		revenueaction.ReconciliationErrorEQ("execution idempotency key is missing"),
+		revenueaction.ReconciliationErrorEQ("This send has no receipt to check."),
+		revenueaction.ReconciliationErrorContainsFold("reconciliation idempotency key is required"),
+	)},
+	{"Someone else is set to send this, so this workspace cannot confirm it.", revenueaction.ReconciliationErrorEQ("action is assigned to another provider credential")},
+	{"This channel cannot confirm whether the send went out.", executionErrorEither(
+		revenueaction.ReconciliationErrorEQ("execution backend does not support provider reconciliation"),
+		revenueaction.ReconciliationErrorContainsFold("cannot reconcile provider state"),
+	)},
+	{"The provider matched this send but did not return a receipt.", revenueaction.ReconciliationErrorEQ("provider reconciliation reported a match without a receipt")},
+	{"Connect Google for the person who will send this, then try again.", revenueaction.ReconciliationErrorContainsFold("google is not connected")},
+	{"Google stopped accepting the authorization. Reconnect, then try again.", revenueaction.ReconciliationErrorContainsFold("refresh token is invalid")},
+	{"Google is missing permission to check this send. Reconnect, then try again.", executionErrorEither(
+		reconciliationErrorPattern("missing the", "scope"),
+		revenueaction.ReconciliationErrorContainsFold("reconnect Google"),
+	)},
+	{"Google could not authorize this check. Reconnect, then try again.", revenueaction.ReconciliationErrorContainsFold("could not obtain a google access token")},
+	{"Calendar sending is not set up yet.", revenueaction.ReconciliationErrorContainsFold("Google Calendar executor is not configured")},
+	{"Choose the Slack channel before sending.", revenueaction.ReconciliationErrorContainsFold("Slack action needs target")},
+	{"Link the HubSpot record before sending.", revenueaction.ReconciliationErrorContainsFold("HubSpot action needs a relationship resource ref")},
+	{"Slack could not be reached for this check.", revenueaction.ReconciliationErrorContainsFold("resolve Slack workspace")},
+	{"The check could not confirm this send.", reconciliationErrorPrefixFold("revenue:")},
+}
+
+func reconciliationErrorNormalizedEQ(needle string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeNormalizedSQLText(b, s, "trim("+s.C(revenueaction.FieldReconciliationError)+")")
+			b.WriteString(" = ")
+			b.Arg(needle)
+		}))
+	})
+}
+
+func reconciliationErrorPrefixFold(prefix string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("lower(trim(")
+			b.WriteString(s.C(revenueaction.FieldReconciliationError))
+			b.WriteString(")) LIKE ")
+			b.Arg(strings.ToLower(prefix) + "%")
+		}))
+	})
+}
+
+func reconciliationErrorPattern(parts ...string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := "lower(" + s.C(revenueaction.FieldReconciliationError) + ")"
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(column)
+				b.WriteString(" ~ ")
+				b.Arg(strings.Join(parts, ".+"))
+				return
+			}
+			b.WriteString(column)
+			b.WriteString(" GLOB ")
+			b.Arg("*" + strings.Join(parts, "*") + "*")
 		}))
 	})
 }

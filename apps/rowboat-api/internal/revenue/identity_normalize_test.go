@@ -7015,6 +7015,80 @@ func TestRelationshipSearchFindsTheDismissReason(t *testing.T) {
 	assertCompanyQuery("follow_up", "Quill Token")
 }
 
+func TestRelationshipSearchFindsTheReconciliationCheck(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, execution, failure string, attempts int) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		create := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("warm_follow_up").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetExecutionStatus(execution).
+			SetReconciliationAttempts(attempts)
+		if failure != "" {
+			create.SetReconciliationError(failure)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Receipt", ExecAmbiguous, "execution idempotency key is missing", 1)
+	save("Birch Other", ExecAmbiguous, "action is assigned to another provider credential", 3)
+	save("Cedar Channel", ExecAmbiguous, "execution backend does not support provider reconciliation", 0)
+	save("Maple Match", ExecAmbiguous, "provider reconciliation reported a match without a receipt", 0)
+	save("Quill Slack", ExecAmbiguous, "could not resolve Slack workspace", 0)
+	save("Avery Check", ExecAmbiguous, "revenue: something odd", 0)
+	save("Lane Hidden", ExecAmbiguous, "The provider could not confirm this send.", 0)
+	save("West Settled", ExecPending, "execution idempotency key is missing", 2)
+	save("North Note", ExecAmbiguous, "The harbor mailbox bounced.", 0)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("This send has no receipt to check.", "Harbor Receipt")
+	assertCompanyQuery("Someone else is set to send this, so this workspace cannot confirm it.", "Birch Other")
+	assertCompanyQuery("This channel cannot confirm whether the send went out.", "Cedar Channel")
+	assertCompanyQuery("The provider matched this send but did not return a receipt.", "Maple Match")
+	assertCompanyQuery("Slack could not be reached for this check.", "Quill Slack")
+	assertCompanyQuery("The check could not confirm this send.", "Avery Check")
+	assertCompanyQuery("The harbor mailbox bounced.", "North Note")
+	assertCompanyQuery("Checked 1 time.", "Harbor Receipt")
+	assertCompanyQuery("Checked 3 times.", "Birch Other")
+	assertCompanyQuery("Checked 2 times.")
+	assertCompanyQuery("Checked 1 times.")
+	assertCompanyQuery("The provider could not confirm this send.")
+	assertCompanyQuery("provider marker was not found after bounded reconciliation attempts")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
