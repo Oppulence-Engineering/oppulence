@@ -7744,6 +7744,116 @@ func TestRelationshipSearchFindsTheSourceMissing(t *testing.T) {
 	assertCompanyQuery("Missing: Post a message")
 }
 
+func TestRelationshipSearchFindsTheSuggestedReview(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, kind string) (*ent.Relationship, *ent.RelationshipObservation) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := json.Marshal(map[string]any{
+			"conversation_claim_candidates": []map[string]any{{
+				"candidateId": "cand-" + name, "kind": kind,
+				"displayValue": "Noted", "confidence": 0.4,
+				"evidence": []map[string]any{{"exactQuote": "Noted"}},
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("A recorded note").SetNormalizedFactsJSON(string(body)).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rel, row
+	}
+	decide := func(rel *ent.Relationship, obs *ent.RelationshipObservation, name, kind string) {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"review_decision": map[string]any{
+				"item_id": "review:" + name, "kind": kind,
+				"candidate_id": "cand-" + rel.DisplayName, "observation_id": obs.ID.String(),
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("user").SetExternalID(name).SetEventType("conversation_review_decided").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("A recorded decision").SetNormalizedFactsJSON(string(body)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	save("Harbor Promise", "promise")
+	save("Harbor Commit", "commitment")
+	save("Birch Risk", "risk")
+	save("Cedar Step", "next_action")
+	save("Lumen Object", "objection")
+	save("Mesa Person", "stakeholder")
+	save("Aspen Detail", "fact")
+	save("Title Promise", "Promise")
+	save("Harbor Plan", "Harbor plan")
+	save("Quiet Token", "local-user")
+	save("Quiet Party", "meeting-counterparty")
+	save("Quiet Empty", "")
+	save("Quiet Other", "widget")
+	closedRel, closedObs := save("Closed Promise", "promise")
+	decide(closedRel, closedObs, "closed-promise", "approve")
+	deferredRel, deferredObs := save("Deferred Promise", "promise")
+	decide(deferredRel, deferredObs, "deferred-promise", "defer")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("A suggested promise is waiting.", "Harbor Promise", "Harbor Commit", "Title Promise", "Deferred Promise")
+	assertCompanyQuery("A suggested promise is waiting", "Harbor Promise", "Harbor Commit", "Title Promise", "Deferred Promise")
+	assertCompanyQuery("which companies have a suggested promise is waiting", "Harbor Promise", "Harbor Commit", "Title Promise", "Deferred Promise")
+	assertCompanyQuery("A suggested risk is waiting.", "Birch Risk")
+	assertCompanyQuery("A suggested objection is waiting.", "Lumen Object")
+	assertCompanyQuery("A suggested person is waiting.", "Mesa Person")
+	assertCompanyQuery("A suggested next step is waiting.", "Cedar Step")
+	assertCompanyQuery("A suggested detail is waiting.", "Aspen Detail")
+	assertCompanyQuery("A suggested Harbor plan is waiting.", "Harbor Plan")
+	assertCompanyQuery("A suggestion is waiting.", "Quiet Token", "Quiet Party", "Quiet Empty", "Quiet Other")
+	assertCompanyQuery("Review proposed promise")
+	assertCompanyQuery("A suggested waiting is promise")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

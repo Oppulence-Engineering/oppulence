@@ -1384,6 +1384,11 @@ func (s *Service) ListRelationshipsFiltered(
 		if suggestion := relationshipSheetSuggestionMatch(needle); suggestion != nil {
 			parts = append(parts, suggestion)
 		}
+		// A proposed review card says "A suggested promise is waiting." The
+		// stored label is still "Review proposed promise".
+		if suggested := relationshipSheetSuggestedReviewMatch(needle); suggested != nil {
+			parts = append(parts, suggested)
+		}
 		if uncertain := relationshipSheetUncertainClaimMatch(needle); uncertain != nil {
 			parts = append(parts, uncertain)
 		}
@@ -10664,6 +10669,186 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipSheetSuggestedReviewMatch matches the title on a proposed
+// review card. The stored label is "Review proposed promise". The card says
+// "A suggested promise is waiting." An approved, corrected, or rejected
+// suggestion leaves the card. A deferred one stays.
+func relationshipSheetSuggestedReviewMatch(needle string) predicate.Relationship {
+	if !suggestedReviewNeedle(needle) {
+		return nil
+	}
+	return relationshipHasOpenCandidate(func(b *sql.Builder, s *sql.Selector) {
+		b.WriteString("(")
+		writeNeedleContainsSentence(b, s, needle, writeSuggestedReviewSentence)
+		b.WriteString(" AND ")
+		writeSuggestedReviewSentence(b, s)
+		b.WriteString(" <> '')")
+	})
+}
+
+func suggestedReviewNeedle(needle string) bool {
+	if strings.Contains(needle, "a suggestion is waiting") {
+		return true
+	}
+	return strings.Contains(needle, "a suggested ") && strings.Contains(needle, " is waiting")
+}
+
+func writeNeedleContainsSentence(b *sql.Builder, s *sql.Selector, needle string, writeSentence func(*sql.Builder, *sql.Selector)) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("strpos(")
+	} else {
+		b.WriteString("instr(")
+	}
+	b.Arg(needle)
+	b.WriteString(", ")
+	writeSentence(b, s)
+	b.WriteString(") > 0")
+}
+
+func writeSuggestedReviewSentence(b *sql.Builder, s *sql.Selector) {
+	kind := "trim(coalesce(json_extract(candidate.value, '$.kind'), ''))"
+	token := kind + " <> '' AND " + kind + " NOT GLOB '*[^a-z0-9_:-]*'"
+	if s.Dialect() == dialect.Postgres {
+		kind = "btrim(coalesce(candidate->>'kind', ''))"
+		token = kind + " ~ '^[a-z0-9_:-]+$'"
+	}
+	named := []string{"promise", "commitment", "risk", "objection", "stakeholder", "next_action", "fact"}
+	b.WriteString("CASE WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" IN (")
+	b.Arg("")
+	b.WriteString(", ")
+	b.Arg("local-user")
+	b.WriteString(", ")
+	b.Arg("meeting-counterparty")
+	b.WriteString(") OR (")
+	b.WriteString(token)
+	b.WriteString(" AND ")
+	b.WriteString(kind)
+	b.WriteString(" NOT IN (")
+	for i, value := range named {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(value)
+	}
+	b.WriteString(")) THEN ")
+	b.Arg("a suggestion is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" IN (")
+	b.Arg("promise")
+	b.WriteString(", ")
+	b.Arg("commitment")
+	b.WriteString(") THEN ")
+	b.Arg("a suggested promise is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" = ")
+	b.Arg("risk")
+	b.WriteString(" THEN ")
+	b.Arg("a suggested risk is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" = ")
+	b.Arg("objection")
+	b.WriteString(" THEN ")
+	b.Arg("a suggested objection is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" = ")
+	b.Arg("stakeholder")
+	b.WriteString(" THEN ")
+	b.Arg("a suggested person is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" = ")
+	b.Arg("next_action")
+	b.WriteString(" THEN ")
+	b.Arg("a suggested next step is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" = ")
+	b.Arg("fact")
+	b.WriteString(" THEN ")
+	b.Arg("a suggested detail is waiting")
+	b.WriteString(" ELSE ")
+	writeNormalizedSQLText(b, s, "('A suggested ' || "+kind+" || ' is waiting.')")
+	b.WriteString(" END")
+}
+
+func relationshipHasOpenCandidate(match func(*sql.Builder, *sql.Selector)) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := "obs." + relationshipobservation.FieldNormalizedFactsJSON
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipobservation.Table)
+			b.WriteString(" AS obs WHERE obs.")
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'conversation_claim_candidates') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'conversation_claim_candidates') AS candidate WHERE ")
+			} else {
+				b.WriteString("json_valid(")
+				b.WriteString(facts)
+				b.WriteString(") AND json_type(")
+				b.WriteString(facts)
+				b.WriteString(", '$.conversation_claim_candidates') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
+				b.WriteString(facts)
+				b.WriteString(", '$.conversation_claim_candidates') AS candidate WHERE ")
+			}
+			match(b, s)
+			b.WriteString(" AND NOT ")
+			writeOpenCandidateDecisionClosed(b, s)
+			b.WriteString("))")
+		}))
+	})
+}
+
+func writeOpenCandidateDecisionClosed(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("EXISTS (SELECT 1 FROM (SELECT ")
+	writeObservationFactText(b, s, "dec", "review_decision", "kind")
+	b.WriteString(" AS kind FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS dec WHERE dec.")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(" AND ")
+	writeObservationFactText(b, s, "dec", "review_decision", "observation_id")
+	b.WriteString(" = ")
+	b.WriteString("obs.")
+	b.WriteString(relationshipobservation.FieldID)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("::text")
+	}
+	b.WriteString(" AND ")
+	writeObservationFactText(b, s, "dec", "review_decision", "candidate_id")
+	b.WriteString(" = ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("candidate->>'candidateId'")
+	} else {
+		b.WriteString("json_extract(candidate.value, '$.candidateId')")
+	}
+	b.WriteString(" ORDER BY dec.")
+	b.WriteString(relationshipobservation.FieldOccurredAt)
+	b.WriteString(" DESC, dec.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(" DESC LIMIT 1) AS latest WHERE latest.kind IN (")
+	b.Arg("approve")
+	b.WriteString(", ")
+	b.Arg("correct")
+	b.WriteString(", ")
+	b.Arg("reject")
+	b.WriteString("))")
 }
 
 // relationshipSheetOlderReviewMatch matches "Older conversations may still
