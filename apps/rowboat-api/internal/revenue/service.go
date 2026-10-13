@@ -1133,6 +1133,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if badge := relationshipSheetSourceBadgeMatch(needle); badge != nil {
 			parts = append(parts, badge)
 		}
+		if sourceError := relationshipSheetSourceErrorMatch(needle); sourceError != nil {
+			parts = append(parts, sourceError)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -6319,6 +6322,105 @@ func relationshipDependsOnSource(cond func(b *sql.Builder, s *sql.Selector)) pre
 			b.WriteString(")")
 		}))
 	})
+}
+
+// relationshipSheetSourceErrorMatch is the error under a source badge.
+// The card rewrites a stored worker sentence. A company matches when it
+// depends on the source that stored that error.
+func relationshipSheetSourceErrorMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	for _, rule := range sourceErrorRules {
+		if needle != normalizePersonSearch(rule.phrase) {
+			continue
+		}
+		raw := rule.raw
+		return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+			b.WriteString("(trim(src.")
+			b.WriteString(relationshipsourcestatus.FieldLastError)
+			b.WriteString(") = ")
+			b.Arg(raw)
+			b.WriteString(" OR ")
+			writeNormalizedSQLText(b, s, "trim(src."+relationshipsourcestatus.FieldLastError+")")
+			b.WriteString(" = ")
+			b.Arg(needle)
+			b.WriteString(")")
+		})
+	}
+	if needle == normalizePersonSearch("Reading stopped. Reconnect or try again.") {
+		return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+			b.WriteString("(")
+			writeSourceErrorToken(b, s)
+			b.WriteString(" OR ")
+			writeNormalizedSQLText(b, s, "trim(src."+relationshipsourcestatus.FieldLastError+")")
+			b.WriteString(" = ")
+			b.Arg(needle)
+			b.WriteString(") AND ")
+			writeSourceErrorNotMapped(b)
+		})
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeNormalizedSQLText(b, s, "trim(src."+relationshipsourcestatus.FieldLastError+")")
+		b.WriteString(" = ")
+		b.Arg(needle)
+		b.WriteString(" AND NOT (")
+		writeSourceErrorToken(b, s)
+		b.WriteString(") AND ")
+		writeSourceErrorNotMapped(b)
+	})
+}
+
+type sourceErrorRule struct {
+	phrase string
+	raw    string
+}
+
+var sourceErrorRules = []sourceErrorRule{
+	{"A needed permission is missing. Reconnect to grant it.", "Required provider permission is missing."},
+	{"The connection expired. Reconnect to keep reading.", "Provider authorization expired; reconnect is required."},
+	{"Access was turned off. Reconnect to keep reading.", "Provider access was revoked; reconnect is required."},
+	{"The source is busy. Reading will continue shortly.", "Provider rate limit delayed synchronization."},
+	{"The source is temporarily unavailable.", "Provider is temporarily unavailable."},
+	{"This source is not set up to read yet.", "This provider is not configured on the synchronization worker."},
+	{"Reading lost its place. Start the sync again.", "The provider cursor was lost; a rebuild is required."},
+	{"The connection was canceled.", "Provider authorization was canceled."},
+	{"The connection failed. Reconnect to try again.", "Provider authorization failed; reconnect is required."},
+	{"Public research stopped because this workspace used its research budget.", "Account monitoring stopped early because this workspace reached its research budget for the period."},
+	{"Public research is part of the Intelligence plan. This workspace does not include it.", "Account monitoring is not running because the subscription does not currently include cloud research."},
+	{"Public research stays off until you allow it.", "Account monitoring is not running because cloud research consent has been withdrawn."},
+	{"Public research is paused for this workspace.", "Account monitoring is paused for this workspace."},
+	{"Public research is not available in this workspace.", "Account monitoring is not running because no research provider is configured."},
+	{"Public research did not finish its last check.", "Account monitoring did not finish its last run."},
+}
+
+func writeSourceErrorNotMapped(b *sql.Builder) {
+	b.WriteString("trim(src.")
+	b.WriteString(relationshipsourcestatus.FieldLastError)
+	b.WriteString(") NOT IN (")
+	for i, rule := range sourceErrorRules {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(rule.raw)
+	}
+	b.WriteString(")")
+}
+
+func writeSourceErrorToken(b *sql.Builder, s *sql.Selector) {
+	column := "trim(src." + relationshipsourcestatus.FieldLastError + ")"
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString(" ~ ")
+		b.Arg("^[a-z0-9_:-]+$")
+		return
+	}
+	b.WriteString(column)
+	b.WriteString(" GLOB '[a-z0-9_:-]*' AND ")
+	b.WriteString(column)
+	b.WriteString(" NOT GLOB '*[^a-z0-9_:-]*' AND ")
+	b.WriteString(column)
+	b.WriteString(" <> ''")
 }
 
 // relationshipSheetUncertainSendMatch is the review for a send that might
