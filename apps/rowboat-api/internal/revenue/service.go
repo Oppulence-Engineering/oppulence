@@ -2447,6 +2447,11 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	if seniority := relationshipSheetPersonSeniorityMatch(needle); seniority != nil {
 		preds = append(preds, seniority)
 	}
+	// A public-research fact is badged with the dimension's name. "alias"
+	// reads "Also known as". A retracted fact leaves the card.
+	if badge := relationshipSheetResearchBadgeMatch(needle); badge != nil {
+		preds = append(preds, badge)
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -2517,6 +2522,51 @@ func writeLabelPhraseMatch(b *sql.Builder, s *sql.Selector, needle string, write
 	b.WriteString(") >= 8 AND ")
 	writeNeedleContainsSentence(b, s, needle, writePhrase)
 	b.WriteString("))")
+}
+
+// researchBadgeLabels are the words on a public-research fact. The sheet
+// renames a few tokens. "alias" is "Also known as", not "Alias". "Name" and
+// "Company" already mean the company itself, so those two badges stay out.
+// "Location" sits inside the meeting sentence "Location: …".
+var researchBadgeLabels = map[string]string{
+	"alias":             "Also known as",
+	"org_domain":        "Company domain",
+	"timezone":          "Time zone",
+	"title":             "Title",
+	"phone":             "Phone",
+	"locale":            "Locale",
+	"seniority":         "Seniority",
+	"linkedin_url":      "LinkedIn",
+	"department":        "Department",
+	"employment_status": "Employment",
+	"handle":            "Handle",
+	"bio":               "Bio",
+	"responsibilities":  "Responsibilities",
+	"work_history":      "Work history",
+	"education":         "Education",
+	"expertise":         "Expertise",
+	"recent_activity":   "Recent activity",
+}
+
+func relationshipSheetResearchBadgeMatch(needle string) predicate.Relationship {
+	dims := make([]string, 0, len(researchBadgeLabels))
+	for dim, label := range researchBadgeLabels {
+		if labelPhraseMatches(label, needle) {
+			dims = append(dims, dim)
+		}
+	}
+	if len(dims) == 0 {
+		return nil
+	}
+	return relationship.HasParticipantsWith(
+		relationshipparticipant.HasPersonWith(
+			person.HasAttributesWith(
+				personattribute.DimensionIn(dims...),
+				personattribute.SourceTypeEQ("external_research"),
+				personattribute.StatusNEQ("retracted"),
+			),
+		),
+	)
 }
 
 // publicResearchDetailCount reads "Public research · 1 detail" and
