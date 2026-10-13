@@ -15116,29 +15116,38 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 		preds = append(preds, relationshipShowsCurrentHeading(now))
 	}
 	if sheetPhraseMatches("needs a review before you act", needle) ||
-		sheetPhraseMatches("identity review is required before acting on this relationship.", needle) {
+		labelPhraseMatches("confirm who this company is before you act.", needle) {
 		preds = append(preds, relationshipShowsAmbiguousHeading(now))
 	}
 	if sheetPhraseMatches("details need a refresh", needle) ||
-		sheetPhraseMatches("a required source is stale or disconnected.", needle) ||
 		sheetPhraseMatches("a source needs reconnecting.", needle) {
 		preds = append(preds, relationshipShowsStaleHeading(now))
 	}
 	if sheetPhraseMatches("updating from connected sources", needle) {
 		preds = append(preds, relationshipShowsRebuildingHeading(now))
 	}
-	if sheetPhraseMatches("a required source is rebuilding; partial state is visible.", needle) ||
-		sheetPhraseMatches("a source is still updating, so only some details are shown.", needle) {
+	if sheetPhraseMatches("a source is still updating, so only some details are shown.", needle) {
 		preds = append(preds, relationshipShowsSourceRebuilding(now))
 	}
-	if sheetPhraseMatches("accepted evidence is waiting for the durable relationship projector.", needle) {
+	if labelPhraseMatches("accepted details are still being saved.", needle) {
 		preds = append(preds, relationship.And(
 			relationshipHasDueProjection(now),
 			relationship.Not(relationshipHasDeadProjection(now)),
 		))
 	}
-	if sheetPhraseMatches("relationship projection requires operator repair before this state is safe to act on.", needle) {
+	if labelPhraseMatches("this company needs a repair before you act on it.", needle) {
 		preds = append(preds, relationshipHasDeadProjection(now))
+	}
+	// The paragraph under "Details are current". "Up to date" is the graph
+	// evidence word, so a shorter question stays on that search.
+	if labelPhraseMatches("the details you can open are up to date.", needle) {
+		preds = append(preds, relationshipShowsCurrentHeading(now))
+	}
+	if labelPhraseMatches("older history is still loading, so only some details are shown.", needle) {
+		preds = append(preds, relationshipShowsBackfillExplanation(now))
+	}
+	if labelPhraseMatches("a source is missing permission for something we need.", needle) {
+		preds = append(preds, relationshipShowsMissingScopeExplanation(now))
 	}
 	// An open duplicate shows Keep separate, Move the evidence, and Decide
 	// later. A resolved duplicate keeps the heading and drops those buttons.
@@ -15653,6 +15662,7 @@ func relationshipShowsPartialHeading(now time.Time) predicate.Relationship {
 }
 
 // relationshipShowsCurrentHeading is the heading "Details are current".
+// The paragraph under it is "The details you can open are up to date."
 func relationshipShowsCurrentHeading(now time.Time) predicate.Relationship {
 	return relationship.And(
 		relationship.Not(relationshipHasUnresolvedIdentity()),
@@ -16014,8 +16024,117 @@ func relationshipProjectionIn(now time.Time, statuses ...string) predicate.Relat
 	})
 }
 
+// relationshipShowsBackfillExplanation is "Older history is still loading, so
+// only some details are shown." A partial connector, or a connector with no
+// status row, is that sentence once every detail already has a source. A
+// missing permission, a reconnect, and a rebuild each replace it.
+func relationshipShowsBackfillExplanation(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationshipHasUnresolvedIdentity()),
+		relationship.Not(relationshipHasBlockingProjection(now)),
+		relationship.Not(relationshipHasEarlySourceStop()),
+		relationshipSupportedDetailCount(len(relationshipProjectionDimensions), now),
+		relationshipHasSourceDependency(),
+		relationship.Not(relationshipDependenciesAreCurrent()),
+		relationship.Not(relationshipHasDependentMissingScopes()),
+	)
+}
+
+// relationshipShowsMissingScopeExplanation is "A source is missing permission
+// for something we need." It wins over a partial backfill on the same
+// connector. A later partial connector with no missing permission, or a
+// connector that has no status row, uses the backfill sentence instead.
+func relationshipShowsMissingScopeExplanation(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationshipHasUnresolvedIdentity()),
+		relationship.Not(relationshipHasBlockingProjection(now)),
+		relationship.Not(relationshipHasEarlySourceStop()),
+		relationshipSupportedDetailCount(len(relationshipProjectionDimensions), now),
+		relationshipHasDependentMissingScopes(),
+		relationship.Not(relationshipHasPartialWithoutMissingScopes()),
+		relationship.Not(relationshipLacksDependentStatus()),
+	)
+}
+
+func relationshipHasDependentMissingScopes() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" AS src WHERE src.")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND NOT ")
+			writeAliasMissingScopesEmpty(b, s, "src")
+			b.WriteString(" AND ")
+			writeDependentSource(b, s, "src")
+			b.WriteString(")")
+		}))
+	})
+}
+
+func relationshipHasPartialWithoutMissingScopes() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" AS src WHERE src.")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND src.")
+			b.WriteString(relationshipsourcestatus.FieldCompleteness)
+			b.WriteString(" = 'partial' AND ")
+			writeAliasMissingScopesEmpty(b, s, "src")
+			b.WriteString(" AND ")
+			writeDependentSource(b, s, "src")
+			b.WriteString(")")
+		}))
+	})
+}
+
+// relationshipLacksDependentStatus is a connector the company names that has
+// no status row. The sheet treats that gap as a partial backfill.
+func relationshipLacksDependentStatus() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.Or(
+			relationshipFamilyWithoutStatus(s, []string{"gmail", "calendar", "google"}, []string{"email", "gmail", "calendar"}, []string{"gmail", "calendar", "google"}),
+			relationshipFamilyWithoutStatus(s, []string{"slack"}, []string{"slack"}, []string{"slack"}),
+			relationshipFamilyWithoutStatus(s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"}, []string{"hubspot", "crm"}),
+		))
+	})
+}
+
+func relationshipFamilyWithoutStatus(s *sql.Selector, sources, channels, statusSources []string) *sql.Predicate {
+	return sql.And(
+		sql.P(func(b *sql.Builder) {
+			writeRelationshipDependsOn(b, s, sources, channels)
+		}),
+		sql.Not(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND lower(")
+			b.WriteString(relationshipsourcestatus.FieldSource)
+			b.WriteString(") IN (")
+			for i, source := range statusSources {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				b.Arg(source)
+			}
+			b.WriteString("))")
+		})),
+	)
+}
+
 // relationshipShowsStaleHeading is "Details need a refresh". The first connector
 // stop is stale or disconnected, and a projector wait has not replaced it.
+// The paragraph is "A source needs reconnecting."
 func relationshipShowsStaleHeading(now time.Time) predicate.Relationship {
 	return relationship.And(
 		relationship.Not(relationshipHasUnresolvedIdentity()),

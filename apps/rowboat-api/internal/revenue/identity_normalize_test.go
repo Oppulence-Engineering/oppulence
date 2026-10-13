@@ -8866,7 +8866,8 @@ func TestRelationshipSearchFindsTheCompletenessHeading(t *testing.T) {
 	assertCompanyQuery("No account details have a source yet", "Quill Atelier")
 	assertCompanyQuery("Some details are still missing")
 	assertCompanyQuery("Needs a review before you act", "Lumen Packet", "Harbor Ledger")
-	assertCompanyQuery("Identity review is required before acting on this relationship", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Confirm who this company is before you act", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Identity review is required before acting on this relationship")
 	assertCompanyQuery("1 identity review blocks acting", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("1 possible duplicate must be reviewed before you act", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("Keep separate", "Lumen Packet", "Harbor Ledger")
@@ -9056,14 +9057,113 @@ func TestRelationshipSearchFindsTheRefreshHeading(t *testing.T) {
 		}
 	}
 	assertCompanyQuery("Details need a refresh", "Quill Atelier", "Cedar Mill")
-	assertCompanyQuery("A required source is stale or disconnected", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("A source needs reconnecting", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("A required source is stale or disconnected")
 	assertCompanyQuery("Updating from connected sources", "Lumen Packet", "Harbor Ledger", "Northwind")
-	assertCompanyQuery("A required source is rebuilding; partial state is visible", "Lumen Packet")
-	assertCompanyQuery("Accepted evidence is waiting for the durable relationship projector", "Harbor Ledger")
-	assertCompanyQuery("Relationship projection requires operator repair before this state is safe to act on", "Northwind")
+	assertCompanyQuery("A source is still updating, so only some details are shown", "Lumen Packet")
+	assertCompanyQuery("A required source is rebuilding; partial state is visible")
+	assertCompanyQuery("Accepted details are still being saved", "Harbor Ledger")
+	assertCompanyQuery("Accepted evidence is waiting for the durable relationship projector")
+	assertCompanyQuery("This company needs a repair before you act on it", "Northwind")
+	assertCompanyQuery("Relationship projection requires operator repair before this state is safe to act on")
 	assertCompanyQuery("No account details have a source yet", "Mesa Clay")
 	assertCompanyQuery("Some details are still missing")
 	assertCompanyQuery("refresh")
+}
+
+func TestRelationshipSearchFindsTheCompletenessSentences(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name, ref string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, item := range []struct{ dimension, value string }{
+			{"lifecycle", "prospect"},
+			{"engagement", "steady"},
+			{"sentiment", "positive"},
+			{"health", "healthy"},
+			{"summary", "A buyer is in evaluation."},
+			{"next_action", "Send the note."},
+			{"risk", "Delivery ownership is unresolved."},
+			{"milestone", "Technical evaluation started."},
+		} {
+			if _, err := f.svc.CorrectRelationship(f.ctx, f.user, row.ID, RelationshipCorrectionInput{
+				Dimension: item.dimension, Value: item.value, Reason: "Filled in for the sheet.",
+			}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return row
+	}
+	current := makeCompany("Birch Ledger", "hubspot:company:birch")
+	backfill := makeCompany("Cedar Packet", "slack:channel:cedar")
+	scoped := makeCompany("Maple Quay", "google:company:maple")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveStatus := func(source, completeness string, scopes []string) {
+		t.Helper()
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource(source).SetSourceAccountID("default").
+			SetStatus("live").SetCompleteness(completeness).
+			SetMissingScopes(scopes).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveStatus("hubspot", "complete", []string{})
+	saveStatus("slack", "partial", []string{})
+	saveStatus("google", "complete", []string{"crm.objects.contacts.read"})
+
+	assertExplanation := func(id uuid.UUID, status, explanation string) {
+		t.Helper()
+		model, err := f.svc.MissionControl(f.ctx, f.user, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if model.Completeness.Status != status || model.Completeness.Explanation != explanation {
+			t.Fatalf("completeness = %+v, want %s / %s", model.Completeness, status, explanation)
+		}
+	}
+	assertExplanation(current.ID, "complete", "Required source evidence is current.")
+	assertExplanation(backfill.ID, "partial", "Backfill is incomplete; only partial state is shown.")
+	assertExplanation(scoped.ID, "partial", "A required source scope is missing.")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("The details you can open are up to date.", "Birch Ledger")
+	assertCompanyQuery("which sheet says The details you can open are up to date.", "Birch Ledger")
+	assertCompanyQuery("Up to date")
+	assertCompanyQuery("Older history is still loading, so only some details are shown.", "Cedar Packet")
+	assertCompanyQuery("A source is missing permission for something we need.", "Maple Quay")
+	assertCompanyQuery("Required source evidence is current.")
+	assertCompanyQuery("Backfill is incomplete; only partial state is shown.")
+	assertCompanyQuery("A required source scope is missing.")
 }
 
 func TestRelationshipSearchFindsTheMissingNextStep(t *testing.T) {
