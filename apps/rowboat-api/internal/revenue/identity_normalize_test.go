@@ -6159,6 +6159,94 @@ func TestRelationshipSearchFindsTheActivitySnapshot(t *testing.T) {
 	assertCompanyQuery("company-1")
 }
 
+func TestRelationshipSearchFindsTheActivityClaim(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Harbor Claim", "A saved note", `{
+		"conversation_claims":[
+			{"id":"claim:risk","kind":"risk","value":"Security review may slip","exactQuote":"Security review may slip","speakerId":"speaker_2","speakerLabel":"Avery"},
+			{"id":"claim:again","kind":"risk","value":"Security review may slip","speakerLabel":"Avery"}
+		]
+	}`)
+	saveNote("Birch Claim", "A saved note", `{
+		"conversation_claims":[
+			{"id":"claim:objection","kind":"objection","value":"The price is too high","speakerLabel":"Speaker 1"},
+			{"id":"claim:decision","kind":"decision","value":"We decided to renew."},
+			{"id":"claim:promise","kind":"commitment","value":"I will send the proposal.","speakerLabel":"You"},
+			{"id":"claim:person","kind":"stakeholder","value":"Avery Chen is the champion"},
+			{"id":"claim:mile","kind":"milestone","value":"The pilot starts in June"}
+		]
+	}`)
+	saveNote("Cedar Claim", "A saved note", `{"conversation_claims":[{"id":"claim:life","kind":"lifecycle","value":"former_customer","exactQuote":"They are a former customer now."}]}`)
+	saveNote("Maple Claim", "A saved note", `{"conversation_claims":[{"id":"claim:feel","kind":"sentiment","value":"negative"}]}`)
+	saveNote("Quill Claim", "A saved note", `{"conversation_claims":[{"id":"claim:unknown","kind":"lifecycle","value":"unknown"}]}`)
+	saveNote("Lane Claim", "A saved note", `{"conversation_claims":[{"id":"claim:risk2","kind":"risk","value":"at_risk"}]}`)
+	saveNote("Quote Claim", "A saved note", `{"conversation_claims":[{"id":"claim:quote","kind":"decision","value":"","exactQuote":"We will renew the harbor contract."}]}`)
+	saveNote("Hidden Claim", "Security review may slip — Avery", `{
+		"conversation_claims":[{"kind":"risk","value":"Security review may slip","speakerLabel":"Avery"}]
+	}`)
+	saveNote("Plain Claim", "A saved note", `{"conversation_claims":[{"kind":"risk","value":"Security review may slip","speakerLabel":"Speaker 2"}]}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Risk raised in a conversation: Security review may slip — Avery", "Harbor Claim")
+	assertCompanyQuery("Risk raised in a conversation: Security review may slip", "Plain Claim")
+	assertCompanyQuery("Unresolved objection: The price is too high", "Birch Claim")
+	assertCompanyQuery("Decision: We decided to renew.", "Birch Claim")
+	assertCompanyQuery("Promise: I will send the proposal. — You", "Birch Claim")
+	assertCompanyQuery("Person: Avery Chen is the champion", "Birch Claim")
+	assertCompanyQuery("Milestone: The pilot starts in June", "Birch Claim")
+	assertCompanyQuery("Lifecycle: Former customer", "Cedar Claim")
+	assertCompanyQuery("Sentiment: Negative", "Maple Claim")
+	assertCompanyQuery("Lifecycle: Not known", "Quill Claim")
+	assertCompanyQuery("Decision: We will renew the harbor contract.", "Quote Claim")
+	assertCompanyQuery("Risk raised in a conversation: at risk")
+	assertCompanyQuery("claim:risk")
+	assertCompanyQuery("speaker_2")
+	assertCompanyQuery("former_customer")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

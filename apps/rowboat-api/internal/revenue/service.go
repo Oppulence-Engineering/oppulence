@@ -1094,6 +1094,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if snapshot := relationshipSheetActivitySnapshotMatch(needle); snapshot != nil {
 			parts = append(parts, snapshot)
 		}
+		if claim := relationshipSheetActivityClaimMatch(needle); claim != nil {
+			parts = append(parts, claim)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -5457,6 +5460,221 @@ func activityStoryPromiseUpdate(needle string) (string, string, bool, bool) {
 		return label.status, text, false, true
 	}
 	return "", "", false, false
+}
+
+// relationshipSheetActivityClaimMatch is a reviewed conversation on the
+// opened activity. The line names the claim and, when someone was named, who
+// said it. A claim id and a speaker id stay hidden. Lifecycle and sentiment
+// use the company sheet's words. A line that repeats the row summary stays hidden.
+func relationshipSheetActivityClaimMatch(needle string) predicate.Relationship {
+	for _, claim := range activityClaimTitles {
+		prefix := claim.title + ": "
+		if !strings.HasPrefix(needle, prefix) {
+			continue
+		}
+		rest := strings.TrimSpace(needle[len(prefix):])
+		if rest == "" {
+			return nil
+		}
+		value, speaker, spoken := splitActivityClaimSpeaker(rest)
+		if value == "" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationActivityClaim(claim.kind, value, speaker, spoken, rest))
+	}
+	return nil
+}
+
+var activityClaimTitles = []struct{ title, kind string }{
+	{"risk raised in a conversation", "risk"},
+	{"unresolved objection", "objection"},
+	{"decision", "decision"},
+	{"milestone", "milestone"},
+	{"person", "stakeholder"},
+	{"promise", "commitment"},
+	{"lifecycle", "lifecycle"},
+	{"sentiment", "sentiment"},
+}
+
+func splitActivityClaimSpeaker(rest string) (value, speaker string, spoken bool) {
+	const dash = " — "
+	index := strings.LastIndex(rest, dash)
+	if index < 0 {
+		return rest, "", false
+	}
+	value = strings.TrimSpace(rest[:index])
+	speaker = strings.TrimSpace(rest[index+len(dash):])
+	if value == "" || speaker == "" {
+		return rest, "", false
+	}
+	return value, speaker, true
+}
+
+func activityClaimSheetToken(kind, value string) string {
+	if kind != "lifecycle" && kind != "sentiment" {
+		return ""
+	}
+	switch value {
+	case "not known":
+		return "unknown"
+	case "not recorded for this date":
+		return "historical_unknown"
+	case "needs review":
+		return "review_required"
+	case "needs attention":
+		return "needs_attention"
+	case "at risk":
+		return "at_risk"
+	case "active customer":
+		return "active_customer"
+	case "former customer":
+		return "former_customer"
+	case "out of date":
+		return "stale"
+	default:
+		return ""
+	}
+}
+
+func observationActivityClaim(kind, value, speaker string, spoken bool, rest string) predicate.RelationshipObservation {
+	token := activityClaimSheetToken(kind, value)
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeClaimArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeClaimRows(b, s, facts)
+			b.WriteString(" AS claim WHERE ")
+			writeClaimKind(b, s)
+			b.WriteString(" = ")
+			b.Arg(kind)
+			b.WriteString(" AND ")
+			writeClaimReadable(b, s, kind)
+			b.WriteString(" AND (")
+			writeNormalizedSQLText(b, s, claimValueExpr(s))
+			b.WriteString(" = ")
+			b.Arg(value)
+			if token != "" {
+				b.WriteString(" OR lower(")
+				b.WriteString(claimValueExpr(s))
+				b.WriteString(") = ")
+				b.Arg(token)
+			}
+			b.WriteString(") AND (")
+			if spoken {
+				b.WriteString("(")
+				writeClaimSpeakerShown(b, s)
+				b.WriteString(" AND ")
+				writeNormalizedSQLText(b, s, claimSpeakerExpr(s))
+				b.WriteString(" = ")
+				b.Arg(speaker)
+				b.WriteString(") OR (NOT ")
+				writeClaimSpeakerShown(b, s)
+				b.WriteString(" AND ")
+				writeNormalizedSQLText(b, s, claimValueExpr(s))
+				b.WriteString(" = ")
+				b.Arg(rest)
+				b.WriteString("))")
+			} else {
+				b.WriteString("NOT ")
+				writeClaimSpeakerShown(b, s)
+				b.WriteString(")")
+			}
+			b.WriteString(") AND lower(")
+			writeSummaryTrim(b, s, summary)
+			b.WriteString(") <> ")
+			b.Arg(rest)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeClaimArray(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'conversation_claims') = 'array'")
+		return
+	}
+	b.WriteString("json_valid(")
+	b.WriteString(facts)
+	b.WriteString(") AND json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.conversation_claims') = 'array'")
+}
+
+func writeClaimRows(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'conversation_claims')")
+		return
+	}
+	b.WriteString("json_each(")
+	b.WriteString(facts)
+	b.WriteString(", '$.conversation_claims')")
+}
+
+func writeClaimKind(b *sql.Builder, s *sql.Selector) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("claim->>'kind'")
+		return
+	}
+	b.WriteString("json_extract(claim.value, '$.kind')")
+}
+
+func claimValueExpr(s *sql.Selector) string {
+	if s.Dialect() == dialect.Postgres {
+		return "(CASE WHEN btrim(coalesce(claim->>'value', '')) <> '' THEN btrim(claim->>'value') ELSE btrim(coalesce(claim->>'exactQuote', '')) END)"
+	}
+	return "(CASE WHEN trim(coalesce(json_extract(claim.value, '$.value'), '')) <> '' THEN trim(json_extract(claim.value, '$.value')) ELSE trim(coalesce(json_extract(claim.value, '$.exactQuote'), '')) END)"
+}
+
+func claimSpeakerExpr(s *sql.Selector) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce(claim->>'speakerLabel', ''))"
+	}
+	return "trim(coalesce(json_extract(claim.value, '$.speakerLabel'), ''))"
+}
+
+func writeClaimReadable(b *sql.Builder, s *sql.Selector, kind string) {
+	value := claimValueExpr(s)
+	b.WriteString(value)
+	b.WriteString(" <> '' AND lower(")
+	b.WriteString(value)
+	b.WriteString(") NOT IN ('local-user', 'meeting-counterparty')")
+	if kind == "lifecycle" || kind == "sentiment" {
+		return
+	}
+	b.WriteString(" AND ")
+	b.WriteString(value)
+	b.WriteString(" ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("!~ '^[a-z0-9_:-]+$'")
+		return
+	}
+	b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+}
+
+func writeClaimSpeakerShown(b *sql.Builder, s *sql.Selector) {
+	label := claimSpeakerExpr(s)
+	b.WriteString("(")
+	b.WriteString(label)
+	b.WriteString(" <> '' AND ")
+	b.WriteString(label)
+	b.WriteString(" NOT IN ('local-user', 'meeting-counterparty', 'Other', 'Unknown speaker') AND NOT ")
+	writeSpeakerNumber(b, s, label)
+	b.WriteString(" AND ")
+	b.WriteString(label)
+	b.WriteString(" ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("!~ '^[a-z0-9_:-]+$'")
+	} else {
+		b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+	}
+	b.WriteString(")")
 }
 
 // relationshipSheetActivityInviteMatch matches who accepted the invite on
