@@ -6322,6 +6322,77 @@ func TestRelationshipSearchFindsTheActivityFollowUp(t *testing.T) {
 	assertCompanyQuery("local-user")
 }
 
+func TestRelationshipSearchFindsTheActivityRecovery(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Harbor Kept", "A saved note", `{
+		"commitment_recovery_evidence":[{
+			"commitmentId":"9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+			"kind":"explicit_fulfilled",
+			"evidenceRef":"gmail-message:proof-1"
+		}]
+	}`)
+	saveNote("Birch Suggest", "A saved note", `{"commitment_recovery_evidence":[{"kind":"likely_fulfilled"}]}`)
+	saveNote("Cedar Later", "A saved note", `{"commitment_recovery_evidence":[{"kind":"superseded"}]}`)
+	saveNote("Maple Terms", "A saved note", `{"commitment_recovery_evidence":[{"kind":"renegotiated"}]}`)
+	saveNote("Quill Block", "A saved note", `{"commitment_recovery_evidence":[{"kind":"blocked"},{"kind":"blocked"}]}`)
+	saveNote("Lane Pair", "A saved note", `{"commitment_recovery_evidence":[{"kind":"likely_fulfilled"},{"kind":"blocked"}]}`)
+	saveNote("Hidden Kept", "A newer source shows this promise was kept.", `{"commitment_recovery_evidence":[{"kind":"explicit_fulfilled"}]}`)
+	saveNote("Token Kind", "A saved note", `{"commitment_recovery_evidence":[{"kind":"other","evidenceRef":"gmail-message:other"}]}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("A newer source shows this promise was kept.", "Harbor Kept")
+	assertCompanyQuery("A newer source suggests this promise was kept. Review it before closing it.", "Birch Suggest", "Lane Pair")
+	assertCompanyQuery("A later promise replaced this one.", "Cedar Later")
+	assertCompanyQuery("This promise was renegotiated. Review the new terms.", "Maple Terms")
+	assertCompanyQuery("This promise is blocked. Review it before acting.", "Quill Block", "Lane Pair")
+	assertCompanyQuery("explicit_fulfilled")
+	assertCompanyQuery("gmail-message:proof-1")
+	assertCompanyQuery("9c8dfa9b-a7b2-46ea-982c-622a914c00e5")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

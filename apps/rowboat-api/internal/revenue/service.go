@@ -1100,6 +1100,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if followUp := relationshipSheetActivityFollowUpMatch(needle); followUp != nil {
 			parts = append(parts, followUp)
 		}
+		if recoveryLine := relationshipSheetActivityRecoveryMatch(needle); recoveryLine != nil {
+			parts = append(parts, recoveryLine)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -5618,6 +5621,83 @@ func printedActionReasonExpr(s *sql.Selector) string {
 		" WHEN 'Track a spoken commitment until it is fulfilled or renegotiated.' THEN 'Keep this promise until it is kept or changed.'" +
 		" WHEN 'Protect time before the spoken commitment is due.' THEN 'Hold time before this promise is due.'" +
 		" ELSE " + reason + " END)"
+}
+
+// relationshipSheetActivityRecoveryMatch is promise evidence on the opened
+// activity. The line is the sentence the promise check already shows. A
+// promise id and an evidence id stay hidden. A line that repeats the row
+// summary stays hidden.
+func relationshipSheetActivityRecoveryMatch(needle string) predicate.Relationship {
+	for _, item := range activityRecoverySentences {
+		if needle != normalizePersonSearch(item.sentence) {
+			continue
+		}
+		return relationship.HasObservationsWith(observationRecoveryEvidence(item.kind, needle))
+	}
+	return nil
+}
+
+var activityRecoverySentences = []struct{ kind, sentence string }{
+	{"explicit_fulfilled", "A newer source shows this promise was kept."},
+	{"likely_fulfilled", "A newer source suggests this promise was kept. Review it before closing it."},
+	{"superseded", "A later promise replaced this one."},
+	{"renegotiated", "This promise was renegotiated. Review the new terms."},
+	{"blocked", "This promise is blocked. Review it before acting."},
+}
+
+func observationRecoveryEvidence(kind, sentence string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			writeRecoveryArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeRecoveryRows(b, s, facts)
+			b.WriteString(" AS evidence WHERE ")
+			writeRecoveryKind(b, s)
+			b.WriteString(" = ")
+			b.Arg(kind)
+			b.WriteString(") AND ")
+			writeNormalizedSQLText(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
+			b.Arg(sentence)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeRecoveryArray(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'commitment_recovery_evidence') = 'array'")
+		return
+	}
+	b.WriteString("json_valid(")
+	b.WriteString(facts)
+	b.WriteString(") AND json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.commitment_recovery_evidence') = 'array'")
+}
+
+func writeRecoveryRows(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'commitment_recovery_evidence')")
+		return
+	}
+	b.WriteString("json_each(")
+	b.WriteString(facts)
+	b.WriteString(", '$.commitment_recovery_evidence')")
+}
+
+func writeRecoveryKind(b *sql.Builder, s *sql.Selector) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("evidence->>'kind'")
+		return
+	}
+	b.WriteString("json_extract(evidence.value, '$.kind')")
 }
 
 // relationshipSheetActivityClaimMatch is a reviewed conversation on the
