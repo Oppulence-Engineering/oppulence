@@ -1097,6 +1097,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if claim := relationshipSheetActivityClaimMatch(needle); claim != nil {
 			parts = append(parts, claim)
 		}
+		if followUp := relationshipSheetActivityFollowUpMatch(needle); followUp != nil {
+			parts = append(parts, followUp)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -5462,6 +5465,161 @@ func activityStoryPromiseUpdate(needle string) (string, string, bool, bool) {
 	return "", "", false, false
 }
 
+// relationshipSheetActivityFollowUpMatch is a proposed follow-up on the
+// opened activity. The line names the follow-up and the reason a person can
+// read. The draft, the channel, and the action id stay hidden. A due day on
+// that follow-up is "Due: Aug 1, 2026". A line that repeats the row summary
+// stays hidden.
+func relationshipSheetActivityFollowUpMatch(needle string) predicate.Relationship {
+	for _, item := range activityFollowUpLabels {
+		prefix := item.phrase + ": "
+		if !strings.HasPrefix(needle, prefix) {
+			continue
+		}
+		reason := strings.TrimSpace(needle[len(prefix):])
+		if reason == "" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationActionPack(item.actionType, reason))
+	}
+	start, ok := activityDueDay(needle)
+	if !ok {
+		return nil
+	}
+	printed := start.Format("Jan 2, 2006")
+	if strings.ToLower(printed) != strings.TrimSpace(strings.TrimPrefix(needle, "due: ")) {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationActionPackDue(strings.ToLower(printed), printed))
+}
+
+var activityFollowUpLabels = []struct{ phrase, actionType string }{
+	{"warm follow up", "warm_follow_up"},
+	{"proposal nudge", "proposal_nudge"},
+	{"referral reconnect", "referral_reconnect"},
+	{"customer risk", "customer_risk"},
+	{"meeting follow up", "meeting_follow_up"},
+	{"meeting recap", "meeting_recap"},
+	{"crm update", "crm_update"},
+	{"follow up task", "follow_up_task"},
+	{"calendar hold", "calendar_hold"},
+	{"promise follow up", "commitment_rescue"},
+}
+
+func observationActionPack(actionType, reason string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			writeActionPackArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeActionPackRows(b, s, facts)
+			b.WriteString(" AS action WHERE ")
+			writeActionType(b, s)
+			b.WriteString(" = ")
+			b.Arg(actionType)
+			b.WriteString(" AND ")
+			b.WriteString(printedActionReasonExpr(s))
+			b.WriteString(" ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("!~ '^[a-z0-9_:-]+$'")
+			} else {
+				b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+			}
+			b.WriteString(" AND ")
+			writeNormalizedSQLText(b, s, printedActionReasonExpr(s))
+			b.WriteString(" = ")
+			b.Arg(reason)
+			b.WriteString(" AND ")
+			writeNormalizedSQLText(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
+			b.Arg(reason)
+			b.WriteString("))")
+		}))
+	})
+}
+
+func observationActionPackDue(day, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeActionPackArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeActionPackRows(b, s, facts)
+			b.WriteString(" AS action WHERE ")
+			writeMeetingDay(b, s, actionDueExpr(s))
+			b.WriteString(" = ")
+			b.Arg(day)
+			b.WriteString(") AND ")
+			writeSummaryTrim(b, s, summary)
+			b.WriteString(" <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeActionPackArray(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'action_pack') = 'array'")
+		return
+	}
+	b.WriteString("json_valid(")
+	b.WriteString(facts)
+	b.WriteString(") AND json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.action_pack') = 'array'")
+}
+
+func writeActionPackRows(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'action_pack')")
+		return
+	}
+	b.WriteString("json_each(")
+	b.WriteString(facts)
+	b.WriteString(", '$.action_pack')")
+}
+
+func writeActionType(b *sql.Builder, s *sql.Selector) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("action->>'actionType'")
+		return
+	}
+	b.WriteString("json_extract(action.value, '$.actionType')")
+}
+
+func actionReasonExpr(s *sql.Selector) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce(action->>'reason', ''))"
+	}
+	return "trim(coalesce(json_extract(action.value, '$.reason'), ''))"
+}
+
+func actionDueExpr(s *sql.Selector) string {
+	if s.Dialect() == dialect.Postgres {
+		return "action->>'dueAt'"
+	}
+	return "json_extract(action.value, '$.dueAt')"
+}
+
+func printedActionReasonExpr(s *sql.Selector) string {
+	reason := actionReasonExpr(s)
+	return "(CASE " + reason +
+		" WHEN 'Send a recap grounded in the material statements from this conversation.' THEN 'Send a recap of what was said.'" +
+		" WHEN 'Share the evidence-backed recap with the account team.' THEN 'Share the recap with the account team.'" +
+		" WHEN 'Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.' THEN 'Update the company record from what was said.'" +
+		" WHEN 'Track a spoken commitment until it is fulfilled or renegotiated.' THEN 'Keep this promise until it is kept or changed.'" +
+		" WHEN 'Protect time before the spoken commitment is due.' THEN 'Hold time before this promise is due.'" +
+		" ELSE " + reason + " END)"
+}
+
 // relationshipSheetActivityClaimMatch is a reviewed conversation on the
 // opened activity. The line names the claim and, when someone was named, who
 // said it. A claim id and a speaker id stay hidden. Lifecycle and sentiment
@@ -5541,7 +5699,6 @@ func observationActivityClaim(kind, value, speaker string, spoken bool, rest str
 	return predicate.RelationshipObservation(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
-			summary := s.C(relationshipobservation.FieldSummary)
 			b.WriteString("(")
 			writeClaimArray(b, s, facts)
 			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
@@ -5582,9 +5739,9 @@ func observationActivityClaim(kind, value, speaker string, spoken bool, rest str
 				writeClaimSpeakerShown(b, s)
 				b.WriteString(")")
 			}
-			b.WriteString(") AND lower(")
-			writeSummaryTrim(b, s, summary)
-			b.WriteString(") <> ")
+			b.WriteString(") AND ")
+			writeNormalizedSQLText(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
 			b.Arg(rest)
 			b.WriteString(")")
 		}))

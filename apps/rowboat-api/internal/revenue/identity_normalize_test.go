@@ -6212,6 +6212,7 @@ func TestRelationshipSearchFindsTheActivityClaim(t *testing.T) {
 	saveNote("Hidden Claim", "Security review may slip — Avery", `{
 		"conversation_claims":[{"kind":"risk","value":"Security review may slip","speakerLabel":"Avery"}]
 	}`)
+	saveNote("Hidden Period", "We decided to renew.", `{"conversation_claims":[{"kind":"decision","value":"We decided to renew."}]}`)
 	saveNote("Plain Claim", "A saved note", `{"conversation_claims":[{"kind":"risk","value":"Security review may slip","speakerLabel":"Speaker 2"}]}`)
 
 	assertCompanyQuery := func(query string, want ...string) {
@@ -6245,6 +6246,80 @@ func TestRelationshipSearchFindsTheActivityClaim(t *testing.T) {
 	assertCompanyQuery("claim:risk")
 	assertCompanyQuery("speaker_2")
 	assertCompanyQuery("former_customer")
+}
+
+func TestRelationshipSearchFindsTheActivityFollowUp(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Harbor Follow", "A saved note", `{
+		"action_pack":[
+			{"id":"action:email","actionType":"meeting_recap","channel":"email","reason":"Send a recap grounded in the material statements from this conversation.","proposedSubject":"Recap: Q3 review"},
+			{"id":"action:slack","actionType":"meeting_recap","channel":"slack","reason":"Share the evidence-backed recap with the account team."},
+			{"id":"action:task","actionType":"follow_up_task","channel":"task","reason":"Track a spoken commitment until it is fulfilled or renegotiated.","dueAt":"2026-08-01T17:00:00.000Z"},
+			{"id":"action:hold","actionType":"calendar_hold","channel":"calendar","reason":"Protect time before the spoken commitment is due.","dueAt":"2026-08-01T17:00:00.000Z"},
+			{"actionType":"crm_update","channel":"crm","reason":"Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence."}
+		],
+		"legacy_shadow_action_pack":[{"actionType":"meeting_recap","reason":"This shadow recap should stay off the activity."}]
+	}`)
+	saveNote("Birch Follow", "A saved note", `{"action_pack":[{"actionType":"commitment_rescue","reason":"Call Avery about the harbor quote."}]}`)
+	saveNote("Hidden Follow", "Send a recap of what was said.", `{"action_pack":[{"actionType":"meeting_recap","reason":"Send a recap grounded in the material statements from this conversation."}]}`)
+	saveNote("Token Follow", "A saved note", `{"action_pack":[{"actionType":"meeting_recap","reason":"local-user"}]}`)
+	saveNote("Hidden Day", "Aug 1, 2026", `{"action_pack":[{"actionType":"follow_up_task","reason":"Call tomorrow.","dueAt":"2026-08-01T17:00:00Z"}]}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Meeting recap: Send a recap of what was said.", "Harbor Follow")
+	assertCompanyQuery("Meeting recap: Share the recap with the account team.", "Harbor Follow")
+	assertCompanyQuery("Follow-up task: Keep this promise until it is kept or changed.", "Harbor Follow")
+	assertCompanyQuery("Calendar hold: Hold time before this promise is due.", "Harbor Follow")
+	assertCompanyQuery("CRM update: Update the company record from what was said.", "Harbor Follow")
+	assertCompanyQuery("Promise follow-up: Call Avery about the harbor quote.", "Birch Follow")
+	assertCompanyQuery("Due: Aug 1, 2026", "Harbor Follow")
+	assertCompanyQuery("This shadow recap should stay off the activity.")
+	assertCompanyQuery("Recap: Q3 review")
+	assertCompanyQuery("action:email")
+	assertCompanyQuery("local-user")
 }
 
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
