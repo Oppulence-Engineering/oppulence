@@ -1053,10 +1053,11 @@ func (s *Service) ListRelationshipsFiltered(
 		if people := relationshipSheetPeopleMatch(needle); people != nil {
 			parts = append(parts, people)
 		}
-		// "Nothing recorded yet" and "None recorded." contain "recorded",
-		// and the calendar sentence contains "calendar". Those words are
-		// also activity headings. The empty sentence is the company that
-		// prints it. "You chose the value from Calendar." is the closed
+		// "Nothing recorded yet", "None recorded.", and the people, risks,
+		// and milestones empty lines contain "recorded". The
+		// calendar sentence contains "calendar". Those words are also
+		// activity headings. The empty sentence is the company that prints
+		// it. "You chose the value from Calendar." is the closed
 		// contradiction, not every company that has a calendar event.
 		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) && !contradictionSentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
@@ -13092,7 +13093,7 @@ func relationshipJSONArrayCount(field, compare string, n int) predicate.Relation
 		s.Where(sql.P(func(b *sql.Builder) {
 			column := s.C(field)
 			// A correction that only fills one list stores the other as JSON
-			// null. The sheet still prints "None recorded." for that list.
+			// null. The sheet still prints the empty-section line for that list.
 			// jsonb_array_length rejects the null, so a missing list counts as 0.
 			if s.Dialect() == dialect.Postgres {
 				b.WriteString(fmt.Sprintf(
@@ -13727,18 +13728,39 @@ func relationshipSheetEmptyCopyMatch(needle string) predicate.Relationship {
 	}
 }
 
-// relationshipSheetNoneRecordedMatch matches "None recorded." Risks,
-// milestones, and the people section each print that line when the list
-// is empty. A company that has a risk, a milestone, and a person does not.
+// relationshipSheetNoneRecordedMatch matches the empty people, risks, and
+// milestones lines. Each section names itself: "No people recorded for this
+// company yet.", and the same shape for risks and milestones. "None recorded."
+// is the older line and still matches a company that is empty in any one of
+// those lists. A company that has a risk, a milestone, and a person does not.
 func relationshipSheetNoneRecordedMatch(needle string) predicate.Relationship {
-	if !labelPhraseMatches("none recorded.", needle) {
-		return nil
+	var preds []predicate.Relationship
+	if labelPhraseMatches("none recorded.", needle) {
+		preds = append(preds, relationship.Or(
+			relationshipRiskCount("=", 0),
+			relationshipMilestoneCount("=", 0),
+			relationshipParticipantCount("=", 0),
+		))
 	}
-	return relationship.Or(
-		relationshipRiskCount("=", 0),
-		relationshipMilestoneCount("=", 0),
-		relationshipParticipantCount("=", 0),
-	)
+	// People is the participant list. An empty risks or milestones array is
+	// that section. A health band can still name risks while this array is empty.
+	if labelPhraseMatches("no people recorded for this company yet.", needle) {
+		preds = append(preds, relationshipParticipantCount("=", 0))
+	}
+	if labelPhraseMatches("no risks recorded for this company yet.", needle) {
+		preds = append(preds, relationshipRiskCount("=", 0))
+	}
+	if labelPhraseMatches("no milestones recorded for this company yet.", needle) {
+		preds = append(preds, relationshipMilestoneCount("=", 0))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
 }
 
 // sheetEmptySentenceOwnsActivity is true when the query is an empty-sheet
@@ -13749,6 +13771,9 @@ func sheetEmptySentenceOwnsActivity(needle string) bool {
 		"no gmail or calendar events yet.",
 		"nothing recorded yet.",
 		"no commitments recorded for this company yet.",
+		"no people recorded for this company yet.",
+		"no risks recorded for this company yet.",
+		"no milestones recorded for this company yet.",
 		"none recorded.",
 		// "1 Gmail thread is linked." names the Gmail heading too. The sentence
 		// is the unsupported-detail paragraph, not every company with mail.

@@ -12728,6 +12728,10 @@ func TestRelationshipSearchFindsNoneRecorded(t *testing.T) {
 	assertCompanyQuery("None recorded.", emptyLists...)
 	assertCompanyQuery("which companies have none recorded", emptyLists...)
 	assertCompanyQuery("none")
+	assertCompanyQuery("No people recorded for this company yet.", "Quay Quiet", "Quay Risks", "Quay Miles")
+	assertCompanyQuery("which companies have no people recorded for this company yet", "Quay Quiet", "Quay Risks", "Quay Miles")
+	assertCompanyQuery("No risks recorded for this company yet.", "Quay Quiet", "Quay Miles", "Quay People")
+	assertCompanyQuery("No milestones recorded for this company yet.", "Quay Quiet", "Quay Risks", "Quay People")
 }
 
 func TestRelationshipSearchFindsProfileFieldCounts(t *testing.T) {
