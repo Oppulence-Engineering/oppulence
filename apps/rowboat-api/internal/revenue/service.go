@@ -1112,6 +1112,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if recoveryStatus := relationshipSheetRecoveryStatusMatch(needle); recoveryStatus != nil {
 			parts = append(parts, recoveryStatus)
 		}
+		if uncertain := relationshipSheetUncertainSendMatch(needle); uncertain != nil {
+			parts = append(parts, uncertain)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -5707,6 +5710,47 @@ func writeRecoveryKind(b *sql.Builder, s *sql.Selector) {
 		return
 	}
 	b.WriteString("json_extract(evidence.value, '$.kind')")
+}
+
+// relationshipSheetUncertainSendMatch is the review for a send that might
+// already have gone out. The title is on every uncertain send. The line under
+// it is the reconciliation check. A settled send stays off both sentences.
+func relationshipSheetUncertainSendMatch(needle string) predicate.Relationship {
+	uncertain := revenueaction.Or(
+		revenueaction.ExecutionStatusEQ(ExecAmbiguous),
+		revenueaction.ReconciliationStatusEQ("manual_review"),
+	)
+	switch needle {
+	case normalizePersonSearch("This send is not confirmed. Do not try again yet."):
+		return relationship.HasActionsWith(uncertain)
+	case normalizePersonSearch("This send was confirmed."):
+		return relationship.HasActionsWith(
+			revenueaction.ExecutionStatusEQ(ExecAmbiguous),
+			revenueaction.ReconciliationStatusEQ("found"),
+		)
+	case normalizePersonSearch("There is no record of this send."):
+		return relationship.HasActionsWith(
+			revenueaction.ExecutionStatusEQ(ExecAmbiguous),
+			revenueaction.ReconciliationStatusEQ("not_found"),
+		)
+	case normalizePersonSearch("The check could not be finished."):
+		return relationship.HasActionsWith(
+			revenueaction.ExecutionStatusEQ(ExecAmbiguous),
+			revenueaction.ReconciliationStatusEQ("error"),
+		)
+	case normalizePersonSearch("This needs a person to check it."):
+		return relationship.HasActionsWith(revenueaction.ReconciliationStatusEQ("manual_review"))
+	case normalizePersonSearch("Still checking whether this was sent."):
+		return relationship.HasActionsWith(
+			uncertain,
+			revenueaction.Or(
+				revenueaction.ReconciliationStatusIsNil(),
+				revenueaction.ReconciliationStatusNotIn("found", "not_found", "error", "manual_review"),
+			),
+		)
+	default:
+		return nil
+	}
 }
 
 // relationshipSheetRecoveryStatusMatch is the recovery queue word for an

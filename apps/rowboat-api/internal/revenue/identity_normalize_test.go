@@ -6738,6 +6738,73 @@ func TestRelationshipSearchFindsTheRecoveryStatus(t *testing.T) {
 	assertCompanyQuery("Nothing is snoozed right now.")
 }
 
+func TestRelationshipSearchFindsTheUncertainSend(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, execution, reconciliation string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		create := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("warm_follow_up").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetExecutionStatus(execution)
+		if reconciliation != "" {
+			create.SetReconciliationStatus(reconciliation)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Unsure", ExecAmbiguous, "")
+	save("West Pending", ExecAmbiguous, "pending")
+	save("Birch Receipt", ExecAmbiguous, "found")
+	save("Cedar Absent", ExecAmbiguous, "not_found")
+	save("Maple Fault", ExecAmbiguous, "error")
+	save("Quill Person", ExecPending, "manual_review")
+	save("Lane Check", ExecAmbiguous, "manual_review")
+	save("North Settled", ExecSent, "found")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	title := "This send is not confirmed. Do not try again yet."
+	assertCompanyQuery(title, "Harbor Unsure", "West Pending", "Birch Receipt", "Cedar Absent", "Maple Fault", "Quill Person", "Lane Check")
+	assertCompanyQuery("Still checking whether this was sent.", "Harbor Unsure", "West Pending")
+	assertCompanyQuery("This send was confirmed.", "Birch Receipt")
+	assertCompanyQuery("There is no record of this send.", "Cedar Absent")
+	assertCompanyQuery("The check could not be finished.", "Maple Fault")
+	assertCompanyQuery("This needs a person to check it.", "Quill Person", "Lane Check")
+	assertCompanyQuery("found")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
