@@ -2452,6 +2452,11 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	if badge := relationshipSheetResearchBadgeMatch(needle); badge != nil {
 		preds = append(preds, badge)
 	}
+	// The profile line prints a title, a company, and a place. The title falls
+	// back to the membership title when the person has none.
+	if line := relationshipSheetPersonLineMatch(needle); line != nil {
+		preds = append(preds, line)
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -2498,6 +2503,10 @@ func writePersonSeniorityLabel(b *sql.Builder, s *sql.Selector) {
 	if s.Dialect() == dialect.Postgres {
 		trimmed = fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(person.FieldSeniority))
 	}
+	writeSeniorityLabelExpr(b, s, trimmed)
+}
+
+func writeSeniorityLabelExpr(b *sql.Builder, s *sql.Selector, trimmed string) {
 	b.WriteString("CASE WHEN ")
 	b.WriteString(trimmed)
 	b.WriteString(" = ")
@@ -2507,6 +2516,38 @@ func writePersonSeniorityLabel(b *sql.Builder, s *sql.Selector) {
 	b.WriteString(" ELSE ")
 	writeNormalizedSQLText(b, s, trimmed)
 	b.WriteString(" END")
+}
+
+// relationshipSheetPersonLineMatch matches the title, company, and place on
+// a person line. A domain stored as the company name reads as that host.
+// The membership title is the line only when the person has no title.
+func relationshipSheetPersonLineMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	like := "%" + escapePersonSearchLike(needle) + "%"
+	return relationship.Or(
+		relationship.HasParticipantsWith(
+			relationshipparticipant.HasPersonWith(predicate.Person(func(s *sql.Selector) {
+				s.Where(sql.Or(
+					normalizedSearchLike(s, person.FieldTitle, like),
+					normalizedSearchLike(s, person.FieldOrgName, like),
+					normalizedSearchLike(s, person.FieldLocation, like),
+				))
+			})),
+		),
+		relationship.HasParticipantsWith(
+			relationshipparticipant.And(
+				predicate.RelationshipParticipant(func(s *sql.Selector) {
+					s.Where(normalizedSearchLike(s, relationshipparticipant.FieldTitle, like))
+				}),
+				relationshipparticipant.Or(
+					relationshipparticipant.Not(relationshipparticipant.HasPerson()),
+					relationshipparticipant.HasPersonWith(personTextMissing(person.FieldTitle)),
+				),
+			),
+		),
+	)
 }
 
 // writeLabelPhraseMatch is the company-search form of labelPhraseMatches.
