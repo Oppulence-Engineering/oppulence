@@ -1115,6 +1115,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if uncertain := relationshipSheetUncertainSendMatch(needle); uncertain != nil {
 			parts = append(parts, uncertain)
 		}
+		if execution := relationshipSheetGraphExecutionMatch(needle); execution != nil {
+			parts = append(parts, execution)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -5748,6 +5751,25 @@ func relationshipSheetUncertainSendMatch(needle string) predicate.Relationship {
 				revenueaction.ReconciliationStatusNotIn("found", "not_found", "error", "manual_review"),
 			),
 		)
+	default:
+		return nil
+	}
+}
+
+// relationshipSheetGraphExecutionMatch is the Execution word on a graph
+// action. A send that has started is "Sending…". A finished draft is
+// "Drafted". An uncertain send is "Needs reconcile".
+func relationshipSheetGraphExecutionMatch(needle string) predicate.Relationship {
+	switch needle {
+	case normalizePersonSearch("Sending…"):
+		return relationship.HasActionsWith(revenueaction.ExecutionStatusEQ(ExecRequested))
+	case normalizePersonSearch("Drafted"):
+		return relationship.HasActionsWith(
+			revenueaction.ExecutionStatusEQ(ExecSent),
+			revenueaction.ExecutionModeEQ(ExecModeDraft),
+		)
+	case normalizePersonSearch("Needs reconcile"):
+		return relationship.HasActionsWith(revenueaction.ExecutionStatusEQ(ExecAmbiguous))
 	default:
 		return nil
 	}

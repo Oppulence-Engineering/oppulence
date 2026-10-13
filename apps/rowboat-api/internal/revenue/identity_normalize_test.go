@@ -6805,6 +6805,63 @@ func TestRelationshipSearchFindsTheUncertainSend(t *testing.T) {
 	assertCompanyQuery("found")
 }
 
+func TestRelationshipSearchFindsTheGraphExecution(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, execution, mode string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("warm_follow_up").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetExecutionStatus(execution).SetExecutionMode(mode).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Start", ExecRequested, ExecModeSend)
+	save("Birch Note", ExecSent, ExecModeDraft)
+	save("Cedar Out", ExecSent, ExecModeSend)
+	save("Quill Check", ExecAmbiguous, ExecModeSend)
+	save("Maple Stop", ExecFailed, ExecModeSend)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Sending…", "Harbor Start")
+	assertCompanyQuery("Drafted", "Birch Note")
+	assertCompanyQuery("Needs reconcile", "Quill Check")
+	assertCompanyQuery("Sending...")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
