@@ -11583,7 +11583,7 @@ func TestRelationshipSearchFindsTheRecommendationBadges(t *testing.T) {
 	assertCompanyQuery("High", "Review Co", "Cleared Co", "Rejected Co")
 	assertCompanyQuery("Medium", "Stale Co", "Approved Co")
 	assertCompanyQuery("Low", "Pending Co", "Blocked Co")
-	assertCompanyQuery("Awaiting approval")
+	assertCompanyQuery("Awaiting approval", "Review Co", "Stale Co", "Pending Co", "Cleared Co", "Blocked Co")
 	assertCompanyQuery("Approved in this workspace")
 }
 

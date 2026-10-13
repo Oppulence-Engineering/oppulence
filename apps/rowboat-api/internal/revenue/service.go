@@ -10575,8 +10575,9 @@ func relationshipSheetActionLabelMatch(needle string) predicate.Relationship {
 // relationshipSheetRecommendationBadgeMatch matches the badges on a
 // recommendation. Policy reads "Review required", "Re-check needed",
 // "Not checked", "Cleared", or "Blocked". A decided recommendation reads
-// "Approved" or "Rejected". The corner chip reads "Draft" or "Send".
-// Priority reads "High", "Medium", or "Low".
+// "Approved" or "Rejected". One still waiting reads "Awaiting approval".
+// The corner chip reads "Draft" or "Send". Priority reads "High",
+// "Medium", or "Low".
 func relationshipSheetRecommendationBadgeMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	for _, item := range []struct {
@@ -10597,6 +10598,7 @@ func relationshipSheetRecommendationBadgeMatch(needle string) predicate.Relation
 		phrase string
 		status string
 	}{
+		{"awaiting approval", ApprovalPending},
 		{"approved", ApprovalApproved},
 		{"rejected", ApprovalRejected},
 	} {
