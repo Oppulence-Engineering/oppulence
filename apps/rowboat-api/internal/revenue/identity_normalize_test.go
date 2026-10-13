@@ -7089,6 +7089,68 @@ func TestRelationshipSearchFindsTheReconciliationCheck(t *testing.T) {
 	assertCompanyQuery("provider marker was not found after bounded reconciliation attempts")
 }
 
+func TestRelationshipSearchFindsTheSnoozeWake(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	save := func(name, status string, until time.Time) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("customer_risk").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetQueueStatus(status).SetSnoozedUntil(until).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Week", QueueSnoozed, now.Add(7*24*time.Hour))
+	save("Birch Past", QueueSnoozed, now.Add(-2*24*time.Hour))
+	save("Cedar Hour", QueueSnoozed, now.Add(3*time.Hour))
+	save("Maple Day", QueueSnoozed, now.Add(26*time.Hour))
+	save("Quill Open", QueueOpen, now.Add(7*24*time.Hour))
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Comes back 7 days from now.", "Harbor Week")
+	assertCompanyQuery("Comes back 3 hours from now.", "Cedar Hour")
+	assertCompanyQuery("Comes back 1 day from now.", "Maple Day")
+	assertCompanyQuery("Comes back 1 days from now.")
+	// Listing puts an elapsed snooze back on the open queue and clears the
+	// wake, so the "Snooze ended" sentence is no longer on the company.
+	assertCompanyQuery("Snooze ended 2 days ago.")
+	assertCompanyQuery("Snooze ended 7 days ago.")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

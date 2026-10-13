@@ -1127,6 +1127,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if check := relationshipSheetReconciliationCheckMatch(needle); check != nil {
 			parts = append(parts, check)
 		}
+		if wake := relationshipSheetSnoozeWakeMatch(needle, searchedAt); wake != nil {
+			parts = append(parts, wake)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -6062,6 +6065,152 @@ func reconciliationErrorPattern(parts ...string) predicate.RevenueAction {
 			b.Arg("*" + strings.Join(parts, "*") + "*")
 		}))
 	})
+}
+
+// relationshipSheetSnoozeWakeMatch is the queue line for a snoozed action.
+// A future wake says "Comes back". Listing reopens a wake that already passed
+// and clears its time, so "Snooze ended" is no longer on the company.
+func relationshipSheetSnoozeWakeMatch(needle string, now time.Time) predicate.Relationship {
+	kind, count, unit, ok := snoozeWakePhrase(needle)
+	if !ok {
+		return nil
+	}
+	lo, hi, ok := snoozeWakeWindow(count, unit)
+	if !ok {
+		return nil
+	}
+	var window predicate.RevenueAction
+	switch kind {
+	case "back":
+		if lo == 0 {
+			window = revenueaction.And(
+				revenueaction.SnoozedUntilGT(now),
+				revenueaction.SnoozedUntilLT(now.Add(hi)),
+			)
+		} else {
+			window = revenueaction.And(
+				revenueaction.SnoozedUntilGTE(now.Add(lo)),
+				revenueaction.SnoozedUntilLT(now.Add(hi)),
+			)
+		}
+	case "ended":
+		if lo == 0 {
+			window = revenueaction.And(
+				revenueaction.SnoozedUntilLTE(now),
+				revenueaction.SnoozedUntilGT(now.Add(-hi)),
+			)
+		} else {
+			window = revenueaction.And(
+				revenueaction.SnoozedUntilLTE(now.Add(-lo)),
+				revenueaction.SnoozedUntilGT(now.Add(-hi)),
+			)
+		}
+	default:
+		return nil
+	}
+	return relationship.HasActionsWith(
+		revenueaction.QueueStatusEQ(QueueSnoozed),
+		window,
+	)
+}
+
+func snoozeWakePhrase(needle string) (kind string, count int, unit time.Duration, ok bool) {
+	var rest string
+	switch {
+	case strings.HasPrefix(needle, "comes back ") && strings.HasSuffix(needle, " from now"):
+		kind = "back"
+		rest = strings.TrimSuffix(strings.TrimPrefix(needle, "comes back "), " from now")
+	case strings.HasPrefix(needle, "snooze ended ") && strings.HasSuffix(needle, " ago"):
+		kind = "ended"
+		rest = strings.TrimSuffix(strings.TrimPrefix(needle, "snooze ended "), " ago")
+	default:
+		return "", 0, 0, false
+	}
+	parts := strings.Fields(rest)
+	if len(parts) != 2 {
+		return "", 0, 0, false
+	}
+	count, err := strconv.Atoi(parts[0])
+	if err != nil || count < 1 {
+		return "", 0, 0, false
+	}
+	switch parts[1] {
+	case "min":
+		if count != 1 {
+			return "", 0, 0, false
+		}
+		unit = time.Minute
+	case "mins":
+		if count < 2 {
+			return "", 0, 0, false
+		}
+		unit = time.Minute
+	case "hour":
+		if count != 1 {
+			return "", 0, 0, false
+		}
+		unit = time.Hour
+	case "hours":
+		if count < 2 {
+			return "", 0, 0, false
+		}
+		unit = time.Hour
+	case "day":
+		if count != 1 {
+			return "", 0, 0, false
+		}
+		unit = 24 * time.Hour
+	case "days":
+		if count < 2 {
+			return "", 0, 0, false
+		}
+		unit = 24 * time.Hour
+	default:
+		return "", 0, 0, false
+	}
+	return kind, count, unit, true
+}
+
+func snoozeWakeWindow(count int, unit time.Duration) (lo, hi time.Duration, ok bool) {
+	switch unit {
+	case time.Minute:
+		if count < 1 || count > 59 {
+			return 0, 0, false
+		}
+		if count == 1 {
+			return 0, 90 * time.Second, true
+		}
+		return time.Duration(count)*time.Minute - 30*time.Second, time.Duration(count)*time.Minute + 30*time.Second, true
+	case time.Hour:
+		if count < 1 || count > 24 {
+			return 0, 0, false
+		}
+		lo = time.Duration(count)*time.Hour - 30*time.Minute
+		hi = time.Duration(count)*time.Hour + 30*time.Minute
+		if lo < time.Hour {
+			lo = time.Hour
+		}
+		if hi > 24*time.Hour {
+			hi = 24 * time.Hour
+		}
+		return lo, hi, lo < hi
+	case 24 * time.Hour:
+		if count < 1 || count > 30 {
+			return 0, 0, false
+		}
+		day := 24 * time.Hour
+		lo = time.Duration(count)*day - day/2
+		hi = time.Duration(count)*day + day/2
+		if lo < day {
+			lo = day
+		}
+		if hi > 30*day {
+			hi = 30 * day
+		}
+		return lo, hi, lo < hi
+	default:
+		return 0, 0, false
+	}
 }
 
 // relationshipSheetUncertainSendMatch is the review for a send that might
