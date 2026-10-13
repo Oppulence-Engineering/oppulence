@@ -8083,6 +8083,51 @@ func TestRelationshipSearchFindsTheReviewIntro(t *testing.T) {
 	assertCompanyQuery("which companies say approve, correct, reject, or defer each one before it changes this company", want...)
 }
 
+func TestRelationshipSearchFindsTheRenewalFallback(t *testing.T) {
+	f := newFixture(t)
+	save := func(name, summary, lifecycle string) {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.Relationship.UpdateOneID(row.ID).
+			SetLifecycle(lifecycle).SetSummary(summary).Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Blank", "", "renewal")
+	save("Harbor Token", "local-user", "renewal")
+	save("Harbor Party", "meeting-counterparty", "renewal")
+	save("Harbor Widget", " next_action ", "renewal")
+	save("Harbor June", "The renewal is in June.", "renewal")
+	save("Harbor Title", "Promise", "renewal")
+	save("Harbor Prospect", "", "prospect")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	want := []string{"Harbor Blank", "Harbor Token", "Harbor Party", "Harbor Widget"}
+	assertCompanyQuery("Decide what happens before this renewal.", want...)
+	assertCompanyQuery("Decide what happens before this renewal", want...)
+	assertCompanyQuery("Up for renewal", "Harbor Blank", "Harbor Token", "Harbor Party", "Harbor Widget", "Harbor June", "Harbor Title")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

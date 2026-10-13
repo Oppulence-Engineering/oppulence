@@ -1389,6 +1389,11 @@ func (s *Service) ListRelationshipsFiltered(
 		if intro := relationshipSheetReviewIntroMatch(needle); intro != nil {
 			parts = append(parts, intro)
 		}
+		// A renewal suggestion with no usable summary says this. A real
+		// summary stays the detail under "Up for renewal".
+		if renewal := relationshipSheetRenewalFallbackMatch(needle); renewal != nil {
+			parts = append(parts, renewal)
+		}
 		// A proposed review card says "A suggested promise is waiting." The
 		// stored label is still "Review proposed promise".
 		if suggested := relationshipSheetSuggestedReviewMatch(needle); suggested != nil {
@@ -10719,6 +10724,44 @@ func writeFocusedReviewOnNewestPage(b *sql.Builder, s *sql.Selector) {
 	b.WriteString(" OR ")
 	writePagedCandidateReview(b, s, rel)
 	b.WriteString(")")
+}
+
+// relationshipSheetRenewalFallbackMatch matches the renewal suggestion when
+// the summary is blank or still a machine token. The card title is already
+// "Up for renewal". The detail says what to decide. A written summary is
+// that detail instead.
+func relationshipSheetRenewalFallbackMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("decide what happens before this renewal", needle) {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.And(
+			sql.EQ(s.C(relationship.FieldLifecycle), "renewal"),
+			sql.P(func(b *sql.Builder) {
+				writeRenewalSummaryUnusable(b, s)
+			}),
+		))
+	})
+}
+
+func writeRenewalSummaryUnusable(b *sql.Builder, s *sql.Selector) {
+	trimmed := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(relationship.FieldSummary))
+	token := trimmed + " <> '' AND " + trimmed + " NOT GLOB '*[^a-z0-9_:-]*'"
+	if s.Dialect() == dialect.Postgres {
+		trimmed = fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(relationship.FieldSummary))
+		token = trimmed + " ~ '^[a-z0-9_:-]+$'"
+	}
+	b.WriteString("(")
+	b.WriteString(trimmed)
+	b.WriteString(" = '' OR ")
+	b.WriteString(trimmed)
+	b.WriteString(" IN (")
+	b.Arg("local-user")
+	b.WriteString(", ")
+	b.Arg("meeting-counterparty")
+	b.WriteString(") OR (")
+	b.WriteString(token)
+	b.WriteString("))")
 }
 
 // relationshipSheetSuggestedReviewMatch matches the title on a proposed
