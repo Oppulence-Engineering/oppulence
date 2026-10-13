@@ -1235,6 +1235,7 @@ it("finds a promise by the status and score printed on the row", async () => {
     state: "open" as const,
     confidence: 0.4,
     relationshipName: "Lumen",
+    sourcePhrase: "",
   };
   render(<CommitmentQueue {...props({ entries: [...entries(), quiet] })} />);
 
@@ -1247,6 +1248,21 @@ it("finds a promise by the status and score printed on the row", async () => {
   await user.type(box, "65");
   expect(screen.getByText("Acme")).toBeInTheDocument();
   expect(screen.queryByText("Lumen")).not.toBeInTheDocument();
+
+  await user.clear(box);
+  await user.type(box, "65%");
+  expect(screen.getByText("Acme")).toBeInTheDocument();
+  expect(screen.queryByText("Lumen")).not.toBeInTheDocument();
+
+  await user.clear(box);
+  await user.type(box, "by Friday");
+  expect(screen.getByText("Acme")).toBeInTheDocument();
+  expect(screen.queryByText("Lumen")).not.toBeInTheDocument();
+
+  await user.clear(box);
+  await user.type(box, "No exact quote is attached yet.");
+  expect(screen.getByText("Lumen")).toBeInTheDocument();
+  expect(screen.queryByText("Acme")).not.toBeInTheDocument();
 
   await user.clear(box);
   await user.type(box, "Open");
@@ -1271,8 +1287,9 @@ it("finds a promise by the status and score printed on the row", async () => {
     }),
   ).toBe(
     [
-      "Acme Taylor Morgan Send the signed security packet 65 At risk",
+      "Acme Taylor Morgan Send the signed security packet 65% At risk",
       "Due within 72h due soon At risk Accepted Missing Not confirmed Evidence Complete Watch",
+      "No exact quote is attached yet.",
     ].join(" "),
   );
   const undated = commitmentSearchText({
