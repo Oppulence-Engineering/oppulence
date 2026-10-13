@@ -1910,6 +1910,55 @@ func TestRelationshipSearchFindsRecommendationReasons(t *testing.T) {
 	if slow.StateReason != "Replies have slowed." {
 		t.Fatalf("slow reason = %q", slow.StateReason)
 	}
+	correct := func(name, reason string) {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		row, err = f.svc.CorrectRelationship(f.ctx, f.user, row.ID, RelationshipCorrectionInput{
+			Dimension: "health", Value: "healthy", Reason: reason,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if row.StateReason != reason {
+			t.Fatalf("%s reason = %q", name, row.StateReason)
+		}
+	}
+	correct("Reason Gap", "No active health assertion at evaluation time.")
+	correct("Reason Step", "No active next action assertion at evaluation time.")
+	correct("Reason Life", "Supporting evidence changed. No active lifecycle assertion at evaluation time.")
+	correct("Reason Said", "Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms.")
+	correct("Reason Quote", "Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms. No active lifecycle assertion at evaluation time.")
+	correct("Reason Stage", "HubSpot company lifecycle stage.")
+	correct("Reason Meet", "User confirmed this commitment from the cited meeting transcript.")
+	correct("Reason Pick", "User selected the current value from a focused contradiction case.")
+	correct("Reason Edit", "User corrected focused conversation evidence.")
+	correct("Reason Focus", "User corrected conversation evidence during focused review.")
+	correct("Reason Vote", "User decided a proposed conversation change.")
+
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	quiet, err := f.client.Relationship.Query().
+		Where(relationship.DisplayNameEQ("Reason Quiet")).
+		Only(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(quiet).
+		SetSource("user").SetExternalID("reason-quiet-observed").
+		SetEventType("relationship.observed").SetOccurredAt(at).SetReceivedAt(at).
+		SetSummary("A recorded row").SetContentHash("reason-quiet-observed").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -1927,11 +1976,37 @@ func TestRelationshipSearchFindsRecommendationReasons(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Why the recommendation changed", "Reason Health", "Reason Slow")
-	assertCompanyQuery("Why the recommendation changed:", "Reason Health", "Reason Slow")
+	assertCompanyQuery("Why the recommendation changed", "Reason Health", "Reason Slow", "Reason Gap", "Reason Step", "Reason Life", "Reason Said", "Reason Quote", "Reason Stage", "Reason Meet", "Reason Pick", "Reason Edit", "Reason Focus", "Reason Vote")
+	assertCompanyQuery("Why the recommendation changed:", "Reason Health", "Reason Slow", "Reason Gap", "Reason Step", "Reason Life", "Reason Said", "Reason Quote", "Reason Stage", "Reason Meet", "Reason Pick", "Reason Edit", "Reason Focus", "Reason Vote")
 	assertCompanyQuery("Why the recommendation changed: The account is healthy.", "Reason Health")
+	assertCompanyQuery("The account is healthy.", "Reason Health")
 	assertCompanyQuery("Why the recommendation changed: Replies have slowed.", "Reason Slow")
+	assertCompanyQuery("Replies have slowed.", "Reason Slow")
 	assertCompanyQuery("Why the recommendation changed: Supporting evidence changed.")
+	assertCompanyQuery("Health is not recorded.", "Reason Gap")
+	assertCompanyQuery("Why the recommendation changed: Health is not recorded.", "Reason Gap")
+	assertCompanyQuery("No active health assertion at evaluation time.")
+	assertCompanyQuery("Why the recommendation changed: No active health assertion at evaluation time.")
+	assertCompanyQuery("No next step is recorded.", "Reason Step")
+	assertCompanyQuery("Why the recommendation changed: No next step is recorded.", "Reason Step")
+	assertCompanyQuery("Supporting evidence changed. Lifecycle is not recorded.", "Reason Life")
+	assertCompanyQuery("Why the recommendation changed: Supporting evidence changed. Lifecycle is not recorded.", "Reason Life")
+	assertCompanyQuery("Supporting evidence changed. No active lifecycle assertion at evaluation time.")
+	assertCompanyQuery("Taken from what was said.", "Reason Said")
+	assertCompanyQuery("Why the recommendation changed: Taken from what was said.", "Reason Said")
+	assertCompanyQuery("Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms.")
+	assertCompanyQuery("Taken from what was said. Lifecycle is not recorded.", "Reason Quote")
+	assertCompanyQuery("Why the recommendation changed: Taken from what was said. Lifecycle is not recorded.", "Reason Quote")
+	assertCompanyQuery("Taken from HubSpot.", "Reason Stage")
+	assertCompanyQuery("Why the recommendation changed: Taken from HubSpot.", "Reason Stage")
+	assertCompanyQuery("HubSpot company lifecycle stage.")
+	assertCompanyQuery("You confirmed this promise from the meeting.", "Reason Meet")
+	assertCompanyQuery("Why the recommendation changed: You confirmed this promise from the meeting.", "Reason Meet")
+	assertCompanyQuery("You chose the current value.", "Reason Pick")
+	assertCompanyQuery("You corrected what was said.", "Reason Edit", "Reason Focus")
+	assertCompanyQuery("Why the recommendation changed: You corrected what was said.", "Reason Edit", "Reason Focus")
+	assertCompanyQuery("You decided a suggested change.", "Reason Vote")
+	assertCompanyQuery("User decided a proposed conversation change.")
 }
 
 func TestRelationshipSearchFindsUnavailableEvidenceExcerpts(t *testing.T) {

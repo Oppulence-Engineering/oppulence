@@ -9501,7 +9501,10 @@ func relationshipLinkedCount(table, column string, n int) predicate.Relationship
 }
 
 // relationshipSheetRecommendationReasonMatch matches the line under What
-// changed. The sheet prints it only when the company has a saved reason.
+// changed and the sentence after "Why the recommendation changed:". The
+// sheet rewrites a missing assertion, a correction, a HubSpot stage, and a
+// quote-backed claim. The stored sentence stays on the record. Search
+// compares the words the sheet prints.
 func relationshipSheetRecommendationReasonMatch(needle string) predicate.Relationship {
 	mode, reason, ok := recommendationReasonQuery(needle)
 	if !ok {
@@ -9509,16 +9512,14 @@ func relationshipSheetRecommendationReasonMatch(needle string) predicate.Relatio
 	}
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
-			column := s.C(relationship.FieldStateReason)
 			if mode == "any" {
 				b.WriteString("trim(COALESCE(")
-				b.WriteString(column)
+				b.WriteString(s.C(relationship.FieldStateReason))
 				b.WriteString(", '')) <> ''")
 				return
 			}
-			b.WriteString("lower(trim(replace(replace(replace(COALESCE(")
-			b.WriteString(column)
-			b.WriteString(", ''), '-', ' '), '_', ' '), '.', ' '))) = ")
+			writeDisplayedProjectionReason(b, s)
+			b.WriteString(" = ")
 			b.Arg(reason)
 		}))
 	})
@@ -9526,19 +9527,147 @@ func relationshipSheetRecommendationReasonMatch(needle string) predicate.Relatio
 
 func recommendationReasonQuery(needle string) (mode, reason string, ok bool) {
 	text := normalizePersonSearch(needle)
+	if text == "" {
+		return "", "", false
+	}
 	const prefix = "why the recommendation changed"
 	if text == prefix || text == prefix+":" {
 		return "any", "", true
 	}
 	const labeled = prefix + ": "
-	if !strings.HasPrefix(text, labeled) {
-		return "", "", false
+	if strings.HasPrefix(text, labeled) {
+		reason = strings.TrimSpace(text[len(labeled):])
+		if reason == "" {
+			return "any", "", true
+		}
+		return "exact", reason, true
 	}
-	reason = strings.TrimSpace(text[len(labeled):])
-	if reason == "" {
-		return "any", "", true
+	// The change list prints the reason with no heading in front of it.
+	return "exact", text, true
+}
+
+// writeDisplayedProjectionReason is projectionReasonCopy in SQL. The claim
+// span is rewritten first, then the named corrections, then each missing
+// assertion. Periods are already spaces, so the quote timestamp's hyphen is
+// a space too.
+func writeDisplayedProjectionReason(b *sql.Builder, s *sql.Selector) {
+	named := [][2]string{
+		{"user corrected focused conversation evidence", "you corrected what was said"},
+		{"user corrected conversation evidence during focused review", "you corrected what was said"},
+		{"user decided a proposed conversation change", "you decided a suggested change"},
+		{"user selected the current value from a focused contradiction case", "you chose the current value"},
+		{"user confirmed this commitment from the cited meeting transcript", "you confirmed this promise from the meeting"},
+		{"hubspot company lifecycle stage", "taken from hubspot"},
 	}
-	return "exact", reason, true
+	gaps := [][2]string{
+		{"no active next action assertion at evaluation time", "no next step is recorded"},
+		{"no active health assertion at evaluation time", "health is not recorded"},
+		{"no active lifecycle assertion at evaluation time", "lifecycle is not recorded"},
+		{"no active engagement assertion at evaluation time", "engagement is not recorded"},
+		{"no active sentiment assertion at evaluation time", "sentiment is not recorded"},
+		{"no active summary assertion at evaluation time", "no summary is recorded"},
+		{"no active risk assertion at evaluation time", "no risk is recorded"},
+		{"no active milestone assertion at evaluation time", "no milestone is recorded"},
+	}
+	for range gaps {
+		b.WriteString("replace(")
+	}
+	for range named {
+		b.WriteString("replace(")
+	}
+	writeClaimSplicedReason(b, s)
+	for _, pair := range named {
+		b.WriteString(", ")
+		b.Arg(pair[0])
+		b.WriteString(", ")
+		b.Arg(pair[1])
+		b.WriteString(")")
+	}
+	for _, pair := range gaps {
+		b.WriteString(", ")
+		b.Arg(pair[0])
+		b.WriteString(", ")
+		b.Arg(pair[1])
+		b.WriteString(")")
+	}
+}
+
+func writeProjectionReasonNorm(b *sql.Builder, s *sql.Selector) {
+	writeNormalizedSQLText(b, s, "COALESCE("+s.C(relationship.FieldStateReason)+", '')")
+}
+
+func writeSQLLocate(b *sql.Builder, s *sql.Selector, haystack func(), needle string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("strpos(")
+	} else {
+		b.WriteString("instr(")
+	}
+	haystack()
+	b.WriteString(", ")
+	b.Arg(needle)
+	b.WriteString(")")
+}
+
+func writeClaimStartPos(b *sql.Builder, s *sql.Selector) {
+	writeSQLLocate(b, s, func() { writeProjectionReasonNorm(b, s) }, "conversation claim ")
+}
+
+func writeClaimMarkerRel(b *sql.Builder, s *sql.Selector) {
+	writeSQLLocate(b, s, func() {
+		b.WriteString("substr(")
+		writeProjectionReasonNorm(b, s)
+		b.WriteString(", ")
+		writeClaimStartPos(b, s)
+		b.WriteString(")")
+	}, ", supported by the exact quote at ")
+}
+
+func writeClaimMarkerPos(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(")
+	writeClaimStartPos(b, s)
+	b.WriteString(" + ")
+	writeClaimMarkerRel(b, s)
+	b.WriteString(" - 1)")
+}
+
+func writeClaimEndRel(b *sql.Builder, s *sql.Selector) {
+	writeSQLLocate(b, s, func() {
+		b.WriteString("substr(")
+		writeProjectionReasonNorm(b, s)
+		b.WriteString(", ")
+		writeClaimMarkerPos(b, s)
+		b.WriteString(")")
+	}, " ms")
+}
+
+func writeClaimSuffixStart(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(")
+	writeClaimMarkerPos(b, s)
+	b.WriteString(" + ")
+	writeClaimEndRel(b, s)
+	b.WriteString(" - 1 + 3)")
+}
+
+func writeClaimSplicedReason(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(CASE WHEN ")
+	writeClaimStartPos(b, s)
+	b.WriteString(" > 0 AND ")
+	writeClaimMarkerRel(b, s)
+	b.WriteString(" > 0 AND ")
+	writeClaimEndRel(b, s)
+	b.WriteString(" > 0 THEN substr(")
+	writeProjectionReasonNorm(b, s)
+	b.WriteString(", 1, ")
+	writeClaimStartPos(b, s)
+	b.WriteString(" - 1) || ")
+	b.Arg("taken from what was said")
+	b.WriteString(" || substr(")
+	writeProjectionReasonNorm(b, s)
+	b.WriteString(", ")
+	writeClaimSuffixStart(b, s)
+	b.WriteString(") ELSE ")
+	writeProjectionReasonNorm(b, s)
+	b.WriteString(" END)")
 }
 
 // relationshipSheetEvidenceExcerptMatch matches the quote under Inspect
@@ -13787,6 +13916,14 @@ func sheetEmptySentenceOwnsActivity(needle string) bool {
 		"no risks recorded for this company yet.",
 		"no milestones recorded for this company yet.",
 		"no activity recorded for this company yet.",
+		"no next step is recorded.",
+		"health is not recorded.",
+		"lifecycle is not recorded.",
+		"engagement is not recorded.",
+		"sentiment is not recorded.",
+		"no summary is recorded.",
+		"no risk is recorded.",
+		"no milestone is recorded.",
 		"none recorded.",
 		// "1 Gmail thread is linked." names the Gmail heading too. The sentence
 		// is the unsupported-detail paragraph, not every company with mail.
