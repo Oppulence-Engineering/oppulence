@@ -1082,6 +1082,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if invite := relationshipSheetActivityInviteMatch(needle); invite != nil {
 			parts = append(parts, invite)
 		}
+		if guest := relationshipSheetActivityGuestMatch(needle); guest != nil {
+			parts = append(parts, guest)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -3854,6 +3857,151 @@ func writeNormalizedExpr(b *sql.Builder, s *sql.Selector, expr string) {
 		b.WriteString(", '  ', ' ')")
 	}
 	b.WriteString(")")
+}
+
+// relationshipSheetActivityGuestMatch is "Named from the guest list: Avery"
+// and "A speaker was not named" on an opened conversation. You, a speaker id,
+// and an anonymous label stay off the named line.
+func relationshipSheetActivityGuestMatch(needle string) predicate.Relationship {
+	const named = "named from the guest list: "
+	if strings.HasPrefix(needle, named) {
+		label := strings.TrimSpace(needle[len(named):])
+		if label == "" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationNamedGuest(label))
+	}
+	if needle == "a speaker was not named" {
+		return relationship.HasObservationsWith(observationUnnamedSpeaker())
+	}
+	return nil
+}
+
+func observationNamedGuest(label string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			writeGuestArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeGuestRows(b, s, facts)
+			b.WriteString(" AS guest WHERE ")
+			writeNamedGuest(b, s, "guest")
+			b.WriteString(" AND ")
+			writeNormalizedExpr(b, s, guestLabelExpr(s, "guest"))
+			b.WriteString(" = ")
+			b.Arg(label)
+			b.WriteString(") AND ")
+			writeNormalizedExpr(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
+			b.Arg(label)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func observationUnnamedSpeaker() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			writeGuestArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeGuestRows(b, s, facts)
+			b.WriteString(" AS guest WHERE ")
+			writeAnonymousGuest(b, s, "guest")
+			b.WriteString(") AND ")
+			writeNormalizedExpr(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
+			b.Arg("a speaker was not named")
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeGuestArray(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'participant_resolution') = 'array'")
+		return
+	}
+	b.WriteString("json_valid(")
+	b.WriteString(facts)
+	b.WriteString(") AND json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.participant_resolution') = 'array'")
+}
+
+func writeGuestRows(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'participant_resolution')")
+		return
+	}
+	b.WriteString("json_each(")
+	b.WriteString(facts)
+	b.WriteString(", '$.participant_resolution')")
+}
+
+func guestLabelExpr(s *sql.Selector, alias string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce(" + alias + "->>'label', ''))"
+	}
+	return "trim(coalesce(json_extract(" + alias + ".value, '$.label'), ''))"
+}
+
+func guestSourceExpr(s *sql.Selector, alias string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce(" + alias + "->>'resolution_source', ''))"
+	}
+	return "trim(coalesce(json_extract(" + alias + ".value, '$.resolution_source'), ''))"
+}
+
+func writeAnonymousGuest(b *sql.Builder, s *sql.Selector, alias string) {
+	label := guestLabelExpr(s, alias)
+	source := guestSourceExpr(s, alias)
+	b.WriteString("(lower(")
+	b.WriteString(source)
+	b.WriteString(") = 'anonymous' OR ")
+	b.WriteString(label)
+	b.WriteString(" = '' OR ")
+	b.WriteString(label)
+	b.WriteString(" IN ('Other', 'Unknown speaker') OR ")
+	writeSpeakerNumber(b, s, label)
+	b.WriteString(")")
+}
+
+func writeNamedGuest(b *sql.Builder, s *sql.Selector, alias string) {
+	label := guestLabelExpr(s, alias)
+	b.WriteString("NOT ")
+	writeAnonymousGuest(b, s, alias)
+	b.WriteString(" AND ")
+	b.WriteString(label)
+	b.WriteString(" NOT IN ('You', 'local-user', 'meeting-counterparty') AND ")
+	b.WriteString(label)
+	b.WriteString(" ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("!~ '^[a-z0-9_:-]+$'")
+		return
+	}
+	b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+}
+
+func writeSpeakerNumber(b *sql.Builder, s *sql.Selector, label string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(label)
+		b.WriteString(" ~* '^speaker[[:space:]]+[0-9]+$'")
+		return
+	}
+	b.WriteString("(lower(")
+	b.WriteString(label)
+	b.WriteString(") GLOB 'speaker [0-9]' OR lower(")
+	b.WriteString(label)
+	b.WriteString(") GLOB 'speaker [0-9][0-9]' OR lower(")
+	b.WriteString(label)
+	b.WriteString(") GLOB 'speaker [0-9][0-9][0-9]')")
 }
 
 // relationshipSheetActivityPromiseStateMatch is who made a confirmed promise,

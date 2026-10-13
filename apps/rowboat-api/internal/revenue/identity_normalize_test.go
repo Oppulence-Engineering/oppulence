@@ -5874,6 +5874,70 @@ func TestRelationshipSearchFindsTheActivityAttendance(t *testing.T) {
 	assertCompanyQuery("evt_18")
 }
 
+func TestRelationshipSearchFindsTheActivityGuest(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Guest Avery", "Q3 review", `{
+		"participant_resolution":[
+			{"speaker_id":"local-user","label":"You","resolution_source":"calendar_contact_or_provider"},
+			{"speaker_id":"meeting-participant:avery","label":"Avery","resolution_source":"calendar_contact_or_provider"},
+			{"speaker_id":"anonymous:1","label":"Speaker 1","resolution_source":"anonymous"}
+		]
+	}`)
+	saveNote("Guest Ada", "Q3 review", `{"participant_resolution":[{"label":"Ada Mesa","resolution_source":"calendar_contact_or_provider"}]}`)
+	saveNote("Guest You", "Q3 review", `{"participant_resolution":[{"label":"You"},{"label":"speaker_2"}]}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Named from the guest list: Avery", "Guest Avery")
+	assertCompanyQuery("Named from the guest list: Ada Mesa", "Guest Ada")
+	assertCompanyQuery("A speaker was not named", "Guest Avery")
+	assertCompanyQuery("Named from the guest list: Speaker 1")
+	assertCompanyQuery("Named from the guest list: You")
+	assertCompanyQuery("Named from the guest list: speaker_2")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
