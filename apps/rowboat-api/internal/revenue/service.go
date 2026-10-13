@@ -1384,6 +1384,11 @@ func (s *Service) ListRelationshipsFiltered(
 		if suggestion := relationshipSheetSuggestionMatch(needle); suggestion != nil {
 			parts = append(parts, suggestion)
 		}
+		// The review section says this when a card is on the newest page.
+		// An empty page with older conversations says a different sentence.
+		if intro := relationshipSheetReviewIntroMatch(needle); intro != nil {
+			parts = append(parts, intro)
+		}
 		// A proposed review card says "A suggested promise is waiting." The
 		// stored label is still "Review proposed promise".
 		if suggested := relationshipSheetSuggestedReviewMatch(needle); suggested != nil {
@@ -10674,6 +10679,46 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipSheetReviewIntroMatch matches the sentence above the review
+// cards. The sheet says it when the newest page has a card. A corrected
+// claim and an approved suggestion leave that page empty. A claim buried
+// under a full page of newer conversations stays on the older-page sentence.
+func relationshipSheetReviewIntroMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("approve, correct, reject, or defer each one before it changes this company", needle) {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeFocusedReviewOnNewestPage(b, s)
+		}))
+	})
+}
+
+func writeFocusedReviewOnNewestPage(b *sql.Builder, s *sql.Selector) {
+	rel := s.C(relationship.FieldID)
+	b.WriteString("EXISTS (SELECT 1 FROM (SELECT paged_obs.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(" AS id, paged_obs.")
+	b.WriteString(relationshipobservation.FieldNormalizedFactsJSON)
+	b.WriteString(" AS facts FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS paged_obs WHERE paged_obs.")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(rel)
+	b.WriteString(" ORDER BY paged_obs.")
+	b.WriteString(relationshipobservation.FieldOccurredAt)
+	b.WriteString(" DESC, paged_obs.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(" DESC LIMIT ")
+	b.WriteString(strconv.Itoa(intelligenceObservationPage))
+	b.WriteString(") AS paged WHERE ")
+	writePagedClaimReview(b, s, rel)
+	b.WriteString(" OR ")
+	writePagedCandidateReview(b, s, rel)
+	b.WriteString(")")
 }
 
 // relationshipSheetSuggestedReviewMatch matches the title on a proposed

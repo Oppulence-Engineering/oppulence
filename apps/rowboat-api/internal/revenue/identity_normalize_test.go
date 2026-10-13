@@ -7945,6 +7945,144 @@ func TestRelationshipSearchFindsTheReviewCaveat(t *testing.T) {
 	assertCompanyQuery("speaker assignment requires review")
 }
 
+func TestRelationshipSearchFindsTheReviewIntro(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveFacts := func(rel *ent.Relationship, externalID string, at time.Time, facts string) *ent.RelationshipObservation {
+		t.Helper()
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(at).SetReceivedAt(at).SetContentHash(externalID).
+			SetSummary("A recorded note").SetNormalizedFactsJSON(facts).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	claim := func(id string, confidence float64) string {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"conversation_claims": []map[string]any{{
+				"id": id, "kind": "risk", "value": "The packet is late",
+				"confidence": confidence, "speakerConfidence": 1,
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(body)
+	}
+	candidate := func(name string) string {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"conversation_claim_candidates": []map[string]any{{
+				"candidateId": "cand-" + name, "kind": "promise",
+				"displayValue": "Noted", "confidence": 0.4,
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(body)
+	}
+	now := time.Now().UTC()
+	makeCompany("Intro Quiet")
+	claimRel := makeCompany("Intro Claim")
+	saveFacts(claimRel, "intro-claim", now, claim("intro-claim", 0.5))
+	sure := makeCompany("Intro Sure")
+	saveFacts(sure, "intro-sure", now, claim("intro-sure", 0.95))
+	fixedRel := makeCompany("Intro Fixed")
+	fixedObs := saveFacts(fixedRel, "intro-fixed", now, claim("intro-fixed", 0.5))
+	correction, err := json.Marshal(map[string]any{
+		"review_correction": map[string]any{
+			"review_item_id": reviewItemID(fixedObs.ID.String(), "intro-fixed", "claim"),
+			"kind":           "claim", "claim_id": "intro-fixed",
+			"observation_id": fixedObs.ID.String(), "corrected_value": "The packet is on time",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveFacts(fixedRel, "intro-fixed-correction", now.Add(time.Minute), string(correction))
+	open := makeCompany("Intro Open")
+	saveFacts(open, "intro-open", now, candidate("Intro Open"))
+	closedRel := makeCompany("Intro Closed")
+	closedObs := saveFacts(closedRel, "intro-closed", now, candidate("Intro Closed"))
+	decision, err := json.Marshal(map[string]any{
+		"review_decision": map[string]any{
+			"item_id": "review:intro-closed", "kind": "approve",
+			"candidate_id": "cand-Intro Closed", "observation_id": closedObs.ID.String(),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveFacts(closedRel, "intro-closed-decision", now.Add(time.Minute), string(decision))
+	deferredRel := makeCompany("Intro Deferred")
+	deferredObs := saveFacts(deferredRel, "intro-deferred", now, candidate("Intro Deferred"))
+	deferredDecision, err := json.Marshal(map[string]any{
+		"review_decision": map[string]any{
+			"item_id": "review:intro-deferred", "kind": "defer",
+			"candidate_id": "cand-Intro Deferred", "observation_id": deferredObs.ID.String(),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveFacts(deferredRel, "intro-deferred-decision", now.Add(time.Minute), string(deferredDecision))
+	buried := makeCompany("Intro Buried")
+	older := now.Add(-2 * time.Hour)
+	saveFacts(buried, "intro-buried-claim", older, claim("intro-buried", 0.5))
+	for i := 0; i < intelligenceObservationPage; i++ {
+		externalID := fmt.Sprintf("intro-buried-%03d", i)
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(buried).
+			SetSource("user").SetExternalID(externalID).SetEventType("note").
+			SetOccurredAt(now.Add(-time.Duration(i) * time.Second)).SetReceivedAt(now).
+			SetSummary("A recorded note").SetContentHash(externalID).
+			SetNormalizedFactsJSON("{}").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	want := []string{"Intro Claim", "Intro Open", "Intro Deferred"}
+	assertCompanyQuery("Approve, correct, reject, or defer each one before it changes this company.", want...)
+	assertCompanyQuery("Approve, correct, reject, or defer each one before it changes this company", want...)
+	assertCompanyQuery("which companies say approve, correct, reject, or defer each one before it changes this company", want...)
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
