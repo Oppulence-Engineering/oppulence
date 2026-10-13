@@ -1121,6 +1121,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if failure := relationshipSheetSendFailureMatch(needle); failure != nil {
 			parts = append(parts, failure)
 		}
+		if dismissed := relationshipSheetDismissReasonMatch(needle); dismissed != nil {
+			parts = append(parts, dismissed)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -5869,6 +5872,59 @@ func executionErrorEither(preds ...predicate.RevenueAction) predicate.RevenueAct
 
 func executionErrorAll(preds ...predicate.RevenueAction) predicate.RevenueAction {
 	return revenueaction.And(preds...)
+}
+
+// relationshipSheetDismissReasonMatch is the reason on a dismissed action.
+// The queue names a stored slug. A reason written in words stays as written.
+func relationshipSheetDismissReasonMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	return relationship.HasActionsWith(
+		revenueaction.QueueStatusEQ(QueueDismissed),
+		dismissReasonShown(needle),
+	)
+}
+
+func dismissReasonShown(needle string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := "trim(" + s.C(revenueaction.FieldDismissReason) + ")"
+			b.WriteString(column)
+			b.WriteString(" <> '' AND (CASE")
+			for _, item := range []struct{ token, label string }{
+				{"not_relevant", "not relevant"},
+				{"already_handled", "already handled"},
+				{"resolved_by_new_evidence", "newer evidence arrived"},
+				{"changed_my_mind", "changed my mind"},
+			} {
+				b.WriteString(" WHEN ")
+				b.WriteString(column)
+				b.WriteString(" = ")
+				b.Arg(item.token)
+				b.WriteString(" THEN ")
+				b.Arg(item.label)
+			}
+			b.WriteString(" WHEN ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(column)
+				b.WriteString(" ~ '^[a-z0-9_]+$' THEN replace(lower(")
+				b.WriteString(column)
+				b.WriteString("), '_', ' ')")
+			} else {
+				b.WriteString(column)
+				b.WriteString(" GLOB '[a-z0-9_]*' AND ")
+				b.WriteString(column)
+				b.WriteString(" NOT GLOB '*[^a-z0-9_]*' THEN replace(lower(")
+				b.WriteString(column)
+				b.WriteString("), '_', ' ')")
+			}
+			b.WriteString(" ELSE ")
+			writeNormalizedSQLText(b, s, column)
+			b.WriteString(" END) = ")
+			b.Arg(needle)
+		}))
+	})
 }
 
 // relationshipSheetUncertainSendMatch is the review for a send that might

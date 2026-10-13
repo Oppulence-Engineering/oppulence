@@ -6948,6 +6948,73 @@ func TestRelationshipSearchFindsTheSendFailure(t *testing.T) {
 	assertCompanyQuery("revenue: mailbox exploded")
 }
 
+func TestRelationshipSearchFindsTheDismissReason(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, status, reason string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		create := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("customer_risk").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetQueueStatus(status)
+		if reason != "" {
+			create.SetDismissReason(reason)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Skip", QueueDismissed, "not_relevant")
+	save("Birch Done", QueueDismissed, "already_handled")
+	save("Cedar Fresh", QueueDismissed, "resolved_by_new_evidence")
+	save("Maple Mind", QueueDismissed, "changed_my_mind")
+	save("Quill Token", QueueDismissed, "follow_up")
+	save("Lane Note", QueueDismissed, "Call Avery tomorrow.")
+	save("West Open", QueueOpen, "not_relevant")
+	save("Cedar Empty", QueueDismissed, "")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Not relevant", "Harbor Skip")
+	assertCompanyQuery("Already handled", "Birch Done")
+	assertCompanyQuery("Newer evidence arrived", "Cedar Fresh")
+	assertCompanyQuery("resolved by new evidence")
+	assertCompanyQuery("Changed my mind", "Maple Mind")
+	assertCompanyQuery("Follow Up", "Quill Token")
+	assertCompanyQuery("Call Avery tomorrow.", "Lane Note")
+	assertCompanyQuery("follow_up", "Quill Token")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
