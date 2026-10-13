@@ -9452,6 +9452,34 @@ func TestRelationshipSearchFindsTheQuietAccount(t *testing.T) {
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	pylon, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Pylon Works",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(pylon.ID).
+		SetLifecycle("prospect").SetLastTouchAt(quietAt).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"Ada Lovelace", "J.R. Rowe"} {
+		personRow, err := f.client.Person.Create().
+			SetDisplayName(name).
+			SetEmploymentStatus("departed").
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RelationshipParticipant.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetRelationship(pylon).SetPerson(personRow).
+			SetDisplayName(name).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
 	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 100, 0)
 	if err != nil || page == nil {
 		t.Fatal(err)
@@ -9483,6 +9511,9 @@ func TestRelationshipSearchFindsTheQuietAccount(t *testing.T) {
 	if !strings.Contains(got["Mesa Clay"], "Ada Mesa has left") {
 		t.Fatalf("mesa explanation = %q", got["Mesa Clay"])
 	}
+	if !strings.Contains(got["Pylon Works"], "Ada Lovelace and J.R. Rowe has left") {
+		t.Fatalf("pylon explanation = %q", got["Pylon Works"])
+	}
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -9505,9 +9536,32 @@ func TestRelationshipSearchFindsTheQuietAccount(t *testing.T) {
 	assertCompanyQuery("Quiet account", "Quill Atelier", "Lumen Packet")
 	assertCompanyQuery("No recorded interaction", "Quill Atelier", "Lumen Packet")
 	assertCompanyQuery("Prospects are usually contacted again within 30 days", "Quill Atelier")
-	assertCompanyQuery("mail to that address is no longer delivered", "Mesa Clay")
-	assertCompanyQuery("because nobody here can reply", "Mesa Clay")
+	assertCompanyQuery("mail to that address is no longer delivered", "Mesa Clay", "Pylon Works")
+	assertCompanyQuery("because nobody here can reply", "Mesa Clay", "Pylon Works")
 	assertCompanyQuery("because there is nobody here to reply")
+	singular := fmt.Sprintf(
+		"Ada Mesa has left, so mail to that address is no longer delivered. It has been quiet for %d days because nobody here can reply.",
+		days,
+	)
+	plural := fmt.Sprintf(
+		"Ada Lovelace and J.R. Rowe have left, so mail to that address is no longer delivered. It has been quiet for %d days because nobody here can reply.",
+		days,
+	)
+	assertCompanyQuery(singular, "Mesa Clay")
+	assertCompanyQuery("which queue says "+singular, "Mesa Clay")
+	assertCompanyQuery(plural, "Pylon Works")
+	assertCompanyQuery(fmt.Sprintf(
+		"Ada Mesa has left; mail to that address is no longer delivered. Quiet for %d days because there is nobody here to reply.",
+		days,
+	))
+	assertCompanyQuery(fmt.Sprintf(
+		"Ada Lovelace and J.R. Rowe has left, so mail to that address is no longer delivered. It has been quiet for %d days because nobody here can reply.",
+		days,
+	))
+	assertCompanyQuery(fmt.Sprintf(
+		"Ada Mesa has left, so mail to that address is no longer delivered. It has been quiet for %d day because nobody here can reply.",
+		days,
+	))
 }
 
 func TestRelationshipSearchFindsTheUnresolvedRisk(t *testing.T) {

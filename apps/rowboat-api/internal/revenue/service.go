@@ -2218,11 +2218,21 @@ func attentionSourceWarningSentence(sources []string) string {
 	return who + " " + verb + " to be read again or reconnected."
 }
 
+// departedQuietSentence is the attention-queue line for a contact who left.
+// The queue drops the stored semicolon and says how long the silence has lasted.
+var departedQuietSentence = regexp.MustCompile(` left, so mail to that address is no longer delivered it has been quiet for (\d+) (day|days) because nobody here can reply`)
+
 // relationshipSheetQuietMatch matches the quiet-account sentence. The day count
 // and the stage are part of the sentence, so "Prospects … within 30 days" stays
 // off an active customer, and a company under the stage's usual silence does
 // not match. A departed contact prints a different sentence.
 func relationshipSheetQuietMatch(needle string, now time.Time) predicate.Relationship {
+	if days, ok := departedQuietDays(needle); ok {
+		return relationship.And(
+			relationshipShowsDepartedQuietForDays(now, days),
+			relationshipDepartedSentenceMatches(needle, days),
+		)
+	}
 	if days, cohort, usual, ok := parseQuietSentence(needle); ok {
 		for _, lifecycle := range quietSearchLifecycles() {
 			if normalizePersonSearch(quietAccountCohort(lifecycle)) != cohort {
@@ -2320,6 +2330,116 @@ func relationshipShowsDepartedQuiet(now time.Time) predicate.Relationship {
 		parts = append(parts, relationshipQuietFor(now, lifecycle, 0))
 	}
 	return relationship.And(relationship.Or(parts...), relationshipHasDepartedContact())
+}
+
+// departedQuietDays reads the day count from the queue's departed-contact sentence.
+// "1 day" and "N days" are the printed forms. The stored "Quiet for N days" is not.
+func departedQuietDays(needle string) (int, bool) {
+	match := departedQuietSentence.FindStringSubmatch(needle)
+	if match == nil {
+		return 0, false
+	}
+	days, err := strconv.Atoi(match[1])
+	if err != nil || days < 1 || strconv.Itoa(days) != match[1] {
+		return 0, false
+	}
+	unit := "days"
+	if days == 1 {
+		unit = "day"
+	}
+	if match[2] != unit {
+		return 0, false
+	}
+	return days, true
+}
+
+func relationshipShowsDepartedQuietForDays(now time.Time, days int) predicate.Relationship {
+	parts := make([]predicate.Relationship, 0, len(quietSearchLifecycles()))
+	for _, lifecycle := range quietSearchLifecycles() {
+		parts = append(parts, relationshipQuietFor(now, lifecycle, days))
+	}
+	return relationship.And(relationship.Or(parts...), relationshipHasDepartedContact())
+}
+
+// relationshipDepartedSentenceMatches is the sentence the queue shows for the
+// people who left. Names stay in the order the queue prints them, and two
+// names use "have". A stored "has left" sentence stays unmatched.
+func relationshipDepartedSentenceMatches(needle string, days int) predicate.Relationship {
+	dayWord := "days"
+	if days == 1 {
+		dayWord = "day"
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			raw := fmt.Sprintf(
+				"(SELECT names || ' ' || CASE WHEN %s THEN 'have' ELSE 'has' END || ' left, so mail to that address is no longer delivered. It has been quiet for %d %s because nobody here can reply.' FROM (SELECT %s AS names) AS joined WHERE names IS NOT NULL AND names <> '')",
+				departedPluralSQL(s.Dialect()),
+				days,
+				dayWord,
+				departedContactNamesSQL(s),
+			)
+			b.WriteString("EXISTS (SELECT 1 FROM (SELECT ")
+			writeNormalizedSQLText(b, s, raw)
+			b.WriteString(" AS shown) AS sentence WHERE shown <> '' AND (shown = ")
+			b.Arg(needle)
+			b.WriteString(" OR ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("strpos(")
+				b.Arg(needle)
+				b.WriteString(", shown) > 0")
+			} else {
+				b.WriteString("instr(")
+				b.Arg(needle)
+				b.WriteString(", shown) > 0")
+			}
+			b.WriteString("))")
+		}))
+	})
+}
+
+func departedPluralSQL(name string) string {
+	if name == dialect.Postgres {
+		return `names ~ '(^|[^A-Za-z0-9_])and([^A-Za-z0-9_]|$)'`
+	}
+	return `(names GLOB '*[^A-Za-z0-9_]and[^A-Za-z0-9_]*' OR names GLOB 'and[^A-Za-z0-9_]*' OR names GLOB '*[^A-Za-z0-9_]and' OR names = 'and')`
+}
+
+
+func departedContactNamesSQL(s *sql.Selector) string {
+	relID := s.C(relationship.FieldID)
+	people := person.Table
+	part := relationshipparticipant.Table
+	name := person.FieldDisplayName
+	if s.Dialect() == dialect.Postgres {
+		return fmt.Sprintf(
+			`(SELECT string_agg(name, ' and ' ORDER BY name COLLATE "C") FROM (SELECT who.%s AS name FROM %s AS member JOIN %s AS who ON who.%s = member.%s WHERE member.%s = %s AND who.%s = 'departed' AND who.%s = 'active' AND coalesce(who.%s, '') <> '' GROUP BY who.%s) AS unique_names)`,
+			name,
+			part,
+			people,
+			person.FieldID,
+			relationshipparticipant.PersonColumn,
+			relationshipparticipant.RelationshipColumn,
+			relID,
+			person.FieldEmploymentStatus,
+			person.FieldStatus,
+			name,
+			name,
+		)
+	}
+	return fmt.Sprintf(
+		`(SELECT group_concat(name, ' and ') FROM (SELECT name FROM (SELECT who.%s AS name FROM %s AS member JOIN %s AS who ON who.%s = member.%s WHERE member.%s = %s AND who.%s = 'departed' AND who.%s = 'active' AND coalesce(who.%s, '') <> '' GROUP BY who.%s) AS unique_names ORDER BY name))`,
+		name,
+		part,
+		people,
+		person.FieldID,
+		relationshipparticipant.PersonColumn,
+		relationshipparticipant.RelationshipColumn,
+		relID,
+		person.FieldEmploymentStatus,
+		person.FieldStatus,
+		name,
+		name,
+	)
 }
 
 func relationshipQuietFor(now time.Time, lifecycle string, exactDays int) predicate.Relationship {
