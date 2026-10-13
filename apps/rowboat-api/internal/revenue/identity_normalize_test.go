@@ -7610,6 +7610,70 @@ func TestRelationshipSearchFindsTheSourceReconnectCopy(t *testing.T) {
 	assertCompanyQuery("A source needs to be reconnected.", "Harbor Card")
 }
 
+func TestRelationshipSearchFindsTheSourceCopy(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Slack", "slack:channel:harbor")
+	save("Birch Hub", "hubspot:company:birch")
+	save("Cedar Google", "google:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("default").
+		SetStatus("connected").SetCompleteness("partial").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("live").SetCompleteness("complete").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Read recent mail and meetings to build company history. Sending and calendar changes wait for approval.", "Cedar Google")
+	assertCompanyQuery("Read: Mail and calendar", "Cedar Google")
+	assertCompanyQuery("On approval: Drafts, sending, and calendar changes", "Cedar Google")
+	assertCompanyQuery("Read channels and people to add shared context. Posting waits until you approve the exact message.", "Harbor Slack")
+	assertCompanyQuery("Read: Channels and people", "Harbor Slack")
+	assertCompanyQuery("On approval: Post a message", "Harbor Slack")
+	assertCompanyQuery("Read companies, contacts, and deals. Notes and tasks are created only after you approve them.")
+	assertCompanyQuery("Read: Companies, contacts, and deals")
+	assertCompanyQuery("On approval: Notes and tasks")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

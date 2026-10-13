@@ -1148,6 +1148,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if reconnect := relationshipSheetSourceReconnectCopyMatch(needle); reconnect != nil {
 			parts = append(parts, reconnect)
 		}
+		if copy := relationshipSheetSourceCopyMatch(needle); copy != nil {
+			parts = append(parts, copy)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -6681,6 +6684,95 @@ func relationshipSheetSourceReconnectCopyMatch(needle string) predicate.Relation
 		b.WriteString(" = ")
 		b.Arg("disconnected")
 	})
+}
+
+// relationshipSheetSourceCopyMatch is the explanation and the permission
+// lines on a source card. The card is hidden once every account is live and
+// nothing is missing, so those sentences stay out of search then.
+func relationshipSheetSourceCopyMatch(needle string) predicate.Relationship {
+	family, ok := sourceCopyFamily(needle)
+	if !ok {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(")
+			writeSourceFamilyDependency(b, s, family)
+			b.WriteString(" AND ")
+			writeSourceFamilyNeedsAttention(b, s, family)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func sourceCopyFamily(needle string) (string, bool) {
+	phrases := map[string]string{
+		normalizePersonSearch("Read recent mail and meetings to build company history. Sending and calendar changes wait for approval."): "google",
+		"read: mail and calendar":                            "google",
+		"on approval: drafts, sending, and calendar changes": "google",
+		normalizePersonSearch("Read channels and people to add shared context. Posting waits until you approve the exact message."): "slack",
+		"read: channels and people":   "slack",
+		"on approval: post a message": "slack",
+		normalizePersonSearch("Read companies, contacts, and deals. Notes and tasks are created only after you approve them."): "hubspot",
+		"read: companies, contacts, and deals": "hubspot",
+		"on approval: notes and tasks":         "hubspot",
+	}
+	family, ok := phrases[needle]
+	return family, ok
+}
+
+func writeSourceFamilyDependency(b *sql.Builder, s *sql.Selector, family string) {
+	switch family {
+	case "google":
+		writeRelationshipDependsOn(b, s, []string{"gmail", "calendar", "google"}, []string{"email", "gmail", "calendar"})
+	case "slack":
+		writeRelationshipDependsOn(b, s, []string{"slack"}, []string{"slack"})
+	case "hubspot":
+		writeRelationshipDependsOn(b, s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"})
+	default:
+		b.WriteString("0")
+	}
+}
+
+func writeSourceFamilyNeedsAttention(b *sql.Builder, s *sql.Selector, family string) {
+	b.WriteString("(NOT EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS src WHERE src.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.WorkspaceColumn))
+	b.WriteString(" AND lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN ")
+	writeSourceFamilyIn(b, family)
+	b.WriteString(") OR EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS src WHERE src.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.WorkspaceColumn))
+	b.WriteString(" AND lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN ")
+	writeSourceFamilyIn(b, family)
+	b.WriteString(" AND (src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" <> 'live' OR NOT (")
+	writeAliasMissingScopesEmpty(b, s, "src")
+	b.WriteString("))))")
+}
+
+func writeSourceFamilyIn(b *sql.Builder, family string) {
+	switch family {
+	case "google":
+		b.WriteString("('gmail', 'calendar', 'google')")
+	case "slack":
+		b.WriteString("('slack')")
+	case "hubspot":
+		b.WriteString("('hubspot', 'crm')")
+	default:
+		b.WriteString("('')")
+	}
 }
 
 // relationshipSheetSourceLookedMatch is the hover on a source badge.
