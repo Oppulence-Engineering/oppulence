@@ -1109,6 +1109,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if freshness := relationshipSheetGraphFreshnessMatch(needle, searchedAt); freshness != nil {
 			parts = append(parts, freshness)
 		}
+		if recoveryStatus := relationshipSheetRecoveryStatusMatch(needle); recoveryStatus != nil {
+			parts = append(parts, recoveryStatus)
+		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
@@ -5704,6 +5707,24 @@ func writeRecoveryKind(b *sql.Builder, s *sql.Selector) {
 		return
 	}
 	b.WriteString("json_extract(evidence.value, '$.kind')")
+}
+
+// relationshipSheetRecoveryStatusMatch is the recovery queue word for an
+// action. Open is "Held". The other stored statuses use the same words the
+// queue filter already prints.
+func relationshipSheetRecoveryStatusMatch(needle string) predicate.Relationship {
+	switch needle {
+	case "held":
+		return relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen))
+	case "snoozed":
+		return relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueSnoozed))
+	case "handled":
+		return relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueHandled))
+	case "dismissed":
+		return relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueDismissed))
+	default:
+		return nil
+	}
 }
 
 // relationshipSheetGraphFreshnessMatch is the State word on a graph evidence

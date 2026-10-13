@@ -6657,6 +6657,87 @@ func TestRelationshipSearchFindsTheGraphFreshness(t *testing.T) {
 	assertCompanyQuery("aging")
 }
 
+func TestRelationshipSearchFindsTheRecoveryStatus(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, status string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("follow_up_task").SetChannel("task").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").
+			SetPriorityScore(40).
+			SetQueueStatus(status).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Queue", QueueOpen)
+	save("Birch Later", QueueSnoozed)
+	save("Cedar Done", QueueHandled)
+	save("Quill Closed", QueueDismissed)
+	lane, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lane Both",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range []struct{ key, status string }{
+		{"lane-open", QueueOpen},
+		{"lane-snoozed", QueueSnoozed},
+	} {
+		if _, err := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(lane).
+			SetActionType("follow_up_task").SetChannel("task").SetDetector("manual").
+			SetDedupeKey(item.key).SetRevisionHash(item.key + "-hash").
+			SetReason("Send the weekly note").
+			SetPriorityScore(40).
+			SetQueueStatus(item.status).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Held", "Harbor Queue", "Lane Both")
+	assertCompanyQuery("Held.", "Harbor Queue", "Lane Both")
+	assertCompanyQuery("Snoozed", "Birch Later", "Lane Both")
+	assertCompanyQuery("Handled", "Cedar Done")
+	assertCompanyQuery("Dismissed", "Quill Closed")
+	assertCompanyQuery("open")
+	assertCompanyQuery("Nothing is snoozed right now.")
+}
+
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
