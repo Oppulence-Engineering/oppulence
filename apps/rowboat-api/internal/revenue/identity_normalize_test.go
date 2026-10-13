@@ -12692,6 +12692,8 @@ func TestRelationshipSearchFindsPrivacySentences(t *testing.T) {
 	saveArtifact(harbor, "governance_decision", "privacy:harbor:two", 1, decision("privacy:harbor:two"))
 	saveArtifact(lumen, "conversation_policy", "privacy:lumen", 1, policy("deny", false, false, 7))
 	saveArtifact(lumen, "conversation_policy", "privacy:lumen", 2, policy("require_consent", true, true, 30))
+	birch := makeCompany("Birch Permit")
+	saveArtifact(birch, "conversation_policy", "privacy:birch", 1, policy("allow", true, true, 30))
 	quillIntel, err := f.svc.RelationshipIntelligenceFor(f.ctx, quill)
 	if err != nil {
 		t.Fatal(err)
@@ -12736,12 +12738,15 @@ func TestRelationshipSearchFindsPrivacySentences(t *testing.T) {
 	assertCompanyQuery("Retention: 7 days", "Quill Atelier")
 	assertCompanyQuery("1 privacy decision recorded.", "Quill Atelier")
 	assertCompanyQuery("Ask before capturing", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
-	assertCompanyQuery("Shared excerpts: on", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
-	assertCompanyQuery("Plan sharing outside this workspace: allowed", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
-	assertCompanyQuery("Retention: 30 days", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
-	assertCompanyQuery("No privacy decisions recorded.", "Cedar Mill", "Lumen Packet")
+	assertCompanyQuery("Capture: Ask before capturing", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
+	assertCompanyQuery("Shared excerpts: on", "Cedar Mill", "Harbor Ledger", "Lumen Packet", "Birch Permit")
+	assertCompanyQuery("Plan sharing outside this workspace: allowed", "Cedar Mill", "Harbor Ledger", "Lumen Packet", "Birch Permit")
+	assertCompanyQuery("Retention: 30 days", "Cedar Mill", "Harbor Ledger", "Lumen Packet", "Birch Permit")
+	assertCompanyQuery("No privacy decisions recorded.", "Cedar Mill", "Lumen Packet", "Birch Permit")
 	assertCompanyQuery("2 privacy decisions recorded.", "Harbor Ledger")
-	assertCompanyQuery("Capture is allowed")
+	assertCompanyQuery("Capture is allowed", "Birch Permit")
+	assertCompanyQuery("Capture: Capture is allowed", "Birch Permit")
+	assertCompanyQuery("which privacy line says Capture: Capture is allowed", "Birch Permit")
 }
 
 func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {

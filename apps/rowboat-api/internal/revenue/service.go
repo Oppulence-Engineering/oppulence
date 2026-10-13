@@ -12079,7 +12079,10 @@ func relationshipSheetPrivacyMatch(needle string) predicate.Relationship {
 		preds = append(preds, relationshipHasPolicyCapture("deny"))
 	}
 	if sheetPhraseMatches("ask before capturing", needle) || sheetPhraseMatches("capture: ask before capturing", needle) {
-		preds = append(preds, relationship.Not(relationshipHasPolicyCapture("deny")))
+		preds = append(preds, relationshipShowsAskBeforeCapture())
+	}
+	if sheetPhraseMatches("capture is allowed", needle) || labelPhraseMatches("capture: capture is allowed", needle) {
+		preds = append(preds, relationshipShowsCaptureAllowed())
 	}
 	if sheetPhraseMatches("shared excerpts: off", needle) {
 		preds = append(preds, relationshipHasPolicyBoolFalse("publishEvidence"))
@@ -12157,6 +12160,29 @@ func privacyRetentionDays(needle string) (int, bool) {
 		return 0, false
 	}
 	return parsed, true
+}
+
+// relationshipShowsAskBeforeCapture is the privacy badge "Capture: Ask before
+// capturing". A saved allow rule prints "Capture is allowed" instead. No saved
+// rule still asks before capturing.
+func relationshipShowsAskBeforeCapture() predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationshipHasPolicyCapture("deny")),
+		relationship.Or(
+			relationship.Not(relationshipHasPolicyCapture("allow")),
+			relationshipHasPolicyCapture("require_consent"),
+		),
+	)
+}
+
+// relationshipShowsCaptureAllowed is the privacy badge "Capture: Capture is
+// allowed". A stricter saved rule, or no saved rule, prints a different line.
+func relationshipShowsCaptureAllowed() predicate.Relationship {
+	return relationship.And(
+		relationshipHasPolicyCapture("allow"),
+		relationship.Not(relationshipHasPolicyCapture("deny")),
+		relationship.Not(relationshipHasPolicyCapture("require_consent")),
+	)
 }
 
 func relationshipHasPolicyCapture(capture string) predicate.Relationship {
