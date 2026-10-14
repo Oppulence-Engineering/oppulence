@@ -1844,6 +1844,48 @@ test("asking for the due day finds the promise that prints that day", () => {
   assert.deepEqual(queryRelationshipGraph(graph, "Oct 20").relationshipIds, []);
 });
 
+test("asking for an unknown person finds the person with no name", () => {
+  const parsed = parseRelationshipGraphQuery("Unknown person");
+  assert.equal(parsed.filters.unknownPerson, true);
+  assert.deepEqual(parsed.filters.health, []);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["nodes: person", "unknown person"]);
+
+  const dotted = parseRelationshipGraphQuery("Unknown person.");
+  assert.equal(dotted.filters.unknownPerson, true);
+  assert.deepEqual(dotted.filters.freeText, []);
+
+  const known = parseRelationshipGraphQuery("Not known");
+  assert.equal(known.filters.unknownPerson, false);
+  assert.deepEqual(known.filters.health, ["unknown"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:healthy", kind: "relationship", label: "Quay Healthy", health: "healthy" },
+      {
+        id: "person:unknown",
+        kind: "person",
+        label: "Unknown person",
+        relationshipId: "healthy",
+        role: "contact",
+      },
+      { id: "relationship:sick", kind: "relationship", label: "Quay Sick", health: "unknown" },
+      {
+        id: "person:ada",
+        kind: "person",
+        label: "Ada Lovelace",
+        relationshipId: "sick",
+        role: "champion",
+      },
+    ],
+    edges: [],
+  };
+  for (const query of ["Unknown person", "Unknown person.", "show me Unknown person"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["healthy"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Not known").relationshipIds, ["sick"]);
+});
+
 test("every contracted capability has an explicit surface in web and desktop", () => {
   const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const clientSources = {

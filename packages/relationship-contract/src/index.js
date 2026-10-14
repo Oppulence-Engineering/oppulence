@@ -359,6 +359,10 @@ export function parseRelationshipGraphQuery(query) {
   const dueDetail = printedGraphDueDay(normalized);
   filters.changedDimensions = changeDetail ? changeDetail.dimensions : [];
   filters.dueLabel = dueDetail ? dueDetail.label : null;
+  // The people list says Unknown person when no name or address was saved.
+  // The word unknown in that name is not a health reading.
+  filters.unknownPerson = /\bunknown person\b/.test(normalized);
+  const healthHaystack = normalized.replace(/\bunknown person\b\.?/g, " ");
   const aliasHaystack = changeDetail ? normalized.replaceAll(changeDetail.span, " ") : normalized;
 
   for (const [alias, kind] of Object.entries(GRAPH_QUERY_NODE_ALIASES)) {
@@ -421,7 +425,7 @@ export function parseRelationshipGraphQuery(query) {
     );
   for (const health of GRAPH_QUERY_HEALTH) {
     if (
-      new RegExp(`\\b${health.replaceAll("_", "[ _]")}\\b`).test(normalized) &&
+      new RegExp(`\\b${health.replaceAll("_", "[ _]")}\\b`).test(healthHaystack) &&
       !filters.health.includes(health)
     ) {
       filters.health.push(health);
@@ -648,6 +652,7 @@ export function parseRelationshipGraphQuery(query) {
         )
       : withoutDue;
   filters.freeText = withoutConfidence
+    .replace(/\bunknown person\b\.?/g, " ")
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
     .filter((token) => token && !recognizedToken(token));
@@ -686,6 +691,7 @@ export function parseRelationshipGraphQuery(query) {
     applied.push(`${filters.confidencePercent}% confidence`);
   }
   if (filters.dueLabel) applied.push(filters.dueLabel);
+  if (filters.unknownPerson) applied.push("unknown person");
   if (filters.meetingFollowUp) applied.push("meeting follow-up");
   else if (filters.promiseFollowUp) applied.push("promise follow-up");
   else if (filters.followUp) applied.push("follow-up");
@@ -907,6 +913,11 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   if (filters.dueLabel) {
     const label = filters.dueLabel;
     constrainBy((node) => graphDueLabel(node.dueAt) === label);
+  }
+  if (filters.unknownPerson) {
+    constrainBy(
+      (node) => node.kind === "person" && normalizedGraphValue(node.label) === "unknown person",
+    );
   }
   if (filters.notConnected) {
     constrainBy(
