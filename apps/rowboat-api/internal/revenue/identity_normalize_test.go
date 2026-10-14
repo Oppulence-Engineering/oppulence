@@ -2972,6 +2972,8 @@ func TestRelationshipSearchFindsTheActivityDueDay(t *testing.T) {
 		}
 	}
 	assertCompanyQuery("Due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("due Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("due Oct 3, 2026.", "Day Third", "Day Early", "Day Late")
 	assertCompanyQuery("which activity says due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
 	assertCompanyQuery("Due: Oct 4, 2026", "Day Fourth")
 	assertCompanyQuery("Due: Oct 32, 2026")
@@ -4532,6 +4534,9 @@ func TestRelationshipSearchFindsThePromiseDueDay(t *testing.T) {
 		}
 	}
 	assertCompanyQuery("Due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("due Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("due Oct 3, 2026.", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("overdue Oct 3, 2026")
 	assertCompanyQuery("which promise is due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
 	assertCompanyQuery("Oct 3, 2026", "Day Third", "Day Early", "Day Late")
 	assertCompanyQuery("Due: Oct 4, 2026", "Day Fourth")

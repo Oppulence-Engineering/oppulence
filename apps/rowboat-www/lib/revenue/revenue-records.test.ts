@@ -205,11 +205,6 @@ describe("local due dates", () => {
     expect(taskIsDueToday(undefined, picked)).toBe(false);
     expect(taskIsDueToday("not-a-date", picked)).toBe(false);
     expect(localCalendarDay(stored)).toBe(picked);
-    const shown = new Date(stored).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
     expect(promiseDirectionLabel("promised_by_me")).toBe("we owe them");
     expect(promiseDirectionLabel("promised_by_them")).toBe("they owe us");
     expect(promiseDirectionLabel("mutual")).toBe("we both owe");
@@ -217,7 +212,8 @@ describe("local due dates", () => {
     expect(promiseDueDay("2026-10-20T03:00:00.000Z")).toBe("Oct 20, 2026");
     expect(promiseDueDay("  ")).toBeUndefined();
     expect(promiseDueDay("not-a-date")).toBeUndefined();
-    expect(promiseDueLabel(stored)).toBe(`due ${shown}`);
+    expect(promiseDueLabel("2026-10-20T03:00:00.000Z")).toBe("due Oct 20, 2026");
+    expect(promiseDueLabel(stored)).toBe(`due ${promiseDueDay(stored)}`);
     expect(promiseDueLabel(undefined)).toBe("due unspecified");
     expect(promiseDueLabel("not-a-date")).toBe("due unspecified");
     const moment = "2026-09-30T13:00:00.000Z";

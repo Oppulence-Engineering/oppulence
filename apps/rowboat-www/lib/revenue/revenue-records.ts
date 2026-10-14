@@ -427,16 +427,10 @@ export function graphAsOfLabel(asOf: string): string {
   return `As of ${localMomentLabel(asOf) || asOf}`;
 }
 
-/** Open promises used to print the UTC date prefix. The reader sees their own day. */
+/** The report prints this beside the account. The day is the UTC day search uses. */
 export function promiseDueLabel(dueAt: string | null | undefined): string {
-  if (!dueAt) return "due unspecified";
-  const date = new Date(dueAt);
-  if (Number.isNaN(date.getTime())) return "due unspecified";
-  return `due ${date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })}`;
+  const day = promiseDueDay(dueAt);
+  return day ? `due ${day}` : "due unspecified";
 }
 
 /**

@@ -3550,12 +3550,11 @@ func relationshipSheetActivityDueMatch(needle string) predicate.Relationship {
 }
 
 func activityDueDay(needle string) (time.Time, bool) {
-	const marker = "due: "
-	index := strings.LastIndex(needle, marker)
-	if index < 0 {
+	rest, ok := duePhraseRest(needle)
+	if !ok {
 		return time.Time{}, false
 	}
-	fields := strings.Fields(needle[index+len(marker):])
+	fields := strings.Fields(rest)
 	if len(fields) < 3 {
 		return time.Time{}, false
 	}
@@ -13367,11 +13366,27 @@ func relationshipSheetPromiseDueMatch(needle string) predicate.Relationship {
 
 func promiseDueDayStart(needle string) (time.Time, bool) {
 	needle = normalizePersonSearch(needle)
-	const prefix = "due: "
-	if i := strings.LastIndex(needle, prefix); i >= 0 {
-		return parseLeadingDueDate(strings.TrimSpace(needle[i+len(prefix):]), true)
+	if rest, ok := duePhraseRest(needle); ok {
+		return parseLeadingDueDate(rest, true)
 	}
 	return parseLeadingDueDate(needle, false)
+}
+
+// duePhraseRest reads "Due: Oct 3, 2026" and the report line "due Oct 3, 2026".
+// "overdue" contains those letters, so the word has to start the query or
+// follow a space.
+func duePhraseRest(needle string) (string, bool) {
+	for _, marker := range []string{"due: ", "due "} {
+		index := strings.LastIndex(needle, marker)
+		if index < 0 {
+			continue
+		}
+		if index > 0 && needle[index-1] != ' ' {
+			continue
+		}
+		return strings.TrimSpace(needle[index+len(marker):]), true
+	}
+	return "", false
 }
 
 func parseLeadingDueDate(rest string, allowTrailing bool) (time.Time, bool) {
