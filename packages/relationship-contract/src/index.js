@@ -1065,11 +1065,16 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     );
   }
   if (filters.engagement.length) {
-    constrainBy(
-      (node) =>
-        node.kind === "relationship" &&
-        filters.engagement.includes(normalizedGraphValue(node.engagement)),
-    );
+    constrainBy((node) => {
+      if (node.kind !== "relationship") return false;
+      if (filters.engagement.includes(normalizedGraphValue(node.engagement))) return true;
+      // The inspector Status cell says Dormant for a dormant account.
+      // Engagement uses the same word when the account has gone quiet.
+      return (
+        filters.engagement.includes("dormant") &&
+        normalizedGraphValue(node.status) === "dormant"
+      );
+    });
   }
   if (filters.sentiment.length) {
     constrainBy(

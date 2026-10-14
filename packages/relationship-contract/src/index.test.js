@@ -3060,6 +3060,52 @@ test("a trailing period still finds the badge it follows", () => {
   assert.deepEqual(queryRelationshipGraph(graph, "Open.").relationshipIds, ["open"]);
 });
 
+test("asking dormant finds a company whose status is Dormant", () => {
+  const parsed = parseRelationshipGraphQuery("Dormant");
+  assert.deepEqual(parsed.filters.engagement, ["dormant"]);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parseRelationshipGraphQuery("Dormant.").filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:account",
+        kind: "relationship",
+        label: "Quay Account",
+        status: "dormant",
+        engagement: "steady",
+        health: "healthy",
+      },
+      {
+        id: "relationship:quiet",
+        kind: "relationship",
+        label: "Quay Quiet",
+        status: "active",
+        engagement: "dormant",
+        health: "healthy",
+      },
+      {
+        id: "relationship:busy",
+        kind: "relationship",
+        label: "Quay Busy",
+        status: "active",
+        engagement: "increasing",
+        health: "healthy",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of ["Dormant", "Dormant.", "show me dormant"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds.sort(), [
+      "account",
+      "quiet",
+    ]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Steady").relationshipIds, ["account"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Increasing").relationshipIds, ["busy"]);
+});
+
 test("speaker parsing stays bounded for adversarial whitespace", () => {
   const observation = buildImportedTranscriptObservation({
     relationshipId: "relationship-1",
