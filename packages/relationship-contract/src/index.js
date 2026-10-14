@@ -315,10 +315,73 @@ function printedGraphNodeLabels(normalized) {
   return { labels, rest };
 }
 
+// The activity row rewrites a stored snapshot into the sentence a person reads.
+// "Meeting" inside "Meeting with ada@acme.com" is that sentence, not a source.
+// "Review" inside "Mail: Q3 review" is the subject, not a promise that needs review.
+function graphRowTitle(value) {
+  return normalizedGraphValue(value)
+    .replaceAll("-", " ")
+    .replaceAll("_", " ")
+    .replace(/\.$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function printedGraphRowTitles(normalized) {
+  const labels = [];
+  let rest = normalized;
+  const push = (label, span) => {
+    const printed = graphRowTitle(label);
+    if (!printed || labels.includes(printed)) return;
+    labels.push(printed);
+    rest = rest.replace(span, " ");
+  };
+  const take = (re, labelFrom) => {
+    const match = re.exec(rest);
+    if (!match) return;
+    const label = labelFrom(match);
+    if (!label) return;
+    push(label, match[0]);
+  };
+  const blank = (value) =>
+    !value || value === "local-user" || value === "meeting-counterparty" || value === "a person";
+
+  take(/\byou added a person\b\.?/, () => "you added a person");
+  take(/\byou added\s+(.+?)\.?\s*$/, (match) => {
+    const name = match[1].trim().replace(/\.$/, "").replace(/\s+/g, " ");
+    if (blank(name)) return "";
+    return `you added ${name}`;
+  });
+  take(/\bmeeting with\s+(.+?)\.?\s*$/, (match) => {
+    const guest = match[1].trim().replace(/\.$/, "").replace(/\s+/g, " ");
+    if (!guest || guest === "local-user" || guest === "meeting-counterparty") return "";
+    return `meeting with ${guest}`;
+  });
+  take(/\bmail:\s*(.+?)\.?\s*$/, (match) => {
+    const subject = match[1].trim().replace(/\.$/, "").replace(/\s+/g, " ");
+    if (!subject || subject === "local-user" || subject === "meeting-counterparty") return "";
+    return `mail: ${subject}`;
+  });
+  take(/\bcompany from hubspot:\s*(.+?)\.?\s*$/, (match) => {
+    const name = match[1].trim().replace(/\.$/, "").replace(/\s+/g, " ");
+    if (!name || name === "local-user" || name.startsWith("hubspot company")) return "";
+    return `company from hubspot: ${name}`;
+  });
+  take(/\bcompany from hubspot\b\.?/, () => "company from hubspot");
+  take(/\bmessage in slack\b\.?/, () => "message in slack");
+  take(/\bmessage in #(\S+)\.?\s*$/, (match) => {
+    const channel = match[1].replace(/\.$/, "");
+    if (!channel || channel === "local-user" || channel.startsWith("slack")) return "";
+    return `message in #${channel}`;
+  });
+  return { labels, rest };
+}
+
 export function parseRelationshipGraphQuery(query) {
   const raw = String(query || "").trim();
   const nodeLabelDetail = printedGraphNodeLabels(raw.toLowerCase().replaceAll("-", "_"));
-  const normalized = nodeLabelDetail.rest;
+  const rowTitleDetail = printedGraphRowTitles(nodeLabelDetail.rest);
+  const normalized = rowTitleDetail.rest;
   const filters = {
     nodeKinds: [],
     lifecycle: [],
@@ -414,6 +477,7 @@ export function parseRelationshipGraphQuery(query) {
     freeText: [],
     confidencePercent: null,
     nodeLabels: nodeLabelDetail.labels,
+    rowTitles: rowTitleDetail.labels,
   };
   filters.confidencePercent = printedGraphConfidence(normalized);
   const changeDetail = printedGraphChangeDetail(normalized);
@@ -759,6 +823,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.unknownPerson) applied.push("unknown person");
   if (filters.formerContact) applied.push("former contact");
   for (const label of filters.nodeLabels) applied.push(label);
+  for (const label of filters.rowTitles) applied.push(label);
   if (filters.meetingFollowUp) applied.push("meeting follow-up");
   else if (filters.promiseFollowUp) applied.push("promise follow-up");
   else if (filters.followUp) applied.push("follow-up");
@@ -1000,6 +1065,11 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     constrainBy(
       (node) =>
         normalizedGraphValue(node.label) === label || normalizedGraphValue(node.status) === label,
+    );
+  }
+  for (const label of filters.rowTitles) {
+    constrainBy(
+      (node) => graphRowTitle(node.label) === label || graphRowTitle(node.status) === label,
     );
   }
   if (filters.notConnected) {

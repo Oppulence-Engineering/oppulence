@@ -2307,6 +2307,160 @@ test("asking for an activity name finds the detail that prints that name", () =>
   assert.deepEqual(queryRelationshipGraph(graph, "Detail chosen.").relationshipIds, ["chosen"]);
 });
 
+test("asking for an activity sentence finds the row that prints it", () => {
+  const meeting = parseRelationshipGraphQuery("Meeting with ada@acme.com");
+  assert.deepEqual(meeting.filters.rowTitles, ["meeting with ada@acme.com"]);
+  assert.deepEqual(meeting.filters.sources, []);
+  assert.deepEqual(meeting.filters.freeText, []);
+
+  const mail = parseRelationshipGraphQuery("Mail: Q3 review");
+  assert.deepEqual(mail.filters.rowTitles, ["mail: q3 review"]);
+  assert.equal(mail.filters.promiseReview, false);
+  assert.deepEqual(mail.filters.freeText, []);
+
+  const added = parseRelationshipGraphQuery("You added a person.");
+  assert.deepEqual(added.filters.rowTitles, ["you added a person"]);
+  assert.deepEqual(added.filters.nodeKinds, []);
+  assert.deepEqual(added.filters.freeText, []);
+
+  assert.deepEqual(parseRelationshipGraphQuery("You added Ada.").filters.rowTitles, ["you added ada"]);
+  const hubspot = parseRelationshipGraphQuery("Company from HubSpot");
+  assert.deepEqual(hubspot.filters.rowTitles, ["company from hubspot"]);
+  assert.deepEqual(hubspot.filters.sources, []);
+  assert.deepEqual(hubspot.filters.nodeKinds, []);
+  const namedHub = parseRelationshipGraphQuery("Company from HubSpot: Acme");
+  assert.deepEqual(namedHub.filters.rowTitles, ["company from hubspot: acme"]);
+  assert.deepEqual(namedHub.filters.sources, []);
+  const slack = parseRelationshipGraphQuery("Message in Slack");
+  assert.deepEqual(slack.filters.rowTitles, ["message in slack"]);
+  assert.deepEqual(slack.filters.sources, []);
+  assert.deepEqual(parseRelationshipGraphQuery("Message in #design").filters.rowTitles, [
+    "message in #design",
+  ]);
+  assert.deepEqual(parseRelationshipGraphQuery("meeting").filters.rowTitles, []);
+  assert.deepEqual(parseRelationshipGraphQuery("meeting").filters.sources, ["meeting"]);
+  assert.deepEqual(parseRelationshipGraphQuery("hubspot").filters.sources, ["hubspot"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:meet", kind: "relationship", label: "Quay Meet" },
+      {
+        id: "evidence:meet",
+        kind: "evidence",
+        label: "Meeting with ada@acme.com",
+        status: "Meeting",
+        source: "calendar",
+        relationshipId: "meet",
+      },
+      { id: "relationship:source", kind: "relationship", label: "Quay Source" },
+      {
+        id: "source:meet",
+        kind: "source",
+        label: "A meeting",
+        source: "meeting",
+        relationshipId: "source",
+      },
+      { id: "relationship:mail", kind: "relationship", label: "Quay Mail" },
+      {
+        id: "evidence:mail",
+        kind: "evidence",
+        label: "Mail: Q3 review",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "mail",
+      },
+      { id: "relationship:review", kind: "relationship", label: "Quay Review" },
+      {
+        id: "commitment:review",
+        kind: "commitment",
+        label: "Send the notes",
+        status: "review",
+        relationshipId: "review",
+      },
+      { id: "relationship:blank", kind: "relationship", label: "Quay Blank" },
+      {
+        id: "evidence:blank",
+        kind: "evidence",
+        label: "You added a person.",
+        status: "Person added",
+        source: "user",
+        relationshipId: "blank",
+      },
+      { id: "relationship:ada", kind: "relationship", label: "Quay Ada" },
+      {
+        id: "person:ada",
+        kind: "person",
+        label: "Ada Lovelace",
+        role: "champion",
+        relationshipId: "ada",
+      },
+      {
+        id: "evidence:ada",
+        kind: "evidence",
+        label: "You added Ada.",
+        status: "Person added",
+        source: "user",
+        relationshipId: "ada",
+      },
+      { id: "relationship:hub", kind: "relationship", label: "Quay Hub" },
+      {
+        id: "evidence:hub",
+        kind: "evidence",
+        label: "Company from HubSpot",
+        status: "Company record",
+        source: "hubspot",
+        relationshipId: "hub",
+      },
+      { id: "relationship:hubonly", kind: "relationship", label: "Quay Hub Only" },
+      {
+        id: "source:hubonly",
+        kind: "source",
+        label: "HubSpot",
+        source: "hubspot",
+        relationshipId: "hubonly",
+      },
+      { id: "relationship:acme", kind: "relationship", label: "Acme" },
+      {
+        id: "evidence:acme",
+        kind: "evidence",
+        label: "Company from HubSpot: Acme",
+        source: "hubspot",
+        relationshipId: "acme",
+      },
+      { id: "relationship:slack", kind: "relationship", label: "Quay Slack" },
+      {
+        id: "evidence:slack",
+        kind: "evidence",
+        label: "Message in Slack",
+        status: "Message",
+        source: "slack",
+        relationshipId: "slack",
+      },
+      { id: "relationship:channel", kind: "relationship", label: "Quay Channel" },
+      {
+        id: "evidence:channel",
+        kind: "evidence",
+        label: "Message in #design",
+        status: "Message",
+        source: "slack",
+        relationshipId: "channel",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of ["Meeting with ada@acme.com", "Meeting with ada@acme.com.", "show me Meeting with ada@acme.com"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["meet"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Mail: Q3 review").relationshipIds, ["mail"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "You added a person.").relationshipIds, ["blank"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "You added Ada.").relationshipIds, ["ada"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Company from HubSpot").relationshipIds, ["hub"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Company from HubSpot: Acme").relationshipIds, ["acme"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Message in Slack").relationshipIds, ["slack"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Message in #design").relationshipIds, ["channel"]);
+});
+
 test("speaker parsing stays bounded for adversarial whitespace", () => {
   const observation = buildImportedTranscriptObservation({
     relationshipId: "relationship-1",
