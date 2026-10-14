@@ -2901,6 +2901,97 @@ test("asking out of date finds a source whose status is Out of date", () => {
   ]);
 });
 
+test("asking for a mail thread sentence finds the row that prints it", () => {
+  const outside = parseRelationshipGraphQuery("1 message with someone outside the company");
+  assert.deepEqual(outside.filters.rowTitles, ["1 message with someone outside the company"]);
+  assert.deepEqual(outside.filters.nodeKinds, []);
+  assert.deepEqual(outside.filters.freeText, []);
+
+  const outsidePeriod = parseRelationshipGraphQuery("1 message with someone outside the company.");
+  assert.deepEqual(outsidePeriod.filters.rowTitles, ["1 message with someone outside the company"]);
+  assert.deepEqual(outsidePeriod.filters.freeText, []);
+
+  const review = parseRelationshipGraphQuery("4 messages with Q3 review");
+  assert.deepEqual(review.filters.rowTitles, ["4 messages with q3 review"]);
+  assert.equal(review.filters.promiseReview, false);
+  assert.deepEqual(review.filters.freeText, []);
+
+  const domain = parseRelationshipGraphQuery("4 messages with acme.com");
+  assert.deepEqual(domain.filters.rowTitles, ["4 messages with acme.com"]);
+  assert.deepEqual(domain.filters.freeText, []);
+
+  assert.deepEqual(parseRelationshipGraphQuery("1 messages with acme.com").filters.rowTitles, []);
+  assert.deepEqual(parseRelationshipGraphQuery("2 message with acme.com").filters.rowTitles, []);
+  assert.deepEqual(parseRelationshipGraphQuery("01 messages with acme.com").filters.rowTitles, []);
+  assert.deepEqual(parseRelationshipGraphQuery("messages").filters.rowTitles, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:out", kind: "relationship", label: "Quay Out" },
+      {
+        id: "evidence:out",
+        kind: "evidence",
+        label: "1 message with someone outside the company",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "out",
+      },
+      { id: "relationship:named", kind: "relationship", label: "Someone Outside Company" },
+      { id: "relationship:review", kind: "relationship", label: "Quay Review" },
+      {
+        id: "evidence:review",
+        kind: "evidence",
+        label: "4 messages with Q3 review",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "review",
+      },
+      { id: "relationship:promise", kind: "relationship", label: "Quay Promise" },
+      {
+        id: "commitment:promise",
+        kind: "commitment",
+        label: "Send the notes",
+        status: "review",
+        relationshipId: "promise",
+      },
+      { id: "relationship:domain", kind: "relationship", label: "Quay Domain" },
+      {
+        id: "evidence:domain",
+        kind: "evidence",
+        label: "4 messages with acme.com",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "domain",
+      },
+      { id: "relationship:one", kind: "relationship", label: "Quay One" },
+      {
+        id: "evidence:one",
+        kind: "evidence",
+        label: "1 message with acme.com",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "one",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of [
+    "1 message with someone outside the company",
+    "1 message with someone outside the company.",
+    "show me 1 message with someone outside the company",
+  ]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["out"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "4 messages with Q3 review").relationshipIds, [
+    "review",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "4 messages with acme.com").relationshipIds, [
+    "domain",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "1 message with acme.com").relationshipIds, ["one"]);
+});
+
 test("speaker parsing stays bounded for adversarial whitespace", () => {
   const observation = buildImportedTranscriptObservation({
     relationshipId: "relationship-1",

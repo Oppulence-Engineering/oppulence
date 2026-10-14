@@ -427,6 +427,29 @@ function printedGraphRowTitles(normalized) {
     if (!channel || channel === "local-user" || channel.startsWith("slack")) return "";
     return `message in #${channel}`;
   });
+  // Gmail stores "4-message thread with acme.com". The row says
+  // "4 messages with acme.com". "Review" and "company" in that sentence
+  // name the other party. They are not a promise badge or a company filter.
+  take(/\b(\d+ messages? with .+?)\.?\s*$/, (match) => {
+    const sentence = graphRowDetail(match[1]);
+    const split = /^(\d+) (message|messages) with (.+)$/.exec(sentence);
+    if (!split) return "";
+    const count = split[1];
+    const word = split[2];
+    const who = split[3].trim();
+    if (/^0\d/.test(count)) return "";
+    if ((count === "1") !== (word === "message")) return "";
+    if (
+      !who ||
+      graphRowPlaceholder(who) ||
+      who === "local_user" ||
+      who === "meeting_counterparty" ||
+      who === "an external contact"
+    ) {
+      return "";
+    }
+    return `${count} ${word} with ${who}`;
+  });
   // "This promise was kept: Send the proposal" is the activity sentence.
   // "Kept" and "open" inside it are not the promise badges.
   take(
