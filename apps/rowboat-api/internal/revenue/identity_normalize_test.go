@@ -12768,13 +12768,68 @@ func TestRelationshipSearchFindsFocusedReview(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	saveCandidate := func(rel *ent.Relationship, confidence float64, externalID string) *ent.RelationshipObservation {
+		t.Helper()
+		facts, err := json.Marshal(map[string]any{
+			"conversation_claim_candidates": []map[string]any{{
+				"candidateId": "cand-" + rel.DisplayName, "kind": "promise",
+				"displayValue": "Noted", "confidence": confidence,
+				"evidence": []map[string]any{{"exactQuote": "Noted"}},
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(externalID).
+			SetSummary("A recorded note").SetNormalizedFactsJSON(string(facts)).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	decideCandidate := func(rel *ent.Relationship, obs *ent.RelationshipObservation, externalID, kind string) {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"review_decision": map[string]any{
+				"item_id": "review:" + externalID, "kind": kind,
+				"candidate_id": "cand-" + rel.DisplayName, "observation_id": obs.ID.String(),
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("user").SetExternalID(externalID).SetEventType("conversation_review_decided").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(externalID).
+			SetSummary("A recorded decision").SetNormalizedFactsJSON(string(body)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
 	quill := makeCompany("Quill Atelier")
 	cedar := makeCompany("Cedar Mill")
 	lumen := makeCompany("Lumen Packet")
 	makeCompany("Harbor Ledger")
+	half := makeCompany("Half Ledger")
+	proposed := makeCompany("Proposed Ledger")
+	closed := makeCompany("Closed Ledger")
+	deferred := makeCompany("Deferred Ledger")
 	saveClaim(quill, "objection", 0.5, 1, "review-quill")
 	saveClaim(cedar, "risk", 0.7, 0.4, "review-cedar")
 	saveClaim(lumen, "stakeholder", 0.8, 1, "review-lumen")
+	saveCandidate(half, 0.5, "review-half")
+	saveCandidate(proposed, 0.92, "review-proposed")
+	closedObs := saveCandidate(closed, 0.92, "review-closed")
+	decideCandidate(closed, closedObs, "review-closed-decision", "approve")
+	deferredObs := saveCandidate(deferred, 0.61, "review-deferred")
+	decideCandidate(deferred, deferredObs, "review-deferred-decision", "defer")
 	labelsOf := func(rel *ent.Relationship) []string {
 		t.Helper()
 		intelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, rel)
@@ -12817,12 +12872,17 @@ func TestRelationshipSearchFindsFocusedReview(t *testing.T) {
 	assertCompanyQuery("The wording", "Quill Atelier")
 	assertCompanyQuery("Name who said this.", "Cedar Mill")
 	assertCompanyQuery("Who said it", "Cedar Mill")
-	assertCompanyQuery("50% · What was said", "Quill Atelier")
-	assertCompanyQuery("50% · What was said.", "Quill Atelier")
+	assertCompanyQuery("50% · What was said", "Quill Atelier", "Half Ledger")
+	assertCompanyQuery("50% · What was said.", "Quill Atelier", "Half Ledger")
 	assertCompanyQuery("50% · The wording", "Quill Atelier")
 	assertCompanyQuery("70% · What was said", "Cedar Mill")
 	assertCompanyQuery("40% · Who said it", "Cedar Mill")
 	assertCompanyQuery("80% · Who this is", "Lumen Packet")
+	assertCompanyQuery("92% · What was said", "Proposed Ledger")
+	assertCompanyQuery("92% · What was said.", "Proposed Ledger")
+	assertCompanyQuery("61% · What was said", "Deferred Ledger")
+	assertCompanyQuery("92% · Who said it")
+	assertCompanyQuery("61% · The wording")
 	assertCompanyQuery("50% · Who said it")
 	assertCompanyQuery("80% · What was said")
 	assertCompanyQuery("70% · The wording")

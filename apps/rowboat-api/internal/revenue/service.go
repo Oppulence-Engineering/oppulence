@@ -12086,8 +12086,10 @@ func relationshipHasConversationClaim(match func(*sql.Builder, *sql.Selector)) p
 	})
 }
 
-// relationshipSheetReviewBadgeMatch is the badge on a focused-review card.
-// The card prints "50% · What was said" or "40% · Who said it". The kind
+// relationshipSheetReviewBadgeMatch is the badge on a review card. A stored
+// claim prints "50% · What was said" or "40% · Who said it". A proposed
+// change prints the same "92% · What was said" badge at any confidence, and
+// an approved, corrected, or rejected suggestion leaves the card. The kind
 // alone still finds every card of that kind. The percent stays on the card
 // that prints it.
 func relationshipSheetReviewBadgeMatch(needle string) predicate.Relationship {
@@ -12095,9 +12097,16 @@ func relationshipSheetReviewBadgeMatch(needle string) predicate.Relationship {
 	if !ok {
 		return nil
 	}
-	return relationshipHasConversationClaim(func(b *sql.Builder, s *sql.Selector) {
+	claim := relationshipHasConversationClaim(func(b *sql.Builder, s *sql.Selector) {
 		writeReviewBadge(b, s, kind, percent)
 	})
+	if kind != "claim" {
+		return claim
+	}
+	open := relationshipHasOpenCandidate(func(b *sql.Builder, s *sql.Selector) {
+		writeRoundedPercent(b, reviewCandidateNumber(s, "confidence"), percent)
+	})
+	return relationship.Or(claim, open)
 }
 
 func reviewEvidenceBadge(needle string) (percent int, kind string, ok bool) {
@@ -12210,6 +12219,13 @@ func reviewClaimNumber(s *sql.Selector, field string) string {
 		return fmt.Sprintf("COALESCE((claim->>'%s')::double precision, 0)", field)
 	}
 	return fmt.Sprintf("COALESCE(json_extract(claim.value, '$.%s'), 0)", field)
+}
+
+func reviewCandidateNumber(s *sql.Selector, field string) string {
+	if s.Dialect() == dialect.Postgres {
+		return fmt.Sprintf("COALESCE((candidate->>'%s')::double precision, 0)", field)
+	}
+	return fmt.Sprintf("COALESCE(json_extract(candidate.value, '$.%s'), 0)", field)
 }
 
 func focusedReviewCount(needle string) (n int, atLeast bool, ok bool) {
