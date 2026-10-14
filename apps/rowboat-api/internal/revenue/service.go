@@ -13369,7 +13369,8 @@ func relationshipSheetPromiseDueMatch(needle string) predicate.Relationship {
 
 // relationshipSheetSourceObservedMatch is the citation clock on the open
 // promises report. The line is "Source observed Sep 30, 2026 at 1:00 PM"
-// in UTC. A local clock turned that same instant into another hour.
+// in UTC, and the link continues it as "· Open source". A local clock
+// turned that same instant into another hour.
 func relationshipSheetSourceObservedMatch(needle string) predicate.Relationship {
 	start, ok := sourceObservedAt(needle)
 	if !ok {
@@ -13390,7 +13391,9 @@ func sourceObservedAt(needle string) (time.Time, bool) {
 		return time.Time{}, false
 	}
 	fields := strings.Fields(needle[index+len(marker):])
-	if len(fields) != 6 || fields[3] != "at" {
+	// The link sits on the same line: "· Open source". The clock is the
+	// first six words. A date with no hour stays unmatched.
+	if len(fields) < 6 || fields[3] != "at" {
 		return time.Time{}, false
 	}
 	month, ok := promiseDueMonths[fields[0]]

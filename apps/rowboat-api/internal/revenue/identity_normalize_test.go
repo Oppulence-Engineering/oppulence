@@ -4595,6 +4595,7 @@ func TestRelationshipSearchFindsTheSourceObservedLine(t *testing.T) {
 	}
 	assertCompanyQuery("Source observed Sep 30, 2026 at 1:00 PM", "Harbor Ledger")
 	assertCompanyQuery("Source observed Sep 30, 2026 at 1:00 PM.", "Harbor Ledger")
+	assertCompanyQuery("Source observed Sep 30, 2026 at 1:00 PM · Open source", "Harbor Ledger")
 	assertCompanyQuery("Source observed Sep 30, 2026 at 12:00 PM", "Lumen Packet")
 	assertCompanyQuery("Source observed Sep 30, 2026 at 12:00 AM", "Quill Atelier")
 	assertCompanyQuery("Source observed Sep 30, 2026")
