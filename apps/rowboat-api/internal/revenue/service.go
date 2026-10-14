@@ -8724,13 +8724,30 @@ func relationshipSheetActivityMatch(needle string) predicate.Relationship {
 	if strings.Contains(needle, "·") {
 		sides := strings.Split(needle, "·")
 		if len(sides) == 2 {
-			source := activitySources(normalizePersonSearch(sides[0]))
-			event := activityEvents(normalizePersonSearch(sides[1]))
+			left := strings.TrimSpace(sides[0])
+			right := strings.TrimSpace(sides[1])
+			source := activitySources(normalizePersonSearch(left))
+			event := activityEvents(normalizePersonSearch(right))
 			if len(source) > 0 && len(event) > 0 {
 				return relationship.HasObservationsWith(relationshipobservation.And(
 					relationshipobservation.SourceIn(source...),
 					relationshipobservation.EventTypeIn(event...),
 				))
+			}
+			// "See where each detail came from" prints the source and the
+			// time as one line. A longer source word such as "calendar" or
+			// "added by you" would otherwise match every event of that
+			// source and drop the clock. A short word such as "gmail" or
+			// "google" matched nothing.
+			if window, timed := visibleActivityWindow(right, time.Now().UTC()); timed {
+				if sources := detailProvenanceSources(left); len(sources) > 0 {
+					return relationship.HasObservationsWith(relationshipobservation.And(
+						relationshipobservation.SourceIn(sources...),
+						relationshipobservation.OccurredAtGT(window.after),
+						relationshipobservation.OccurredAtLTE(window.until),
+					))
+				}
+				return nil
 			}
 		}
 	}
@@ -8776,6 +8793,44 @@ func observationMeetingLinked() predicate.RelationshipObservation {
 			b.WriteString(", '$.meetingLinked') = 'true'")
 		}))
 	})
+}
+
+// detailProvenanceSources is the source half of the detail line. The sheet
+// prints activitySourceLabel of the canonical source, then the observation
+// time. Gmail and Calendar both read "Google" on that line. The CRM reads
+// "HubSpot". Activity history still names the stored source, so "Gmail" and
+// "Calendar" stay on those rows when the time is typed with them.
+func detailProvenanceSources(label string) []string {
+	switch normalizePersonSearch(label) {
+	case "google":
+		return []string{"google", "gmail", "calendar"}
+	case "gmail":
+		return []string{"gmail"}
+	case "calendar":
+		return []string{"calendar"}
+	case "hubspot":
+		return []string{"hubspot", "crm"}
+	case "the crm":
+		return []string{"crm"}
+	case "slack":
+		return []string{"slack"}
+	case "a meeting":
+		return []string{"meeting"}
+	case "a note":
+		return []string{"desktop_note"}
+	case "a voice note":
+		return []string{"voice_note"}
+	case "the browser":
+		return []string{"browser"}
+	case "added by you":
+		return []string{"user"}
+	case "the web":
+		return []string{"web"}
+	case "a connected app":
+		return []string{"composio"}
+	default:
+		return nil
+	}
 }
 
 func activitySources(needle string) []string {

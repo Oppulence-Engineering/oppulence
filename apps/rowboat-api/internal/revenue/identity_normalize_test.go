@@ -14654,6 +14654,81 @@ func TestRelationshipSearchFindsOlderReview(t *testing.T) {
 	assertCompanyQuery("Older conversations may still need review", want...)
 }
 
+func TestRelationshipSearchFindsTheDetailProvenanceLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	datedAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	hourAt := time.Now().UTC().Add(-2 * time.Hour)
+	label := datedAt.Format("Jan 2, 2006")
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	writeObservation := func(rel *ent.Relationship, source, event string, at time.Time) {
+		t.Helper()
+		id := rel.DisplayName + "-" + source
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(id).SetSourceVersion("1").
+			SetEventType(event).SetOccurredAt(at).SetReceivedAt(at).
+			SetSummary("Noted the harbor").SetContentHash(id).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	gmail := makeCompany("Dated Gmail")
+	hour := makeCompany("Hour Gmail")
+	calendar := makeCompany("Dated Calendar")
+	slack := makeCompany("Dated Slack")
+	hub := makeCompany("Dated Hub")
+	crm := makeCompany("Dated CRM")
+	makeCompany("Quiet Harbor")
+	writeObservation(gmail, "gmail", "thread.updated", datedAt)
+	writeObservation(hour, "gmail", "thread.updated", hourAt)
+	writeObservation(calendar, "calendar", "meeting.snapshot", datedAt)
+	writeObservation(slack, "slack", "message.posted", datedAt)
+	writeObservation(hub, "hubspot", "company.updated", datedAt)
+	writeObservation(crm, "crm", "crm.activity", datedAt)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Google · "+label, "Dated Gmail", "Dated Calendar")
+	assertCompanyQuery("Google · "+label+".", "Dated Gmail", "Dated Calendar")
+	assertCompanyQuery("Gmail · "+label, "Dated Gmail")
+	assertCompanyQuery("Calendar · "+label, "Dated Calendar")
+	assertCompanyQuery("Google · 2 hours ago", "Hour Gmail")
+	assertCompanyQuery("Slack · "+label, "Dated Slack")
+	assertCompanyQuery("HubSpot · "+label, "Dated Hub", "Dated CRM")
+	assertCompanyQuery("The CRM · "+label, "Dated CRM")
+	assertCompanyQuery("Gmail", "Dated Gmail", "Hour Gmail")
+	assertCompanyQuery("Gmail · Mail updated", "Dated Gmail", "Hour Gmail")
+	assertCompanyQuery("Google")
+	assertCompanyQuery(label+" · Google")
+}
+
 func TestRelationshipSearchFindsTheMailTimelineLine(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
