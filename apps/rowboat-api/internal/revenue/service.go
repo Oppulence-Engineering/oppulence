@@ -11501,6 +11501,9 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	if labelPhraseMatches("show earlier evidence", needle) {
 		preds = append(preds, relationshipHasEarlierEvidence())
 	}
+	if badge := relationshipSheetReviewBadgeMatch(needle); badge != nil {
+		preds = append(preds, badge)
+	}
 	if sheetPhraseMatches("look at this quote again", needle) || sheetPhraseMatches("what was said", needle) {
 		preds = append(preds, relationshipHasReviewClaim("claim"))
 	}
@@ -12081,6 +12084,90 @@ func relationshipHasConversationClaim(match func(*sql.Builder, *sql.Selector)) p
 			b.WriteString("))")
 		}))
 	})
+}
+
+// relationshipSheetReviewBadgeMatch is the badge on a focused-review card.
+// The card prints "50% · What was said" or "40% · Who said it". The kind
+// alone still finds every card of that kind. The percent stays on the card
+// that prints it.
+func relationshipSheetReviewBadgeMatch(needle string) predicate.Relationship {
+	percent, kind, ok := reviewEvidenceBadge(needle)
+	if !ok {
+		return nil
+	}
+	return relationshipHasConversationClaim(func(b *sql.Builder, s *sql.Selector) {
+		writeReviewBadge(b, s, kind, percent)
+	})
+}
+
+func reviewEvidenceBadge(needle string) (percent int, kind string, ok bool) {
+	left, right, split := mailTimelineParts(needle)
+	if !split || !strings.HasSuffix(left, "%") {
+		return 0, "", false
+	}
+	raw := strings.TrimSuffix(left, "%")
+	parsed, err := strconv.Atoi(raw)
+	if err != nil || parsed < 0 || parsed > 100 || strconv.Itoa(parsed) != raw {
+		return 0, "", false
+	}
+	switch right {
+	case "what was said":
+		return parsed, "claim", true
+	case "who said it":
+		return parsed, "speaker", true
+	case "who this is":
+		return parsed, "entity", true
+	case "the wording":
+		return parsed, "word", true
+	default:
+		return 0, "", false
+	}
+}
+
+func writeReviewBadge(b *sql.Builder, s *sql.Selector, kind string, percent int) {
+	confidence := reviewClaimNumber(s, "confidence")
+	speaker := reviewClaimNumber(s, "speakerConfidence")
+	switch kind {
+	case "speaker":
+		writeRoundedPercent(b, speaker, percent)
+		b.WriteString(" AND ")
+		b.WriteString(speaker)
+		b.WriteString(" < 0.75")
+	case "word":
+		writeRoundedPercent(b, confidence, percent)
+		b.WriteString(" AND ")
+		b.WriteString(confidence)
+		b.WriteString(" < 0.65")
+	case "entity":
+		if s.Dialect() == dialect.Postgres {
+			b.WriteString("claim->>'kind'")
+		} else {
+			b.WriteString("json_extract(claim.value, '$.kind')")
+		}
+		b.WriteString(" = 'stakeholder' AND ")
+		writeRoundedPercent(b, confidence, percent)
+		b.WriteString(" AND ")
+		b.WriteString(confidence)
+		b.WriteString(" < 0.85")
+	default:
+		writeRoundedPercent(b, confidence, percent)
+		b.WriteString(" AND ")
+		b.WriteString(confidence)
+		b.WriteString(" < 0.75")
+	}
+}
+
+func writeRoundedPercent(b *sql.Builder, expr string, percent int) {
+	lo := float64(percent) - 0.5
+	hi := float64(percent) + 0.5
+	b.WriteString("((")
+	b.WriteString(expr)
+	b.WriteString(") * 100) >= ")
+	b.Arg(lo)
+	b.WriteString(" AND ((")
+	b.WriteString(expr)
+	b.WriteString(") * 100) < ")
+	b.Arg(hi)
 }
 
 func writeReviewClaimCondition(b *sql.Builder, s *sql.Selector, mode string) {
