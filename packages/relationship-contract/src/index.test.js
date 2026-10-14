@@ -1788,6 +1788,62 @@ test("asking for a confidence badge finds the promise that prints that percent",
   assert.deepEqual(queryRelationshipGraph(graph, "Not recorded for this date").relationshipIds, ["later"]);
 });
 
+test("asking for the due day finds the promise that prints that day", () => {
+  const exact = parseRelationshipGraphQuery("Oct 20, 2026");
+  assert.equal(exact.filters.dueLabel, "oct 20, 2026");
+  assert.deepEqual(exact.filters.freeText, []);
+  assert.deepEqual(exact.applied, ["oct 20, 2026"]);
+
+  const prefixed = parseRelationshipGraphQuery("Due: Oct 20, 2026");
+  assert.equal(prefixed.filters.dueLabel, "oct 20, 2026");
+  assert.deepEqual(prefixed.filters.freeText, []);
+
+  const dated = parseRelationshipGraphQuery("due date Oct 20, 2026.");
+  assert.equal(dated.filters.dueLabel, "oct 20, 2026");
+  assert.deepEqual(dated.filters.freeText, []);
+
+  assert.equal(parseRelationshipGraphQuery("Oct 20").filters.dueLabel, null);
+  assert.equal(parseRelationshipGraphQuery("Oct 05, 2026").filters.dueLabel, null);
+  assert.equal(parseRelationshipGraphQuery("Oct 20, 2026 and Nov 2, 2026").filters.dueLabel, null);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:due", kind: "relationship", label: "Quay Due" },
+      {
+        id: "commitment:due",
+        kind: "commitment",
+        label: "Send the security packet",
+        relationshipId: "due",
+        status: "open",
+        dueAt: "2026-10-20T15:00:00.000Z",
+      },
+      { id: "relationship:next", kind: "relationship", label: "Quay Next" },
+      {
+        id: "commitment:next",
+        kind: "commitment",
+        label: "Send the renewal note",
+        relationshipId: "next",
+        status: "open",
+        dueAt: "2026-11-02T00:30:00.000Z",
+      },
+      { id: "relationship:open", kind: "relationship", label: "Quay Open" },
+      {
+        id: "commitment:open",
+        kind: "commitment",
+        label: "Send the agenda",
+        relationshipId: "open",
+        status: "open",
+      },
+    ],
+    edges: [],
+  };
+  for (const query of ["Oct 20, 2026", "Oct 20, 2026.", "Due: Oct 20, 2026", "show me due Oct 20, 2026"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["due"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Nov 2, 2026").relationshipIds, ["next"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Oct 20").relationshipIds, []);
+});
+
 test("every contracted capability has an explicit surface in web and desktop", () => {
   const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const clientSources = {

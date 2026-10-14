@@ -170,7 +170,6 @@ const graphNodeRelationshipIds = (node) => {
  * deliberately deterministic: it never invents graph facts and every applied
  * filter is returned to the UI for inspection.
  */
-// The graph card prints "80% confidence". "80%" and the word alone are not that badge.
 const GRAPH_CHANGE_LABELS = [
   ["supporting evidence", "evidence"],
   ["next action", "next_action"],
@@ -202,6 +201,50 @@ function printedGraphChangeDetail(normalized) {
   return { dimensions, span: match[0] };
 }
 
+const GRAPH_DUE_MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+function graphDueLabel(value) {
+  const date = new Date(value);
+  if (!value || !Number.isFinite(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  })
+    .format(date)
+    .toLowerCase();
+}
+
+// The inspector Due cell prints the UTC day, such as "Oct 20, 2026".
+function printedGraphDueDay(normalized) {
+  const re = new RegExp(
+    `(?:^|\\s)((?:due(?::|\\s+date)?\\s+)?(${GRAPH_DUE_MONTHS.join("|")})\\s+(\\d{1,2}),\\s+(\\d{4})\\b\\.?)`,
+    "g",
+  );
+  const found = [];
+  for (const match of normalized.matchAll(re)) {
+    const rawDay = match[3];
+    const day = Number(rawDay);
+    const year = Number(match[4]);
+    const month = GRAPH_DUE_MONTHS.indexOf(match[2]);
+    if (rawDay !== String(day) || month < 0 || year < 1000) continue;
+    const date = new Date(Date.UTC(year, month, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month || date.getUTCDate() !== day) {
+      continue;
+    }
+    found.push({ label: graphDueLabel(date), span: match[1] });
+  }
+  if (found.length === 0 || found.some((item) => item.label !== found[0].label)) return null;
+  const label = found[0].label;
+  return {
+    label,
+    spans: found.map((item) => item.span),
+    core: new RegExp(`\\b${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b\\.?`, "g"),
+  };
+}
+
+// The graph card prints "80% confidence". "80%" and the word alone are not that badge.
 function printedGraphConfidence(normalized) {
   const found = [];
   for (const match of normalized.matchAll(/(?:^|\s)(\d{1,3})% confidence\b/g)) {
@@ -313,7 +356,9 @@ export function parseRelationshipGraphQuery(query) {
   };
   filters.confidencePercent = printedGraphConfidence(normalized);
   const changeDetail = printedGraphChangeDetail(normalized);
+  const dueDetail = printedGraphDueDay(normalized);
   filters.changedDimensions = changeDetail ? changeDetail.dimensions : [];
+  filters.dueLabel = dueDetail ? dueDetail.label : null;
   const aliasHaystack = changeDetail ? normalized.replaceAll(changeDetail.span, " ") : normalized;
 
   for (const [alias, kind] of Object.entries(GRAPH_QUERY_NODE_ALIASES)) {
@@ -590,13 +635,18 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\breplaces\b/g, " ")
     .replace(/\bowns\b/g, " ")
     .replace(/\bsupports\b/g, " ");
+  let withoutDue = withoutFilterPhrases;
+  if (dueDetail) {
+    for (const span of dueDetail.spans) withoutDue = withoutDue.replaceAll(span, " ");
+    withoutDue = withoutDue.replace(dueDetail.core, " ");
+  }
   const withoutConfidence =
     typeof filters.confidencePercent === "number"
-      ? withoutFilterPhrases.replace(
+      ? withoutDue.replace(
           new RegExp(`\\b${filters.confidencePercent}% confidence\\b\\.?`, "g"),
           " ",
         )
-      : withoutFilterPhrases;
+      : withoutDue;
   filters.freeText = withoutConfidence
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -635,6 +685,7 @@ export function parseRelationshipGraphQuery(query) {
   if (typeof filters.confidencePercent === "number") {
     applied.push(`${filters.confidencePercent}% confidence`);
   }
+  if (filters.dueLabel) applied.push(filters.dueLabel);
   if (filters.meetingFollowUp) applied.push("meeting follow-up");
   else if (filters.promiseFollowUp) applied.push("promise follow-up");
   else if (filters.followUp) applied.push("follow-up");
@@ -852,6 +903,10 @@ export function queryRelationshipGraph(graph, query, options = {}) {
       if (typeof confidence !== "number" || !Number.isFinite(confidence)) return false;
       return Math.round(confidence * 100) === percent;
     });
+  }
+  if (filters.dueLabel) {
+    const label = filters.dueLabel;
+    constrainBy((node) => graphDueLabel(node.dueAt) === label);
   }
   if (filters.notConnected) {
     constrainBy(
