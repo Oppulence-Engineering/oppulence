@@ -7531,6 +7531,14 @@ func TestRelationshipSearchFindsTheSourceLook(t *testing.T) {
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	lookedOn := now.Add(-40 * 24 * time.Hour)
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("dated").
+		SetStatus("live").SetLastObservationAt(lookedOn).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -7552,6 +7560,10 @@ func TestRelationshipSearchFindsTheSourceLook(t *testing.T) {
 	assertCompanyQuery("Last looked 1 day ago.", "Cedar Day")
 	assertCompanyQuery("Last looked 2 hours from now.")
 	assertCompanyQuery("Last looked 2 hour ago.")
+	day := lookedOn.Format("Jan 2, 2006")
+	assertCompanyQuery("Last looked "+day, "Birch Hide")
+	assertCompanyQuery("Last looked "+day+".", "Birch Hide")
+	assertCompanyQuery("Last looked " + now.Add(-2*time.Hour).Format("Jan 2, 2006"))
 }
 
 func TestRelationshipSearchFindsTheSourceHistory(t *testing.T) {

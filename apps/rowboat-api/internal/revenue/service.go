@@ -7453,22 +7453,46 @@ var sourceScopeLabels = []struct{ scope, label string }{
 
 // relationshipSheetSourceLookedMatch is the hover on a source badge.
 // An error on that badge replaces the hover, so the look time stays hidden.
+// The first 30 days read "Last looked 2 hours ago". Older reads switch to the
+// UTC day, "Last looked Sep 4, 2026", which is the sentence on the badge.
 func relationshipSheetSourceLookedMatch(needle string, now time.Time) predicate.Relationship {
-	kind, count, unit, ok := sourceLookedPhrase(needle)
+	if kind, count, unit, ok := sourceLookedPhrase(needle); ok {
+		lo, hi, ok := snoozeWakeWindow(count, unit)
+		if !ok {
+			return nil
+		}
+		return sourceLookedAtMatch(func(b *sql.Builder) {
+			writeSourceLookedWindow(b, now, kind, lo, hi)
+		})
+	}
+	const prefix = "last looked "
+	if !strings.HasPrefix(needle, prefix) {
+		return nil
+	}
+	window, ok := calendarLabelWindow(strings.TrimPrefix(needle, prefix), now)
 	if !ok {
 		return nil
 	}
-	lo, hi, ok := snoozeWakeWindow(count, unit)
-	if !ok {
-		return nil
-	}
+	return sourceLookedAtMatch(func(b *sql.Builder) {
+		column := "src." + relationshipsourcestatus.FieldLastObservationAt
+		b.WriteString(column)
+		b.WriteString(" > ")
+		b.Arg(window.after.UTC())
+		b.WriteString(" AND ")
+		b.WriteString(column)
+		b.WriteString(" <= ")
+		b.Arg(window.until.UTC())
+	})
+}
+
+func sourceLookedAtMatch(window func(b *sql.Builder)) predicate.Relationship {
 	return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
 		b.WriteString("trim(coalesce(src.")
 		b.WriteString(relationshipsourcestatus.FieldLastError)
 		b.WriteString(", '')) = '' AND src.")
 		b.WriteString(relationshipsourcestatus.FieldLastObservationAt)
 		b.WriteString(" IS NOT NULL AND ")
-		writeSourceLookedWindow(b, now, kind, lo, hi)
+		window(b)
 	})
 }
 

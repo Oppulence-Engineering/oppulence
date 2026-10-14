@@ -394,6 +394,14 @@ describe("source product copy", () => {
     expect(sourceLastLookedTitle(twoHoursAgo)).toBe("Last looked 2 hours ago");
     expect(sourceLastLookedTitle("")).toBe("");
     expect(sourceLastLookedTitle("not-a-date")).toBe("");
+    const lookedOn = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
+    const day = new Date(lookedOn).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    expect(sourceLastLookedTitle(lookedOn)).toBe(`Last looked ${day}`);
     expect(sourceConnectionLabel({ source: "google", status: "not_connected" })).toBe(
       "Not connected",
     );

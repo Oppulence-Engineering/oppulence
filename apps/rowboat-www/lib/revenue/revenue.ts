@@ -1437,10 +1437,13 @@ export function relativeTime(iso?: string | null): string {
   if (abs < 3600_000) return fmt(Math.max(1, Math.round(abs / 60_000)), "min");
   if (abs < day) return fmt(Math.round(abs / 3600_000), "hour");
   if (abs < 30 * day) return fmt(Math.round(abs / day), "day");
-  return new Date(iso).toLocaleDateString(undefined, {
+  // Company search reads this same UTC day. A local calendar turned the
+  // badge the person hovered into a different date from the one search uses.
+  return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
