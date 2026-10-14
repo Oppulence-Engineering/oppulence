@@ -2992,6 +2992,74 @@ test("asking for a mail thread sentence finds the row that prints it", () => {
   assert.deepEqual(queryRelationshipGraph(graph, "1 message with acme.com").relationshipIds, ["one"]);
 });
 
+test("a trailing period still finds the badge it follows", () => {
+  const declining = parseRelationshipGraphQuery("Declining.");
+  assert.deepEqual(declining.filters.engagement, ["declining"]);
+  assert.deepEqual(declining.filters.freeText, []);
+
+  const active = parseRelationshipGraphQuery("Active.");
+  assert.equal(active.filters.sourceActive, true);
+  assert.deepEqual(active.filters.freeText, []);
+
+  const open = parseRelationshipGraphQuery("Open.");
+  assert.equal(open.filters.open, true);
+  assert.deepEqual(open.filters.freeText, []);
+
+  const healthy = parseRelationshipGraphQuery("Healthy.");
+  assert.deepEqual(healthy.filters.health, ["healthy"]);
+  assert.deepEqual(healthy.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:slide",
+        kind: "relationship",
+        label: "Quay Slide",
+        engagement: "declining",
+        health: "unknown",
+      },
+      {
+        id: "relationship:well",
+        kind: "relationship",
+        label: "Quay Well",
+        health: "healthy",
+        engagement: "steady",
+      },
+      { id: "relationship:live", kind: "relationship", label: "Quay Live" },
+      {
+        id: "source:live",
+        kind: "source",
+        label: "Gmail",
+        status: "live",
+        freshness: "current",
+        source: "gmail",
+        relationshipId: "live",
+      },
+      { id: "relationship:open", kind: "relationship", label: "Quay Open" },
+      {
+        id: "commitment:open",
+        kind: "commitment",
+        label: "Send the proposal",
+        status: "open",
+        relationshipId: "open",
+      },
+      {
+        id: "relationship:plain",
+        kind: "relationship",
+        label: "Quay Plain",
+        engagement: "unknown",
+        health: "unknown",
+      },
+    ],
+    edges: [],
+  };
+
+  assert.deepEqual(queryRelationshipGraph(graph, "Declining.").relationshipIds, ["slide"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Healthy.").relationshipIds, ["well"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Active.").relationshipIds, ["live"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Open.").relationshipIds, ["open"]);
+});
+
 test("speaker parsing stays bounded for adversarial whitespace", () => {
   const observation = buildImportedTranscriptObservation({
     relationshipId: "relationship-1",

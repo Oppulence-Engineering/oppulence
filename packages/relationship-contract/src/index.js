@@ -945,7 +945,12 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bformer contacts?\b\.?/g, " ")
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
-    .filter((token) => token && !recognizedToken(token));
+    .filter((token) => {
+      if (!token || token === ".") return false;
+      if (recognizedToken(token)) return false;
+      // "Declining." is the badge Declining. The period is not another word.
+      return !(token.endsWith(".") && recognizedToken(token.slice(0, -1)));
+    });
 
   const applied = [];
   if (filters.lifecycle.length) applied.push(`lifecycle: ${filters.lifecycle.join(", ")}`);
