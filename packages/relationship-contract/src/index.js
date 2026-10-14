@@ -170,6 +170,18 @@ const graphNodeRelationshipIds = (node) => {
  * deliberately deterministic: it never invents graph facts and every applied
  * filter is returned to the UI for inspection.
  */
+// The graph card prints "80% confidence". "80%" and the word alone are not that badge.
+function printedGraphConfidence(normalized) {
+  const found = [];
+  for (const match of normalized.matchAll(/(?:^|\s)(\d{1,3})% confidence\b/g)) {
+    const raw = match[1];
+    const percent = Number(raw);
+    if (raw === String(percent) && percent >= 0 && percent <= 100) found.push(percent);
+  }
+  if (found.length === 0 || found.some((percent) => percent !== found[0])) return null;
+  return found[0];
+}
+
 export function parseRelationshipGraphQuery(query) {
   const raw = String(query || "").trim();
   const normalized = raw.toLowerCase().replaceAll("-", "_");
@@ -266,7 +278,9 @@ export function parseRelationshipGraphQuery(query) {
       !/\bnot connected\b|\bnot_connected\b/.test(normalized) &&
       /\bconnected\b|\bhide isolated\b|\bunconnected\b|\bhide unconnected\b/.test(normalized),
     freeText: [],
+    confidencePercent: null,
   };
+  filters.confidencePercent = printedGraphConfidence(normalized);
 
   for (const [alias, kind] of Object.entries(GRAPH_QUERY_NODE_ALIASES)) {
     // "at risk" is the promise badge. "Customer risk" is the follow-up title.
@@ -540,7 +554,14 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\breplaces\b/g, " ")
     .replace(/\bowns\b/g, " ")
     .replace(/\bsupports\b/g, " ");
-  filters.freeText = withoutFilterPhrases
+  const withoutConfidence =
+    typeof filters.confidencePercent === "number"
+      ? withoutFilterPhrases.replace(
+          new RegExp(`\\b${filters.confidencePercent}% confidence\\b\\.?`, "g"),
+          " ",
+        )
+      : withoutFilterPhrases;
+  filters.freeText = withoutConfidence
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
     .filter((token) => token && !recognizedToken(token));
@@ -575,6 +596,9 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.current) applied.push("up to date");
   if (filters.aging) applied.push("getting old");
   if (filters.notRecorded) applied.push("not recorded for this date");
+  if (typeof filters.confidencePercent === "number") {
+    applied.push(`${filters.confidencePercent}% confidence`);
+  }
   if (filters.meetingFollowUp) applied.push("meeting follow-up");
   else if (filters.promiseFollowUp) applied.push("promise follow-up");
   else if (filters.followUp) applied.push("follow-up");
@@ -775,6 +799,14 @@ export function queryRelationshipGraph(graph, query, options = {}) {
         "freshness",
       ].some((field) => normalizedGraphValue(node[field]) === "historical_unknown"),
     );
+  }
+  if (typeof filters.confidencePercent === "number") {
+    const percent = filters.confidencePercent;
+    constrainBy((node) => {
+      const confidence = node.confidence;
+      if (typeof confidence !== "number" || !Number.isFinite(confidence)) return false;
+      return Math.round(confidence * 100) === percent;
+    });
   }
   if (filters.notConnected) {
     constrainBy(

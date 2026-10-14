@@ -1627,6 +1627,89 @@ test("asking not recorded for this date finds a record that did not exist yet", 
   assert.deepEqual(queryRelationshipGraph(graph, "historical unknown").relationshipIds, []);
 });
 
+test("asking for a confidence badge finds the promise that prints that percent", () => {
+  const exact = parseRelationshipGraphQuery("80% confidence");
+  assert.equal(exact.filters.confidencePercent, 80);
+  assert.deepEqual(exact.filters.freeText, []);
+  assert.deepEqual(exact.applied, ["80% confidence"]);
+
+  const dotted = parseRelationshipGraphQuery("80% confidence.");
+  assert.equal(dotted.filters.confidencePercent, 80);
+  assert.deepEqual(dotted.filters.freeText, []);
+
+  const shown = parseRelationshipGraphQuery("show me 80% confidence");
+  assert.equal(shown.filters.confidencePercent, 80);
+  assert.deepEqual(shown.filters.freeText, []);
+
+  assert.equal(parseRelationshipGraphQuery("80%").filters.confidencePercent, null);
+  assert.equal(parseRelationshipGraphQuery("confidence").filters.confidencePercent, null);
+  assert.equal(
+    parseRelationshipGraphQuery("65% confidence and 40% confidence").filters.confidencePercent,
+    null,
+  );
+  assert.equal(parseRelationshipGraphQuery("065% confidence").filters.confidencePercent, null);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:quoted", kind: "relationship", label: "Quay Quoted" },
+      {
+        id: "commitment:quoted",
+        kind: "commitment",
+        label: "Send the security packet",
+        relationshipId: "quoted",
+        status: "open",
+        confidence: 0.8,
+      },
+      { id: "relationship:rounded", kind: "relationship", label: "Quay Rounded" },
+      {
+        id: "commitment:rounded",
+        kind: "commitment",
+        label: "Send the rounded packet",
+        relationshipId: "rounded",
+        status: "open",
+        confidence: 0.804,
+      },
+      { id: "relationship:lower", kind: "relationship", label: "Quay Lower" },
+      {
+        id: "commitment:lower",
+        kind: "commitment",
+        label: "Send the renewal note",
+        relationshipId: "lower",
+        status: "open",
+        confidence: 0.4,
+      },
+      { id: "relationship:plain", kind: "relationship", label: "Quay Plain" },
+      {
+        id: "commitment:plain",
+        kind: "commitment",
+        label: "Send the agenda",
+        relationshipId: "plain",
+        status: "open",
+      },
+      { id: "relationship:sure", kind: "relationship", label: "Quay Sure" },
+      {
+        id: "commitment:sure",
+        kind: "commitment",
+        label: "Send the sure packet",
+        relationshipId: "sure",
+        status: "open",
+        confidence: 0.855,
+      },
+      { id: "relationship:later", kind: "relationship", label: "Quay Later", status: "historical_unknown" },
+    ],
+    edges: [],
+  };
+
+  for (const query of ["80% confidence", "80% confidence.", "show me 80% confidence"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds.sort(), ["quoted", "rounded"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "86% confidence").relationshipIds, ["sure"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "40% confidence").relationshipIds, ["lower"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "80%").relationshipIds, []);
+  assert.deepEqual(queryRelationshipGraph(graph, "confidence").relationshipIds, []);
+  assert.deepEqual(queryRelationshipGraph(graph, "Not recorded for this date").relationshipIds, ["later"]);
+});
+
 test("every contracted capability has an explicit surface in web and desktop", () => {
   const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const clientSources = {
