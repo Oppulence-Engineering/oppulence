@@ -11073,6 +11073,107 @@ func TestRelationshipSearchFindsACalendarLastInteraction(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsTheSheetTime(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	datedAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	recentAt := time.Now().UTC().Add(-10 * 24 * time.Hour)
+	hourAt := time.Now().UTC().Add(-2 * time.Hour)
+	label := datedAt.Format("Jan 2, 2006")
+
+	makeCompany := func(name string, touch time.Time) *ent.Relationship {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		saved, err := f.client.Relationship.UpdateOneID(rel.ID).SetLastTouchAt(touch).Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return saved
+	}
+	makeCompany("Directory Touch", datedAt)
+	thread := makeCompany("Thread Day", recentAt)
+	badge := makeCompany("Badge Day", recentAt)
+	timeline := makeCompany("Timeline Day", recentAt)
+	change := makeCompany("Change Day", recentAt)
+	removed := makeCompany("Deleted Day", recentAt)
+	makeCompany("Recent Day", recentAt)
+	makeCompany("Hour Touch", hourAt)
+	hourThread := makeCompany("Hour Thread", recentAt)
+
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).SetProviderThreadID("thread-day").
+		SetLastActivityAt(datedAt).SetRelationship(thread).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).SetProviderThreadID("hour-thread").
+		SetLastActivityAt(hourAt).SetRelationship(hourThread).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(badge).
+		SetSource("gmail").SetExternalID("badge-day").SetEventType("mail").
+		SetOccurredAt(datedAt).SetReceivedAt(datedAt).SetContentHash("badge-day").
+		SetSummary("A dated activity").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(context.Background())
+	saveMail := func(rel *ent.Relationship, id string, at time.Time, deleted bool) {
+		t.Helper()
+		if _, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(rel.ID).
+			SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID(id).
+			SetInteractionType("email").SetDirection("inbound").SetSubject(id).
+			SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+			SetContentHash("sha256:"+id).SetMetadataJSON(`{}`).SetDeleted(deleted).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveMail(timeline, "timeline-day", datedAt, false)
+	saveMail(removed, "deleted-day", datedAt, true)
+	if _, err := f.client.RelationshipStateSnapshot.Create().
+		SetWorkspace(ws).SetRelationship(change).SetUser(f.user).
+		SetVersion(1).SetStateJSON(`{}`).SetStateHash("change-day").
+		SetCreatedAt(datedAt).SetEvaluatedAt(datedAt).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	day := []string{"Directory Touch", "Thread Day", "Badge Day", "Timeline Day", "Change Day"}
+	assertCompanyQuery(label, day...)
+	assertCompanyQuery(label+".", day...)
+	assertCompanyQuery(recentAt.Format("Jan 2, 2006"))
+	assertCompanyQuery("2 hours ago", "Hour Touch", "Hour Thread")
+}
+
 func TestRelationshipSearchFindsTheQuietCompany(t *testing.T) {
 	f := newFixture(t)
 	quiet, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

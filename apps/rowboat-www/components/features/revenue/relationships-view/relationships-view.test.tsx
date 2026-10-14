@@ -1057,7 +1057,14 @@ describe("RelationshipsView", () => {
     expect(mailThreadActivityLabel(null)).toBe("Not known");
     expect(mailThreadActivityLabel("")).toBe("Not known");
     expect(mailThreadActivityLabel("not-a-date")).toBe("Not known");
-    expect(mailThreadActivityLabel("2026-08-04T12:00:00Z")).not.toBe("Not known");
+    expect(mailThreadActivityLabel("2026-08-04T12:00:00Z")).toBe(
+      new Date("2026-08-04T12:00:00Z").toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      }),
+    );
     expect(source).toContain("mailThreadActivityLabel(thread.lastActivityAt)");
     expect(source).not.toContain("Unknown date");
     expect(source).not.toContain('thread.subject || "Email conversation"');

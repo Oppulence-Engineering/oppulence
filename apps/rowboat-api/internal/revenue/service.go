@@ -849,12 +849,8 @@ func (s *Service) ListRelationshipsFiltered(
 		if columns := relationshipDirectoryColumnMatch(value, s.now()); columns != nil {
 			parts = append(parts, columns)
 		}
-		if window, ok := visibleActivityWindow(value, time.Now().UTC()); ok {
-			parts = append(parts, relationship.And(
-				relationship.LastTouchAtNotNil(),
-				relationship.LastTouchAtGT(window.after),
-				relationship.LastTouchAtLTE(window.until),
-			))
+		if window, ok := visibleActivityWindow(normalizePersonSearch(value), time.Now().UTC()); ok {
+			parts = append(parts, relationshipPrintedTimeMatch(window))
 		}
 		needle := normalizePersonSearch(value)
 		if badges := relationshipSheetRecordBadgeMatch(needle, s.now()); badges != nil {
@@ -14079,6 +14075,38 @@ func writeMailThreadID(b *sql.Builder, s *sql.Selector) {
 	b.WriteString("COALESCE(json_extract(")
 	b.WriteString(column)
 	b.WriteString(", '$.threadId'), '')")
+}
+
+// relationshipPrintedTimeMatch finds a company that prints this relative
+// phrase or UTC day. The directory uses the company touch. An email thread
+// uses its own last activity. Activity history, the mail timeline, and a
+// change version print the event time. A deleted mail row is off the timeline.
+func relationshipPrintedTimeMatch(window relativeWindow) predicate.Relationship {
+	return relationship.Or(
+		relationship.And(
+			relationship.LastTouchAtNotNil(),
+			relationship.LastTouchAtGT(window.after),
+			relationship.LastTouchAtLTE(window.until),
+		),
+		relationship.HasMailThreadsWith(
+			mailthread.LastActivityAtNotNil(),
+			mailthread.LastActivityAtGT(window.after),
+			mailthread.LastActivityAtLTE(window.until),
+		),
+		relationship.HasObservationsWith(
+			relationshipobservation.OccurredAtGT(window.after),
+			relationshipobservation.OccurredAtLTE(window.until),
+		),
+		relationship.HasCommunicationInteractionsWith(
+			communicationinteraction.DeletedEQ(false),
+			communicationinteraction.OccurredAtGT(window.after),
+			communicationinteraction.OccurredAtLTE(window.until),
+		),
+		relationship.HasSnapshotsWith(
+			relationshipstatesnapshot.CreatedAtGT(window.after),
+			relationshipstatesnapshot.CreatedAtLTE(window.until),
+		),
+	)
 }
 
 // relationshipSheetMailMatch matches the mail section on the company sheet.
