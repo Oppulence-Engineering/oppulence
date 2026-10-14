@@ -6836,34 +6836,80 @@ func snoozeWakeWindow(count int, unit time.Duration) (lo, hi time.Duration, ok b
 // The directory says "Reconnect required" or "Syncing". The stored status
 // stays on the row. A company matches when it depends on that source.
 func relationshipSheetSourceBadgeMatch(needle string) predicate.Relationship {
-	switch needle {
-	case "not connected":
+	// The badge is "Google · Active" or "Slack · Out of date". The status
+	// word alone still finds every source in that state. The source name
+	// keeps the row that prints it.
+	if left, right, ok := mailTimelineParts(needle); ok {
+		sources := sourceBadgeFamilies(left)
+		cond := sourceBadgeWriter(right)
+		if len(sources) == 0 || cond == nil {
+			return nil
+		}
 		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
-			writeSourceStatusEQ(b, "not_connected")
+			writeListedSourceNames(b, sources)
+			b.WriteString(" AND ")
+			cond(b)
 		})
-	case "reconnect required":
+	}
+	if cond := sourceBadgeWriter(needle); cond != nil {
 		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
-			writeSourceStatusEQ(b, "reconnect_required")
+			cond(b)
 		})
-	case "disconnected":
-		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
-			writeSourceStatusEQ(b, "disconnected")
-		})
-	case "syncing":
-		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
-			writeSourceBadgeSyncing(b)
-		})
-	case "sync incomplete":
-		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
-			writeSourceBadgeIncomplete(b)
-		})
-	case "active":
-		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
-			writeSourceBadgeActive(b)
-		})
+	}
+	return nil
+}
+
+func sourceBadgeFamilies(label string) []string {
+	switch normalizePersonSearch(label) {
+	case "google":
+		return []string{"google"}
+	case "gmail":
+		return []string{"gmail"}
+	case "calendar":
+		return []string{"calendar"}
+	case "slack":
+		return []string{"slack"}
+	case "hubspot":
+		return []string{"hubspot"}
+	case "the crm":
+		return []string{"crm"}
 	default:
 		return nil
 	}
+}
+
+func sourceBadgeWriter(label string) func(*sql.Builder) {
+	switch normalizePersonSearch(label) {
+	case "not connected":
+		return func(b *sql.Builder) { writeSourceStatusEQ(b, "not_connected") }
+	case "reconnect required":
+		return func(b *sql.Builder) { writeSourceStatusEQ(b, "reconnect_required") }
+	case "disconnected":
+		return func(b *sql.Builder) { writeSourceStatusEQ(b, "disconnected") }
+	case "syncing":
+		return writeSourceBadgeSyncing
+	case "sync incomplete":
+		return writeSourceBadgeIncomplete
+	case "out of date":
+		return writeSourceBadgeStale
+	case "active":
+		return writeSourceBadgeActive
+	default:
+		return nil
+	}
+}
+
+func writeListedSourceNames(b *sql.Builder, sources []string) {
+	b.WriteString("lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN (")
+	for i, source := range sources {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(source)
+	}
+	b.WriteString(")")
 }
 
 func writeSourceStatusEQ(b *sql.Builder, status string) {
@@ -6917,6 +6963,13 @@ func writeSourceBadgeActive(b *sql.Builder) {
 	b.WriteString(") IN ('google', 'slack', 'hubspot') AND src.")
 	b.WriteString(relationshipsourcestatus.FieldCompleteness)
 	b.WriteString(" <> 'complete')")
+}
+
+func writeSourceBadgeStale(b *sql.Builder) {
+	b.WriteString("src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" = 'stale' AND NOT ")
+	writeSourceSyncingFlag(b)
 }
 
 func relationshipDependsOnSource(cond func(b *sql.Builder, s *sql.Selector)) predicate.Relationship {
