@@ -275,7 +275,9 @@ function printedGraphConfidence(normalized) {
 }
 
 // Graph details use these names when the activity has no longer sentence.
+// The inspector still prints the name as Status when a longer sentence is the title.
 // "Promise" in "Promise confirmed" is that name, not a request for every promise.
+// "Company" in "Company added" is that name, not a request for every company.
 // "A note" is the desktop-note badge, not a request for note nodes.
 const GRAPH_NODE_LABELS = [
   "onboarding moved forward",
@@ -288,8 +290,12 @@ const GRAPH_NODE_LABELS = [
   "meeting missing",
   "meeting booked",
   "message sent",
+  "company updated",
+  "company record",
+  "company added",
   "promise added",
   "person added",
+  "detail chosen",
   "action recorded",
   "note removed",
   "crm activity",
@@ -991,7 +997,10 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     });
   }
   for (const label of filters.nodeLabels) {
-    constrainBy((node) => normalizedGraphValue(node.label) === label);
+    constrainBy(
+      (node) =>
+        normalizedGraphValue(node.label) === label || normalizedGraphValue(node.status) === label,
+    );
   }
   if (filters.notConnected) {
     constrainBy(

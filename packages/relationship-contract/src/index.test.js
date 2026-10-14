@@ -2211,6 +2211,64 @@ test("asking for an activity name finds the detail that prints that name", () =>
         label: "Quay Stage",
         lifecycle: "onboarding",
       },
+      { id: "relationship:company", kind: "relationship", label: "Quay Company" },
+      {
+        id: "evidence:company",
+        kind: "evidence",
+        label: "Company added",
+        relationshipId: "company",
+      },
+      { id: "relationship:summary", kind: "relationship", label: "Quay Summary" },
+      {
+        id: "evidence:summary",
+        kind: "evidence",
+        label: "Harbor joined the workspace",
+        status: "Company added",
+        relationshipId: "summary",
+      },
+      { id: "relationship:salt", kind: "relationship", label: "Added Salt" },
+      { id: "relationship:mail", kind: "relationship", label: "Quay Mail" },
+      {
+        id: "evidence:mail",
+        kind: "evidence",
+        label: "Mail updated",
+        relationshipId: "mail",
+      },
+      { id: "relationship:updated", kind: "relationship", label: "Quay Updated" },
+      {
+        id: "evidence:updated",
+        kind: "evidence",
+        label: "Company updated",
+        relationshipId: "updated",
+      },
+      { id: "relationship:record", kind: "relationship", label: "Quay Record" },
+      {
+        id: "evidence:record",
+        kind: "evidence",
+        label: "Company record",
+        relationshipId: "record",
+      },
+      { id: "relationship:recorded", kind: "relationship", label: "Quay Recorded" },
+      {
+        id: "evidence:recorded",
+        kind: "evidence",
+        label: "Recorded",
+        relationshipId: "recorded",
+      },
+      { id: "relationship:chosen", kind: "relationship", label: "Quay Chosen" },
+      {
+        id: "evidence:chosen",
+        kind: "evidence",
+        label: "Detail chosen",
+        relationshipId: "chosen",
+      },
+      { id: "relationship:quote", kind: "relationship", label: "Quay Quote" },
+      {
+        id: "evidence:quote",
+        kind: "evidence",
+        label: "A quote was chosen",
+        relationshipId: "quote",
+      },
     ],
     edges: [],
   };
@@ -2227,6 +2285,26 @@ test("asking for an activity name finds the detail that prints that name", () =>
   assert.deepEqual(queryRelationshipGraph(graph, "Message sent").relationshipIds, ["sent"]);
   assert.deepEqual(queryRelationshipGraph(graph, "Onboarding moved forward").relationshipIds, ["forward"]);
   assert.deepEqual(queryRelationshipGraph(graph, "Changed since you last looked.").relationshipIds, ["shift"]);
+
+  const company = parseRelationshipGraphQuery("Company added");
+  assert.deepEqual(company.filters.nodeLabels, ["company added"]);
+  assert.deepEqual(company.filters.nodeKinds, []);
+  assert.deepEqual(company.filters.freeText, []);
+  assert.deepEqual(parseRelationshipGraphQuery("Company added.").filters.freeText, []);
+  assert.deepEqual(parseRelationshipGraphQuery("Company updated").filters.nodeKinds, []);
+  assert.deepEqual(parseRelationshipGraphQuery("Company record").filters.nodeLabels, ["company record"]);
+  const chosen = parseRelationshipGraphQuery("Detail chosen");
+  assert.deepEqual(chosen.filters.nodeLabels, ["detail chosen"]);
+  assert.deepEqual(chosen.filters.nodeKinds, []);
+  assert.deepEqual(chosen.filters.freeText, []);
+
+  for (const query of ["Company added", "Company added.", "show me Company added"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds.sort(), ["company", "summary"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Company updated").relationshipIds, ["updated"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Company record").relationshipIds, ["record"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Detail chosen").relationshipIds, ["chosen"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Detail chosen.").relationshipIds, ["chosen"]);
 });
 
 test("speaker parsing stays bounded for adversarial whitespace", () => {
