@@ -3335,6 +3335,94 @@ test("asking for a risk or milestone line finds that row", () => {
   assert.deepEqual(queryRelationshipGraph(graph, "Proposal shared.").relationshipIds, ["stone"]);
   assert.deepEqual(queryRelationshipGraph(graph, "Review").relationshipIds, ["promise"]);
   assert.deepEqual(queryRelationshipGraph(graph, "At risk").relationshipIds, ["late"]);
+  // "A delivery risk" still means the risk row. Stripping the leading "A"
+  // must not replace the badge answer when that row already survived.
+  const delivery = queryRelationshipGraph(
+    {
+      nodes: [
+        {
+          id: "relationship:delivery",
+          kind: "relationship",
+          label: "Quay Delivery",
+          lifecycle: "active_customer",
+        },
+        {
+          id: "risk:delivery",
+          kind: "risk",
+          label: "A delivery risk",
+          relationshipId: "delivery",
+        },
+      ],
+      edges: [],
+    },
+    "A delivery risk",
+  );
+  assert.deepEqual(delivery.relationshipIds, ["delivery"]);
+  assert.deepEqual(delivery.parsed.applied, ["nodes: risk", "text: delivery"]);
+});
+
+test("asking for a meeting note finds the row titled A meeting note", () => {
+  const parsed = parseRelationshipGraphQuery("A meeting note");
+  assert.deepEqual(parsed.filters.nodeKinds, ["note"]);
+  assert.deepEqual(parsed.filters.sources, ["meeting"]);
+  assert.deepEqual(parsed.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:row",
+        kind: "relationship",
+        label: "Quay Notes",
+        lifecycle: "active_customer",
+        health: "healthy",
+      },
+      {
+        id: "evidence:row",
+        kind: "evidence",
+        label: "A meeting note",
+        relationshipId: "row",
+        source: "desktop_note",
+        status: "Note saved",
+      },
+      {
+        id: "relationship:note",
+        kind: "relationship",
+        label: "Quay Folder",
+        lifecycle: "prospect",
+      },
+      {
+        id: "note:note",
+        kind: "note",
+        label: "Kickoff notes",
+        relationshipId: "note",
+      },
+      {
+        id: "relationship:meet",
+        kind: "relationship",
+        label: "Quay Meet",
+        lifecycle: "prospect",
+      },
+      {
+        id: "source:meet",
+        kind: "source",
+        label: "A meeting",
+        relationshipId: "meet",
+        source: "meeting",
+        status: "live",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of ["A meeting note", "A meeting note.", "show me a meeting note"]) {
+    const found = queryRelationshipGraph(graph, query);
+    assert.deepEqual(found.relationshipIds, ["row"]);
+    assert.deepEqual(found.parsed.applied, ["meeting note"]);
+    assert.equal(found.visibleNodeIds.includes("relationship:note"), false);
+    assert.equal(found.visibleNodeIds.includes("relationship:meet"), false);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "A note").relationshipIds, []);
+  assert.deepEqual(queryRelationshipGraph(graph, "Meeting").relationshipIds, ["meet"]);
 });
 
 test("speaker parsing stays bounded for adversarial whitespace", () => {

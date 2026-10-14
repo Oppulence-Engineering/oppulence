@@ -1425,12 +1425,16 @@ export function queryRelationshipGraph(graph, query, options = {}) {
 
   // A risk line is "Security review has no owner." "Review" in that line is
   // not a promise waiting for confirmation, and "renewal" in "renewal slip"
-  // is not the lifecycle. When the question is the line itself and the badge
+  // is not the lifecycle. "A meeting note" is that row: "note" and "meeting"
+  // would otherwise ask for a note and a meeting source. A leading "A" or
+  // "The" is how the row is titled, so it comes off both sides before the
+  // line is compared. When the question is the line itself and the badge
   // reading hid it, keep the line.
   const questionTitle = graphQuestionTitle(parsed.raw);
   const printsQuestion = (node) =>
     questionTitle.includes(" ") &&
-    (graphRowTitle(node.label) === questionTitle || graphRowTitle(node.summary) === questionTitle);
+    (graphQuestionTitle(node.label) === questionTitle ||
+      graphQuestionTitle(node.summary) === questionTitle);
   const printed = nodes.filter(printsQuestion);
   const printedSurvived = printed.some((node) =>
     graphNodeRelationshipIds(node).some((id) => relationshipIds.has(id)),
