@@ -256,9 +256,45 @@ function printedGraphConfidence(normalized) {
   return found[0];
 }
 
+// Graph details use these names when the activity has no longer sentence.
+// "Promise" in "Promise confirmed" is that name, not a request for every promise.
+// "A note" is the desktop-note badge, not a request for note nodes.
+const GRAPH_NODE_LABELS = [
+  "onboarding moved forward",
+  "engagement changed",
+  "a voice note",
+  "promise confirmed",
+  "promise evidence",
+  "promise updated",
+  "meeting updated",
+  "meeting missing",
+  "meeting booked",
+  "message sent",
+  "promise added",
+  "person added",
+  "action recorded",
+  "note removed",
+  "crm activity",
+  "note saved",
+  "a note",
+];
+
+function printedGraphNodeLabels(normalized) {
+  const labels = [];
+  let rest = normalized;
+  for (const label of GRAPH_NODE_LABELS) {
+    const re = new RegExp(`\\b${label.replaceAll(" ", "[ _]")}\\b\\.?`, "g");
+    if (!re.test(rest)) continue;
+    labels.push(label);
+    rest = rest.replace(new RegExp(`\\b${label.replaceAll(" ", "[ _]")}\\b\\.?`, "g"), " ");
+  }
+  return { labels, rest };
+}
+
 export function parseRelationshipGraphQuery(query) {
   const raw = String(query || "").trim();
-  const normalized = raw.toLowerCase().replaceAll("-", "_");
+  const nodeLabelDetail = printedGraphNodeLabels(raw.toLowerCase().replaceAll("-", "_"));
+  const normalized = nodeLabelDetail.rest;
   const filters = {
     nodeKinds: [],
     lifecycle: [],
@@ -353,6 +389,7 @@ export function parseRelationshipGraphQuery(query) {
       /\bconnected\b|\bhide isolated\b|\bunconnected\b|\bhide unconnected\b/.test(normalized),
     freeText: [],
     confidencePercent: null,
+    nodeLabels: nodeLabelDetail.labels,
   };
   filters.confidencePercent = printedGraphConfidence(normalized);
   const changeDetail = printedGraphChangeDetail(normalized);
@@ -697,6 +734,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.dueLabel) applied.push(filters.dueLabel);
   if (filters.unknownPerson) applied.push("unknown person");
   if (filters.formerContact) applied.push("former contact");
+  for (const label of filters.nodeLabels) applied.push(label);
   if (filters.meetingFollowUp) applied.push("meeting follow-up");
   else if (filters.promiseFollowUp) applied.push("promise follow-up");
   else if (filters.followUp) applied.push("follow-up");
@@ -930,6 +968,9 @@ export function queryRelationshipGraph(graph, query, options = {}) {
       const role = normalizedGraphValue(node.role).replaceAll("_", " ").replaceAll("-", " ");
       return role === "former contact";
     });
+  }
+  for (const label of filters.nodeLabels) {
+    constrainBy((node) => normalizedGraphValue(node.label) === label);
   }
   if (filters.notConnected) {
     constrainBy(

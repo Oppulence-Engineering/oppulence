@@ -2001,6 +2001,185 @@ test("an imported transcript retry keeps the same idempotency identity", () => {
   );
 });
 
+test("asking for an activity name finds the detail that prints that name", () => {
+  const confirmed = parseRelationshipGraphQuery("Promise confirmed");
+  assert.deepEqual(confirmed.filters.nodeLabels, ["promise confirmed"]);
+  assert.deepEqual(confirmed.filters.nodeKinds, []);
+  assert.deepEqual(confirmed.filters.freeText, []);
+  assert.deepEqual(confirmed.applied, ["promise confirmed"]);
+
+  const dotted = parseRelationshipGraphQuery("Promise confirmed.");
+  assert.deepEqual(dotted.filters.nodeLabels, ["promise confirmed"]);
+  assert.deepEqual(dotted.filters.freeText, []);
+
+  const evidence = parseRelationshipGraphQuery("Promise evidence");
+  assert.deepEqual(evidence.filters.nodeLabels, ["promise evidence"]);
+  assert.deepEqual(evidence.filters.nodeKinds, []);
+
+  const person = parseRelationshipGraphQuery("Person added");
+  assert.deepEqual(person.filters.nodeLabels, ["person added"]);
+  assert.deepEqual(person.filters.nodeKinds, []);
+  assert.deepEqual(person.filters.freeText, []);
+
+  const note = parseRelationshipGraphQuery("A note");
+  assert.deepEqual(note.filters.nodeLabels, ["a note"]);
+  assert.deepEqual(note.filters.nodeKinds, []);
+  assert.deepEqual(note.filters.freeText, []);
+
+  const voice = parseRelationshipGraphQuery("A voice note");
+  assert.deepEqual(voice.filters.nodeLabels, ["a voice note"]);
+  assert.deepEqual(voice.filters.nodeKinds, []);
+  assert.deepEqual(voice.filters.sources, []);
+
+  const changed = parseRelationshipGraphQuery("Engagement changed");
+  assert.deepEqual(changed.filters.nodeLabels, ["engagement changed"]);
+  assert.equal(changed.filters.changed, false);
+  assert.deepEqual(changed.filters.freeText, []);
+
+  const sent = parseRelationshipGraphQuery("Message sent");
+  assert.deepEqual(sent.filters.nodeLabels, ["message sent"]);
+  assert.equal(sent.filters.sent, false);
+  assert.deepEqual(sent.filters.freeText, []);
+
+  const onboarding = parseRelationshipGraphQuery("Onboarding moved forward");
+  assert.deepEqual(onboarding.filters.nodeLabels, ["onboarding moved forward"]);
+  assert.deepEqual(onboarding.filters.lifecycle, []);
+  assert.deepEqual(onboarding.filters.freeText, []);
+
+  const desktop = parseRelationshipGraphQuery("desktop notes");
+  assert.deepEqual(desktop.filters.nodeLabels, []);
+  assert.deepEqual(desktop.filters.sources, ["desktop_note"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:confirmed", kind: "relationship", label: "Quay Confirmed" },
+      {
+        id: "evidence:confirmed",
+        kind: "evidence",
+        label: "Promise confirmed",
+        relationshipId: "confirmed",
+      },
+      { id: "relationship:word", kind: "relationship", label: "Quay Word" },
+      {
+        id: "commitment:word",
+        kind: "commitment",
+        label: "Confirmed the date",
+        relationshipId: "word",
+        status: "open",
+      },
+      { id: "relationship:both", kind: "relationship", label: "Quay Both" },
+      {
+        id: "commitment:both",
+        kind: "commitment",
+        label: "Send the note",
+        relationshipId: "both",
+        status: "open",
+      },
+      {
+        id: "evidence:both",
+        kind: "evidence",
+        label: "Other detail",
+        relationshipId: "both",
+      },
+      { id: "relationship:evidence", kind: "relationship", label: "Quay Evidence" },
+      {
+        id: "evidence:evidence",
+        kind: "evidence",
+        label: "Promise evidence",
+        relationshipId: "evidence",
+      },
+      { id: "relationship:added", kind: "relationship", label: "Quay Added" },
+      {
+        id: "evidence:added",
+        kind: "evidence",
+        label: "Person added",
+        relationshipId: "added",
+      },
+      { id: "relationship:ada", kind: "relationship", label: "Quay Ada" },
+      {
+        id: "person:ada",
+        kind: "person",
+        label: "Ada Lovelace",
+        relationshipId: "ada",
+        role: "champion",
+      },
+      { id: "relationship:noted", kind: "relationship", label: "Quay Noted" },
+      {
+        id: "source:noted",
+        kind: "source",
+        label: "A note",
+        relationshipId: "noted",
+        source: "desktop_note",
+      },
+      { id: "relationship:standup", kind: "relationship", label: "Quay Standup" },
+      {
+        id: "note:standup",
+        kind: "note",
+        label: "Standup",
+        relationshipId: "standup",
+      },
+      { id: "relationship:voice", kind: "relationship", label: "Quay Voice" },
+      {
+        id: "source:voice",
+        kind: "source",
+        label: "A voice note",
+        relationshipId: "voice",
+        source: "voice_note",
+      },
+      { id: "relationship:engaged", kind: "relationship", label: "Quay Engaged" },
+      {
+        id: "evidence:engaged",
+        kind: "evidence",
+        label: "Engagement changed",
+        relationshipId: "engaged",
+      },
+      { id: "relationship:shift", kind: "relationship", label: "Quay Shift", changedSinceReview: true },
+      { id: "relationship:sent", kind: "relationship", label: "Quay Sent" },
+      {
+        id: "evidence:sent",
+        kind: "evidence",
+        label: "Message sent",
+        relationshipId: "sent",
+      },
+      { id: "relationship:out", kind: "relationship", label: "Quay Out" },
+      {
+        id: "action:out",
+        kind: "action",
+        label: "Warm follow-up",
+        relationshipId: "out",
+        executionStatus: "sent",
+      },
+      { id: "relationship:forward", kind: "relationship", label: "Quay Forward" },
+      {
+        id: "evidence:forward",
+        kind: "evidence",
+        label: "Onboarding moved forward",
+        relationshipId: "forward",
+      },
+      {
+        id: "relationship:stage",
+        kind: "relationship",
+        label: "Quay Stage",
+        lifecycle: "onboarding",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of ["Promise confirmed", "Promise confirmed.", "show me Promise confirmed"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["confirmed"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Promise evidence").relationshipIds, ["evidence"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Person added").relationshipIds, ["added"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "A note").relationshipIds, ["noted"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "A note.").relationshipIds, ["noted"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "A voice note").relationshipIds, ["voice"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Engagement changed").relationshipIds, ["engaged"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Message sent").relationshipIds, ["sent"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Onboarding moved forward").relationshipIds, ["forward"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Changed since you last looked.").relationshipIds, ["shift"]);
+});
+
 test("speaker parsing stays bounded for adversarial whitespace", () => {
   const observation = buildImportedTranscriptObservation({
     relationshipId: "relationship-1",
