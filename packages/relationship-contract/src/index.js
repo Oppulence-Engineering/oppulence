@@ -157,6 +157,24 @@ const graphPromiseCanBeOverdue = (status) => {
   return normalized === "open" || normalized === "at_risk";
 };
 
+// The card and the inspector say Not known. Engagement and sentiment hide
+// their unknown fallback, so those fields are not this sentence.
+function graphNodePrintsNotKnown(node) {
+  const reading = (field) => normalizedGraphValue(node[field]);
+  if (
+    ["freshness", "health", "lifecycle", "status", "approvalStatus", "policyStatus", "executionStatus"].some(
+      (field) => reading(field) === "unknown",
+    )
+  ) {
+    return true;
+  }
+  return (
+    node.kind === "relationship" &&
+    (!node.status || reading("status") === "active") &&
+    (!node.health || reading("health") === "unknown")
+  );
+}
+
 const graphNodeRelationshipIds = (node) => {
   if (node.kind === "relationship") return [node.id.replace(/^relationship:/, "")];
   const ids = Array.isArray(node.relationshipIds) ? node.relationshipIds : [];
@@ -454,10 +472,9 @@ export function parseRelationshipGraphQuery(query) {
   ) {
     filters.health.push("needs_attention");
   }
-    // The company row says Not known. The stored health is unknown.
-    if (/\bnot known\b|\bnot_known\b/.test(normalized) && !filters.health.includes("unknown")) {
-      filters.health.push("unknown");
-    }
+    // The inspector prints Not known for an unknown health, lifecycle, status,
+    // or freshness, and for a company that has no health reading yet.
+    filters.notKnown = /\bnot known\b|\bnot_known\b/.test(normalized);
     // A date before the record existed says "Not recorded for this date".
     // The stored token is historical_unknown.
     filters.notRecorded = /\bnot recorded for this date\b|\bnot_recorded_for_this_date\b/.test(
@@ -637,8 +654,8 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bkept_promises\b/g, " ")
     .replace(/\bkept_promise\b/g, " ")
     .replace(/\bkept\b/g, " ")
-    .replace(/\bnot known\b/g, " ")
-    .replace(/\bnot_known\b/g, " ")
+    .replace(/\bnot known\b\.?/g, " ")
+    .replace(/\bnot_known\b\.?/g, " ")
     .replace(/\bnot recorded for this date\b\.?/g, " ")
     .replace(/\bnot_recorded_for_this_date\b\.?/g, " ")
     .replace(/\bawaiting approvals\b/g, " ")
@@ -728,6 +745,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.current) applied.push("up to date");
   if (filters.aging) applied.push("getting old");
   if (filters.notRecorded) applied.push("not recorded for this date");
+  if (filters.notKnown) applied.push("not known");
   if (typeof filters.confidencePercent === "number") {
     applied.push(`${filters.confidencePercent}% confidence`);
   }
@@ -944,6 +962,9 @@ export function queryRelationshipGraph(graph, query, options = {}) {
         "freshness",
       ].some((field) => normalizedGraphValue(node[field]) === "historical_unknown"),
     );
+  }
+  if (filters.notKnown) {
+    constrainBy(graphNodePrintsNotKnown);
   }
   if (typeof filters.confidencePercent === "number") {
     const percent = filters.confidencePercent;

@@ -344,25 +344,73 @@ test("asking kept finds a promise the company card calls kept", () => {
 
 test("asking not known finds a company whose health is unknown", () => {
   const parsed = parseRelationshipGraphQuery("not known");
-  assert.deepEqual(parsed.filters.health, ["unknown"]);
+  assert.equal(parsed.filters.notKnown, true);
+  assert.deepEqual(parsed.filters.health, []);
   assert.deepEqual(parsed.filters.freeText, []);
-  assert.deepEqual(parsed.applied, ["health: unknown"]);
+  assert.deepEqual(parsed.applied, ["not known"]);
 
   const hyphenated = parseRelationshipGraphQuery("not-known");
-  assert.deepEqual(hyphenated.filters.health, ["unknown"]);
+  assert.equal(hyphenated.filters.notKnown, true);
+  assert.deepEqual(hyphenated.filters.health, []);
   assert.deepEqual(hyphenated.filters.freeText, []);
+
+  const dotted = parseRelationshipGraphQuery("Not known.");
+  assert.equal(dotted.filters.notKnown, true);
+  assert.deepEqual(dotted.filters.freeText, []);
 
   const graph = {
     nodes: [
       { id: "relationship:plain", kind: "relationship", label: "Quay Plain", health: "unknown" },
-      { id: "relationship:healthy", kind: "relationship", label: "Quay Healthy", health: "healthy" },
+      {
+        id: "relationship:fresh",
+        kind: "relationship",
+        label: "Quay Fresh",
+        health: "healthy",
+        status: "active",
+      },
+      {
+        id: "source:fresh",
+        kind: "source",
+        label: "Gmail",
+        relationshipId: "fresh",
+        source: "gmail",
+        status: "live",
+        freshness: "unknown",
+      },
+      {
+        id: "relationship:life",
+        kind: "relationship",
+        label: "Quay Life",
+        health: "healthy",
+        status: "active",
+        lifecycle: "unknown",
+      },
+      { id: "relationship:blank", kind: "relationship", label: "Quay Blank", status: "active" },
+      {
+        id: "relationship:healthy",
+        kind: "relationship",
+        label: "Quay Healthy",
+        health: "healthy",
+        status: "active",
+        lifecycle: "active_customer",
+        freshness: "current",
+      },
     ],
     edges: [],
   };
-  const result = queryRelationshipGraph(graph, "not known");
-  assert.deepEqual(result.relationshipIds, ["plain"]);
-  assert.equal(result.visibleNodeIds.includes("relationship:healthy"), false);
-  assert.equal(result.answer, "1 relationship matches health: unknown.");
+  for (const query of ["not known", "Not known.", "not-known"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds.sort(), [
+      "blank",
+      "fresh",
+      "life",
+      "plain",
+    ]);
+  }
+  assert.equal(
+    queryRelationshipGraph(graph, "not known").visibleNodeIds.includes("relationship:healthy"),
+    false,
+  );
+  assert.equal(queryRelationshipGraph(graph, "not known").answer, "4 relationships match not known.");
 });
 
 test("asking declining finds a company whose engagement is declining", () => {
@@ -1857,7 +1905,8 @@ test("asking for an unknown person finds the person with no name", () => {
 
   const known = parseRelationshipGraphQuery("Not known");
   assert.equal(known.filters.unknownPerson, false);
-  assert.deepEqual(known.filters.health, ["unknown"]);
+  assert.equal(known.filters.notKnown, true);
+  assert.deepEqual(known.filters.health, []);
 
   const graph = {
     nodes: [
