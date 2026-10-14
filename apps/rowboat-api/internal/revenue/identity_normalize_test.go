@@ -5736,6 +5736,114 @@ func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	sponsorCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Sponsor",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sponsor, err := f.client.Person.Create().
+		SetDisplayName("Nia Chen").
+		SetTitle("Sponsor").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(sponsorCompany).SetPerson(sponsor).
+		SetDisplayName("Nia C").
+		SetRole("executive_sponsor").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	headerCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Header",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(headerCompany).
+		SetDisplayName("Lane Header").
+		SetTitle("Guide").
+		SetRole("primary_contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	unknownCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Unknown",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	unnamed, err := f.client.Person.Create().
+		SetDisplayName(" ").
+		SetTitle("Listener").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(unknownCompany).SetPerson(unnamed).
+		SetDisplayName(" ").
+		SetRole("blocker").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	formerCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Former",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	former, err := f.client.Person.Create().
+		SetDisplayName("Owen Birch").
+		SetTitle("Director").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(formerCompany).SetPerson(former).
+		SetDisplayName("Owen Birch").
+		SetRole("former_contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	mailCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Mail",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mailed, err := f.client.Person.Create().
+		SetDisplayName(" ").
+		SetTitle("Owner").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(mailCompany).SetPerson(mailed).
+		SetDisplayName(" ").
+		SetEmail("lane@example.com").
+		SetRole("owner").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -5757,7 +5865,25 @@ func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
 	assertCompanyQuery("Left the company", "Harbor Left")
 	assertCompanyQuery("No profile details yet", "Harbor Blank")
 	assertCompanyQuery("Champion", "Harbor Blank")
-	assertCompanyQuery("Contact", "Harbor Left")
+	assertCompanyQuery("Contact", "Harbor Left", "Harbor Header", "Harbor Former")
+	assertCompanyQuery("Casey Quinn · Decision maker", "Harbor Maker")
+	assertCompanyQuery("Casey Quinn · Decision maker.", "Harbor Maker")
+	assertCompanyQuery("Casey Quinn · Champion")
+	assertCompanyQuery("Casey Quinn · Buyer")
+	assertCompanyQuery("Ada Mesa · Contact", "Harbor Left")
+	assertCompanyQuery("No Profile · Champion", "Harbor Blank")
+	assertCompanyQuery("Nia Chen · Executive sponsor", "Harbor Sponsor")
+	assertCompanyQuery("Nia C · Executive sponsor")
+	assertCompanyQuery("Lane Header · Primary contact", "Harbor Header")
+	assertCompanyQuery("Unknown person · Blocker", "Harbor Unknown")
+	assertCompanyQuery("Owen Birch · Former contact", "Harbor Former")
+	assertCompanyQuery("Owen Birch · Contact")
+	assertCompanyQuery("lane@example.com · Owner", "Harbor Mail")
+	assertCompanyQuery("Executive sponsor", "Harbor Sponsor")
+	assertCompanyQuery("Primary contact", "Harbor Header")
+	assertCompanyQuery("Blocker", "Harbor Unknown")
+	assertCompanyQuery("Former contact", "Harbor Former")
+	assertCompanyQuery("Owner", "Harbor Mail")
 }
 
 func TestRelationshipSearchFindsAnUnknownPerson(t *testing.T) {

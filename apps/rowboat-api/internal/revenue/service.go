@@ -2755,6 +2755,11 @@ func relationshipHasUnknownPerson() predicate.Relationship {
 
 func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
+	// The people row prints "Casey Quinn · Decision maker". The name and the
+	// role are different columns. The line is that pair on one membership.
+	if line := relationshipSheetPersonRoleLineMatch(needle); line != nil {
+		preds = append(preds, line)
+	}
 	if role := relationshipParticipantRoleMatch(needle); role != nil {
 		preds = append(preds, role)
 	}
@@ -2821,6 +2826,58 @@ func relationshipParticipantRoleMatch(needle string) predicate.Relationship {
 	return relationship.HasParticipantsWith(predicate.RelationshipParticipant(func(s *sql.Selector) {
 		s.Where(normalizedSearchLike(s, relationshipparticipant.FieldRole, like))
 	}))
+}
+
+// relationshipSheetPersonRoleLineMatch is the name and role on one people row.
+// The sheet prints the corrected person name, then the membership header, then
+// an email, then "Unknown person". The role token decision_maker reads
+// "Decision maker". A title on the line below is a different sentence.
+func relationshipSheetPersonRoleLineMatch(needle string) predicate.Relationship {
+	name, role, ok := mailTimelineParts(needle)
+	if !ok {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			part := relationshipparticipant.Table
+			people := person.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(part)
+			b.WriteString(" AS member LEFT JOIN ")
+			b.WriteString(people)
+			b.WriteString(" AS who ON who.")
+			b.WriteString(person.FieldID)
+			b.WriteString(" = member.")
+			b.WriteString(relationshipparticipant.PersonColumn)
+			b.WriteString(" WHERE member.")
+			b.WriteString(relationshipparticipant.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			writeNormalizedSQLText(b, s, participantPrintedNameSQL())
+			b.WriteString(" = ")
+			b.Arg(name)
+			b.WriteString(" AND ")
+			writeNormalizedSQLText(b, s, "trim(coalesce(member."+relationshipparticipant.FieldRole+", ''))")
+			b.WriteString(" = ")
+			b.Arg(role)
+			b.WriteString(" AND trim(coalesce(member.")
+			b.WriteString(relationshipparticipant.FieldRole)
+			b.WriteString(", '')) <> '')")
+		}))
+	})
+}
+
+func participantPrintedNameSQL() string {
+	personName := "trim(coalesce(who." + person.FieldDisplayName + ", ''))"
+	header := "trim(coalesce(member." + relationshipparticipant.FieldDisplayName + ", ''))"
+	memberEmail := "trim(coalesce(member." + relationshipparticipant.FieldEmail + ", ''))"
+	primary := "trim(coalesce(who." + person.FieldPrimaryEmail + ", ''))"
+	return "CASE WHEN " + personName + " <> '' THEN " + personName +
+		" WHEN " + header + " <> '' THEN " + header +
+		" WHEN " + memberEmail + " <> '' THEN " + memberEmail +
+		" WHEN " + primary + " <> '' THEN " + primary +
+		" ELSE 'Unknown person' END"
 }
 
 // relationshipSheetPersonSeniorityMatch matches the seniority on a person
