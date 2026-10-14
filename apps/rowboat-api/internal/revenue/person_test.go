@@ -1343,6 +1343,98 @@ func TestPersonSearchFindsACalendarLastInteraction(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsTheEvidenceTime(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	datedAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	recentAt := time.Now().UTC().Add(-10 * 24 * time.Hour)
+	hourAt := time.Now().UTC().Add(-2 * time.Hour)
+	label := datedAt.Format("Jan 2, 2006")
+
+	create := func(name string, touch time.Time) *ent.Person {
+		t.Helper()
+		row, err := f.client.Person.Create().
+			SetDisplayName(name).
+			SetLastInteractionAt(touch).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	create("Casey Quinn", datedAt)
+	indira := create("Indira Cole", recentAt)
+	morgan := create("Morgan Lee", recentAt)
+	nia := create("Nia Holt", recentAt)
+	quill := create("Quill Morse", recentAt)
+	create("Mira Chen", hourAt)
+
+	fact := func(person *ent.Person, dimension, value, externalID string, at time.Time) {
+		t.Helper()
+		if err := upsertPersonAttributes(f.ctx, f.client, ws, f.user, person, nil, []PersonAttributeInput{{
+			Dimension: dimension, Value: value, SourceType: "source_fact",
+			Source: "gmail", Extractor: "email_signature", Confidence: 0.8, ObservedAt: at,
+			ExternalID: externalID,
+		}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fact(indira, "title", "Designer", "indira-title", datedAt)
+	fact(morgan, "display_name", "Morgan Lee", "morgan-name", datedAt)
+	fact(nia, "title", "Writer", "nia-title", datedAt)
+	fact(quill, "title", "Editor", "quill-title", hourAt)
+	if _, err := f.client.PersonAttribute.Update().
+		Where(
+			personattribute.HasPersonWith(person.IDEQ(nia.ID)),
+			personattribute.DimensionEQ("title"),
+		).
+		SetStatus("retracted").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	names := func(query string) []string {
+		t.Helper()
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, 0, len(found.Persons))
+		for _, row := range found.Persons {
+			got = append(got, row.DisplayName)
+		}
+		return got
+	}
+	assertNames := func(query string, want ...string) {
+		t.Helper()
+		got := names(query)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			found := false
+			for _, gotName := range got {
+				if gotName == name {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertNames(label, "Casey Quinn", "Indira Cole")
+	assertNames(label+".", "Casey Quinn", "Indira Cole")
+	assertNames(recentAt.Format("Jan 2, 2006"))
+	assertNames("2 hours ago", "Quill Morse", "Mira Chen")
+}
+
 func TestRelativeLabelWindowKeepsAFuturePhraseWithTheNextBucket(t *testing.T) {
 	now := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
 	window, ok := relativeLabelWindow("3 days from now", now)

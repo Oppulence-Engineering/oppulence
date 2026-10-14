@@ -221,11 +221,7 @@ func personVisibleLabelMatch(term string) predicate.Person {
 		preds = append(preds, person.RelationshipCountEQ(n))
 	}
 	if window, ok := visibleActivityWindow(needle, time.Now()); ok {
-		preds = append(preds, person.And(
-			person.LastInteractionAtNotNil(),
-			person.LastInteractionAtGT(window.after),
-			person.LastInteractionAtLTE(window.until),
-		))
+		preds = append(preds, personPrintedTimeMatch(window))
 	}
 	if len(preds) == 0 {
 		return nil
@@ -467,6 +463,24 @@ func visiblePersonEvidence(extra ...predicate.PersonAttribute) []predicate.Perso
 
 func personHasVisibleEvidence() predicate.Person {
 	return person.HasAttributesWith(visiblePersonEvidence()...)
+}
+
+// personPrintedTimeMatch finds a person who prints this relative phrase or
+// UTC day. The directory cell is the last interaction. A sourced fact prints
+// the same clock beside where it was read. The name and aliases are not that
+// list, and a retracted fact is gone.
+func personPrintedTimeMatch(window relativeWindow) predicate.Person {
+	return person.Or(
+		person.And(
+			person.LastInteractionAtNotNil(),
+			person.LastInteractionAtGT(window.after),
+			person.LastInteractionAtLTE(window.until),
+		),
+		person.HasAttributesWith(visiblePersonEvidence(
+			personattribute.ObservedAtGT(window.after),
+			personattribute.ObservedAtLTE(window.until),
+		)...),
+	)
 }
 
 func personEvidenceAddedByYou() predicate.Person {
