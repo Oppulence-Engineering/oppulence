@@ -3200,6 +3200,143 @@ test("asking dormant finds a company whose status is Dormant", () => {
   assert.deepEqual(queryRelationshipGraph(graph, "Increasing").relationshipIds, ["busy"]);
 });
 
+test("asking for a risk or milestone line finds that row", () => {
+  const review = parseRelationshipGraphQuery("Security review has no owner.");
+  assert.equal(review.filters.promiseReview, true);
+  assert.deepEqual(review.filters.freeText, ["security", "has", "no", "owner"]);
+  const slip = parseRelationshipGraphQuery("renewal slip");
+  assert.deepEqual(slip.filters.lifecycle, ["renewal"]);
+  assert.deepEqual(slip.filters.freeText, ["slip"]);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:security",
+        kind: "relationship",
+        label: "Quay Security",
+        lifecycle: "active_customer",
+        health: "critical",
+      },
+      {
+        id: "risk:security",
+        kind: "risk",
+        label: "Security review has no owner.",
+        relationshipId: "security",
+        status: "critical",
+      },
+      {
+        id: "relationship:promise",
+        kind: "relationship",
+        label: "Quay Promise",
+        lifecycle: "prospect",
+        health: "healthy",
+      },
+      {
+        id: "commitment:promise",
+        kind: "commitment",
+        label: "Confirm the date",
+        relationshipId: "promise",
+        status: "review",
+      },
+      {
+        id: "relationship:gate",
+        kind: "relationship",
+        label: "Quay Gate",
+        lifecycle: "prospect",
+        health: "needs_attention",
+      },
+      {
+        id: "risk:gate",
+        kind: "risk",
+        label: "Security review blocked",
+        relationshipId: "gate",
+        status: "needs_attention",
+      },
+      {
+        id: "relationship:held",
+        kind: "relationship",
+        label: "Quay Held",
+        lifecycle: "prospect",
+      },
+      {
+        id: "action:held",
+        kind: "action",
+        label: "Warm follow-up",
+        relationshipId: "held",
+        status: "open",
+        policyStatus: "blocked",
+      },
+      {
+        id: "relationship:slip",
+        kind: "relationship",
+        label: "Quay Slip",
+        lifecycle: "active_customer",
+        health: "critical",
+      },
+      {
+        id: "risk:slip",
+        kind: "risk",
+        label: "renewal slip",
+        relationshipId: "slip",
+        status: "critical",
+      },
+      {
+        id: "relationship:renew",
+        kind: "relationship",
+        label: "Quay Renew",
+        lifecycle: "renewal",
+        health: "healthy",
+      },
+      {
+        id: "relationship:stone",
+        kind: "relationship",
+        label: "Quay Stone",
+        lifecycle: "onboarding",
+      },
+      {
+        id: "milestone:stone",
+        kind: "milestone",
+        label: "Proposal shared.",
+        relationshipId: "stone",
+      },
+      {
+        id: "relationship:late",
+        kind: "relationship",
+        label: "Quay Late",
+        health: "critical",
+      },
+      {
+        id: "commitment:late",
+        kind: "commitment",
+        label: "Send the renewal packet",
+        relationshipId: "late",
+        status: "at_risk",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of [
+    "Security review has no owner.",
+    "Security review has no owner",
+    "show me security review has no owner",
+  ]) {
+    const found = queryRelationshipGraph(graph, query);
+    assert.deepEqual(found.relationshipIds, ["security"]);
+    assert.deepEqual(found.parsed.applied, ["security review has no owner"]);
+  }
+  const blocked = queryRelationshipGraph(graph, "Security review blocked");
+  assert.deepEqual(blocked.relationshipIds, ["gate"]);
+  assert.equal(blocked.visibleNodeIds.includes("relationship:held"), false);
+  for (const query of ["renewal slip", "Renewal slip."]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["slip"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Renewal").relationshipIds, ["renew"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Proposal shared.").relationshipIds, ["stone"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Review").relationshipIds, ["promise"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "At risk").relationshipIds, ["late"]);
+});
+
 test("speaker parsing stays bounded for adversarial whitespace", () => {
   const observation = buildImportedTranscriptObservation({
     relationshipId: "relationship-1",

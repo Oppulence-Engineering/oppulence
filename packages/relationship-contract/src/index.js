@@ -342,6 +342,17 @@ function graphRowTitle(value) {
     .trim();
 }
 
+// "show me" is how someone asks. The rest is the line on the row.
+function graphQuestionTitle(raw) {
+  let title = graphRowTitle(raw);
+  while (GRAPH_ROW_LEADING_STOP.test(title)) {
+    const next = title.replace(GRAPH_ROW_LEADING_STOP, "");
+    if (!next) break;
+    title = next;
+  }
+  return title;
+}
+
 const GRAPH_ROW_LEADING_STOP =
   /^(?:a|an|and|are|for|from|in|is|me|of|on|show|that|the|this|to|what|which|who|with)\s+/;
 
@@ -1396,7 +1407,8 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   // Each individual constraint can find useful nodes while their relationship sets have no
   // overlap. Only keep nodes that belong to the final intersection; otherwise a zero-result
   // answer can still render unrelated accounts and evidence in the client.
-  if (constrained) {
+  const dropUnrelatedMatches = () => {
+    if (!constrained) return;
     for (const nodeId of [...matched]) {
       const node = nodesById.get(nodeId);
       if (
@@ -1408,6 +1420,28 @@ export function queryRelationshipGraph(graph, query, options = {}) {
         matched.delete(nodeId);
       }
     }
+  };
+  dropUnrelatedMatches();
+
+  // A risk line is "Security review has no owner." "Review" in that line is
+  // not a promise waiting for confirmation, and "renewal" in "renewal slip"
+  // is not the lifecycle. When the question is the line itself and the badge
+  // reading hid it, keep the line.
+  const questionTitle = graphQuestionTitle(parsed.raw);
+  const printsQuestion = (node) =>
+    questionTitle.includes(" ") &&
+    (graphRowTitle(node.label) === questionTitle || graphRowTitle(node.summary) === questionTitle);
+  const printed = nodes.filter(printsQuestion);
+  const printedSurvived = printed.some((node) =>
+    graphNodeRelationshipIds(node).some((id) => relationshipIds.has(id)),
+  );
+  if (printed.length > 0 && constrained && !printedSurvived) {
+    relationshipIds = new Set(allRelationshipIds);
+    matched.clear();
+    constrained = false;
+    constrainBy(printsQuestion);
+    dropUnrelatedMatches();
+    parsed.applied = [questionTitle];
   }
 
   const relationshipNodeIds = new Set(
