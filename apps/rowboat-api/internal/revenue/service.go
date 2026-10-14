@@ -834,6 +834,8 @@ func (s *Service) ListRelationshipsFiltered(
 			relationshipNormalizedContains(value),
 			relationshipCategoryContains(value),
 			relationshipEnrichmentContains(value),
+			relationshipListItemContains(relationship.FieldRisks, value),
+			relationshipListItemContains(relationship.FieldMilestones, value),
 		}
 		if labels := relationshipLinkedInLabelMatch(value); labels != nil {
 			parts = append(parts, labels)
@@ -1621,6 +1623,34 @@ func relationshipHasAnotherSavedViewPage(userID uuid.UUID) predicate.Relationshi
 // relationshipNormalizedContains matches the words a teammate sees. A domain
 // stored as dogfood-label.example is shown as "Dogfood Label", and a next
 // action stored with a hyphen still has to match the phrase on the row.
+// relationshipListItemContains matches one line of a JSON list. The company
+// sheet prints each risk and each milestone as its own line. Those lists are
+// not text columns, so the line was invisible to search.
+func relationshipListItemContains(field, term string) predicate.Relationship {
+	needle := "%" + escapePersonSearchLike(normalizePersonSearch(term)) + "%"
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(field)
+			like := "replace(replace(replace(lower(coalesce(item.value, '')), '-', ' '), '_', ' '), '.', ' ') LIKE "
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf(
+					"EXISTS (SELECT 1 FROM jsonb_array_elements_text(coalesce(%s, '[]'::jsonb)) AS item(value) WHERE %s",
+					column, like,
+				))
+				b.Arg(needle)
+				b.WriteString(" ESCAPE '!')")
+				return
+			}
+			b.WriteString(fmt.Sprintf(
+				"EXISTS (SELECT 1 FROM json_each(coalesce(%s, '[]')) AS item WHERE %s",
+				column, like,
+			))
+			b.Arg(needle)
+			b.WriteString(" ESCAPE '!')")
+		}))
+	})
+}
+
 func relationshipNormalizedContains(term string) predicate.Relationship {
 	needle := "%" + escapePersonSearchLike(normalizePersonSearch(term)) + "%"
 	return predicate.Relationship(func(s *sql.Selector) {

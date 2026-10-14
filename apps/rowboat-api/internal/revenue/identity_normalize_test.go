@@ -9654,6 +9654,62 @@ func TestRelationshipSearchFindsTheUnresolvedRisk(t *testing.T) {
 	assertCompanyQuery("This company is critical.", "Quill Atelier")
 }
 
+func TestRelationshipSearchFindsTheRiskAndMilestoneLine(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	quill := makeCompany("Quill Atelier")
+	lumen := makeCompany("Lumen Packet")
+	harbor := makeCompany("Harbor Ledger")
+	if _, err := f.client.Relationship.UpdateOneID(quill.ID).
+		SetRisks([]string{"Security review has no owner."}).
+		SetMilestones([]string{"Proposal shared."}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(lumen.ID).
+		SetRisks([]string{"renewal slip"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(harbor.ID).
+		SetRisks([]string{"late invoice"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Security review has no owner.", "Quill Atelier")
+	assertCompanyQuery("Security review has no owner", "Quill Atelier")
+	assertCompanyQuery("renewal slip", "Lumen Packet")
+	assertCompanyQuery("Renewal slip.", "Lumen Packet")
+	assertCompanyQuery("late invoice", "Harbor Ledger")
+	assertCompanyQuery("Proposal shared.", "Quill Atelier")
+	assertCompanyQuery("Proposal shared", "Quill Atelier")
+}
+
 func TestRelationshipSearchFindsTheActionOutcome(t *testing.T) {
 	f := newFixture(t)
 	makeCompany := func(name string) *ent.Relationship {
