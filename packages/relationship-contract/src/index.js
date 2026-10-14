@@ -317,10 +317,15 @@ export function parseRelationshipGraphQuery(query) {
   ) {
     filters.health.push("needs_attention");
   }
-  // The company row says Not known. The stored health is unknown.
-  if (/\bnot known\b|\bnot_known\b/.test(normalized) && !filters.health.includes("unknown")) {
-    filters.health.push("unknown");
-  }
+    // The company row says Not known. The stored health is unknown.
+    if (/\bnot known\b|\bnot_known\b/.test(normalized) && !filters.health.includes("unknown")) {
+      filters.health.push("unknown");
+    }
+    // A date before the record existed says "Not recorded for this date".
+    // The stored token is historical_unknown.
+    filters.notRecorded = /\bnot recorded for this date\b|\bnot_recorded_for_this_date\b/.test(
+      normalized,
+    );
   for (const health of GRAPH_QUERY_HEALTH) {
     if (
       new RegExp(`\\b${health.replaceAll("_", "[ _]")}\\b`).test(normalized) &&
@@ -495,6 +500,8 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bkept\b/g, " ")
     .replace(/\bnot known\b/g, " ")
     .replace(/\bnot_known\b/g, " ")
+    .replace(/\bnot recorded for this date\b\.?/g, " ")
+    .replace(/\bnot_recorded_for_this_date\b\.?/g, " ")
     .replace(/\bawaiting approvals\b/g, " ")
     .replace(/\bawaiting approval\b/g, " ")
     .replace(/\bawaiting_approvals\b/g, " ")
@@ -567,6 +574,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.stale) applied.push("out of date");
   if (filters.current) applied.push("up to date");
   if (filters.aging) applied.push("getting old");
+  if (filters.notRecorded) applied.push("not recorded for this date");
   if (filters.meetingFollowUp) applied.push("meeting follow-up");
   else if (filters.promiseFollowUp) applied.push("promise follow-up");
   else if (filters.followUp) applied.push("follow-up");
@@ -752,6 +760,21 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   }
   if (filters.aging) {
     constrainBy((node) => normalizedGraphValue(node.freshness) === "aging");
+  }
+  if (filters.notRecorded) {
+    constrainBy((node) =>
+      [
+        "status",
+        "health",
+        "lifecycle",
+        "engagement",
+        "sentiment",
+        "approvalStatus",
+        "policyStatus",
+        "executionStatus",
+        "freshness",
+      ].some((field) => normalizedGraphValue(node[field]) === "historical_unknown"),
+    );
   }
   if (filters.notConnected) {
     constrainBy(

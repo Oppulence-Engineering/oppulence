@@ -1590,6 +1590,43 @@ test("saved graph views preserve a bounded neighborhood focus", () => {
   assert.equal(createRelationshipGraphSavedView({ state: { focusDepth: 8 } }).state.focusDepth, 2);
 });
 
+test("asking not recorded for this date finds a record that did not exist yet", () => {
+  const parsed = parseRelationshipGraphQuery("Not recorded for this date");
+  assert.equal(parsed.filters.notRecorded, true);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["not recorded for this date"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:later", kind: "relationship", label: "Quay Later", status: "historical_unknown" },
+      { id: "relationship:source", kind: "relationship", label: "Quay Source" },
+      {
+        id: "source:later",
+        kind: "source",
+        label: "Gmail",
+        relationshipId: "source",
+        source: "gmail",
+        status: "historical_unknown",
+      },
+      { id: "relationship:now", kind: "relationship", label: "Quay Now", status: "active", health: "healthy" },
+    ],
+    edges: [],
+  };
+  assert.deepEqual(queryRelationshipGraph(graph, "Not recorded for this date").relationshipIds.sort(), [
+    "later",
+    "source",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Not recorded for this date.").relationshipIds.sort(), [
+    "later",
+    "source",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "show me Not recorded for this date").relationshipIds.sort(), [
+    "later",
+    "source",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "historical unknown").relationshipIds, []);
+});
+
 test("every contracted capability has an explicit surface in web and desktop", () => {
   const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const clientSources = {
