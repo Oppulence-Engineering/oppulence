@@ -171,6 +171,37 @@ const graphNodeRelationshipIds = (node) => {
  * filter is returned to the UI for inspection.
  */
 // The graph card prints "80% confidence". "80%" and the word alone are not that badge.
+const GRAPH_CHANGE_LABELS = [
+  ["supporting evidence", "evidence"],
+  ["next action", "next_action"],
+  ["milestones", "milestones"],
+  ["risks", "risks"],
+  ["lifecycle", "lifecycle"],
+  ["engagement", "engagement"],
+  ["sentiment", "sentiment"],
+  ["health", "health"],
+  ["summary", "summary"],
+];
+
+// The inspector prints "Changed since you last looked." and, when fields moved,
+// "Changed since you last looked: Supporting evidence."
+function printedGraphChangeDetail(normalized) {
+  const match = /\bchanged since you last looked\b(\s*:\s*([^.]*))?\.?/.exec(normalized);
+  if (!match) return null;
+  const list = (match[2] ?? "").trim();
+  const dimensions = [];
+  if (list) {
+    for (const part of list.split(",")) {
+      const label = part.trim();
+      if (!label) continue;
+      const found = GRAPH_CHANGE_LABELS.find(([name]) => name === label);
+      if (!found) return null;
+      dimensions.push(found[1]);
+    }
+  }
+  return { dimensions, span: match[0] };
+}
+
 function printedGraphConfidence(normalized) {
   const found = [];
   for (const match of normalized.matchAll(/(?:^|\s)(\d{1,3})% confidence\b/g)) {
@@ -281,6 +312,9 @@ export function parseRelationshipGraphQuery(query) {
     confidencePercent: null,
   };
   filters.confidencePercent = printedGraphConfidence(normalized);
+  const changeDetail = printedGraphChangeDetail(normalized);
+  filters.changedDimensions = changeDetail ? changeDetail.dimensions : [];
+  const aliasHaystack = changeDetail ? normalized.replaceAll(changeDetail.span, " ") : normalized;
 
   for (const [alias, kind] of Object.entries(GRAPH_QUERY_NODE_ALIASES)) {
     // "at risk" is the promise badge. "Customer risk" is the follow-up title.
@@ -310,7 +344,7 @@ export function parseRelationshipGraphQuery(query) {
     ) {
       continue;
     }
-    if (new RegExp(`\\b${alias}\\b`).test(normalized) && !filters.nodeKinds.includes(kind)) {
+    if (new RegExp(`\\b${alias}\\b`).test(aliasHaystack) && !filters.nodeKinds.includes(kind)) {
       filters.nodeKinds.push(kind);
     }
   }
@@ -455,7 +489,9 @@ export function parseRelationshipGraphQuery(query) {
   };
   // These phrases are the filter. Leaving "since" or "date" behind turns the
   // question into a text search and hides the company that actually changed.
-  const withoutFilterPhrases = normalized
+  const withoutFilterPhrases = (changeDetail
+    ? normalized.replaceAll(changeDetail.span, " ")
+    : normalized)
     .replace(/\bnot up to date\b/g, " ")
     .replace(/\bnot_up_to_date\b/g, " ")
     .replace(/\bup to date\b/g, " ")
@@ -606,7 +642,16 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.calendarHold) applied.push("calendar hold");
   if (filters.crmUpdate) applied.push("crm update");
   if (filters.meetingRecap) applied.push("meeting recap");
-  if (filters.changed) applied.push("changed since you last looked");
+  if (filters.changed) {
+    const names = filters.changedDimensions
+      .map((dimension) => GRAPH_CHANGE_LABELS.find((entry) => entry[1] === dimension)?.[0])
+      .filter(Boolean);
+    applied.push(
+      names.length
+        ? `changed since you last looked: ${names.join(", ")}`
+        : "changed since you last looked",
+    );
+  }
   if (filters.notConnected) applied.push("not connected");
   if (filters.syncing) applied.push("syncing");
   if (filters.sourceActive) applied.push("active");
@@ -900,7 +945,13 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     });
   }
   if (filters.changed) {
-    constrainBy((node) => node.kind === "relationship" && Boolean(node.changedSinceReview));
+    const dimensions = filters.changedDimensions;
+    constrainBy((node) => {
+      if (node.kind !== "relationship" || !node.changedSinceReview) return false;
+      if (!dimensions.length) return true;
+      const present = Array.isArray(node.changedDimensions) ? node.changedDimensions : [];
+      return dimensions.every((dimension) => present.includes(dimension));
+    });
   }
   if (filters.freeText.length) {
     constrainBy((node) => {

@@ -1111,6 +1111,84 @@ test("the graph's own change and freshness words are the filter, not a text sear
   );
   assert.deepEqual(matched.relationshipIds, ["shift"]);
   assert.equal(matched.answer, "1 relationship matches changed since you last looked.");
+  assert.deepEqual(
+    queryRelationshipGraph(
+      {
+        nodes: [
+          {
+            id: "relationship:shift",
+            kind: "relationship",
+            label: "Quay Shift",
+            changedSinceReview: true,
+          },
+          {
+            id: "relationship:still",
+            kind: "relationship",
+            label: "Quay Still",
+            changedSinceReview: false,
+          },
+        ],
+        edges: [],
+      },
+      "Changed since you last looked.",
+    ).relationshipIds,
+    ["shift"],
+  );
+
+  const detailed = {
+    nodes: [
+      {
+        id: "relationship:ev",
+        kind: "relationship",
+        label: "Quay Evidence",
+        changedSinceReview: true,
+        changedDimensions: ["evidence"],
+      },
+      {
+        id: "relationship:both",
+        kind: "relationship",
+        label: "Quay Both",
+        changedSinceReview: true,
+        changedDimensions: ["health", "evidence"],
+      },
+      {
+        id: "relationship:risk",
+        kind: "relationship",
+        label: "Quay Risk",
+        changedSinceReview: true,
+        changedDimensions: ["risks"],
+      },
+      {
+        id: "relationship:quiet",
+        kind: "relationship",
+        label: "Quay Quiet",
+        changedSinceReview: false,
+        changedDimensions: ["evidence"],
+      },
+    ],
+    edges: [],
+  };
+  const evidenceSentence = "Changed since you last looked: Supporting evidence.";
+  const evidenceQuery = parseRelationshipGraphQuery(evidenceSentence);
+  assert.equal(evidenceQuery.filters.changed, true);
+  assert.deepEqual(evidenceQuery.filters.changedDimensions, ["evidence"]);
+  assert.deepEqual(evidenceQuery.filters.nodeKinds, []);
+  assert.deepEqual(evidenceQuery.filters.freeText, []);
+  assert.deepEqual(queryRelationshipGraph(detailed, evidenceSentence).relationshipIds.sort(), [
+    "both",
+    "ev",
+  ]);
+  assert.deepEqual(
+    queryRelationshipGraph(detailed, "Changed since you last looked: Risks.").relationshipIds,
+    ["risk"],
+  );
+  assert.deepEqual(
+    queryRelationshipGraph(
+      detailed,
+      "Changed since you last looked: Health, Supporting evidence.",
+    ).relationshipIds,
+    ["both"],
+  );
 
   const datedGraph = queryRelationshipGraph(
     {
