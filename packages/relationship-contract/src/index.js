@@ -362,6 +362,9 @@ export function parseRelationshipGraphQuery(query) {
   // The people list says Unknown person when no name or address was saved.
   // The word unknown in that name is not a health reading.
   filters.unknownPerson = /\bunknown person\b/.test(normalized);
+  // The role badge says Former contact. The stored role is former_contact.
+  // "former" is also the start of Former customer, so the badge is the whole phrase.
+  filters.formerContact = /\bformer contacts?\b/.test(normalized);
   const healthHaystack = normalized.replace(/\bunknown person\b\.?/g, " ");
   const aliasHaystack = changeDetail ? normalized.replaceAll(changeDetail.span, " ") : normalized;
 
@@ -653,6 +656,7 @@ export function parseRelationshipGraphQuery(query) {
       : withoutDue;
   filters.freeText = withoutConfidence
     .replace(/\bunknown person\b\.?/g, " ")
+    .replace(/\bformer contacts?\b\.?/g, " ")
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
     .filter((token) => token && !recognizedToken(token));
@@ -692,6 +696,7 @@ export function parseRelationshipGraphQuery(query) {
   }
   if (filters.dueLabel) applied.push(filters.dueLabel);
   if (filters.unknownPerson) applied.push("unknown person");
+  if (filters.formerContact) applied.push("former contact");
   if (filters.meetingFollowUp) applied.push("meeting follow-up");
   else if (filters.promiseFollowUp) applied.push("promise follow-up");
   else if (filters.followUp) applied.push("follow-up");
@@ -918,6 +923,13 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     constrainBy(
       (node) => node.kind === "person" && normalizedGraphValue(node.label) === "unknown person",
     );
+  }
+  if (filters.formerContact) {
+    constrainBy((node) => {
+      if (node.kind !== "person") return false;
+      const role = normalizedGraphValue(node.role).replaceAll("_", " ").replaceAll("-", " ");
+      return role === "former contact";
+    });
   }
   if (filters.notConnected) {
     constrainBy(

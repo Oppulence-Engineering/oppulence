@@ -1886,6 +1886,57 @@ test("asking for an unknown person finds the person with no name", () => {
   assert.deepEqual(queryRelationshipGraph(graph, "Not known").relationshipIds, ["sick"]);
 });
 
+test("asking for a former contact finds that role", () => {
+  const parsed = parseRelationshipGraphQuery("Former contact");
+  assert.equal(parsed.filters.formerContact, true);
+  assert.deepEqual(parsed.filters.lifecycle, []);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["former contact"]);
+
+  const dotted = parseRelationshipGraphQuery("Former contact.");
+  assert.equal(dotted.filters.formerContact, true);
+  assert.deepEqual(dotted.filters.freeText, []);
+
+  const customer = parseRelationshipGraphQuery("Former customer");
+  assert.equal(customer.filters.formerContact, false);
+  assert.deepEqual(customer.filters.lifecycle, ["former_customer"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:roles", kind: "relationship", label: "Quay Roles" },
+      {
+        id: "person:former",
+        kind: "person",
+        label: "Ada Former",
+        relationshipId: "roles",
+        role: "former_contact",
+      },
+      {
+        id: "person:primary",
+        kind: "person",
+        label: "Ada Primary",
+        relationshipId: "roles",
+        role: "primary_contact",
+      },
+      { id: "relationship:current", kind: "relationship", label: "Quay Current" },
+      {
+        id: "person:now",
+        kind: "person",
+        label: "Ada Now",
+        relationshipId: "current",
+        role: "contact",
+      },
+      { id: "relationship:left", kind: "relationship", label: "Quay Left", lifecycle: "former_customer" },
+    ],
+    edges: [],
+  };
+  for (const query of ["Former contact", "Former contact.", "show me Former contact"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["roles"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Former customer").relationshipIds, ["left"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Primary contact").relationshipIds, ["roles"]);
+});
+
 test("every contracted capability has an explicit surface in web and desktop", () => {
   const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const clientSources = {
