@@ -945,11 +945,13 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bformer contacts?\b\.?/g, " ")
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
-    .filter((token) => {
-      if (!token || token === ".") return false;
-      if (recognizedToken(token)) return false;
-      // "Declining." is the badge Declining. The period is not another word.
-      return !(token.endsWith(".") && recognizedToken(token.slice(0, -1)));
+    .flatMap((token) => {
+      if (!token || token === ".") return [];
+      // The inspector prints Closed, Snoozed, and Primary contact without a
+      // period. A question that ends on that word still means the badge.
+      const stem = token.endsWith(".") ? token.slice(0, -1) : token;
+      if (!stem || recognizedToken(stem)) return [];
+      return [stem];
     });
 
   const applied = [];

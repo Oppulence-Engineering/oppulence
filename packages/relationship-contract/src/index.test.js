@@ -3060,6 +3060,100 @@ test("a trailing period still finds the badge it follows", () => {
   assert.deepEqual(queryRelationshipGraph(graph, "Open.").relationshipIds, ["open"]);
 });
 
+test("a trailing period still finds a badge stored without one", () => {
+  const closed = parseRelationshipGraphQuery("Closed.");
+  assert.deepEqual(closed.filters.freeText, ["closed"]);
+  const sponsor = parseRelationshipGraphQuery("Executive sponsor.");
+  assert.deepEqual(sponsor.filters.freeText, ["executive", "sponsor"]);
+  const reconnect = parseRelationshipGraphQuery("Reconnect required.");
+  assert.deepEqual(reconnect.filters.freeText, ["reconnect", "required"]);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:closed",
+        kind: "relationship",
+        label: "Quay Closed",
+        status: "closed",
+        engagement: "steady",
+      },
+      {
+        id: "relationship:archived",
+        kind: "relationship",
+        label: "Quay Archived",
+        status: "archived",
+      },
+      {
+        id: "relationship:open",
+        kind: "relationship",
+        label: "Quay Open",
+        status: "active",
+        engagement: "increasing",
+      },
+      { id: "relationship:down", kind: "relationship", label: "Quay Down" },
+      {
+        id: "source:down",
+        kind: "source",
+        label: "Gmail",
+        status: "disconnected",
+        source: "gmail",
+        relationshipId: "down",
+      },
+      { id: "relationship:live", kind: "relationship", label: "Quay Live" },
+      {
+        id: "source:live",
+        kind: "source",
+        label: "Slack",
+        status: "live",
+        source: "slack",
+        relationshipId: "live",
+      },
+      { id: "relationship:again", kind: "relationship", label: "Quay Again" },
+      {
+        id: "source:again",
+        kind: "source",
+        label: "HubSpot",
+        status: "reconnect_required",
+        source: "hubspot",
+        relationshipId: "again",
+      },
+      { id: "relationship:later", kind: "relationship", label: "Quay Later" },
+      {
+        id: "action:later",
+        kind: "action",
+        label: "Follow up",
+        status: "snoozed",
+        relationshipId: "later",
+      },
+      { id: "relationship:ada", kind: "relationship", label: "Quay Ada" },
+      {
+        id: "person:ada",
+        kind: "person",
+        label: "Ada Mesa",
+        role: "executive_sponsor",
+        relationshipId: "ada",
+      },
+      {
+        id: "person:primary",
+        kind: "person",
+        label: "Ren Park",
+        role: "primary_contact",
+        relationshipId: "ada",
+      },
+    ],
+    edges: [],
+  };
+
+  assert.deepEqual(queryRelationshipGraph(graph, "Closed.").relationshipIds, ["closed"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Archived.").relationshipIds, ["archived"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Disconnected.").relationshipIds, ["down"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Reconnect required.").relationshipIds, ["again"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Snoozed.").relationshipIds, ["later"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Executive sponsor.").relationshipIds, ["ada"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Primary contact.").relationshipIds, ["ada"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Active.").relationshipIds, ["live"]);
+});
+
 test("asking dormant finds a company whose status is Dormant", () => {
   const parsed = parseRelationshipGraphQuery("Dormant");
   assert.deepEqual(parsed.filters.engagement, ["dormant"]);
