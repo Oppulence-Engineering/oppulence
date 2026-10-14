@@ -14654,6 +14654,68 @@ func TestRelationshipSearchFindsOlderReview(t *testing.T) {
 	assertCompanyQuery("Older conversations may still need review", want...)
 }
 
+func TestRelationshipSearchFindsTheMailTimelineLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(context.Background())
+	datedAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	hourAt := time.Now().UTC().Add(-2 * time.Hour)
+	label := datedAt.Format("Jan 2, 2006")
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveMail := func(rel *ent.Relationship, at time.Time, deleted bool) {
+		t.Helper()
+		if _, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(rel.ID).
+			SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID(rel.DisplayName).
+			SetInteractionType("email").SetDirection("inbound").SetSubject(rel.DisplayName).
+			SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+			SetContentHash("sha256:"+rel.DisplayName).SetMetadataJSON(`{}`).SetDeleted(deleted).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	dated := makeCompany("Dated Mail")
+	hour := makeCompany("Hour Mail")
+	removed := makeCompany("Removed Mail")
+	saveMail(dated, datedAt, false)
+	saveMail(hour, hourAt, false)
+	saveMail(removed, datedAt, true)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Your mailbox", "Dated Mail", "Hour Mail")
+	assertCompanyQuery(label+" · Your mailbox", "Dated Mail")
+	assertCompanyQuery(label+" · Your mailbox.", "Dated Mail")
+	assertCompanyQuery("2 hours ago · Your mailbox", "Hour Mail")
+	assertCompanyQuery(label+" · Kept private")
+}
+
 func TestRelationshipSearchFindsMailAccess(t *testing.T) {
 	f, teammate, teammateCtx, ws := communicationPrivacyFixture(t)
 	internal := auth.WithInternal(context.Background())

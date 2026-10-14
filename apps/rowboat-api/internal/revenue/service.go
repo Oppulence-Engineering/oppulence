@@ -990,6 +990,11 @@ func (s *Service) ListRelationshipsFiltered(
 		if access := relationshipSheetMailAccessMatch(u.ID, s.now(), needle); access != nil {
 			parts = append(parts, access)
 		}
+		// The mail row prints "Aug 30, 2026 · Your mailbox". The reason alone
+		// would keep every mailbox. The time has to be that same row.
+		if timed := relationshipSheetMailTimelineMatch(u.ID, s.now(), needle); timed != nil {
+			parts = append(parts, timed)
+		}
 
 		if linked := relationshipSheetGmailLinkedMatch(needle); linked != nil {
 			parts = append(parts, linked)
@@ -13902,21 +13907,59 @@ func relationshipOpenActionCount(compare string, n int) predicate.Relationship {
 // same mail is "Your mailbox" for its owner and a different sentence for a
 // teammate. A deleted row is not on the timeline.
 func relationshipSheetMailAccessMatch(actor uuid.UUID, now time.Time, needle string) predicate.Relationship {
+	if timePart, _, ok := mailTimelineParts(needle); ok {
+		if _, parsed := visibleActivityWindow(timePart, time.Now().UTC()); parsed {
+			return nil
+		}
+	}
+	return mailAccessPredicate(actor, now, needle, nil)
+}
+
+// relationshipSheetMailTimelineMatch is the mail row clock and the reason
+// beside it. "Aug 30, 2026 · Your mailbox" is that day's mail in the
+// searcher's mailbox. Mail on another day stays out.
+func relationshipSheetMailTimelineMatch(actor uuid.UUID, now time.Time, needle string) predicate.Relationship {
+	timePart, reason, ok := mailTimelineParts(needle)
+	if !ok {
+		return nil
+	}
+	window, ok := visibleActivityWindow(timePart, time.Now().UTC())
+	if !ok {
+		return nil
+	}
+	return mailAccessPredicate(actor, now, reason, &window)
+}
+
+func mailTimelineParts(needle string) (string, string, bool) {
+	const sep = " · "
+	index := strings.Index(needle, sep)
+	if index <= 0 {
+		return "", "", false
+	}
+	timePart := strings.TrimSpace(needle[:index])
+	reason := strings.TrimSpace(needle[index+len(sep):])
+	if timePart == "" || reason == "" || strings.Contains(reason, sep) {
+		return "", "", false
+	}
+	return timePart, reason, true
+}
+
+func mailAccessPredicate(actor uuid.UUID, now time.Time, needle string, window *relativeWindow) predicate.Relationship {
 	var preds []predicate.Relationship
 	if labelPhraseMatches("your mailbox", needle) {
-		preds = append(preds, relationshipMailAccess(actor, now, "mailbox_owner"))
+		preds = append(preds, relationshipMailAccessDuring(actor, now, "mailbox_owner", window))
 	}
 	if needle == "protected" {
-		preds = append(preds, relationshipMailAccess(actor, now, "protected"))
+		preds = append(preds, relationshipMailAccessDuring(actor, now, "protected", window))
 	}
 	if labelPhraseMatches("kept private", needle) {
-		preds = append(preds, relationshipMailAccess(actor, now, "owner_private"))
+		preds = append(preds, relationshipMailAccessDuring(actor, now, "owner_private", window))
 	}
 	if labelPhraseMatches("shared with you", needle) {
-		preds = append(preds, relationshipMailAccess(actor, now, "explicit_grant"))
+		preds = append(preds, relationshipMailAccessDuring(actor, now, "explicit_grant", window))
 	}
 	if labelPhraseMatches("shared in this workspace", needle) {
-		preds = append(preds, relationshipMailAccess(actor, now, "owner_default"))
+		preds = append(preds, relationshipMailAccessDuring(actor, now, "owner_default", window))
 	}
 	switch len(preds) {
 	case 0:
@@ -13928,7 +13971,7 @@ func relationshipSheetMailAccessMatch(actor uuid.UUID, now time.Time, needle str
 	}
 }
 
-func relationshipMailAccess(actor uuid.UUID, now time.Time, reason string) predicate.Relationship {
+func relationshipMailAccessDuring(actor uuid.UUID, now time.Time, reason string, window *relativeWindow) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			b.WriteString("EXISTS (SELECT 1 FROM ")
@@ -13943,6 +13986,16 @@ func relationshipMailAccess(actor uuid.UUID, now time.Time, reason string) predi
 			b.Arg(false)
 			b.WriteString(" AND ")
 			writeMailAccessReason(b, s, actor, now, reason)
+			if window != nil {
+				b.WriteString(" AND mail.")
+				b.WriteString(communicationinteraction.FieldOccurredAt)
+				b.WriteString(" > ")
+				b.Arg(window.after)
+				b.WriteString(" AND mail.")
+				b.WriteString(communicationinteraction.FieldOccurredAt)
+				b.WriteString(" <= ")
+				b.Arg(window.until)
+			}
 			b.WriteString(")")
 		}))
 	})
