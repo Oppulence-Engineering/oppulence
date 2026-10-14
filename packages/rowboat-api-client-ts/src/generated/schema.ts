@@ -18559,7 +18559,7 @@ export interface operations {
            *     |---|---|
            *     | Company | Acme |
            *     | State | At risk |
-           *     | Due | 2026-09-14 |
+           *     | Due | Sep 14, 2026 |
            *     | Owner | alex@example.com |
            *     | Counterparty | jordan@example.com |
            *     | Record generated | 2026-09-09T12:00:00Z |

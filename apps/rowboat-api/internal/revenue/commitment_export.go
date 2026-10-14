@@ -278,7 +278,7 @@ func (r *CommitmentRecord) Markdown() string {
 	fmt.Fprintf(&b, "| State | %s |\n", registerStateLabel(r.State))
 	switch {
 	case r.DueAt != nil:
-		fmt.Fprintf(&b, "| Due | %s |\n", r.DueAt.UTC().Format("2006-01-02"))
+		fmt.Fprintf(&b, "| Due | %s |\n", reportDueDay(r.DueAt.UTC()))
 	case r.DuePhrase != "":
 		fmt.Fprintf(&b, "| Due | %s (as stated, not resolved to a date) |\n", r.DuePhrase)
 	default:
