@@ -2808,6 +2808,12 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	if line := relationshipSheetPersonLineMatch(needle); line != nil {
 		preds = append(preds, line)
 	}
+	// The same fields are one sentence, "Engineer · Austin". A domain stored
+	// as the company name reads as that host. A single field stays on its
+	// own matcher.
+	if profile := relationshipSheetPersonProfileLineMatch(needle); profile != nil {
+		preds = append(preds, profile)
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -2924,6 +2930,99 @@ func writeSeniorityLabelExpr(b *sql.Builder, s *sql.Selector, trimmed string) {
 // relationshipSheetPersonLineMatch matches the title, company, and place on
 // a person line. A domain stored as the company name reads as that host.
 // The membership title is the line only when the person has no title.
+// relationshipSheetPersonProfileLineMatch is the profile sentence under a
+// person. The sheet joins the title, the company, the seniority, and the
+// place with a middle dot, and it skips a blank. A company stored as
+// acme.example reads "Acme". The title falls back to the membership title.
+func relationshipSheetPersonProfileLineMatch(needle string) predicate.Relationship {
+	if !strings.Contains(needle, " · ") {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipparticipant.Table)
+			b.WriteString(" AS member LEFT JOIN ")
+			b.WriteString(person.Table)
+			b.WriteString(" AS who ON who.")
+			b.WriteString(person.FieldID)
+			b.WriteString(" = member.")
+			b.WriteString(relationshipparticipant.PersonColumn)
+			b.WriteString(" WHERE member.")
+			b.WriteString(relationshipparticipant.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			writeNormalizedSQLText(b, s, personProfileLineSQL(s))
+			b.WriteString(" = ")
+			b.Arg(needle)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func personProfileLineSQL(s *sql.Selector) string {
+	title := profileTrimSQL(s, "CASE WHEN "+profilePersonTrim(s, person.FieldTitle)+" <> '' THEN "+profilePersonTrim(s, person.FieldTitle)+" ELSE "+profileMemberTrim(s, relationshipparticipant.FieldTitle)+" END")
+	company := profileTrimSQL(s, personProfileCompanySQL(s))
+	seniority := profileTrimSQL(s, personProfileSenioritySQL(s))
+	place := profileTrimSQL(s, profilePersonTrim(s, person.FieldLocation))
+	return profileJoinSQL(title, company, seniority, place)
+}
+
+func profileJoinSQL(title, company, seniority, place string) string {
+	return "(SELECT " +
+		"CASE WHEN title <> '' THEN title ELSE '' END || " +
+		"CASE WHEN company <> '' THEN CASE WHEN title <> '' THEN ' · ' ELSE '' END || company ELSE '' END || " +
+		"CASE WHEN seniority <> '' THEN CASE WHEN title <> '' OR company <> '' THEN ' · ' ELSE '' END || seniority ELSE '' END || " +
+		"CASE WHEN place <> '' THEN CASE WHEN title <> '' OR company <> '' OR seniority <> '' THEN ' · ' ELSE '' END || place ELSE '' END " +
+		"FROM (SELECT " + title + " AS title, " + company + " AS company, " + seniority + " AS seniority, " + place + " AS place) AS profile)"
+}
+
+func personProfileCompanySQL(s *sql.Selector) string {
+	name := profilePersonTrim(s, person.FieldOrgName)
+	domain := profilePersonTrim(s, person.FieldOrgDomain)
+	email := name + " GLOB '*@*.*' AND " + name + " NOT GLOB '* *' AND " + name + " NOT GLOB '*@*@*'"
+	if s.Dialect() == dialect.Postgres {
+		email = name + " ~ '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$'"
+	}
+	return "CASE WHEN " + name + " = '' THEN '' WHEN " + domain + " <> '' AND (lower(" + name + ") = lower(" + domain + ") OR (" + email + ")) THEN " + profileCompanyHostSQL(s, domain) + " ELSE " + name + " END"
+}
+
+func profileCompanyHostSQL(s *sql.Selector, domain string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "split_part(" + domain + ", '.', 1)"
+	}
+	return "CASE WHEN instr(" + domain + ", '.') > 0 THEN substr(" + domain + ", 1, instr(" + domain + ", '.') - 1) ELSE " + domain + " END"
+}
+
+func personProfileSenioritySQL(s *sql.Selector) string {
+	trimmed := profilePersonTrim(s, person.FieldSeniority)
+	return "CASE WHEN " + trimmed + " = 'ic' THEN 'individual contributor' ELSE " + trimmed + " END"
+}
+
+func profilePersonTrim(s *sql.Selector, field string) string {
+	expr := "trim(coalesce(who." + field + ", ''))"
+	if s.Dialect() == dialect.Postgres {
+		expr = "btrim(coalesce(who." + field + ", ''))"
+	}
+	return expr
+}
+
+func profileMemberTrim(s *sql.Selector, field string) string {
+	expr := "trim(coalesce(member." + field + ", ''))"
+	if s.Dialect() == dialect.Postgres {
+		expr = "btrim(coalesce(member." + field + ", ''))"
+	}
+	return expr
+}
+
+func profileTrimSQL(s *sql.Selector, expr string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(" + expr + ")"
+	}
+	return "trim(" + expr + ")"
+}
+
 func relationshipSheetPersonLineMatch(needle string) predicate.Relationship {
 	if needle == "" {
 		return nil

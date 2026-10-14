@@ -13562,6 +13562,18 @@ func TestRelationshipSearchFindsProfileFieldCounts(t *testing.T) {
 	addPerson(host, "Ned Oak", "", func(create *ent.PersonCreate) {
 		create.SetOrgName("acme.example").SetOrgDomain("acme.example")
 	})
+	hosted := makeCompany("Quay Hosted")
+	addPerson(hosted, "Ned Place", "", func(create *ent.PersonCreate) {
+		create.SetOrgName("acme.example").SetOrgDomain("acme.example").SetLocation("Austin")
+	})
+	label := makeCompany("Quay Label")
+	addPerson(label, "Ida West", "", func(create *ent.PersonCreate) {
+		create.SetTitle("Guide").SetOrgName("dogfood-label.example").SetOrgDomain("dogfood-label.example")
+	})
+	band := makeCompany("Quay Band")
+	addPerson(band, "Ada Band", "", func(create *ent.PersonCreate) {
+		create.SetTitle("Engineer").SetSeniority("ic").SetLocation("Austin")
+	})
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -13582,17 +13594,30 @@ func TestRelationshipSearchFindsProfileFieldCounts(t *testing.T) {
 	assertCompanyQuery("0/4 profile fields", "Quay Empty", "Quay Space")
 	assertCompanyQuery("No profile details yet", "Quay Empty", "Quay Space")
 	assertCompanyQuery("1/4 profile fields", "Quay Title", "Quay Org", "Quay Hidden", "Quay Host")
-	assertCompanyQuery("2/4 profile fields", "Quay Half")
-	assertCompanyQuery("3/4 profile fields", "Quay Three")
+	assertCompanyQuery("2/4 profile fields", "Quay Half", "Quay Hosted", "Quay Label")
+	assertCompanyQuery("3/4 profile fields", "Quay Three", "Quay Band")
 	assertCompanyQuery("4/4 profile fields", "Quay Full")
 	assertCompanyQuery("which companies have 4/4 profile fields", "Quay Full")
 	assertCompanyQuery("profile fields")
 	assertCompanyQuery("Buyer", "Quay Title")
-	assertCompanyQuery("Engineer", "Quay Half", "Quay Three", "Quay Full", "Quay Hidden")
+	assertCompanyQuery("Engineer", "Quay Half", "Quay Three", "Quay Full", "Quay Hidden", "Quay Band")
 	assertCompanyQuery("Northwind", "Quay Org", "Quay Three", "Quay Full")
-	assertCompanyQuery("Austin", "Quay Half", "Quay Full")
+	assertCompanyQuery("Austin", "Quay Half", "Quay Full", "Quay Hosted", "Quay Band")
 	assertCompanyQuery("Hidden Role")
-	assertCompanyQuery("Acme", "Quay Host")
+	assertCompanyQuery("Acme", "Quay Host", "Quay Hosted")
+	assertCompanyQuery("Engineer · Austin", "Quay Half")
+	assertCompanyQuery("Engineer · Austin.", "Quay Half")
+	assertCompanyQuery("Austin · Engineer")
+	assertCompanyQuery("Engineer · Northwind")
+	assertCompanyQuery("Engineer · Hidden Role")
+	assertCompanyQuery("Buyer · Austin")
+	assertCompanyQuery("Acme · Austin", "Quay Hosted")
+	assertCompanyQuery("Acme · Austin.", "Quay Hosted")
+	assertCompanyQuery("acme.example · Austin")
+	assertCompanyQuery("Guide · Dogfood Label", "Quay Label")
+	assertCompanyQuery("Guide · dogfood-label.example")
+	assertCompanyQuery("Engineer · Individual contributor · Austin", "Quay Band")
+	assertCompanyQuery("Engineer · ic · Austin")
 }
 
 func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
