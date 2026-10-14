@@ -2841,6 +2841,66 @@ test("asking meeting finds a calendar row whose status is Meeting", () => {
   assert.deepEqual(queryRelationshipGraph(graph, "Meeting updated").relationshipIds, ["updated"]);
 });
 
+test("asking out of date finds a source whose status is Out of date", () => {
+  const parsed = parseRelationshipGraphQuery("Out of date");
+  assert.equal(parsed.filters.stale, true);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["out of date"]);
+
+  const withPeriod = parseRelationshipGraphQuery("Out of date.");
+  assert.equal(withPeriod.filters.stale, true);
+  assert.deepEqual(withPeriod.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:cadence", kind: "relationship", label: "Quay Cadence" },
+      {
+        id: "source:cadence",
+        kind: "source",
+        label: "Gmail",
+        status: "stale",
+        freshness: "current",
+        source: "gmail",
+        relationshipId: "cadence",
+      },
+      { id: "relationship:old", kind: "relationship", label: "Quay Dated" },
+      {
+        id: "evidence:old",
+        kind: "evidence",
+        label: "The quay note",
+        status: "Note saved",
+        freshness: "stale",
+        source: "desktop_note",
+        relationshipId: "old",
+      },
+      { id: "relationship:live", kind: "relationship", label: "Quay Live" },
+      {
+        id: "source:live",
+        kind: "source",
+        label: "Slack",
+        status: "live",
+        freshness: "current",
+        source: "slack",
+        relationshipId: "live",
+      },
+    ],
+    edges: [],
+  };
+
+  assert.deepEqual(queryRelationshipGraph(graph, "Out of date").relationshipIds.sort(), [
+    "cadence",
+    "old",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Out of date.").relationshipIds.sort(), [
+    "cadence",
+    "old",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "up to date").relationshipIds.sort(), [
+    "cadence",
+    "live",
+  ]);
+});
+
 test("speaker parsing stays bounded for adversarial whitespace", () => {
   const observation = buildImportedTranscriptObservation({
     relationshipId: "relationship-1",

@@ -813,7 +813,7 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bup_to_date\b/g, " ")
     .replace(/\bgetting old\b/g, " ")
     .replace(/\bgetting_old\b/g, " ")
-    .replace(/\bout of date\b/g, " ")
+    .replace(/\bout of date\b\.?/g, " ")
     .replace(/\bsince you last looked\b/g, " ")
     .replace(/\byou last looked\b/g, " ")
     .replace(/\bsince my last review\b/g, " ")
@@ -1156,8 +1156,14 @@ export function queryRelationshipGraph(graph, query, options = {}) {
       );
     });
   }
+  // The source inspector says Out of date when the connection missed its
+  // cadence. That stored status is stale. Freshness can still be current
+  // when the last activity is inside 72 hours.
   if (filters.stale) {
-    constrainBy((node) => normalizedGraphValue(node.freshness) === "stale");
+    constrainBy((node) => {
+      if (normalizedGraphValue(node.freshness) === "stale") return true;
+      return node.kind === "source" && normalizedGraphValue(node.status) === "stale";
+    });
   }
   if (filters.current) {
     constrainBy((node) => normalizedGraphValue(node.freshness) === "current");
