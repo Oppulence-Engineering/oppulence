@@ -11169,7 +11169,7 @@ func TestRelationshipSearchFindsTheSheetTime(t *testing.T) {
 	change := makeCompany("Change Day", recentAt)
 	removed := makeCompany("Deleted Day", recentAt)
 	makeCompany("Recent Day", recentAt)
-	makeCompany("Hour Touch", hourAt)
+	hourTouch := makeCompany("Hour Touch", hourAt)
 	hourThread := makeCompany("Hour Thread", recentAt)
 
 	if _, err := f.client.MailThread.Create().
@@ -11214,6 +11214,13 @@ func TestRelationshipSearchFindsTheSheetTime(t *testing.T) {
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := f.client.RelationshipStateSnapshot.Create().
+		SetWorkspace(ws).SetRelationship(hourTouch).SetUser(f.user).
+		SetVersion(1).SetStateJSON(`{}`).SetStateHash("hour-change").
+		SetCreatedAt(hourAt).SetEvaluatedAt(hourAt).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -11236,6 +11243,11 @@ func TestRelationshipSearchFindsTheSheetTime(t *testing.T) {
 	assertCompanyQuery(label+".", day...)
 	assertCompanyQuery(recentAt.Format("Jan 2, 2006"))
 	assertCompanyQuery("2 hours ago", "Hour Touch", "Hour Thread")
+	assertCompanyQuery("v1 · "+label, "Change Day")
+	assertCompanyQuery("v1 · "+label+".", "Change Day")
+	assertCompanyQuery("v2 · "+label)
+	assertCompanyQuery("v1")
+	assertCompanyQuery("v1 · 2 hours ago", "Hour Touch")
 }
 
 func TestRelationshipSearchFindsTheQuietCompany(t *testing.T) {

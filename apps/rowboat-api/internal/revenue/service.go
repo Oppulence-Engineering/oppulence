@@ -849,10 +849,15 @@ func (s *Service) ListRelationshipsFiltered(
 		if columns := relationshipDirectoryColumnMatch(value, s.now()); columns != nil {
 			parts = append(parts, columns)
 		}
-		if window, ok := visibleActivityWindow(normalizePersonSearch(value), time.Now().UTC()); ok {
+		needle := normalizePersonSearch(value)
+		if window, ok := visibleActivityWindow(needle, time.Now().UTC()); ok {
 			parts = append(parts, relationshipPrintedTimeMatch(window))
 		}
-		needle := normalizePersonSearch(value)
+		// The change row prints "v1 · Sep 6, 2026". The day alone already
+		// matches. The version stays on that row.
+		if version := relationshipSheetVersionLineMatch(needle); version != nil {
+			parts = append(parts, version)
+		}
 		if badges := relationshipSheetRecordBadgeMatch(needle, s.now()); badges != nil {
 			parts = append(parts, badges)
 		}
@@ -14165,6 +14170,51 @@ func writeMailThreadID(b *sql.Builder, s *sql.Selector) {
 	b.WriteString("COALESCE(json_extract(")
 	b.WriteString(column)
 	b.WriteString(", '$.threadId'), '')")
+}
+
+// relationshipSheetVersionLineMatch is the change row "v1 · Sep 6, 2026"
+// and "v1 · 2 hours ago". The number is the snapshot version. Another
+// version on that day stays out.
+func relationshipSheetVersionLineMatch(needle string) predicate.Relationship {
+	version, rest, ok := sheetVersionRest(needle)
+	if !ok {
+		return nil
+	}
+	window, ok := visibleActivityWindow(rest, time.Now().UTC())
+	if !ok {
+		return nil
+	}
+	return relationship.HasSnapshotsWith(
+		relationshipstatesnapshot.VersionEQ(version),
+		relationshipstatesnapshot.CreatedAtGT(window.after),
+		relationshipstatesnapshot.CreatedAtLTE(window.until),
+	)
+}
+
+func sheetVersionRest(needle string) (int, string, bool) {
+	if len(needle) < 4 || needle[0] != 'v' {
+		return 0, "", false
+	}
+	index := 1
+	for index < len(needle) && needle[index] >= '0' && needle[index] <= '9' {
+		index++
+	}
+	if index == 1 {
+		return 0, "", false
+	}
+	version, err := strconv.Atoi(needle[1:index])
+	if err != nil || version < 1 || needle[1:index] != strconv.Itoa(version) {
+		return 0, "", false
+	}
+	const sep = " · "
+	if !strings.HasPrefix(needle[index:], sep) {
+		return 0, "", false
+	}
+	rest := strings.TrimSpace(needle[index+len(sep):])
+	if rest == "" {
+		return 0, "", false
+	}
+	return version, rest, true
 }
 
 // relationshipPrintedTimeMatch finds a company that prints this relative
