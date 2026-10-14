@@ -272,6 +272,9 @@ func personEvidenceLabeledExtractors() []string {
 // such as "details" or "you" is not enough, because those letters sit inside
 // the sentence without being the sentence a teammate typed.
 func personSheetEvidenceMatch(needle string) predicate.Person {
+	if timed := personEvidenceProvenanceLine(needle); timed != nil {
+		return timed
+	}
 	var preds []predicate.Person
 	if sheetPhraseMatches("no extra details yet", needle) {
 		preds = append(preds, person.Not(personHasVisibleEvidence()))
@@ -481,6 +484,62 @@ func personPrintedTimeMatch(window relativeWindow) predicate.Person {
 			personattribute.ObservedAtLTE(window.until),
 		)...),
 	)
+}
+
+// personEvidenceProvenanceLine is "From their email signature · Aug 30, 2026"
+// and "Gmail · 2 hours ago" under Where details came from. The phrase alone
+// still finds every fact with that label. The clock stays on the fact that
+// prints it. A retracted fact is already off the list.
+func personEvidenceProvenanceLine(needle string) predicate.Person {
+	left, right, ok := mailTimelineParts(needle)
+	if !ok {
+		return nil
+	}
+	window, ok := visibleActivityWindow(right, time.Now())
+	if !ok {
+		return nil
+	}
+	during := func(extra ...predicate.PersonAttribute) []predicate.PersonAttribute {
+		return append(extra,
+			personattribute.ObservedAtGT(window.after),
+			personattribute.ObservedAtLTE(window.until),
+		)
+	}
+	if left == "added by you" {
+		return person.Or(
+			person.HasAttributesWith(visiblePersonEvidence(during(personattribute.SourceEQ("user"))...)...),
+			person.HasAttributesWith(visiblePersonEvidence(during(
+				personattribute.SourceNEQ("user"),
+				personattribute.ExtractorEQ("user_entry"),
+			)...)...),
+		)
+	}
+	for extractor, phrase := range personEvidenceExtractorPhrases {
+		if left == normalizePersonSearch(phrase) {
+			return person.HasAttributesWith(visiblePersonEvidence(during(
+				personattribute.SourceNEQ("user"),
+				personattribute.ExtractorEQ(extractor),
+			)...)...)
+		}
+	}
+	for source, phrase := range personEvidenceSourcePhrases {
+		if left == normalizePersonSearch(phrase) {
+			return person.HasAttributesWith(visiblePersonEvidence(during(
+				personattribute.SourceEQ(source),
+				personattribute.ExtractorNotIn(personEvidenceLabeledExtractors()...),
+			)...)...)
+		}
+	}
+	if left == "recorded in this workspace" {
+		return person.HasAttributesWith(visiblePersonEvidence(during(
+			personattribute.SourceNotIn(
+				"gmail", "calendar", "slack", "hubspot", "meeting",
+				"desktop_note", "voice_note", "browser", "crm", "user", "web",
+			),
+			personattribute.ExtractorNotIn(personEvidenceLabeledExtractors()...),
+		)...)...)
+	}
+	return nil
 }
 
 func personEvidenceAddedByYou() predicate.Person {

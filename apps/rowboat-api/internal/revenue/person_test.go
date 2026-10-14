@@ -1435,6 +1435,98 @@ func TestPersonSearchFindsTheEvidenceTime(t *testing.T) {
 	assertNames("2 hours ago", "Quill Morse", "Mira Chen")
 }
 
+func TestPersonSearchFindsTheEvidenceProvenanceLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	datedAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	recentAt := time.Now().UTC().Add(-10 * 24 * time.Hour)
+	hourAt := time.Now().UTC().Add(-2 * time.Hour)
+	label := datedAt.Format("Jan 2, 2006")
+	create := func(name string) *ent.Person {
+		t.Helper()
+		row, err := f.client.Person.Create().
+			SetDisplayName(name).
+			SetLastInteractionAt(recentAt).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	fact := func(row *ent.Person, source, extractor, externalID string, at time.Time) {
+		t.Helper()
+		if err := upsertPersonAttributes(f.ctx, f.client, ws, f.user, row, nil, []PersonAttributeInput{{
+			Dimension: "title", Value: "Designer", SourceType: "source_fact",
+			Source: source, Extractor: extractor, Confidence: 0.8, ObservedAt: at,
+			ExternalID: externalID,
+		}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	create("Casey Quinn")
+	indira := create("Indira Cole")
+	quill := create("Quill Morse")
+	nia := create("Nia Holt")
+	mira := create("Mira Chen")
+	fact(indira, "gmail", "email_signature", "indira-title", datedAt)
+	fact(quill, "gmail", "email_signature", "quill-title", hourAt)
+	fact(nia, "gmail", "unknown", "nia-title", datedAt)
+	fact(mira, "gmail", "email_signature", "mira-title", datedAt)
+	if _, err := f.client.PersonAttribute.Update().
+		Where(
+			personattribute.HasPersonWith(person.IDEQ(mira.ID)),
+			personattribute.DimensionEQ("title"),
+		).
+		SetStatus("retracted").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	names := func(query string) []string {
+		t.Helper()
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, 0, len(found.Persons))
+		for _, row := range found.Persons {
+			got = append(got, row.DisplayName)
+		}
+		return got
+	}
+	assertNames := func(query string, want ...string) {
+		t.Helper()
+		got := names(query)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			found := false
+			for _, gotName := range got {
+				if gotName == name {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertNames("From their email signature · "+label, "Indira Cole")
+	assertNames("From their email signature · "+label+".", "Indira Cole")
+	assertNames("From their email signature · 2 hours ago", "Quill Morse")
+	assertNames("Gmail · "+label, "Nia Holt")
+	assertNames("From their email signature", "Indira Cole", "Quill Morse")
+	assertNames("Gmail", "Nia Holt")
+	assertNames(label + " · From their email signature")
+}
+
 func TestRelativeLabelWindowKeepsAFuturePhraseWithTheNextBucket(t *testing.T) {
 	now := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
 	window, ok := relativeLabelWindow("3 days from now", now)
