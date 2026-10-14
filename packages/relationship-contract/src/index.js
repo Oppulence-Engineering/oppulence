@@ -327,6 +327,44 @@ function graphRowTitle(value) {
     .trim();
 }
 
+const GRAPH_ROW_LEADING_STOP =
+  /^(?:a|an|and|are|for|from|in|is|me|of|on|show|that|the|this|to|what|which|who|with)\s+/;
+
+function graphRowDetail(value) {
+  if (typeof value !== "string") return "";
+  return value.trim().replace(/\.$/, "").replace(/\s+/g, " ");
+}
+
+function graphRowPlaceholder(value) {
+  return value === "local-user" || value === "meeting-counterparty";
+}
+
+// A speaker id is printed as "They made this promise". A real name has a space
+// or an address, which is the sentence the activity row shows.
+function graphRowUnnamedWho(who) {
+  return (
+    !who ||
+    who === "a person" ||
+    who === "local-user" ||
+    who === "meeting-counterparty" ||
+    who === "other" ||
+    who === "unknown speaker" ||
+    /^speaker\s+\d+$/.test(who) ||
+    /^[a-z0-9_:-]+$/.test(who)
+  );
+}
+
+function graphRowNamedWho(value) {
+  let who = graphRowDetail(value);
+  while (GRAPH_ROW_LEADING_STOP.test(who)) {
+    const next = who.replace(GRAPH_ROW_LEADING_STOP, "");
+    if (!next || graphRowUnnamedWho(next)) break;
+    who = next;
+  }
+  if (graphRowUnnamedWho(who) || who === "we" || who === "they") return "";
+  return who;
+}
+
 function printedGraphRowTitles(normalized) {
   const labels = [];
   let rest = normalized;
@@ -374,6 +412,92 @@ function printedGraphRowTitles(normalized) {
     if (!channel || channel === "local-user" || channel.startsWith("slack")) return "";
     return `message in #${channel}`;
   });
+  // "This promise was kept: Send the proposal" is the activity sentence.
+  // "Kept" and "open" inside it are not the promise badges.
+  take(
+    /\b(this promise is still open|this promise is done|this promise was dropped|this promise was kept|this promise was called off|this promise was missed|this promise was waived|this promise was replaced)(?::\s*(.+?))?\.?\s*$/,
+    (match) => {
+      const text = graphRowDetail(match[2]);
+      if (graphRowPlaceholder(text)) return "";
+      return text ? `${match[1]}: ${text}` : match[1];
+    },
+  );
+  take(
+    /\b(we made this promise|they made this promise)(?::\s*(.+?))?\.?\s*$/,
+    (match) => {
+      const text = graphRowDetail(match[2]);
+      if (graphRowPlaceholder(text)) return "";
+      return text ? `${match[1]}: ${text}` : match[1];
+    },
+  );
+  take(/\b(.+?)\s+made this promise(?::\s*(.+?))?\.?\s*$/, (match) => {
+    const who = graphRowNamedWho(match[1]);
+    if (!who) return "";
+    const text = graphRowDetail(match[2]);
+    if (graphRowPlaceholder(text)) return "";
+    const owner = `${who} made this promise`;
+    return text ? `${owner}: ${text}` : owner;
+  });
+  // Attendance and the transcript line name the meeting. "Person", "company",
+  // and "review" in those sentences are not filters.
+  take(
+    /\b((?:no one|1 person|[1-9]\d* people) from outside the company on .+?)\.?\s*$/,
+    (match) => {
+      const sentence = graphRowDetail(match[1]);
+      const split = /^(no one|1 person|[1-9]\d* people) from outside the company on (.+)$/.exec(
+        sentence,
+      );
+      if (!split) return "";
+      const head = split[1];
+      const title = split[2].trim();
+      if (!title || graphRowPlaceholder(title)) return "";
+      if (head.endsWith(" people") && Number(head.split(" ")[0]) < 2) return "";
+      return `${head} from outside the company on ${title}`;
+    },
+  );
+  take(
+    /\b(.+? · (?:\d+ lines|1 line) in the transcript · (?:\d+ claims|1 claim))\.?\s*$/,
+    (match) => {
+      const sentence = graphRowDetail(match[1]);
+      const split =
+        /^(.+?) · (\d+) (line|lines) in the transcript · (\d+) (claim|claims)$/.exec(sentence);
+      if (!split) return "";
+      const title = split[1].trim();
+      const lines = split[2];
+      const lineWord = split[3];
+      const claims = split[4];
+      const claimWord = split[5];
+      if (!title || graphRowPlaceholder(title)) return "";
+      if (/^0\d/.test(lines) || /^0\d/.test(claims)) return "";
+      if ((lines === "1") !== (lineWord === "line")) return "";
+      if ((claims === "1") !== (claimWord === "claim")) return "";
+      return `${title} · ${lines} ${lineWord} in the transcript · ${claims} ${claimWord}`;
+    },
+  );
+  // A reviewed conversation titles the claim. The title word is that line,
+  // not a request for every risk, promise, or lifecycle.
+  take(/\brisk raised in a conversation(?::\s*(.+?))?\.?\s*$/, (match) => {
+    const text = graphRowDetail(match[1]);
+    if (graphRowPlaceholder(text)) return "";
+    return text ? `risk raised in a conversation: ${text}` : "risk raised in a conversation";
+  });
+  for (const title of [
+    "unresolved objection",
+    "milestone",
+    "promise",
+    "lifecycle",
+    "sentiment",
+    "engagement",
+    "health",
+    "person",
+    "decision",
+  ]) {
+    take(new RegExp(`\\b${title}:\\s*(.+?)\\.?\\s*$`), (match) => {
+      const text = graphRowDetail(match[1]);
+      if (!text || graphRowPlaceholder(text)) return "";
+      return `${title}: ${text}`;
+    });
+  }
   return { labels, rest };
 }
 
@@ -1068,8 +1192,13 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     );
   }
   for (const label of filters.rowTitles) {
+    // A confirmed promise keeps the event name on the card and puts the
+    // sentence in the detail. Attendance and transcript sentences are the card.
     constrainBy(
-      (node) => graphRowTitle(node.label) === label || graphRowTitle(node.status) === label,
+      (node) =>
+        graphRowTitle(node.label) === label ||
+        graphRowTitle(node.status) === label ||
+        graphRowTitle(node.summary) === label,
     );
   }
   if (filters.notConnected) {
