@@ -156,6 +156,16 @@ const normalizedGraphValue = (value) =>
 // spelling on both sides.
 const graphSearchText = (value) => normalizedGraphValue(value).replaceAll("-", "_");
 
+// A calendar snapshot's status is Meeting. That badge is the same word as
+// the meeting source, and the snapshot itself is stored as calendar.
+const GRAPH_MEETING_BADGES = new Set([
+  "meeting",
+  "a meeting",
+  "meeting updated",
+  "meeting missing",
+  "meeting booked",
+]);
+
 /** A kept, missed, waived, or unconfirmed promise is not still overdue. */
 const graphPromiseCanBeOverdue = (status) => {
   const normalized = normalizedGraphValue(status);
@@ -1137,7 +1147,14 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     );
   }
   if (filters.sources.length) {
-    constrainBy((node) => filters.sources.includes(normalizedGraphValue(node.source)));
+    constrainBy((node) => {
+      if (filters.sources.includes(normalizedGraphValue(node.source))) return true;
+      if (!filters.sources.includes("meeting")) return false;
+      return (
+        GRAPH_MEETING_BADGES.has(graphRowTitle(node.status)) ||
+        GRAPH_MEETING_BADGES.has(graphRowTitle(node.label))
+      );
+    });
   }
   if (filters.stale) {
     constrainBy((node) => normalizedGraphValue(node.freshness) === "stale");

@@ -2774,6 +2774,73 @@ test("asking for a hyphenated name finds the row that prints the hyphen", () => 
   assert.deepEqual(queryRelationshipGraph(graph, "Acme Corp").relationshipIds.sort(), ["acme", "plain"]);
 });
 
+test("asking meeting finds a calendar row whose status is Meeting", () => {
+  const parsed = parseRelationshipGraphQuery("Meeting");
+  assert.deepEqual(parsed.filters.sources, ["meeting"]);
+  assert.deepEqual(parsed.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:cal", kind: "relationship", label: "Quay Calendar" },
+      {
+        id: "evidence:cal",
+        kind: "evidence",
+        label: "Q3 review",
+        status: "Meeting",
+        source: "calendar",
+        relationshipId: "cal",
+      },
+      { id: "relationship:updated", kind: "relationship", label: "Quay Updated" },
+      {
+        id: "evidence:updated",
+        kind: "evidence",
+        label: "The guest list changed",
+        status: "Meeting updated",
+        source: "calendar",
+        relationshipId: "updated",
+      },
+      { id: "relationship:source", kind: "relationship", label: "Quay Source" },
+      {
+        id: "source:meet",
+        kind: "source",
+        label: "A meeting",
+        source: "meeting",
+        relationshipId: "source",
+      },
+      { id: "relationship:mail", kind: "relationship", label: "Quay Mail" },
+      {
+        id: "evidence:mail",
+        kind: "evidence",
+        label: "Mail: Q3 review",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "mail",
+      },
+      { id: "relationship:follow", kind: "relationship", label: "Quay Follow" },
+      {
+        id: "action:follow",
+        kind: "action",
+        label: "Meeting follow-up",
+        status: "open",
+        relationshipId: "follow",
+      },
+    ],
+    edges: [],
+  };
+
+  assert.deepEqual(queryRelationshipGraph(graph, "Meeting").relationshipIds.sort(), [
+    "cal",
+    "source",
+    "updated",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "show me the meeting").relationshipIds.sort(), [
+    "cal",
+    "source",
+    "updated",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Meeting updated").relationshipIds, ["updated"]);
+});
+
 test("speaker parsing stays bounded for adversarial whitespace", () => {
   const observation = buildImportedTranscriptObservation({
     relationshipId: "relationship-1",
