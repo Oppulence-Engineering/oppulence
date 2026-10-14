@@ -53,9 +53,9 @@ import {
 } from "@/lib/revenue/revenue";
 import {
   localDayLabel,
-  localMomentLabel,
   promiseDirectionLabel,
   promiseDueLabel,
+  sourceObservedLabel,
 } from "@/lib/revenue/revenue-records";
 import { sourceLastErrorCopy } from "@/lib/revenue/source-product-copy";
 import type { OpenPromisesReport, RelationshipSourceStatus } from "@/lib/revenue/types";
@@ -700,9 +700,7 @@ export function Report({ report, scanId }: { report: OpenPromisesReport; scanId:
               ) : null}
               {item.occurredAt || safeResearchCitationURL(item.sourceUri ?? "") ? (
                 <p className="mt-2 text-[12px] text-primary/45">
-                  {item.occurredAt
-                    ? `Source observed ${localMomentLabel(item.occurredAt)}`
-                    : "Source"}
+                  {item.occurredAt ? sourceObservedLabel(item.occurredAt) : "Source"}
                   {safeResearchCitationURL(item.sourceUri ?? "") ? (
                     <>
                       {" · "}

@@ -433,6 +433,25 @@ export function promiseDueLabel(dueAt: string | null | undefined): string {
   return day ? `due ${day}` : "due unspecified";
 }
 
+const UTC_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** The report clock. A local calendar turned the same instant into another hour. */
+export function sourceObservedLabel(iso?: string | null): string {
+  const raw = iso?.trim() ?? "";
+  if (!raw) return "";
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const month = UTC_MONTHS[parsed.getUTCMonth()] ?? "";
+  const day = parsed.getUTCDate();
+  const year = parsed.getUTCFullYear();
+  const minute = String(parsed.getUTCMinutes()).padStart(2, "0");
+  const hour24 = parsed.getUTCHours();
+  const suffix = hour24 >= 12 ? "PM" : "AM";
+  let hour = hour24 % 12;
+  if (hour === 0) hour = 12;
+  return `Source observed ${month} ${String(day)}, ${String(year)} at ${String(hour)}:${minute} ${suffix}`;
+}
+
 /**
  * The notes list used to title every note "Created today", including one that
  * was only edited today. Day buckets follow the first write. A timestamp in

@@ -4545,6 +4545,62 @@ func TestRelationshipSearchFindsThePromiseDueDay(t *testing.T) {
 	assertCompanyQuery("due")
 }
 
+func TestRelationshipSearchFindsTheSourceObservedLine(t *testing.T) {
+	f := newFixture(t)
+	observed := time.Date(2026, 9, 30, 13, 0, 0, 0, time.UTC)
+	noon := time.Date(2026, 9, 30, 12, 0, 0, 0, time.UTC)
+	midnight := time.Date(2026, 9, 30, 0, 0, 0, 0, time.UTC)
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	seedReportCommitment(t, f, harbor, "promised_by_me", "Send the harbor note", "", nil, observed)
+	seedReportCommitment(t, f, lumen, "promised_by_me", "Send the lumen note", "", nil, noon)
+	seedReportCommitment(t, f, quill, "promised_by_me", "Send the quill note", "", nil, midnight)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Source observed Sep 30, 2026 at 1:00 PM", "Harbor Ledger")
+	assertCompanyQuery("Source observed Sep 30, 2026 at 1:00 PM.", "Harbor Ledger")
+	assertCompanyQuery("Source observed Sep 30, 2026 at 12:00 PM", "Lumen Packet")
+	assertCompanyQuery("Source observed Sep 30, 2026 at 12:00 AM", "Quill Atelier")
+	assertCompanyQuery("Source observed Sep 30, 2026")
+	assertCompanyQuery("source observed")
+}
+
 func TestRelationshipSearchFindsPromiseOverflow(t *testing.T) {
 	f := newFixture(t)
 	makeCompany := func(name string, count int) {

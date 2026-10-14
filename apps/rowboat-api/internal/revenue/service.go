@@ -1045,6 +1045,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if due := relationshipSheetPromiseDueMatch(needle); due != nil {
 			parts = append(parts, due)
 		}
+		if observed := relationshipSheetSourceObservedMatch(needle); observed != nil {
+			parts = append(parts, observed)
+		}
 
 		if overflow := relationshipSheetPromiseOverflowMatch(needle); overflow != nil {
 			parts = append(parts, overflow)
@@ -13362,6 +13365,75 @@ func relationshipSheetPromiseDueMatch(needle string) predicate.Relationship {
 		commitment.DueAtGTE(start),
 		commitment.DueAtLT(start.Add(24*time.Hour)),
 	))
+}
+
+// relationshipSheetSourceObservedMatch is the citation clock on the open
+// promises report. The line is "Source observed Sep 30, 2026 at 1:00 PM"
+// in UTC. A local clock turned that same instant into another hour.
+func relationshipSheetSourceObservedMatch(needle string) predicate.Relationship {
+	start, ok := sourceObservedAt(needle)
+	if !ok {
+		return nil
+	}
+	end := start.Add(time.Minute)
+	return relationship.HasCommitmentsWith(commitment.HasEvidencesWith(
+		revenueevidence.OccurredAtGTE(start),
+		revenueevidence.OccurredAtLT(end),
+	))
+}
+
+func sourceObservedAt(needle string) (time.Time, bool) {
+	needle = normalizePersonSearch(needle)
+	const marker = "source observed "
+	index := strings.LastIndex(needle, marker)
+	if index < 0 || (index > 0 && needle[index-1] != ' ') {
+		return time.Time{}, false
+	}
+	fields := strings.Fields(needle[index+len(marker):])
+	if len(fields) != 6 || fields[3] != "at" {
+		return time.Time{}, false
+	}
+	month, ok := promiseDueMonths[fields[0]]
+	if !ok || !strings.HasSuffix(fields[1], ",") {
+		return time.Time{}, false
+	}
+	day, err := strconv.Atoi(strings.TrimSuffix(fields[1], ","))
+	if err != nil || fields[1] != strconv.Itoa(day)+"," {
+		return time.Time{}, false
+	}
+	year, err := strconv.Atoi(fields[2])
+	if err != nil || len(fields[2]) != 4 {
+		return time.Time{}, false
+	}
+	clock := strings.Split(fields[4], ":")
+	if len(clock) != 2 {
+		return time.Time{}, false
+	}
+	hour, err := strconv.Atoi(clock[0])
+	if err != nil || hour < 1 || hour > 12 || clock[0] != strconv.Itoa(hour) {
+		return time.Time{}, false
+	}
+	minute, err := strconv.Atoi(clock[1])
+	if err != nil || minute < 0 || minute > 59 || len(clock[1]) != 2 {
+		return time.Time{}, false
+	}
+	switch fields[5] {
+	case "am":
+		if hour == 12 {
+			hour = 0
+		}
+	case "pm":
+		if hour != 12 {
+			hour += 12
+		}
+	default:
+		return time.Time{}, false
+	}
+	start := time.Date(year, month, day, hour, minute, 0, 0, time.UTC)
+	if start.Year() != year || start.Month() != month || start.Day() != day {
+		return time.Time{}, false
+	}
+	return start, true
 }
 
 func promiseDueDayStart(needle string) (time.Time, bool) {
