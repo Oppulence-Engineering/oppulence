@@ -151,6 +151,11 @@ const normalizedGraphValue = (value) =>
     .trim()
     .toLowerCase();
 
+// The question turns a hyphen into an underscore before it keeps leftover
+// words. The card still prints the hyphen, so the comparison uses the same
+// spelling on both sides.
+const graphSearchText = (value) => normalizedGraphValue(value).replaceAll("-", "_");
+
 /** A kept, missed, waived, or unconfirmed promise is not still overdue. */
 const graphPromiseCanBeOverdue = (status) => {
   const normalized = normalizedGraphValue(status);
@@ -1304,7 +1309,7 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   if (filters.freeText.length) {
     constrainBy((node) => {
       const haystack = [node.label, node.summary, node.status, node.role, node.source]
-        .map(normalizedGraphValue)
+        .map(graphSearchText)
         .join(" ");
       return filters.freeText.every((token) => haystack.includes(token));
     });

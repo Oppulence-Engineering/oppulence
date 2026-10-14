@@ -2743,6 +2743,37 @@ test("asking for a promise or attendance sentence finds the row that prints it",
   assert.deepEqual(queryRelationshipGraph(graph, "kept").relationshipIds, ["met"]);
 });
 
+test("asking for a hyphenated name finds the row that prints the hyphen", () => {
+  const parsed = parseRelationshipGraphQuery("Nova-3");
+  assert.deepEqual(parsed.filters.freeText, ["nova_3"]);
+  assert.deepEqual(parsed.filters.sources, []);
+
+  const model = parseRelationshipGraphQuery("Model: Nova-3");
+  assert.deepEqual(model.filters.freeText, ["model", "nova_3"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:nova", kind: "relationship", label: "Nova-3" },
+      {
+        id: "evidence:nova",
+        kind: "evidence",
+        label: "Model: Nova-3",
+        status: "Meeting",
+        source: "meeting",
+        relationshipId: "nova",
+      },
+      { id: "relationship:acme", kind: "relationship", label: "Acme-Corp" },
+      { id: "relationship:plain", kind: "relationship", label: "Acme Corp" },
+    ],
+    edges: [],
+  };
+
+  assert.deepEqual(queryRelationshipGraph(graph, "Nova-3").relationshipIds, ["nova"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Model: Nova-3").relationshipIds, ["nova"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Acme-Corp").relationshipIds, ["acme"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Acme Corp").relationshipIds.sort(), ["acme", "plain"]);
+});
+
 test("speaker parsing stays bounded for adversarial whitespace", () => {
   const observation = buildImportedTranscriptObservation({
     relationshipId: "relationship-1",
