@@ -424,6 +424,55 @@ func TestOpenPromisesReportKeepsTheSourcePhraseWhenTheExcerptIsBlank(t *testing.
 	}
 }
 
+func TestOpenPromisesMarkdownUsesThePageClock(t *testing.T) {
+	due := time.Date(2026, 9, 14, 17, 0, 0, 0, time.UTC)
+	occurred := time.Date(2026, 9, 6, 12, 0, 0, 0, time.UTC)
+	midnight := time.Date(2026, 9, 30, 0, 0, 0, 0, time.UTC)
+	afternoon := time.Date(2026, 9, 30, 13, 0, 0, 0, time.UTC)
+	if reportDueDay(due) != "Sep 14, 2026" {
+		t.Fatalf("due day = %q", reportDueDay(due))
+	}
+	if reportSourceObservedLine(occurred) != "Source observed Sep 6, 2026 at 12:00 PM" {
+		t.Fatalf("noon = %q", reportSourceObservedLine(occurred))
+	}
+	if reportSourceObservedLine(midnight) != "Source observed Sep 30, 2026 at 12:00 AM" {
+		t.Fatalf("midnight = %q", reportSourceObservedLine(midnight))
+	}
+	if reportSourceObservedLine(afternoon) != "Source observed Sep 30, 2026 at 1:00 PM" {
+		t.Fatalf("afternoon = %q", reportSourceObservedLine(afternoon))
+	}
+	report := &OpenPromisesReport{
+		GeneratedAt:   time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC),
+		LookbackDays:  180,
+		ThreadsSeen:   412,
+		OutboundCount: 1,
+		ByAccount:     map[string]int{"Acme": 1},
+		Items: []ReportItem{{
+			Account:     "Acme",
+			Direction:   "promised_by_me",
+			Text:        "Migration live by the 14th",
+			State:       RegisterAtRisk,
+			DueAt:       &due,
+			Owner:       "alex@example.com",
+			SourceQuote: "We will have the migration live by the 14th.",
+			SourceURI:   "https://mail.google.com/thread-1",
+			OccurredAt:  &occurred,
+		}},
+	}
+	doc := report.Markdown()
+	for _, want := range []string{
+		"due Sep 14, 2026",
+		"Source observed Sep 6, 2026 at 12:00 PM · https://mail.google.com/thread-1",
+	} {
+		if !strings.Contains(doc, want) {
+			t.Fatalf("markdown missing %q\n%s", want, doc)
+		}
+	}
+	if strings.Contains(doc, "due 2026-09-14") || strings.Contains(doc, "2026-09-06T12:00:00Z") {
+		t.Fatalf("markdown kept the machine stamp:\n%s", doc)
+	}
+}
+
 func mustParseUUID(t *testing.T, raw string) uuid.UUID {
 	t.Helper()
 	id, err := uuid.Parse(raw)

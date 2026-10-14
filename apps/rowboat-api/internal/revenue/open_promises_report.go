@@ -247,7 +247,7 @@ func (r *OpenPromisesReport) Markdown() string {
 		fmt.Fprintf(&b, "%s · state **%s**", owed, registerStateLabel(item.State))
 		switch {
 		case item.DueAt != nil:
-			fmt.Fprintf(&b, " · due %s", item.DueAt.UTC().Format("2006-01-02"))
+			fmt.Fprintf(&b, " · due %s", reportDueDay(item.DueAt.UTC()))
 		case item.DuePhrase != "":
 			fmt.Fprintf(&b, " · due %q as stated", item.DuePhrase)
 		default:
@@ -262,7 +262,7 @@ func (r *OpenPromisesReport) Markdown() string {
 			fmt.Fprintf(&b, "> %s\n\n", strings.ReplaceAll(quote, "\n", "\n> "))
 		}
 		if item.OccurredAt != nil {
-			fmt.Fprintf(&b, "Source observed %s", item.OccurredAt.UTC().Format(time.RFC3339))
+			fmt.Fprintf(&b, "%s", reportSourceObservedLine(item.OccurredAt.UTC()))
 			if item.SourceURI != "" {
 				fmt.Fprintf(&b, " · %s", item.SourceURI)
 			}
@@ -272,6 +272,17 @@ func (r *OpenPromisesReport) Markdown() string {
 	fmt.Fprintf(&b, "\n---\n\nGenerated %s. Every promise above includes the source evidence available at scan time.\n",
 		r.GeneratedAt.Format(time.RFC3339))
 	return b.String()
+}
+
+// reportDueDay is the day the report page prints: "Oct 20, 2026".
+func reportDueDay(at time.Time) string {
+	return at.UTC().Format("Jan 2, 2006")
+}
+
+// reportSourceObservedLine is the citation the report page prints.
+// "Source observed Sep 30, 2026 at 1:00 PM" is that instant in UTC.
+func reportSourceObservedLine(at time.Time) string {
+	return "Source observed " + at.UTC().Format("Jan 2, 2006 at 3:04 PM")
 }
 
 func promiseOwesLabel(direction string) string {

@@ -28493,11 +28493,11 @@ export interface operations {
            *
            *     ### Acme — Migration live by the 14th
            *
-           *     We owe · state **At risk** · due 2026-09-14 · owner alex@example.com
+           *     We owe · state **At risk** · due Sep 14, 2026 · owner alex@example.com
            *
            *     > We will have the migration live by the 14th.
            *
-           *     Source observed 2026-09-06T12:00:00Z · https://mail.google.com/thread-1
+           *     Source observed Sep 6, 2026 at 12:00 PM · https://mail.google.com/thread-1
            *
            *
            *     ---
