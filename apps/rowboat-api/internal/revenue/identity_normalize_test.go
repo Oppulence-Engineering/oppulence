@@ -12462,6 +12462,81 @@ func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
 	assertCompanyQuery("Added by you", "Badge Loose")
 }
 
+func TestRelationshipSearchFindsTheDeltaLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveSnap := func(rel *ent.Relationship, version int, state string, changed []string) {
+		t.Helper()
+		if _, err := f.client.RelationshipStateSnapshot.Create().
+			SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+			SetVersion(version).SetStateJSON(state).
+			SetStateHash(rel.DisplayName + ":" + strconv.Itoa(version)).
+			SetEvaluatedAt(time.Now().UTC()).
+			SetChangedDimensions(changed).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	health := makeCompany("Delta Health")
+	saveSnap(health, 1, `{"health":"unknown"}`, []string{"health"})
+	saveSnap(health, 2, `{"health":"needs_attention"}`, []string{"health"})
+	first := makeCompany("Delta First")
+	saveSnap(first, 1, `{"health":"needs_attention"}`, []string{"health"})
+	reverse := makeCompany("Delta Reverse")
+	saveSnap(reverse, 1, `{"health":"needs_attention"}`, []string{"health"})
+	saveSnap(reverse, 2, `{"health":"unknown"}`, []string{"health"})
+	evidence := makeCompany("Delta Evidence")
+	saveSnap(evidence, 1, `{}`, []string{"evidence"})
+	risk := makeCompany("Delta Risk")
+	saveSnap(risk, 1, `{"risks":[]}`, []string{"risks"})
+	saveSnap(risk, 2, `{"risks":["renewal slip"]}`, []string{"risks"})
+	next := makeCompany("Delta Next")
+	saveSnap(next, 1, `{"nextAction":"Send the packet"}`, []string{"next_action"})
+	stored := makeCompany("Delta Stored")
+	if _, err := f.client.Relationship.UpdateOneID(stored.ID).
+		SetHealth("needs_attention").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Not known → Needs attention", "Delta Health")
+	assertCompanyQuery("Not known → Needs attention.", "Delta Health")
+	assertCompanyQuery("Unknown → Needs attention", "Delta First")
+	assertCompanyQuery("Needs attention → Not known", "Delta Reverse")
+	assertCompanyQuery("Not known → Healthy")
+	assertCompanyQuery("Unknown → Unknown", "Delta Evidence")
+	assertCompanyQuery("None → Renewal slip", "Delta Risk")
+	assertCompanyQuery("Unknown → Send the packet", "Delta Next")
+	assertCompanyQuery("Needs attention", "Delta Stored")
+}
+
 func TestRelationshipSearchFindsContradictionReasons(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

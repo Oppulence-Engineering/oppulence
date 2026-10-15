@@ -858,6 +858,11 @@ func (s *Service) ListRelationshipsFiltered(
 		if version := relationshipSheetVersionLineMatch(needle); version != nil {
 			parts = append(parts, version)
 		}
+		// What changed prints "Not known → Needs attention" from the two
+		// newest snapshots. The words on either side are not that line.
+		if delta := relationshipSheetDeltaLineMatch(needle); delta != nil {
+			parts = append(parts, delta)
+		}
 		if badges := relationshipSheetRecordBadgeMatch(needle, s.now()); badges != nil {
 			parts = append(parts, badges)
 		}
@@ -8218,6 +8223,185 @@ func writeShownReadingNorm(b *sql.Builder, s *sql.Selector, reading string) {
 	b.WriteString(", '_', ' ') END ELSE ")
 	writeNormalizedSQLText(b, s, reading)
 	b.WriteString(" END)")
+}
+
+// relationshipSheetDeltaLineMatch matches one What changed value line.
+// The sheet prints the previous snapshot's value, then the newest, as
+// "Not known → Needs attention". A missing older snapshot is "Unknown".
+func relationshipSheetDeltaLineMatch(needle string) predicate.Relationship {
+	left, right, ok := deltaValueLine(needle)
+	if !ok {
+		return nil
+	}
+	return relationshipHasDeltaValueLine(left, right)
+}
+
+func deltaValueLine(needle string) (string, string, bool) {
+	const arrow = " → "
+	if strings.Count(needle, arrow) != 1 {
+		return "", "", false
+	}
+	parts := strings.Split(needle, arrow)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
+}
+
+type deltaChangeField struct {
+	dimension string
+	key       string
+	array     bool
+}
+
+func deltaChangeFields() []deltaChangeField {
+	return []deltaChangeField{
+		{dimension: "lifecycle", key: "lifecycle"},
+		{dimension: "engagement", key: "engagement"},
+		{dimension: "sentiment", key: "sentiment"},
+		{dimension: "health", key: "health"},
+		{dimension: "summary", key: "summary"},
+		{dimension: "next_action", key: "nextAction"},
+		{dimension: "risks", key: "risks", array: true},
+		{dimension: "milestones", key: "milestones", array: true},
+		{dimension: "evidence"},
+	}
+}
+
+func relationshipHasDeltaValueLine(left, right string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			table := relationshipstatesnapshot.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(table)
+			b.WriteString(" AS cur WHERE cur.")
+			b.WriteString(relationshipstatesnapshot.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND cur.")
+			b.WriteString(relationshipstatesnapshot.FieldVersion)
+			b.WriteString(" = (SELECT MAX(newest.")
+			b.WriteString(relationshipstatesnapshot.FieldVersion)
+			b.WriteString(") FROM ")
+			b.WriteString(table)
+			b.WriteString(" AS newest WHERE newest.")
+			b.WriteString(relationshipstatesnapshot.RelationshipColumn)
+			b.WriteString(" = cur.")
+			b.WriteString(relationshipstatesnapshot.RelationshipColumn)
+			b.WriteString(") AND (")
+			for i, field := range deltaChangeFields() {
+				if i > 0 {
+					b.WriteString(" OR ")
+				}
+				b.WriteByte('(')
+				writeChangedDimensionIncludes(b, s, "cur", field.dimension)
+				b.WriteString(" AND ")
+				writeDeltaSideEqual(b, s, previousSnapshotJSON(), field, left)
+				b.WriteString(" AND ")
+				writeDeltaSideEqual(b, s, "cur."+relationshipstatesnapshot.FieldStateJSON, field, right)
+				b.WriteByte(')')
+			}
+			b.WriteString("))")
+		}))
+	})
+}
+
+func previousSnapshotJSON() string {
+	table := relationshipstatesnapshot.Table
+	return "(SELECT prev." + relationshipstatesnapshot.FieldStateJSON +
+		" FROM " + table + " AS prev WHERE prev." + relationshipstatesnapshot.RelationshipColumn +
+		" = cur." + relationshipstatesnapshot.RelationshipColumn +
+		" AND prev." + relationshipstatesnapshot.FieldVersion +
+		" < cur." + relationshipstatesnapshot.FieldVersion +
+		" ORDER BY prev." + relationshipstatesnapshot.FieldVersion + " DESC LIMIT 1)"
+}
+
+func writeChangedDimensionIncludes(b *sql.Builder, s *sql.Selector, alias, dimension string) {
+	column := alias + "." + relationshipstatesnapshot.FieldChangedDimensions
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(")
+		b.WriteString(column)
+		b.WriteString("::jsonb, '[]'::jsonb)) AS dim(value) WHERE dim.value = ")
+		b.Arg(dimension)
+		b.WriteString(")")
+		return
+	}
+	b.WriteString("EXISTS (SELECT 1 FROM json_each(COALESCE(")
+	b.WriteString(column)
+	b.WriteString(", '[]')) AS dim WHERE dim.value = ")
+	b.Arg(dimension)
+	b.WriteString(")")
+}
+
+func writeDeltaSideEqual(b *sql.Builder, s *sql.Selector, jsonExpr string, field deltaChangeField, needle string) {
+	if field.key == "" {
+		b.WriteString("'unknown' = ")
+		b.Arg(needle)
+		return
+	}
+	writeDeltaShown(b, s, jsonExpr, field)
+	b.WriteString(" = ")
+	b.Arg(needle)
+}
+
+func writeDeltaShown(b *sql.Builder, s *sql.Selector, jsonExpr string, field deltaChangeField) {
+	if field.array {
+		writeDeltaArrayShown(b, s, jsonExpr, field.key)
+		return
+	}
+	writeDeltaScalarShown(b, s, stateJSONText(s, jsonExpr, field.key))
+}
+
+func writeDeltaScalarShown(b *sql.Builder, s *sql.Selector, reading string) {
+	b.WriteString("(CASE WHEN ")
+	b.WriteString(reading)
+	b.WriteString(" = '' THEN 'unknown' ELSE ")
+	writeShownReadingNorm(b, s, reading)
+	b.WriteString(" END)")
+}
+
+func writeDeltaArrayShown(b *sql.Builder, s *sql.Selector, jsonExpr, key string) {
+	length := stateJSONArrayLength(s, jsonExpr, key)
+	kind := stateJSONType(s, jsonExpr, key)
+	b.WriteString("(CASE WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" IS NULL OR ")
+	b.WriteString(kind)
+	b.WriteString(" <> 'array' THEN 'unknown' WHEN ")
+	b.WriteString(length)
+	b.WriteString(" = 0 THEN 'none' WHEN ")
+	b.WriteString(length)
+	b.WriteString(" = 1 THEN ")
+	writeDeltaScalarShown(b, s, stateJSONText(s, jsonExpr, key+"[0]"))
+	b.WriteString(" ELSE '' END)")
+}
+
+func stateJSONText(s *sql.Selector, jsonExpr, path string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce((" + jsonExpr + ")::jsonb #>> " + postgresJSONPath(path) + ", ''))"
+	}
+	return "trim(coalesce(json_extract(" + jsonExpr + ", '$." + path + "'), ''))"
+}
+
+func stateJSONType(s *sql.Selector, jsonExpr, key string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "jsonb_typeof((" + jsonExpr + ")::jsonb->'" + key + "')"
+	}
+	return "json_type(" + jsonExpr + ", '$." + key + "')"
+}
+
+func stateJSONArrayLength(s *sql.Selector, jsonExpr, key string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "jsonb_array_length((" + jsonExpr + ")::jsonb->'" + key + "')"
+	}
+	return "json_array_length(json_extract(" + jsonExpr + ", '$." + key + "'))"
+}
+
+// postgresJSONPath turns "health" into '{health}' and "risks[0]" into '{risks,0}'.
+func postgresJSONPath(path string) string {
+	path = strings.ReplaceAll(path, "[", ",")
+	path = strings.ReplaceAll(path, "]", "")
+	return "'{" + path + "}'"
 }
 
 func writeReadingKept(b *sql.Builder, s *sql.Selector, reading string) {
