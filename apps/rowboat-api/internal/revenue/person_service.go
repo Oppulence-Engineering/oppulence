@@ -89,6 +89,11 @@ func (s *Service) ListPersons(
 			personAliasContains(term),
 			personParticipantRoleMatch(term),
 		}
+		// The Role cell joins a title and the company roles. "VP Engineering ·
+		// Decision maker" is that cell, not every person who has either half.
+		if roleLine := personDirectoryRoleLineMatch(term); roleLine != nil {
+			parts = append(parts, roleLine)
+		}
 		if labels := personVisibleLabelMatch(term); labels != nil {
 			parts = append(parts, labels)
 		}
@@ -945,6 +950,82 @@ func personAliasContains(term string) predicate.Person {
 			b.WriteString(" ESCAPE '!'")
 		}))
 	})
+}
+
+// personDirectoryRoleLineMatch is the Role cell. A title and a company role
+// are joined with a middle dot. Several roles are joined with a comma, in
+// stored-token order, and a role whose label is the title is left off.
+// "Decision maker" on its own stays the role word.
+func personDirectoryRoleLineMatch(term string) predicate.Person {
+	needle := normalizePersonSearch(term)
+	if !strings.Contains(needle, " · ") && !strings.Contains(needle, ", ") {
+		return nil
+	}
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeNormalizedSQLText(b, s, personDirectoryRoleLineExpr(s))
+			b.WriteString(" = ")
+			b.Arg(needle)
+		}))
+	})
+}
+
+func personDirectoryRoleLineExpr(s *sql.Selector) string {
+	title := personDirectoryTitleExpr(s)
+	roles := personDirectoryRolesExpr(s, title)
+	return "CASE WHEN " + title + " <> '' AND " + roles + " <> '' THEN " + title + " || ' · ' || " + roles +
+		" WHEN " + title + " <> '' THEN " + title +
+		" WHEN " + roles + " <> '' THEN " + roles +
+		" ELSE 'Not known' END"
+}
+
+func personDirectoryTitleExpr(s *sql.Selector) string {
+	title := personTrimExpr(s, person.FieldTitle)
+	seniority := personTrimExpr(s, person.FieldSeniority)
+	return "CASE WHEN " + title + " <> '' THEN " + title +
+		" WHEN " + seniority + " = 'ic' THEN 'Individual contributor'" +
+		" WHEN " + seniority + " = 'manager' THEN 'Manager'" +
+		" WHEN " + seniority + " = 'director' THEN 'Director'" +
+		" WHEN " + seniority + " = 'vp' THEN 'VP'" +
+		" WHEN " + seniority + " = 'executive' THEN 'Executive'" +
+		" WHEN " + seniority + " = 'founder' THEN 'Founder'" +
+		" WHEN " + seniority + " <> '' THEN " + seniority +
+		" ELSE '' END"
+}
+
+func personTrimExpr(s *sql.Selector, field string) string {
+	if s.Dialect() == dialect.Postgres {
+		return fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(field))
+	}
+	return fmt.Sprintf("trim(coalesce(%s, ''))", s.C(field))
+}
+
+func personDirectoryRolesExpr(s *sql.Selector, title string) string {
+	roleCol := "trim(member." + relationshipparticipant.FieldRole + ")"
+	if s.Dialect() == dialect.Postgres {
+		roleCol = "btrim(member." + relationshipparticipant.FieldRole + ")"
+	}
+	label := "CASE " + roleCol +
+		" WHEN 'contact' THEN 'Contact'" +
+		" WHEN 'primary_contact' THEN 'Primary contact'" +
+		" WHEN 'champion' THEN 'Champion'" +
+		" WHEN 'decision_maker' THEN 'Decision maker'" +
+		" WHEN 'blocker' THEN 'Blocker'" +
+		" WHEN 'executive_sponsor' THEN 'Executive sponsor'" +
+		" WHEN 'owner' THEN 'Owner'" +
+		" WHEN 'former_contact' THEN 'Former contact'" +
+		" ELSE " + roleCol + " END"
+	where := "member." + relationshipparticipant.PersonColumn + " = " + s.C(person.FieldID) +
+		" AND " + roleCol + " <> ''"
+	from := relationshipparticipant.Table + " AS member WHERE " + where
+	if s.Dialect() == dialect.Postgres {
+		return "coalesce((SELECT string_agg(label, ', ' ORDER BY role) FROM (SELECT role, label FROM (SELECT " +
+			roleCol + " AS role, " + label + " AS label FROM " + from +
+			" GROUP BY " + roleCol + ") AS unique_roles WHERE label <> (" + title + ")) AS shown), '')"
+	}
+	return "coalesce((SELECT group_concat(label, ', ') FROM (SELECT label FROM (SELECT role, label FROM (SELECT " +
+		roleCol + " AS role, " + label + " AS label FROM " + from +
+		" GROUP BY " + roleCol + ") AS unique_roles WHERE label <> (" + title + ")) AS shown ORDER BY role) AS ordered), '')"
 }
 
 // personHasAlias is a person whose row says "Also known as". A list of blank

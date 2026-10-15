@@ -1091,6 +1091,95 @@ func TestPersonSearchFindsTheCompanyRole(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsTheRoleLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	company := func(name string) uuid.UUID {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row.ID
+	}
+	personRow := func(name, title, seniority string) *ent.Person {
+		t.Helper()
+		row := f.client.Person.Create().SetDisplayName(name).SetWorkspace(ws).SetUser(f.user)
+		if title != "" {
+			row.SetTitle(title)
+		}
+		if seniority != "" {
+			row.SetSeniority(seniority)
+		}
+		saved, err := row.Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return saved
+	}
+	link := func(companyID uuid.UUID, who *ent.Person, role string) {
+		t.Helper()
+		if _, err := f.client.RelationshipParticipant.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetRelationshipID(companyID).SetPerson(who).
+			SetDisplayName(who.DisplayName).SetRole(role).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	maker := personRow("Casey Quinn", "VP Engineering", "")
+	link(company("Quill Atelier"), maker, "decision_maker")
+	both := personRow("Indira Cole", "", "")
+	link(company("Harbor One"), both, "champion")
+	link(company("Harbor Two"), both, "decision_maker")
+	titled := personRow("Mina Holt", "Decision maker", "")
+	link(company("Harbor Three"), titled, "decision_maker")
+	link(company("Harbor Four"), titled, "champion")
+	band := personRow("Jules Pike", "", "ic")
+	link(company("Harbor Five"), band, "blocker")
+	other := personRow("Owen Blake", "VP Engineering", "")
+	link(company("Harbor Six"), other, "champion")
+
+	assertPeople := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, 0, len(found.Persons))
+		for _, row := range found.Persons {
+			got = append(got, row.DisplayName)
+		}
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			seen := false
+			for _, gotName := range got {
+				if gotName == name {
+					seen = true
+				}
+			}
+			if !seen {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertPeople("VP Engineering · Decision maker", "Casey Quinn")
+	assertPeople("VP Engineering · Decision maker.", "Casey Quinn")
+	assertPeople("Champion, Decision maker", "Indira Cole")
+	assertPeople("Decision maker · Champion", "Mina Holt")
+	assertPeople("Decision maker · Decision maker, Champion")
+	assertPeople("Individual contributor · Blocker", "Jules Pike")
+	assertPeople("Decision maker", "Casey Quinn", "Indira Cole", "Mina Holt")
+	assertPeople("VP Engineering", "Casey Quinn", "Owen Blake")
+}
+
 func TestPersonSearchFindsTheUnknownRole(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
