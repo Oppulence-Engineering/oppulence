@@ -136,6 +136,19 @@ describe("googleConnectionPresentation", () => {
       label: "Out of date",
       action: "change",
     });
+    expect(googleConnectionPresentation(true, "rebuilding", "ready")).toMatchObject({
+      label: "Syncing",
+      tone: "warn",
+      action: "change",
+    });
+    expect(googleConnectionPresentation(true, "authorizing", "ready")).toMatchObject({
+      label: "Waiting to connect",
+      tone: "warn",
+      action: "change",
+    });
+    expect(
+      googleConnectionPresentation(true, "degraded", "ready", { completeness: "partial" }),
+    ).toMatchObject({ label: "Sync incomplete", tone: "warn" });
   });
 });
 

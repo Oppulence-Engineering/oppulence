@@ -1306,6 +1306,8 @@ export function graphNodeFieldLabel(kind: string, field: GraphField, value: stri
       case "backfilling":
       case "rebuilding":
         return "Syncing";
+      case "authorizing":
+        return "Waiting to connect";
       default:
         break;
     }

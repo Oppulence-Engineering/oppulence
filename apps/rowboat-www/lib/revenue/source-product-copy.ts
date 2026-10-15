@@ -137,6 +137,9 @@ export function sourceConnectionLabel(source: {
   completeness?: string;
 }): string {
   if (source.status === "not_connected") return "Not connected";
+  // The connections card, the company badge, and the graph share this word.
+  // "Authorizing" is the stored token.
+  if (source.status === "authorizing") return "Waiting to connect";
   const stopped = source.status === "reconnect_required" || source.status === "disconnected";
   const syncing =
     source.status === "backfilling" ||

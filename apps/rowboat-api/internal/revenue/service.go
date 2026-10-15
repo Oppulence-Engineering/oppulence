@@ -7208,6 +7208,8 @@ func sourceBadgeWriter(label string) func(*sql.Builder) {
 		return func(b *sql.Builder) { writeSourceStatusEQ(b, "disconnected") }
 	case "syncing":
 		return writeSourceBadgeSyncing
+	case "waiting to connect":
+		return func(b *sql.Builder) { writeSourceStatusEQ(b, "authorizing") }
 	case "sync incomplete":
 		return writeSourceBadgeIncomplete
 	case "out of date":

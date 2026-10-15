@@ -402,6 +402,13 @@ describe("source product copy", () => {
       timeZone: "UTC",
     });
     expect(sourceLastLookedTitle(lookedOn)).toBe(`Last looked ${day}`);
+    expect(sourceConnectionLabel({ source: "google", status: "authorizing" })).toBe(
+      "Waiting to connect",
+    );
+    expect(sourceConnectionLabel({ source: "google", status: "rebuilding" })).toBe("Syncing");
+    expect(
+      sourceConnectionLabel({ source: "google", status: "degraded", completeness: "partial" }),
+    ).toBe("Sync incomplete");
     expect(sourceConnectionLabel({ source: "google", status: "not_connected" })).toBe(
       "Not connected",
     );
