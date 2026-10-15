@@ -17082,7 +17082,19 @@ func writeCurrentAssertionWindow(b *sql.Builder, now time.Time) {
 
 // relationshipSheetStateAnswerMatch matches "What is true now?". The sheet
 // prints "Health: Needs attention" only after that detail is supported.
+// The full answer joins the supported details in order, as
+// "Lifecycle: Prospect · Health: Needs attention".
 func relationshipSheetStateAnswerMatch(needle string, now time.Time) predicate.Relationship {
+	if line, joined := stateAnswerLine(needle, now); joined {
+		if len(line) == 0 {
+			return predicate.Relationship(func(s *sql.Selector) {
+				s.Where(sql.P(func(b *sql.Builder) {
+					b.WriteString("1 = 0")
+				}))
+			})
+		}
+		return relationship.And(line...)
+	}
 	var preds []predicate.Relationship
 	for _, dim := range stateAnswerDimensions() {
 		for _, value := range dim.values {
@@ -17111,6 +17123,50 @@ type stateAnswerDimension struct {
 	dimension string
 	values    []string
 	eq        func(string) predicate.Relationship
+}
+
+func stateAnswerLine(needle string, now time.Time) ([]predicate.Relationship, bool) {
+	if !strings.Contains(needle, " · ") {
+		return nil, false
+	}
+	raw := strings.Split(needle, " · ")
+	dims := stateAnswerDimensions()
+	preds := make([]predicate.Relationship, 0, len(raw))
+	chosen := make([]bool, len(dims))
+	last := -1
+	for _, part := range raw {
+		found := -1
+		var pred predicate.Relationship
+		for i, dim := range dims {
+			for _, value := range dim.values {
+				phrase := normalizePersonSearch(dim.title + ": " + companyRecordSearchLabel(value))
+				if phrase != part {
+					continue
+				}
+				found = i
+				pred = relationship.And(
+					relationshipHasSupportedDimension(dim.dimension, now),
+					dim.eq(value),
+				)
+			}
+		}
+		if found < 0 {
+			return nil, false
+		}
+		if found <= last {
+			return nil, true
+		}
+		last = found
+		chosen[found] = true
+		preds = append(preds, pred)
+	}
+	for i, dim := range dims {
+		if chosen[i] {
+			continue
+		}
+		preds = append(preds, relationship.Not(relationshipHasSupportedDimension(dim.dimension, now)))
+	}
+	return preds, true
 }
 
 func stateAnswerDimensions() []stateAnswerDimension {
