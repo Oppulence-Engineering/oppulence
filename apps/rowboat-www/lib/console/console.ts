@@ -40,10 +40,35 @@ export function consoleUnavailableCopy(): string {
   return "Saving is not available in this workspace yet.";
 }
 
+/** A validator phrase names the field. The page says what to change. */
+function consoleInputCopy(detail: string): string {
+  if (detail.startsWith("name is required for note_template")) return "Enter a name for this template.";
+  if (detail.startsWith("name is required for graph_saved_view")) return "Enter a name for this view.";
+  if (detail.startsWith("template title must contain")) return "Enter a title for this template.";
+  if (detail.startsWith("template body or content exceeds")) return "This template is too large to save.";
+  if (detail.startsWith("noteId must contain")) return "Choose a note before saving.";
+  if (detail.startsWith("relationshipId is required")) {
+    return "Choose a company before saving this view.";
+  }
+  if (detail.startsWith("graph query must be at most")) return "That search is too long to save.";
+  if (detail.startsWith("name must be valid UTF-8") || detail.startsWith("displayName must be valid")) {
+    return "That name is too long to save.";
+  }
+  if (detail.startsWith("payload must contain between") || detail.startsWith("normalized payload exceeds")) {
+    return "This is too large to save.";
+  }
+  return "This could not be saved. Try again.";
+}
+
 /** Stored console details are handler phrases. The page says what happened. */
 export function consoleFailureCopy(detail: string): string | null {
-  switch (detail) {
+  const raw = detail.trim();
+  if (raw.startsWith("invalid console input:")) {
+    return consoleInputCopy(raw.slice("invalid console input:".length).trim());
+  }
+  switch (raw) {
     case "console resource not found":
+    case "resourceId must be a UUID":
       return "This could not be found.";
     case "console resource already exists":
       return "This is already saved.";

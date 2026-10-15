@@ -119,7 +119,8 @@ const ACTIVITY_EVENT_LABELS: Record<string, string> = {
   meeting_attendance_recorded: "Attendance",
   conversation_evidence_compiled: "Conversation reviewed",
   conversation_evidence_corrected: "Conversation corrected",
-  relationship_contradiction_resolved: "Contradiction resolved",
+  conversation_review_decided: "Suggestion decided",
+  relationship_contradiction_resolved: "Detail chosen",
   "crm.activity": "CRM activity",
   mutual_action_plan_response_received: "Plan response",
   oppulence_action: "Action recorded",
@@ -136,6 +137,9 @@ export function sourceConnectionLabel(source: {
   completeness?: string;
 }): string {
   if (source.status === "not_connected") return "Not connected";
+  // The connections card, the company badge, and the graph share this word.
+  // "Authorizing" is the stored token.
+  if (source.status === "authorizing") return "Waiting to connect";
   const stopped = source.status === "reconnect_required" || source.status === "disconnected";
   const syncing =
     source.status === "backfilling" ||
@@ -175,12 +179,25 @@ const SOURCE_LAST_ERRORS: Record<string, string> = {
   "Provider authorization was canceled.": "The connection was canceled.",
   "Provider authorization failed; reconnect is required.":
     "The connection failed. Reconnect to try again.",
+  "Account monitoring stopped early because this workspace reached its research budget for the period.":
+    "Public research stopped because this workspace used its research budget.",
+  "Account monitoring is not running because the subscription does not currently include cloud research.":
+    "Public research is part of the Intelligence plan. This workspace does not include it.",
+  "Account monitoring is not running because cloud research consent has been withdrawn.":
+    "Public research stays off until you allow it.",
+  "Account monitoring is paused for this workspace.":
+    "Public research is paused for this workspace.",
+  "Account monitoring is not running because no research provider is configured.":
+    "Public research is not available in this workspace.",
+  "Account monitoring did not finish its last run.":
+    "Public research did not finish its last check.",
 };
 
 /**
  * A source stores a safe error that still names the worker, the cursor, or
- * the provider. The card says what stopped and what to do. A research
- * sentence that is already plain stays. The stored error stays on the API.
+ * the provider. The card says what stopped and what to do. A public-research
+ * failure uses the same words as the research panel. The stored error stays
+ * on the API.
  */
 export function sourceLastErrorCopy(error: string | null | undefined): string {
   const raw = error?.trim() ?? "";
@@ -333,8 +350,10 @@ export function relationshipDeltaValue(value: unknown): string {
 
 /**
  * A projection with nothing selected stores "No active next action assertion
- * at evaluation time." What changed and the recommendation reason say which
- * field is missing. The stored sentence stays on the record.
+ * at evaluation time." A correction, a HubSpot stage, and a quote-backed
+ * claim store the sentence the model used. What changed and the
+ * recommendation reason say what the person did or where the detail came
+ * from. The stored sentence stays on the record.
  */
 const PROJECTION_GAP_REASONS: Record<string, string> = {
   "next action": "No next step is recorded.",
@@ -347,10 +366,29 @@ const PROJECTION_GAP_REASONS: Record<string, string> = {
   milestone: "No milestone is recorded.",
 };
 
+const RECORDED_CHANGE_REASONS: Record<string, string> = {
+  "User corrected focused conversation evidence.": "You corrected what was said.",
+  "User corrected conversation evidence during focused review.": "You corrected what was said.",
+  "User decided a proposed conversation change.": "You decided a suggested change.",
+  "User selected the current value from a focused contradiction case.": "You chose the current value.",
+  "User confirmed this commitment from the cited meeting transcript.":
+    "You confirmed this promise from the meeting.",
+  "HubSpot company lifecycle stage.": "Taken from HubSpot.",
+};
+
+const CONVERSATION_CLAIM_REASON =
+  /Conversation claim .+?, supported by the exact quote at \d+-\d+ ms\./g;
+
 export function projectionReasonCopy(reason: string): string {
-  return reason.replace(/No active ([a-z][a-z ]*) assertion at evaluation time\./g, (full, key: string) => {
-    return PROJECTION_GAP_REASONS[key] ?? full;
-  });
+  const fromQuote = reason.replace(CONVERSATION_CLAIM_REASON, "Taken from what was said.");
+  const named = Object.entries(RECORDED_CHANGE_REASONS).reduce(
+    (text, [stored, copy]) => text.replaceAll(stored, copy),
+    fromQuote,
+  );
+  return named.replace(
+    /No active ([a-z][a-z ]*) assertion at evaluation time\./g,
+    (full, key: string) => PROJECTION_GAP_REASONS[key] ?? full,
+  );
 }
 
 const HIDDEN_ACTIVITY_KEYS = new Set([
@@ -785,7 +823,7 @@ function activityCaveatLine(value: string): string | null {
     return `${String(n)} of ${String(total)} ${people} had not accepted.`;
   }
   const guardian = /^capture guardian: [a-z0-9_]+ — (.+)$/.exec(text);
-  if (guardian?.[1]) return guardian[1].trim();
+  if (guardian?.[1]) return activityCaptureImpact(guardian[1].trim());
   if (text === "renderer fallback: timed audio evidence was not retained") {
     return "The timed recording was not saved with this transcript.";
   }
@@ -807,6 +845,18 @@ function activityCaveatLine(value: string): string | null {
   if (text.startsWith("mic_voice_processing_silent:")) {
     return "Echo cancellation was silent, so the microphone was recorded without it.";
   }
+  if (text === "Granola supplied meeting notes rather than a timestamped verbatim transcript.") {
+    return "These are notes from Granola, not a word-for-word transcript.";
+  }
+  if (text === "Speaker attribution and wording require focused review before material use.") {
+    return "Check who spoke and the wording before you rely on this.";
+  }
+  if (
+    text ===
+    "Imported from Fireflies; capture consent and audio retention remain governed by the provider."
+  ) {
+    return "Imported from Fireflies. The meeting service still decides consent and how long the recording is kept.";
+  }
   if (text.startsWith("mic_raw_fallback_failed:")) {
     return "The microphone could not be recorded.";
   }
@@ -821,6 +871,37 @@ function activityCaveatLine(value: string): string | null {
     }
   }
   return text;
+}
+
+/**
+ * Capture health stores the recorder's sentence after the kind. The activity
+ * says which side stopped. A sentence that is already plain stays.
+ */
+const CAPTURE_HEALTH_IMPACTS: Record<string, string> = {
+  "The microphone track is advancing but contains no audible signal.":
+    "The microphone is on, but it is silent.",
+  "The microphone track stopped advancing while capture continues.":
+    "The microphone stopped while the meeting was still being recorded.",
+  "Other participants may not be captured.":
+    "The other side of the conversation may not be recorded.",
+  "System audio is advancing but contains no audible signal.":
+    "The other side is on, but it is silent.",
+  "System audio stopped advancing while the microphone continues.":
+    "The other side stopped while your microphone kept recording.",
+  "The recorder stopped reporting progress and evidence may be incomplete.":
+    "The recorder stopped reporting, so this meeting may be incomplete.",
+  "The recorder exited unexpectedly.": "The recorder stopped unexpectedly.",
+  "Capture may stop before the meeting ends.": "Recording may stop before the meeting ends.",
+  "On-device transcription cannot start with the selected model.":
+    "Transcription cannot start with the selected model.",
+  "Live notes are not keeping up, but the durable audio capture continues.":
+    "Live notes are behind. The recording is still going.",
+  "The recording is safe but its transcript is not progressing.":
+    "The recording is saved, but the transcript has stopped.",
+};
+
+function activityCaptureImpact(impact: string): string {
+  return CAPTURE_HEALTH_IMPACTS[impact] ?? impact;
 }
 
 /**
@@ -1055,7 +1136,7 @@ function activityClaimTitle(kind: string): string | null {
     case "milestone":
       return "Milestone";
     case "stakeholder":
-      return "Stakeholder";
+      return "Person";
     case "commitment":
       return "Promise";
     case "lifecycle":

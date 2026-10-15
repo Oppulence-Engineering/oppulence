@@ -6,9 +6,11 @@ import { describe, expect, it } from "vitest";
 import {
   actionHasOriginalEmail,
   executionFailureCopy,
+  governedSourceLine,
   reconciliationErrorCopy,
   reconciliationStatusLabel,
   reviewSupportingQuotes,
+  reviewThreadDay,
   uncertainSendTitle,
 } from "@/components/features/revenue/review-sheet/review-sheet";
 
@@ -35,6 +37,22 @@ describe("ReviewSheet", () => {
     expect(reconciliationErrorCopy("execution idempotency key is missing")).toBe(
       "This send has no receipt to check.",
     );
+    expect(
+      reconciliationErrorCopy("revenue: Gmail reconciliation idempotency key is required"),
+    ).toBe("This send has no receipt to check.");
+    expect(reconciliationErrorCopy("action is assigned to another provider credential")).toBe(
+      "Someone else is set to send this, so this workspace cannot confirm it.",
+    );
+    expect(reconciliationErrorCopy("execution backend does not support provider reconciliation")).toBe(
+      "This channel cannot confirm whether the send went out.",
+    );
+    expect(reconciliationErrorCopy("provider reconciliation reported a match without a receipt")).toBe(
+      "The provider matched this send but did not return a receipt.",
+    );
+    expect(reconciliationErrorCopy("revenue: load google connection: not singular")).toBe(
+      "The check could not confirm this send.",
+    );
+    expect(reconciliationErrorCopy("The mailbox is busy.")).toBe("The mailbox is busy.");
     expect(source).toContain("reconciliationStatusLabel(action.reconciliationStatus)");
     expect(source).not.toContain("{action.reconciliationStatus");
   });
@@ -76,6 +94,8 @@ describe("ReviewSheet", () => {
     expect(source).toContain("<AlertTitle>Dismissed</AlertTitle>");
     expect(source).toContain("setActionError(message)");
     expect(source).toContain('errMessage(e, "Could not load the original email.")');
+    expect(source).toContain("checkoutFailureCopy(e)");
+    expect(source).not.toContain('errMessage(e, "Could not start checkout.")');
     expect(actionHasOriginalEmail({ evidence: [{ source: "gmail" }] })).toBe(true);
     expect(actionHasOriginalEmail({ evidence: [{ source: " Gmail " }] })).toBe(true);
     expect(actionHasOriginalEmail({ evidence: [{ source: "meeting" }] })).toBe(false);
@@ -87,6 +107,22 @@ describe("ReviewSheet", () => {
     ).toEqual(["I will send the quay rank."]);
     expect(source).toContain("actionHasOriginalEmail(action)");
     expect(source).toContain("reviewSupportingQuotes(action)");
+    const threadDay = reviewThreadDay("2026-03-14T12:00:00Z");
+    expect(threadDay).toMatch(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}$/);
+    expect(reviewThreadDay("not-a-date")).toBe("");
+    expect(
+      governedSourceLine({
+        evidence: [{ occurredAt: "2026-03-14T12:00:00Z" }],
+        recipientEmail: "buyer@acme.com",
+      }),
+    ).toBe(`Source: thread from ${threadDay} · buyer@acme.com`);
+    expect(governedSourceLine({ evidence: [], reason: "Added by you" })).toBe(
+      "Source: Added by you",
+    );
+    expect(governedSourceLine({ evidence: [{ occurredAt: "nope" }] })).toBeUndefined();
+    expect(source).toContain("governedSourceLine(action)");
+    expect(source).toContain('format(parsed, "MMM d")');
+    expect(source).not.toContain("toLocaleDateString");
     expect(source).toContain("Supporting words");
     expect(source).toContain("The original email is not available.");
     expect(source).not.toContain("(The original email body is not available.)");

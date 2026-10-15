@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -834,6 +835,8 @@ func (s *Service) ListRelationshipsFiltered(
 			relationshipNormalizedContains(value),
 			relationshipCategoryContains(value),
 			relationshipEnrichmentContains(value),
+			relationshipListItemContains(relationship.FieldRisks, value),
+			relationshipListItemContains(relationship.FieldMilestones, value),
 		}
 		if labels := relationshipLinkedInLabelMatch(value); labels != nil {
 			parts = append(parts, labels)
@@ -847,14 +850,28 @@ func (s *Service) ListRelationshipsFiltered(
 		if columns := relationshipDirectoryColumnMatch(value, s.now()); columns != nil {
 			parts = append(parts, columns)
 		}
-		if window, ok := visibleActivityWindow(value, time.Now().UTC()); ok {
-			parts = append(parts, relationship.And(
-				relationship.LastTouchAtNotNil(),
-				relationship.LastTouchAtGT(window.after),
-				relationship.LastTouchAtLTE(window.until),
-			))
-		}
 		needle := normalizePersonSearch(value)
+		if window, ok := visibleActivityWindow(needle, time.Now().UTC()); ok {
+			parts = append(parts, relationshipPrintedTimeMatch(window))
+		}
+		// The change row prints "v1 · Sep 6, 2026". The day alone already
+		// matches. The version stays on that row.
+		if version := relationshipSheetVersionLineMatch(needle); version != nil {
+			parts = append(parts, version)
+		}
+		// What changed prints "Not known → Needs attention" from the two
+		// newest snapshots. The words on either side are not that line.
+		if delta := relationshipSheetDeltaLineMatch(needle); delta != nil {
+			parts = append(parts, delta)
+		}
+		// The history row joins every field that moved: "Health, Lifecycle".
+		if changed := relationshipSheetChangeListMatch(needle); changed != nil {
+			parts = append(parts, changed)
+		}
+		// The categories cell joins every tag in stored order: "ledger, atelier".
+		if categories := relationshipSheetCategoryLineMatch(needle); categories != nil {
+			parts = append(parts, categories)
+		}
 		if badges := relationshipSheetRecordBadgeMatch(needle, s.now()); badges != nil {
 			parts = append(parts, badges)
 		}
@@ -935,7 +952,11 @@ func (s *Service) ListRelationshipsFiltered(
 		if labelPhraseMatches("show the next companies before saving.", needle) {
 			parts = append(parts, relationshipCompaniesSitPastTheDirectoryPage())
 		}
-		if labelPhraseMatches("no activity", needle) {
+		// "No activity" is the directory row. Activity history says
+		// "No activity recorded for this company yet." That longer sentence
+		// is an empty observation list, so it does not also mean a blank
+		// last touch.
+		if labelPhraseMatches("no activity", needle) && !labelPhraseMatches("no activity recorded for this company yet.", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
 		if labelPhraseMatches("no description yet", needle) {
@@ -982,6 +1003,11 @@ func (s *Service) ListRelationshipsFiltered(
 		}
 		if access := relationshipSheetMailAccessMatch(u.ID, s.now(), needle); access != nil {
 			parts = append(parts, access)
+		}
+		// The mail row prints "Aug 30, 2026 · Your mailbox". The reason alone
+		// would keep every mailbox. The time has to be that same row.
+		if timed := relationshipSheetMailTimelineMatch(u.ID, s.now(), needle); timed != nil {
+			parts = append(parts, timed)
 		}
 
 		if linked := relationshipSheetGmailLinkedMatch(needle); linked != nil {
@@ -1033,8 +1059,14 @@ func (s *Service) ListRelationshipsFiltered(
 		if state := relationshipSheetStateAnswerMatch(needle, searchedAt); state != nil {
 			parts = append(parts, state)
 		}
-		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil {
+		// "2 open promises" and "Lifecycle: Prospect · Open promise: …" are the
+		// sentence on What is true now. The shorter promise words stay on the
+		// highlight that already uses them.
+		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil && !stateAnswerOwns(needle, searchedAt) && !draftedPromiseOwns(needle) {
 			parts = append(parts, truth)
+		}
+		if drafted := relationshipSheetDraftedPromiseMatch(needle, searchedAt); drafted != nil {
+			parts = append(parts, drafted)
 		}
 		if badges := relationshipSheetPromiseBadgeMatch(needle, searchedAt); badges != nil {
 			parts = append(parts, badges)
@@ -1042,6 +1074,9 @@ func (s *Service) ListRelationshipsFiltered(
 
 		if due := relationshipSheetPromiseDueMatch(needle); due != nil {
 			parts = append(parts, due)
+		}
+		if observed := relationshipSheetSourceObservedMatch(needle); observed != nil {
+			parts = append(parts, observed)
 		}
 
 		if overflow := relationshipSheetPromiseOverflowMatch(needle); overflow != nil {
@@ -1053,13 +1088,114 @@ func (s *Service) ListRelationshipsFiltered(
 		if people := relationshipSheetPeopleMatch(needle); people != nil {
 			parts = append(parts, people)
 		}
-		// "Nothing recorded yet" and "None recorded." contain "recorded",
-		// and the calendar sentence contains "calendar". Those words are
-		// also activity headings. The empty sentence is the company that
-		// prints it. "You chose the value from Calendar." is the closed
+		// "Nothing recorded yet", "None recorded.", and the people, risks,
+		// milestones, and activity empty lines contain "recorded". The
+		// calendar sentence contains "calendar". Those words are also
+		// activity headings. The empty sentence is the company that prints
+		// it. "You chose the value from Calendar." is the closed
 		// contradiction, not every company that has a calendar event.
 		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) && !contradictionSentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
+		}
+		// One detail joins every source that supports it: "Google · Sep 6, 2026; HubSpot · Aug 16, 2026".
+		if trail := relationshipSheetEvidenceTrailMatch(needle); trail != nil {
+			parts = append(parts, trail)
+		}
+		if row := relationshipSheetActivityRowMatch(needle); row != nil {
+			parts = append(parts, row)
+		}
+		if recorded := relationshipSheetActivityRecordMatch(needle); recorded != nil {
+			parts = append(parts, recorded)
+		}
+		if story := relationshipSheetActivityStoryMatch(needle); story != nil {
+			parts = append(parts, story)
+		}
+		if plan := relationshipSheetActivityPlanReplyMatch(needle); plan != nil {
+			parts = append(parts, plan)
+		}
+		if review := relationshipSheetActivityReviewMatch(needle); review != nil {
+			parts = append(parts, review)
+		}
+		if caveat := relationshipSheetActivityCaveatMatch(needle); caveat != nil {
+			parts = append(parts, caveat)
+		}
+		if invite := relationshipSheetActivityInviteMatch(needle); invite != nil {
+			parts = append(parts, invite)
+		}
+		if guest := relationshipSheetActivityGuestMatch(needle); guest != nil {
+			parts = append(parts, guest)
+		}
+		if place := relationshipSheetActivityPlaceMatch(needle); place != nil {
+			parts = append(parts, place)
+		}
+		if seen := relationshipSheetActivityVisibilityMatch(needle); seen != nil {
+			parts = append(parts, seen)
+		}
+		if snapshot := relationshipSheetActivitySnapshotMatch(needle); snapshot != nil {
+			parts = append(parts, snapshot)
+		}
+		if claim := relationshipSheetActivityClaimMatch(needle); claim != nil {
+			parts = append(parts, claim)
+		}
+		if followUp := relationshipSheetActivityFollowUpMatch(needle); followUp != nil {
+			parts = append(parts, followUp)
+		}
+		if recoveryLine := relationshipSheetActivityRecoveryMatch(needle); recoveryLine != nil {
+			parts = append(parts, recoveryLine)
+		}
+		if contradictionLine := relationshipSheetActivityContradictionMatch(needle); contradictionLine != nil {
+			parts = append(parts, contradictionLine)
+		}
+		if freshness := relationshipSheetGraphFreshnessMatch(needle, searchedAt); freshness != nil {
+			parts = append(parts, freshness)
+		}
+		if recoveryStatus := relationshipSheetRecoveryStatusMatch(needle); recoveryStatus != nil {
+			parts = append(parts, recoveryStatus)
+		}
+		if uncertain := relationshipSheetUncertainSendMatch(needle); uncertain != nil {
+			parts = append(parts, uncertain)
+		}
+		if execution := relationshipSheetGraphExecutionMatch(needle); execution != nil {
+			parts = append(parts, execution)
+		}
+		if failure := relationshipSheetSendFailureMatch(needle); failure != nil {
+			parts = append(parts, failure)
+		}
+		if dismissed := relationshipSheetDismissReasonMatch(needle); dismissed != nil {
+			parts = append(parts, dismissed)
+		}
+		if check := relationshipSheetReconciliationCheckMatch(needle); check != nil {
+			parts = append(parts, check)
+		}
+		if wake := relationshipSheetSnoozeWakeMatch(needle, searchedAt); wake != nil {
+			parts = append(parts, wake)
+		}
+		if badge := relationshipSheetSourceBadgeMatch(needle); badge != nil {
+			parts = append(parts, badge)
+		}
+		if sourceError := relationshipSheetSourceErrorMatch(needle); sourceError != nil {
+			parts = append(parts, sourceError)
+		}
+		if lag := relationshipSheetSourceLagMatch(needle, searchedAt); lag != nil {
+			parts = append(parts, lag)
+		}
+		if looked := relationshipSheetSourceLookedMatch(needle, searchedAt); looked != nil {
+			parts = append(parts, looked)
+		}
+		if history := relationshipSheetSourceHistoryMatch(needle); history != nil {
+			parts = append(parts, history)
+		}
+		if line := relationshipSheetSourceStatusLineMatch(needle, searchedAt); line != nil {
+			parts = append(parts, line)
+		}
+		if reconnect := relationshipSheetSourceReconnectCopyMatch(needle); reconnect != nil {
+			parts = append(parts, reconnect)
+		}
+		if copy := relationshipSheetSourceCopyMatch(needle); copy != nil {
+			parts = append(parts, copy)
+		}
+		if missing := relationshipSheetSourceMissingMatch(needle); missing != nil {
+			parts = append(parts, missing)
 		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
@@ -1160,18 +1296,32 @@ func (s *Service) ListRelationshipsFiltered(
 		if mailDirection := relationshipSheetActivityMailDirectionMatch(needle); mailDirection != nil {
 			parts = append(parts, mailDirection)
 		}
+		// "Meeting follow-up. Send the harbor note" is one open action. The
+		// action name alone stays on every open action of that type.
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
-			parts = append(parts, actionLabel)
+			if _, _, line := actionAnswerLine(needle); !line {
+				parts = append(parts, actionLabel)
+			}
+		}
+		if answered := relationshipSheetActionAnswerMatch(needle); answered != nil {
+			parts = append(parts, answered)
 		}
 		if badges := relationshipSheetRecommendationBadgeMatch(needle); badges != nil {
 			parts = append(parts, badges)
 		}
 
+		// "Added by you vs HubSpot" is the disagreement badge. The same words
+		// are also an activity heading and a recommendation badge.
 		if detector := relationshipSheetDetectorMatch(needle); detector != nil {
-			parts = append(parts, detector)
+			if _, line := contradictionSourceLine(needle); !line {
+				parts = append(parts, detector)
+			}
 		}
 		parts = append(parts, relationship.HasCommitmentsWith(commitment.TextContainsFold(value)))
-		if text := promiseLineText(needle); text != "" {
+		// The exact promise sentence already names that one promise. A second
+		// promise on the same company prints a count, so the text alone is a
+		// different line. The drafted follow-up keeps the text search.
+		if text := promiseLineText(needle); text != "" && !stateAnswerOwns(needle, searchedAt) && !draftedPromiseOwns(needle) {
 			parts = append(parts, relationship.HasCommitmentsWith(commitment.And(
 				visibleTruthCommitment(),
 				commitment.TextContainsFold(text),
@@ -1215,6 +1365,9 @@ func (s *Service) ListRelationshipsFiltered(
 		}
 		if quiet := relationshipSheetQuietMatch(needle, searchedAt); quiet != nil {
 			parts = append(parts, quiet)
+		}
+		if reported := relationshipSheetReportedAtMatch(needle, searchedAt); reported != nil {
+			parts = append(parts, reported)
 		}
 		if risk := relationshipSheetRiskMatch(needle); risk != nil {
 			parts = append(parts, risk)
@@ -1291,6 +1444,26 @@ func (s *Service) ListRelationshipsFiltered(
 		if suggestion := relationshipSheetSuggestionMatch(needle); suggestion != nil {
 			parts = append(parts, suggestion)
 		}
+		// The review section says this when a card is on the newest page.
+		// An empty page with older conversations says a different sentence.
+		if intro := relationshipSheetReviewIntroMatch(needle); intro != nil {
+			parts = append(parts, intro)
+		}
+		// A renewal suggestion with no usable summary says this. A real
+		// summary stays the detail under "Up for renewal".
+		if renewal := relationshipSheetRenewalFallbackMatch(needle); renewal != nil {
+			parts = append(parts, renewal)
+		}
+		// A proposed review card says "A suggested promise is waiting." The
+		// stored label is still "Review proposed promise".
+		if suggested := relationshipSheetSuggestedReviewMatch(needle); suggested != nil {
+			parts = append(parts, suggested)
+		}
+		// The same card says why the suggestion is still waiting. Those
+		// sentences are the review caveats, not the capture notes.
+		if reviewCaveat := relationshipSheetReviewCardCaveatMatch(needle); reviewCaveat != nil {
+			parts = append(parts, reviewCaveat)
+		}
 		if uncertain := relationshipSheetUncertainClaimMatch(needle); uncertain != nil {
 			parts = append(parts, uncertain)
 		}
@@ -1320,7 +1493,12 @@ func (s *Service) ListRelationshipsFiltered(
 			))
 		}
 		if confirmed := relationshipSheetConfirmedMeetingMatch(needle); confirmed != nil {
-			parts = append(parts, confirmed)
+			if _, _, line := actionAnswerLine(needle); !line {
+				parts = append(parts, confirmed)
+			}
+		}
+		if printed := relationshipSheetPrintedReasonMatch(needle); printed != nil {
+			parts = append(parts, printed)
 		}
 		parts = append(parts, relationship.HasActionsWith(revenueaction.ReasonContainsFold(value)))
 		q.Where(relationship.Or(parts...))
@@ -1497,6 +1675,34 @@ func relationshipHasAnotherSavedViewPage(userID uuid.UUID) predicate.Relationshi
 // relationshipNormalizedContains matches the words a teammate sees. A domain
 // stored as dogfood-label.example is shown as "Dogfood Label", and a next
 // action stored with a hyphen still has to match the phrase on the row.
+// relationshipListItemContains matches one line of a JSON list. The company
+// sheet prints each risk and each milestone as its own line. Those lists are
+// not text columns, so the line was invisible to search.
+func relationshipListItemContains(field, term string) predicate.Relationship {
+	needle := "%" + escapePersonSearchLike(normalizePersonSearch(term)) + "%"
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(field)
+			like := "replace(replace(replace(lower(coalesce(item.value, '')), '-', ' '), '_', ' '), '.', ' ') LIKE "
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf(
+					"EXISTS (SELECT 1 FROM jsonb_array_elements_text(coalesce(%s, '[]'::jsonb)) AS item(value) WHERE %s",
+					column, like,
+				))
+				b.Arg(needle)
+				b.WriteString(" ESCAPE '!')")
+				return
+			}
+			b.WriteString(fmt.Sprintf(
+				"EXISTS (SELECT 1 FROM json_each(coalesce(%s, '[]')) AS item WHERE %s",
+				column, like,
+			))
+			b.Arg(needle)
+			b.WriteString(" ESCAPE '!')")
+		}))
+	})
+}
+
 func relationshipNormalizedContains(term string) predicate.Relationship {
 	needle := "%" + escapePersonSearchLike(normalizePersonSearch(term)) + "%"
 	return predicate.Relationship(func(s *sql.Selector) {
@@ -1517,6 +1723,43 @@ var relationshipSearchColumns = []string{
 	relationship.FieldNextAction,
 	relationship.FieldSummary,
 	relationship.FieldCompanyDescription,
+}
+
+// relationshipSheetCategoryLineMatch matches the categories cell. The sheet
+// joins every saved tag in stored order, as "ledger, atelier". One tag stays
+// on the search that already reads the list.
+func relationshipSheetCategoryLineMatch(needle string) predicate.Relationship {
+	if !strings.Contains(needle, ", ") {
+		return nil
+	}
+	return relationshipHasCategoryLine(needle)
+}
+
+func relationshipHasCategoryLine(needle string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeCategoryLine(b, s)
+			b.WriteString(" = ")
+			b.Arg(needle)
+		}))
+	})
+}
+
+func writeCategoryLine(b *sql.Builder, s *sql.Selector) {
+	column := s.C(relationship.FieldCompanyCategories)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("coalesce((SELECT string_agg(norm, ', ' ORDER BY ord) FROM (SELECT ")
+		writeNormalizedSQLText(b, s, "btrim(item.value)")
+		b.WriteString(" AS norm, item.ord FROM jsonb_array_elements_text(coalesce(")
+		b.WriteString(column)
+		b.WriteString(", '[]'::jsonb)) WITH ORDINALITY AS item(value, ord) WHERE btrim(item.value) <> '') AS mapped), '')")
+		return
+	}
+	b.WriteString("coalesce((SELECT group_concat(norm, ', ') FROM (SELECT norm, ord FROM (SELECT ")
+	writeNormalizedSQLText(b, s, "trim(item.value)")
+	b.WriteString(" AS norm, CAST(item.key AS INTEGER) AS ord FROM json_each(coalesce(")
+	b.WriteString(column)
+	b.WriteString(", '[]')) AS item WHERE trim(item.value) <> '') AS mapped ORDER BY ord) AS ordered), '')")
 }
 
 // relationshipCategoryContains matches the category badge on the directory.
@@ -2027,9 +2270,9 @@ func relationshipShowsMissingNextStep() predicate.Relationship {
 }
 
 // relationshipSheetSourceDegradationMatch matches the attention sentence for a
-// connector that is incomplete, stale, rebuilding, or missing a permission.
-// The joined sentence is exact: "Slack evidence…" stays off a company whose
-// warning actually says "Google and Slack evidence…".
+// connector that stopped reading. The queue says "HubSpot needs to be read
+// again or reconnected." The joined sentence is exact: "Slack needs…" stays
+// off a company whose warning says "Google and Slack need…".
 func relationshipSheetSourceDegradationMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	if sheetPhraseMatches("source needs reconnecting", needle) {
@@ -2049,7 +2292,7 @@ func relationshipSheetSourceDegradationMatch(needle string) predicate.Relationsh
 			}
 		}
 		warnings = append(warnings, sourceWarning{
-			phrase: normalizePersonSearch(sourceDegradationExplanation(sources)),
+			phrase: normalizePersonSearch(attentionSourceWarningSentence(sources)),
 			pred:   relationshipDegradedCanonicalSet(sources),
 		})
 	}
@@ -2078,11 +2321,40 @@ func relationshipSheetSourceDegradationMatch(needle string) predicate.Relationsh
 	}
 }
 
+// attentionSourceWarningSentence is the line the attention queue prints. The
+// stored explanation still lists the internal states. The queue says to read
+// the source again.
+func attentionSourceWarningSentence(sources []string) string {
+	labels := make([]string, 0, len(sources))
+	for _, source := range sources {
+		labels = append(labels, attentionSourceLabel(source))
+	}
+	who := joinAttentionLabels(labels)
+	if who == "Source" {
+		who = "A source"
+	}
+	verb := "needs"
+	if strings.Contains(who, " and ") || strings.Contains(who, ",") {
+		verb = "need"
+	}
+	return who + " " + verb + " to be read again or reconnected."
+}
+
+// departedQuietSentence is the attention-queue line for a contact who left.
+// The queue drops the stored semicolon and says how long the silence has lasted.
+var departedQuietSentence = regexp.MustCompile(` left, so mail to that address is no longer delivered it has been quiet for (\d+) (day|days) because nobody here can reply`)
+
 // relationshipSheetQuietMatch matches the quiet-account sentence. The day count
 // and the stage are part of the sentence, so "Prospects … within 30 days" stays
 // off an active customer, and a company under the stage's usual silence does
 // not match. A departed contact prints a different sentence.
 func relationshipSheetQuietMatch(needle string, now time.Time) predicate.Relationship {
+	if days, ok := departedQuietDays(needle); ok {
+		return relationship.And(
+			relationshipShowsDepartedQuietForDays(now, days),
+			relationshipDepartedSentenceMatches(needle, days),
+		)
+	}
 	if days, cohort, usual, ok := parseQuietSentence(needle); ok {
 		for _, lifecycle := range quietSearchLifecycles() {
 			if normalizePersonSearch(quietAccountCohort(lifecycle)) != cohort {
@@ -2117,7 +2389,7 @@ func relationshipSheetQuietMatch(needle string, now time.Time) predicate.Relatio
 		}
 	}
 	if sheetPhraseMatches("mail to that address is no longer delivered", needle) ||
-		sheetPhraseMatches("because there is nobody here to reply", needle) {
+		sheetPhraseMatches("because nobody here can reply", needle) {
 		preds = append(preds, relationshipShowsDepartedQuiet(now))
 	}
 	switch len(preds) {
@@ -2180,6 +2452,290 @@ func relationshipShowsDepartedQuiet(now time.Time) predicate.Relationship {
 		parts = append(parts, relationshipQuietFor(now, lifecycle, 0))
 	}
 	return relationship.And(relationship.Or(parts...), relationshipHasDepartedContact())
+}
+
+// departedQuietDays reads the day count from the queue's departed-contact sentence.
+// "1 day" and "N days" are the printed forms. The stored "Quiet for N days" is not.
+func departedQuietDays(needle string) (int, bool) {
+	match := departedQuietSentence.FindStringSubmatch(needle)
+	if match == nil {
+		return 0, false
+	}
+	days, err := strconv.Atoi(match[1])
+	if err != nil || days < 1 || strconv.Itoa(days) != match[1] {
+		return 0, false
+	}
+	unit := "days"
+	if days == 1 {
+		unit = "day"
+	}
+	if match[2] != unit {
+		return 0, false
+	}
+	return days, true
+}
+
+func relationshipShowsDepartedQuietForDays(now time.Time, days int) predicate.Relationship {
+	parts := make([]predicate.Relationship, 0, len(quietSearchLifecycles()))
+	for _, lifecycle := range quietSearchLifecycles() {
+		parts = append(parts, relationshipQuietFor(now, lifecycle, days))
+	}
+	return relationship.And(relationship.Or(parts...), relationshipHasDepartedContact())
+}
+
+// relationshipDepartedSentenceMatches is the sentence the queue shows for the
+// people who left. Names stay in the order the queue prints them, and two
+// names use "have". A stored "has left" sentence stays unmatched.
+func relationshipDepartedSentenceMatches(needle string, days int) predicate.Relationship {
+	dayWord := "days"
+	if days == 1 {
+		dayWord = "day"
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			raw := fmt.Sprintf(
+				"(SELECT names || ' ' || CASE WHEN %s THEN 'have' ELSE 'has' END || ' left, so mail to that address is no longer delivered. It has been quiet for %d %s because nobody here can reply.' FROM (SELECT %s AS names) AS joined WHERE names IS NOT NULL AND names <> '')",
+				departedPluralSQL(s.Dialect()),
+				days,
+				dayWord,
+				departedContactNamesSQL(s),
+			)
+			b.WriteString("EXISTS (SELECT 1 FROM (SELECT ")
+			writeNormalizedSQLText(b, s, raw)
+			b.WriteString(" AS shown) AS sentence WHERE shown <> '' AND (shown = ")
+			b.Arg(needle)
+			b.WriteString(" OR ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("strpos(")
+				b.Arg(needle)
+				b.WriteString(", shown) > 0")
+			} else {
+				b.WriteString("instr(")
+				b.Arg(needle)
+				b.WriteString(", shown) > 0")
+			}
+			b.WriteString("))")
+		}))
+	})
+}
+
+func departedPluralSQL(name string) string {
+	if name == dialect.Postgres {
+		return `names ~ '(^|[^A-Za-z0-9_])and([^A-Za-z0-9_]|$)'`
+	}
+	return `(names GLOB '*[^A-Za-z0-9_]and[^A-Za-z0-9_]*' OR names GLOB 'and[^A-Za-z0-9_]*' OR names GLOB '*[^A-Za-z0-9_]and' OR names = 'and')`
+}
+
+// relationshipSheetReportedAtMatch matches the outside-event sentence on the
+// attention queue. The queue says where the event was reported. The stored
+// "Source:" line stays out of search.
+func relationshipSheetReportedAtMatch(needle string, now time.Time) predicate.Relationship {
+	if !strings.Contains(needle, " reported at ") {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM (SELECT ")
+			writeNormalizedSQLText(b, s, reportedAtSentenceSQL(s))
+			b.WriteString(" AS shown FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" AS trigger_row WHERE trigger_row.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND trigger_row.")
+			b.WriteString(relationshipassertion.FieldDimension)
+			b.WriteString(" = 'milestone' AND trigger_row.")
+			b.WriteString(relationshipassertion.FieldSourceType)
+			b.WriteString(" = ")
+			b.Arg(researchSourceType)
+			b.WriteString(" AND trigger_row.")
+			b.WriteString(relationshipassertion.FieldStatus)
+			b.WriteString(" IN (")
+			b.Arg(relationshipAssertionStatusAccepted)
+			b.WriteString(", ")
+			b.Arg(relationshipAssertionStatusLegacyActive)
+			b.WriteString(") AND trigger_row.")
+			b.WriteString(relationshipassertion.FieldValidFrom)
+			b.WriteString(" <= ")
+			b.Arg(now.UTC())
+			b.WriteString(" AND (trigger_row.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" IS NULL OR trigger_row.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" > ")
+			b.Arg(now.UTC())
+			b.WriteString(") AND NOT EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" AS newer WHERE newer.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = trigger_row.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" AND newer.")
+			b.WriteString(relationshipassertion.FieldDimension)
+			b.WriteString(" = 'milestone' AND newer.")
+			b.WriteString(relationshipassertion.FieldSourceType)
+			b.WriteString(" = ")
+			b.Arg(researchSourceType)
+			b.WriteString(" AND newer.")
+			b.WriteString(relationshipassertion.FieldStatus)
+			b.WriteString(" IN (")
+			b.Arg(relationshipAssertionStatusAccepted)
+			b.WriteString(", ")
+			b.Arg(relationshipAssertionStatusLegacyActive)
+			b.WriteString(") AND newer.")
+			b.WriteString(relationshipassertion.FieldValidFrom)
+			b.WriteString(" <= ")
+			b.Arg(now.UTC())
+			b.WriteString(" AND (newer.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" IS NULL OR newer.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" > ")
+			b.Arg(now.UTC())
+			b.WriteString(") AND newer.")
+			b.WriteString(relationshipassertion.FieldValidFrom)
+			b.WriteString(" > trigger_row.")
+			b.WriteString(relationshipassertion.FieldValidFrom)
+			b.WriteString(")) AS sentence WHERE shown <> '' AND (shown = ")
+			b.Arg(needle)
+			b.WriteString(" OR ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("strpos(")
+				b.Arg(needle)
+				b.WriteString(", shown) > 0")
+			} else {
+				b.WriteString("instr(")
+				b.Arg(needle)
+				b.WriteString(", shown) > 0")
+			}
+			b.WriteString("))")
+		}))
+	})
+}
+
+func reportedAtSentenceSQL(s *sql.Selector) string {
+	url := reportedAtURLSQL(s.Dialect())
+	names := reportedAtContactNamesSQL(s)
+	event := reportedAtEventSQL(s.Dialect())
+	urlOK := "(cited GLOB 'https://*' OR cited GLOB 'http://*') AND cited NOT GLOB '* *'"
+	if s.Dialect() == dialect.Postgres {
+		urlOK = `cited ~ '^https?://\S+$'`
+	}
+	body := fmt.Sprintf(
+		"%s || CASE WHEN %s IS NOT NULL AND %s <> '' THEN ' Your last contact there was ' || %s || '.' ELSE '' END",
+		event, names, names, names,
+	)
+	return fmt.Sprintf(
+		"(SELECT body || ' Reported at ' || cited || '.' FROM (SELECT %s AS body, %s AS cited) AS parts WHERE body <> '' AND cited <> '' AND %s)",
+		body, url, urlOK,
+	)
+}
+
+func reportedAtEventSQL(name string) string {
+	value := "trim(trigger_row." + relationshipassertion.FieldValue + ")"
+	if name == dialect.Postgres {
+		value = "btrim(trigger_row." + relationshipassertion.FieldValue + ")"
+		return fmt.Sprintf(
+			"CASE WHEN %s = '' THEN '' WHEN right(%s, 1) = '.' THEN %s ELSE %s || '.' END",
+			value, value, value, value,
+		)
+	}
+	return fmt.Sprintf(
+		"CASE WHEN %s = '' THEN '' WHEN substr(%s, -1, 1) = '.' THEN %s ELSE %s || '.' END",
+		value, value, value, value,
+	)
+}
+
+func reportedAtURLSQL(name string) string {
+	column := "trigger_row." + relationshipassertion.FieldCitationsJSON
+	if name == dialect.Postgres {
+		return fmt.Sprintf(
+			"(SELECT btrim(cite->>'url') FROM jsonb_array_elements(CASE WHEN %s IS NULL OR btrim(%s) = '' THEN '[]'::jsonb ELSE %s::jsonb END) AS cite WHERE btrim(coalesce(cite->>'url', '')) <> '' LIMIT 1)",
+			column, column, column,
+		)
+	}
+	return fmt.Sprintf(
+		"(SELECT trim(json_extract(cite.value, '$.url')) FROM json_each(CASE WHEN json_valid(%s) THEN %s ELSE '[]' END) AS cite WHERE trim(coalesce(json_extract(cite.value, '$.url'), '')) <> '' LIMIT 1)",
+		column, column,
+	)
+}
+
+func reportedAtContactNamesSQL(s *sql.Selector) string {
+	part := relationshipparticipant.Table
+	people := person.Table
+	rel := "trigger_row." + relationshipassertion.RelationshipColumn
+	label := fmt.Sprintf(
+		"trim(who.%s) || CASE WHEN coalesce(who.%s, '') <> '' THEN ' (' || who.%s || ')' ELSE '' END",
+		person.FieldDisplayName, person.FieldTitle, person.FieldTitle,
+	)
+	where := fmt.Sprintf(
+		"member.%s = %s AND who.%s = 'active' AND coalesce(who.%s, '') <> 'departed' AND trim(coalesce(who.%s, '')) <> ''",
+		relationshipparticipant.RelationshipColumn,
+		rel,
+		person.FieldStatus,
+		person.FieldEmploymentStatus,
+		person.FieldDisplayName,
+	)
+	if s.Dialect() == dialect.Postgres {
+		label = fmt.Sprintf(
+			"btrim(who.%s) || CASE WHEN coalesce(who.%s, '') <> '' THEN ' (' || who.%s || ')' ELSE '' END",
+			person.FieldDisplayName, person.FieldTitle, person.FieldTitle,
+		)
+		where = fmt.Sprintf(
+			"member.%s = %s AND who.%s = 'active' AND coalesce(who.%s, '') <> 'departed' AND btrim(coalesce(who.%s, '')) <> ''",
+			relationshipparticipant.RelationshipColumn,
+			rel,
+			person.FieldStatus,
+			person.FieldEmploymentStatus,
+			person.FieldDisplayName,
+		)
+		return fmt.Sprintf(
+			`(SELECT string_agg(name, ' and ' ORDER BY name COLLATE "C") FROM (SELECT name FROM (SELECT %s AS name FROM %s AS member JOIN %s AS who ON who.%s = member.%s WHERE %s GROUP BY 1) AS unique_names ORDER BY name COLLATE "C" LIMIT 2) AS capped)`,
+			label, part, people, person.FieldID, relationshipparticipant.PersonColumn, where,
+		)
+	}
+	return fmt.Sprintf(
+		`(SELECT group_concat(name, ' and ') FROM (SELECT name FROM (SELECT name FROM (SELECT %s AS name FROM %s AS member JOIN %s AS who ON who.%s = member.%s WHERE %s) AS labeled GROUP BY name) AS unique_names ORDER BY name LIMIT 2))`,
+		label, part, people, person.FieldID, relationshipparticipant.PersonColumn, where,
+	)
+}
+
+func departedContactNamesSQL(s *sql.Selector) string {
+	relID := s.C(relationship.FieldID)
+	people := person.Table
+	part := relationshipparticipant.Table
+	name := person.FieldDisplayName
+	if s.Dialect() == dialect.Postgres {
+		return fmt.Sprintf(
+			`(SELECT string_agg(name, ' and ' ORDER BY name COLLATE "C") FROM (SELECT who.%s AS name FROM %s AS member JOIN %s AS who ON who.%s = member.%s WHERE member.%s = %s AND who.%s = 'departed' AND who.%s = 'active' AND coalesce(who.%s, '') <> '' GROUP BY who.%s) AS unique_names)`,
+			name,
+			part,
+			people,
+			person.FieldID,
+			relationshipparticipant.PersonColumn,
+			relationshipparticipant.RelationshipColumn,
+			relID,
+			person.FieldEmploymentStatus,
+			person.FieldStatus,
+			name,
+			name,
+		)
+	}
+	return fmt.Sprintf(
+		`(SELECT group_concat(name, ' and ') FROM (SELECT name FROM (SELECT who.%s AS name FROM %s AS member JOIN %s AS who ON who.%s = member.%s WHERE member.%s = %s AND who.%s = 'departed' AND who.%s = 'active' AND coalesce(who.%s, '') <> '' GROUP BY who.%s) AS unique_names ORDER BY name))`,
+		name,
+		part,
+		people,
+		person.FieldID,
+		relationshipparticipant.PersonColumn,
+		relationshipparticipant.RelationshipColumn,
+		relID,
+		person.FieldEmploymentStatus,
+		person.FieldStatus,
+		name,
+		name,
+	)
 }
 
 func relationshipQuietFor(now time.Time, lifecycle string, exactDays int) predicate.Relationship {
@@ -2279,6 +2835,11 @@ func relationshipHasUnknownPerson() predicate.Relationship {
 
 func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
+	// The people row prints "Casey Quinn · Decision maker". The name and the
+	// role are different columns. The line is that pair on one membership.
+	if line := relationshipSheetPersonRoleLineMatch(needle); line != nil {
+		preds = append(preds, line)
+	}
 	if role := relationshipParticipantRoleMatch(needle); role != nil {
 		preds = append(preds, role)
 	}
@@ -2295,17 +2856,43 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	if research, ok := publicResearchDetailCount(needle); ok {
 		preds = append(preds, relationshipHasPublicResearchDetailCount(research))
 	}
-	// Each public-research fact on the people card ends with "N% confidence".
-	if percent, ok := printedConfidencePercent(needle); ok {
-		preds = append(preds, relationship.HasParticipantsWith(
-			relationshipparticipant.HasPersonWith(personPrintsResearchConfidence(percent)),
-		))
+	// The fact line is "Title: Engineer · 80% confidence". The percent alone
+	// still finds every fact at that percent. The whole line stays on the
+	// fact that prints it.
+	if label, value, percent, ok := researchFactLine(needle); ok {
+		preds = append(preds, relationshipHasResearchFactLine(label, value, percent))
+	} else {
+		if percent, ok := printedConfidencePercent(needle); ok {
+			preds = append(preds, relationship.HasParticipantsWith(
+				relationshipparticipant.HasPersonWith(personPrintsResearchConfidence(percent)),
+			))
+		}
+		if seniority := relationshipSheetPersonSeniorityMatch(needle); seniority != nil {
+			preds = append(preds, seniority)
+		}
+		if badge := relationshipSheetResearchBadgeMatch(needle); badge != nil {
+			preds = append(preds, badge)
+		}
+		if value := relationshipSheetResearchValueMatch(needle); value != nil {
+			preds = append(preds, value)
+		}
 	}
 	// The same card links each saved page as "Verify source N".
 	if count, ok := verifySourceMinimum(needle); ok {
 		preds = append(preds, relationship.HasParticipantsWith(
 			relationshipparticipant.HasPersonWith(personPrintsResearchVerifySource(count)),
 		))
+	}
+	// The profile line prints a title, a company, and a place. The title falls
+	// back to the membership title when the person has none.
+	if line := relationshipSheetPersonLineMatch(needle); line != nil {
+		preds = append(preds, line)
+	}
+	// The same fields are one sentence, "Engineer · Austin". A domain stored
+	// as the company name reads as that host. A single field stays on its
+	// own matcher.
+	if profile := relationshipSheetPersonProfileLineMatch(needle); profile != nil {
+		preds = append(preds, profile)
 	}
 	switch len(preds) {
 	case 0:
@@ -2325,6 +2912,445 @@ func relationshipParticipantRoleMatch(needle string) predicate.Relationship {
 	return relationship.HasParticipantsWith(predicate.RelationshipParticipant(func(s *sql.Selector) {
 		s.Where(normalizedSearchLike(s, relationshipparticipant.FieldRole, like))
 	}))
+}
+
+// relationshipSheetPersonRoleLineMatch is the name and role on one people row.
+// The sheet prints the corrected person name, then the membership header, then
+// an email, then "Unknown person". The role token decision_maker reads
+// "Decision maker". A title on the line below is a different sentence.
+func relationshipSheetPersonRoleLineMatch(needle string) predicate.Relationship {
+	name, role, ok := mailTimelineParts(needle)
+	if !ok {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			part := relationshipparticipant.Table
+			people := person.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(part)
+			b.WriteString(" AS member LEFT JOIN ")
+			b.WriteString(people)
+			b.WriteString(" AS who ON who.")
+			b.WriteString(person.FieldID)
+			b.WriteString(" = member.")
+			b.WriteString(relationshipparticipant.PersonColumn)
+			b.WriteString(" WHERE member.")
+			b.WriteString(relationshipparticipant.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			writeNormalizedSQLText(b, s, participantPrintedNameSQL())
+			b.WriteString(" = ")
+			b.Arg(name)
+			b.WriteString(" AND ")
+			writeNormalizedSQLText(b, s, "trim(coalesce(member."+relationshipparticipant.FieldRole+", ''))")
+			b.WriteString(" = ")
+			b.Arg(role)
+			b.WriteString(" AND trim(coalesce(member.")
+			b.WriteString(relationshipparticipant.FieldRole)
+			b.WriteString(", '')) <> '')")
+		}))
+	})
+}
+
+func participantPrintedNameSQL() string {
+	personName := "trim(coalesce(who." + person.FieldDisplayName + ", ''))"
+	header := "trim(coalesce(member." + relationshipparticipant.FieldDisplayName + ", ''))"
+	memberEmail := "trim(coalesce(member." + relationshipparticipant.FieldEmail + ", ''))"
+	primary := "trim(coalesce(who." + person.FieldPrimaryEmail + ", ''))"
+	return "CASE WHEN " + personName + " <> '' THEN " + personName +
+		" WHEN " + header + " <> '' THEN " + header +
+		" WHEN " + memberEmail + " <> '' THEN " + memberEmail +
+		" WHEN " + primary + " <> '' THEN " + primary +
+		" ELSE 'Unknown person' END"
+}
+
+// relationshipSheetPersonSeniorityMatch matches the seniority on a person
+// line. The sheet says "Individual contributor" when the stored band is ic.
+// A title beside that band still shows the words. The letters "ic" are not
+// that line. Any other band is shown as written, with underscores as spaces.
+func relationshipSheetPersonSeniorityMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	return relationship.HasParticipantsWith(
+		relationshipparticipant.HasPersonWith(personPrintsSeniorityLabel(needle)),
+	)
+}
+
+func personPrintsSeniorityLabel(needle string) predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeLabelPhraseMatch(b, s, needle, writePersonSeniorityLabel)
+		}))
+	})
+}
+
+func writePersonSeniorityLabel(b *sql.Builder, s *sql.Selector) {
+	trimmed := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(person.FieldSeniority))
+	if s.Dialect() == dialect.Postgres {
+		trimmed = fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(person.FieldSeniority))
+	}
+	writeSeniorityLabelExpr(b, s, trimmed)
+}
+
+func writeSeniorityLabelExpr(b *sql.Builder, s *sql.Selector, trimmed string) {
+	b.WriteString("CASE WHEN ")
+	b.WriteString(trimmed)
+	b.WriteString(" = ")
+	b.Arg("ic")
+	b.WriteString(" THEN ")
+	b.Arg("individual contributor")
+	b.WriteString(" ELSE ")
+	writeNormalizedSQLText(b, s, trimmed)
+	b.WriteString(" END")
+}
+
+// relationshipSheetPersonLineMatch matches the title, company, and place on
+// a person line. A domain stored as the company name reads as that host.
+// The membership title is the line only when the person has no title.
+// relationshipSheetPersonProfileLineMatch is the profile sentence under a
+// person. The sheet joins the title, the company, the seniority, and the
+// place with a middle dot, and it skips a blank. A company stored as
+// acme.example reads "Acme". The title falls back to the membership title.
+func relationshipSheetPersonProfileLineMatch(needle string) predicate.Relationship {
+	if !strings.Contains(needle, " · ") {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipparticipant.Table)
+			b.WriteString(" AS member LEFT JOIN ")
+			b.WriteString(person.Table)
+			b.WriteString(" AS who ON who.")
+			b.WriteString(person.FieldID)
+			b.WriteString(" = member.")
+			b.WriteString(relationshipparticipant.PersonColumn)
+			b.WriteString(" WHERE member.")
+			b.WriteString(relationshipparticipant.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			writeNormalizedSQLText(b, s, personProfileLineSQL(s))
+			b.WriteString(" = ")
+			b.Arg(needle)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func personProfileLineSQL(s *sql.Selector) string {
+	title := profileTrimSQL(s, "CASE WHEN "+profilePersonTrim(s, person.FieldTitle)+" <> '' THEN "+profilePersonTrim(s, person.FieldTitle)+" ELSE "+profileMemberTrim(s, relationshipparticipant.FieldTitle)+" END")
+	company := profileTrimSQL(s, personProfileCompanySQL(s))
+	seniority := profileTrimSQL(s, personProfileSenioritySQL(s))
+	place := profileTrimSQL(s, profilePersonTrim(s, person.FieldLocation))
+	return profileJoinSQL(title, company, seniority, place)
+}
+
+func profileJoinSQL(title, company, seniority, place string) string {
+	return "(SELECT " +
+		"CASE WHEN title <> '' THEN title ELSE '' END || " +
+		"CASE WHEN company <> '' THEN CASE WHEN title <> '' THEN ' · ' ELSE '' END || company ELSE '' END || " +
+		"CASE WHEN seniority <> '' THEN CASE WHEN title <> '' OR company <> '' THEN ' · ' ELSE '' END || seniority ELSE '' END || " +
+		"CASE WHEN place <> '' THEN CASE WHEN title <> '' OR company <> '' OR seniority <> '' THEN ' · ' ELSE '' END || place ELSE '' END " +
+		"FROM (SELECT " + title + " AS title, " + company + " AS company, " + seniority + " AS seniority, " + place + " AS place) AS profile)"
+}
+
+func personProfileCompanySQL(s *sql.Selector) string {
+	name := profilePersonTrim(s, person.FieldOrgName)
+	domain := profilePersonTrim(s, person.FieldOrgDomain)
+	email := name + " GLOB '*@*.*' AND " + name + " NOT GLOB '* *' AND " + name + " NOT GLOB '*@*@*'"
+	if s.Dialect() == dialect.Postgres {
+		email = name + " ~ '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$'"
+	}
+	return "CASE WHEN " + name + " = '' THEN '' WHEN " + domain + " <> '' AND (lower(" + name + ") = lower(" + domain + ") OR (" + email + ")) THEN " + profileCompanyHostSQL(s, domain) + " ELSE " + name + " END"
+}
+
+func profileCompanyHostSQL(s *sql.Selector, domain string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "split_part(" + domain + ", '.', 1)"
+	}
+	return "CASE WHEN instr(" + domain + ", '.') > 0 THEN substr(" + domain + ", 1, instr(" + domain + ", '.') - 1) ELSE " + domain + " END"
+}
+
+func personProfileSenioritySQL(s *sql.Selector) string {
+	trimmed := profilePersonTrim(s, person.FieldSeniority)
+	return "CASE WHEN " + trimmed + " = 'ic' THEN 'individual contributor' ELSE " + trimmed + " END"
+}
+
+func profilePersonTrim(s *sql.Selector, field string) string {
+	expr := "trim(coalesce(who." + field + ", ''))"
+	if s.Dialect() == dialect.Postgres {
+		expr = "btrim(coalesce(who." + field + ", ''))"
+	}
+	return expr
+}
+
+func profileMemberTrim(s *sql.Selector, field string) string {
+	expr := "trim(coalesce(member." + field + ", ''))"
+	if s.Dialect() == dialect.Postgres {
+		expr = "btrim(coalesce(member." + field + ", ''))"
+	}
+	return expr
+}
+
+func profileTrimSQL(s *sql.Selector, expr string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(" + expr + ")"
+	}
+	return "trim(" + expr + ")"
+}
+
+func relationshipSheetPersonLineMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	like := "%" + escapePersonSearchLike(needle) + "%"
+	return relationship.Or(
+		relationship.HasParticipantsWith(
+			relationshipparticipant.HasPersonWith(predicate.Person(func(s *sql.Selector) {
+				s.Where(sql.Or(
+					normalizedSearchLike(s, person.FieldTitle, like),
+					normalizedSearchLike(s, person.FieldOrgName, like),
+					normalizedSearchLike(s, person.FieldLocation, like),
+				))
+			})),
+		),
+		relationship.HasParticipantsWith(
+			relationshipparticipant.And(
+				predicate.RelationshipParticipant(func(s *sql.Selector) {
+					s.Where(normalizedSearchLike(s, relationshipparticipant.FieldTitle, like))
+				}),
+				relationshipparticipant.Or(
+					relationshipparticipant.Not(relationshipparticipant.HasPerson()),
+					relationshipparticipant.HasPersonWith(personTextMissing(person.FieldTitle)),
+				),
+			),
+		),
+	)
+}
+
+// relationshipSheetResearchValueMatch matches the words after a public-research
+// badge. A seniority of ic reads "Individual contributor". Employment reads
+// "Current" or "Left the company". Any other fact stays as written.
+func relationshipSheetResearchValueMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	like := "%" + escapePersonSearchLike(needle) + "%"
+	return relationship.HasParticipantsWith(
+		relationshipparticipant.HasPersonWith(
+			person.HasAttributesWith(
+				personattribute.SourceTypeEQ("external_research"),
+				personattribute.StatusNEQ("retracted"),
+				predicate.PersonAttribute(func(s *sql.Selector) {
+					s.Where(sql.P(func(b *sql.Builder) {
+						b.WriteString("(")
+						writeResearchFactShown(b, s)
+						b.WriteString(" <> '' AND ")
+						writeResearchFactShown(b, s)
+						b.WriteString(" LIKE ")
+						b.Arg(like)
+						b.WriteString(" ESCAPE '!')")
+					}))
+				}),
+			),
+		),
+	)
+}
+
+func writeResearchFactShown(b *sql.Builder, s *sql.Selector) {
+	dim := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(personattribute.FieldDimension))
+	val := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(personattribute.FieldValue))
+	if s.Dialect() == dialect.Postgres {
+		dim = fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(personattribute.FieldDimension))
+		val = fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(personattribute.FieldValue))
+	}
+	b.WriteString("CASE WHEN ")
+	b.WriteString(dim)
+	b.WriteString(" = ")
+	b.Arg("seniority")
+	b.WriteString(" THEN ")
+	writeSeniorityLabelExpr(b, s, val)
+	b.WriteString(" WHEN ")
+	b.WriteString(dim)
+	b.WriteString(" = ")
+	b.Arg("employment_status")
+	b.WriteString(" THEN ")
+	writeEmploymentLabelExpr(b, s, val)
+	b.WriteString(" ELSE ")
+	writeNormalizedSQLText(b, s, val)
+	b.WriteString(" END")
+}
+
+func writeEmploymentLabelExpr(b *sql.Builder, s *sql.Selector, trimmed string) {
+	b.WriteString("CASE WHEN ")
+	b.WriteString(trimmed)
+	b.WriteString(" = ")
+	b.Arg("active")
+	b.WriteString(" THEN ")
+	b.Arg("current")
+	b.WriteString(" WHEN ")
+	b.WriteString(trimmed)
+	b.WriteString(" = ")
+	b.Arg("departed")
+	b.WriteString(" THEN ")
+	b.Arg("left the company")
+	b.WriteString(" WHEN ")
+	b.WriteString(trimmed)
+	b.WriteString(" = ")
+	b.Arg("unknown")
+	b.WriteString(" THEN ")
+	b.Arg("not known")
+	b.WriteString(" ELSE ")
+	writeNormalizedSQLText(b, s, trimmed)
+	b.WriteString(" END")
+}
+
+// writeLabelPhraseMatch is the company-search form of labelPhraseMatches.
+// The whole label has to be the query, or sit inside a longer question.
+// A shorter label, such as "VP", does not match from a few of its letters.
+func writeLabelPhraseMatch(b *sql.Builder, s *sql.Selector, needle string, writePhrase func(*sql.Builder, *sql.Selector)) {
+	b.WriteString("(")
+	writePhrase(b, s)
+	b.WriteString(" = ")
+	b.Arg(needle)
+	b.WriteString(" OR (length(")
+	writePhrase(b, s)
+	b.WriteString(") >= 8 AND ")
+	writeNeedleContainsSentence(b, s, needle, writePhrase)
+	b.WriteString("))")
+}
+
+// researchBadgeLabels are the words on a public-research fact. The sheet
+// renames a few tokens. "alias" is "Also known as", not "Alias". "Name" and
+// "Company" already mean the company itself, so those two badges stay out.
+// "Location" sits inside the meeting sentence "Location: …".
+var researchBadgeLabels = map[string]string{
+	"alias":             "Also known as",
+	"org_domain":        "Company domain",
+	"timezone":          "Time zone",
+	"title":             "Title",
+	"phone":             "Phone",
+	"locale":            "Locale",
+	"seniority":         "Seniority",
+	"linkedin_url":      "LinkedIn",
+	"department":        "Department",
+	"employment_status": "Employment",
+	"handle":            "Handle",
+	"bio":               "Bio",
+	"responsibilities":  "Responsibilities",
+	"work_history":      "Work history",
+	"education":         "Education",
+	"expertise":         "Expertise",
+	"recent_activity":   "Recent activity",
+}
+
+func relationshipSheetResearchBadgeMatch(needle string) predicate.Relationship {
+	dims := make([]string, 0, len(researchBadgeLabels))
+	for dim, label := range researchBadgeLabels {
+		if labelPhraseMatches(label, needle) {
+			dims = append(dims, dim)
+		}
+	}
+	if len(dims) == 0 {
+		return nil
+	}
+	return relationship.HasParticipantsWith(
+		relationshipparticipant.HasPersonWith(
+			person.HasAttributesWith(
+				personattribute.DimensionIn(dims...),
+				personattribute.SourceTypeEQ("external_research"),
+				personattribute.StatusNEQ("retracted"),
+			),
+		),
+	)
+}
+
+// researchFactLine is "Title: Engineer · 80% confidence" on a public-research
+// fact. The badge, the value, and the rounded percent belong to that fact.
+func researchFactLine(needle string) (label, value string, percent int, ok bool) {
+	const marker = "% confidence"
+	if !strings.HasSuffix(needle, marker) {
+		return "", "", 0, false
+	}
+	split := strings.LastIndex(needle, " · ")
+	if split <= 0 {
+		return "", "", 0, false
+	}
+	percentText := needle[split+len(" · "):]
+	if !strings.HasSuffix(percentText, marker) {
+		return "", "", 0, false
+	}
+	raw := strings.TrimSuffix(percentText, marker)
+	parsed, err := strconv.Atoi(raw)
+	if err != nil || parsed < 0 || parsed > 100 || strconv.Itoa(parsed) != raw {
+		return "", "", 0, false
+	}
+	body := needle[:split]
+	colon := strings.Index(body, ": ")
+	if colon <= 0 || colon+2 >= len(body) {
+		return "", "", 0, false
+	}
+	return body[:colon], body[colon+2:], parsed, true
+}
+
+func relationshipHasResearchFactLine(label, value string, percent int) predicate.Relationship {
+	return relationship.HasParticipantsWith(
+		relationshipparticipant.HasPersonWith(
+			person.HasAttributesWith(
+				personattribute.SourceTypeEQ("external_research"),
+				personattribute.StatusNEQ("retracted"),
+				personAttributeConfidencePercent(percent),
+				predicate.PersonAttribute(func(s *sql.Selector) {
+					s.Where(sql.P(func(b *sql.Builder) {
+						b.WriteString("(")
+						writeResearchFactBadge(b, s)
+						b.WriteString(" = ")
+						b.Arg(label)
+						b.WriteString(" AND ")
+						writeResearchFactShown(b, s)
+						b.WriteString(" = ")
+						b.Arg(value)
+						b.WriteString(")")
+					}))
+				}),
+			),
+		),
+	)
+}
+
+func writeResearchFactBadge(b *sql.Builder, s *sql.Selector) {
+	dim := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(personattribute.FieldDimension))
+	if s.Dialect() == dialect.Postgres {
+		dim = fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(personattribute.FieldDimension))
+	}
+	b.WriteString("CASE")
+	for stored, label := range researchFactBadgeLabels() {
+		b.WriteString(" WHEN ")
+		b.WriteString(dim)
+		b.WriteString(" = ")
+		b.Arg(stored)
+		b.WriteString(" THEN ")
+		b.Arg(label)
+	}
+	b.WriteString(" ELSE ")
+	writeNormalizedSQLText(b, s, dim)
+	b.WriteString(" END")
+}
+
+func researchFactBadgeLabels() map[string]string {
+	labels := map[string]string{
+		"display_name": "name",
+		"org_name":     "company",
+		"location":     "location",
+	}
+	for dimension, label := range researchBadgeLabels {
+		labels[dimension] = normalizePersonSearch(label)
+	}
+	return labels
 }
 
 // publicResearchDetailCount reads "Public research · 1 detail" and
@@ -2506,7 +3532,8 @@ var activityEventSearchLabels = []struct {
 	{"attendance", "meeting_attendance_recorded"},
 	{"conversation reviewed", "conversation_evidence_compiled"},
 	{"conversation corrected", "conversation_evidence_corrected"},
-	{"contradiction resolved", "relationship_contradiction_resolved"},
+	{"suggestion decided", "conversation_review_decided"},
+	{"detail chosen", "relationship_contradiction_resolved"},
 	{"crm activity", "crm.activity"},
 	{"plan response", "mutual_action_plan_response_received"},
 	{"action recorded", "oppulence_action"},
@@ -2856,12 +3883,11 @@ func relationshipSheetActivityDueMatch(needle string) predicate.Relationship {
 }
 
 func activityDueDay(needle string) (time.Time, bool) {
-	const marker = "due: "
-	index := strings.LastIndex(needle, marker)
-	if index < 0 {
+	rest, ok := duePhraseRest(needle)
+	if !ok {
 		return time.Time{}, false
 	}
-	fields := strings.Fields(needle[index+len(marker):])
+	fields := strings.Fields(rest)
 	if len(fields) < 3 {
 		return time.Time{}, false
 	}
@@ -3652,8 +4678,8 @@ func relationshipSheetActivityRosterMatch(needle string) predicate.Relationship 
 
 // relationshipSheetActivityAttendanceMatch is the opened calendar attendance
 // activity. The heading is "Calendar · Attendance". The meeting size, the
-// invite counts, and the recording are sentences. The calendar event id is
-// not printed. Outside domains are named on the activity and are not searched.
+// invite counts, the outside domains, and the recording are sentences. The
+// calendar event id is not printed.
 func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	if strings.Contains(needle, "taken from the invite") {
@@ -3696,6 +4722,13 @@ func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relations
 	if organizer := relationshipSheetActivityFactMatch(needle, "organizer: ", "organizer_email"); organizer != nil {
 		preds = append(preds, organizer)
 	}
+	const outsideMarker = "outside domains: "
+	if strings.HasPrefix(needle, outsideMarker) {
+		list := strings.TrimSpace(needle[len(outsideMarker):])
+		if list != "" {
+			preds = append(preds, relationship.HasObservationsWith(observationOutsideDomains(list)))
+		}
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -3704,6 +4737,725 @@ func relationshipSheetActivityAttendanceMatch(needle string) predicate.Relations
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// observationOutsideDomains matches "Outside domains: acme.com, birch.example".
+// A token such as local-user is left off the line. The printed order is the
+// first time each domain appears.
+func observationOutsideDomains(list string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'external_domains') = 'array' AND coalesce((SELECT string_agg(shown.norm, ', ' ORDER BY shown.ord) FROM (SELECT MIN(raw.ord) AS ord, ")
+				writeNormalizedExpr(b, s, "btrim(raw.domain)")
+				b.WriteString(" AS norm FROM (SELECT ordinality AS ord, CASE WHEN jsonb_typeof(elem) = 'string' THEN elem #>> '{}' ELSE elem->>'domain' END AS domain FROM jsonb_array_elements(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'external_domains') WITH ORDINALITY AS domain_row(elem, ordinality)) AS raw WHERE ")
+				writeOutsideDomainShown(b, s, "raw.domain")
+				b.WriteString(" GROUP BY ")
+				writeNormalizedExpr(b, s, "btrim(raw.domain)")
+				b.WriteString(") AS shown), '') = ")
+			} else {
+				b.WriteString("json_valid(")
+				b.WriteString(facts)
+				b.WriteString(") AND json_type(")
+				b.WriteString(facts)
+				b.WriteString(", '$.external_domains') = 'array' AND coalesce((SELECT group_concat(shown.norm, ', ') FROM (SELECT norm, ord FROM (SELECT MIN(CAST(domain_row.key AS INTEGER)) AS ord, ")
+				writeNormalizedExpr(b, s, "trim(domain_row.domain)")
+				b.WriteString(" AS norm FROM (SELECT key, CASE WHEN type = 'object' THEN json_extract(value, '$.domain') WHEN type = 'string' THEN value ELSE NULL END AS domain FROM json_each(")
+				b.WriteString(facts)
+				b.WriteString(", '$.external_domains')) AS domain_row WHERE ")
+				writeOutsideDomainShown(b, s, "domain_row.domain")
+				b.WriteString(" GROUP BY ")
+				writeNormalizedExpr(b, s, "trim(domain_row.domain)")
+				b.WriteString(") AS grouped ORDER BY ord) AS shown), '') = ")
+			}
+			b.Arg(list)
+			b.WriteString(" AND ")
+			writeNormalizedExpr(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
+			b.Arg(list)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeOutsideDomainShown(b *sql.Builder, s *sql.Selector, domain string) {
+	trim := "btrim"
+	if s.Dialect() != dialect.Postgres {
+		trim = "trim"
+	}
+	b.WriteString(domain)
+	b.WriteString(" IS NOT NULL AND ")
+	b.WriteString(trim)
+	b.WriteString("(")
+	b.WriteString(domain)
+	b.WriteString(") <> '' AND lower(")
+	b.WriteString(trim)
+	b.WriteString("(")
+	b.WriteString(domain)
+	b.WriteString(")) NOT IN ('local-user', 'meeting-counterparty') AND ")
+	b.WriteString(trim)
+	b.WriteString("(")
+	b.WriteString(domain)
+	b.WriteString(") ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("!~ '^[a-z0-9_:-]+$'")
+		return
+	}
+	b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+}
+
+func summaryTrim(s *sql.Selector) string {
+	summary := s.C(relationshipobservation.FieldSummary)
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce(" + summary + ", ''))"
+	}
+	return "trim(coalesce(" + summary + ", ''))"
+}
+
+func writeNormalizedExpr(b *sql.Builder, s *sql.Selector, expr string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		b.WriteString(expr)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	b.WriteString(expr)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
+}
+
+// relationshipSheetActivityGuestMatch is "Named from the guest list: Avery"
+// and "A speaker was not named" on an opened conversation. You, a speaker id,
+// and an anonymous label stay off the named line.
+func relationshipSheetActivityGuestMatch(needle string) predicate.Relationship {
+	const named = "named from the guest list: "
+	if strings.HasPrefix(needle, named) {
+		label := strings.TrimSpace(needle[len(named):])
+		if label == "" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationNamedGuest(label))
+	}
+	if needle == "a speaker was not named" {
+		return relationship.HasObservationsWith(observationUnnamedSpeaker())
+	}
+	return nil
+}
+
+func observationNamedGuest(label string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			writeGuestArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeGuestRows(b, s, facts)
+			b.WriteString(" AS guest WHERE ")
+			writeNamedGuest(b, s, "guest")
+			b.WriteString(" AND ")
+			writeNormalizedExpr(b, s, guestLabelExpr(s, "guest"))
+			b.WriteString(" = ")
+			b.Arg(label)
+			b.WriteString(") AND ")
+			writeNormalizedExpr(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
+			b.Arg(label)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func observationUnnamedSpeaker() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			writeGuestArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeGuestRows(b, s, facts)
+			b.WriteString(" AS guest WHERE ")
+			writeAnonymousGuest(b, s, "guest")
+			b.WriteString(") AND ")
+			writeNormalizedExpr(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
+			b.Arg("a speaker was not named")
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeGuestArray(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'participant_resolution') = 'array'")
+		return
+	}
+	b.WriteString("json_valid(")
+	b.WriteString(facts)
+	b.WriteString(") AND json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.participant_resolution') = 'array'")
+}
+
+func writeGuestRows(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'participant_resolution')")
+		return
+	}
+	b.WriteString("json_each(")
+	b.WriteString(facts)
+	b.WriteString(", '$.participant_resolution')")
+}
+
+func guestLabelExpr(s *sql.Selector, alias string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce(" + alias + "->>'label', ''))"
+	}
+	return "trim(coalesce(json_extract(" + alias + ".value, '$.label'), ''))"
+}
+
+func guestSourceExpr(s *sql.Selector, alias string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce(" + alias + "->>'resolution_source', ''))"
+	}
+	return "trim(coalesce(json_extract(" + alias + ".value, '$.resolution_source'), ''))"
+}
+
+func writeAnonymousGuest(b *sql.Builder, s *sql.Selector, alias string) {
+	label := guestLabelExpr(s, alias)
+	source := guestSourceExpr(s, alias)
+	b.WriteString("(lower(")
+	b.WriteString(source)
+	b.WriteString(") = 'anonymous' OR ")
+	b.WriteString(label)
+	b.WriteString(" = '' OR ")
+	b.WriteString(label)
+	b.WriteString(" IN ('Other', 'Unknown speaker') OR ")
+	writeSpeakerNumber(b, s, label)
+	b.WriteString(")")
+}
+
+func writeNamedGuest(b *sql.Builder, s *sql.Selector, alias string) {
+	label := guestLabelExpr(s, alias)
+	b.WriteString("NOT ")
+	writeAnonymousGuest(b, s, alias)
+	b.WriteString(" AND ")
+	b.WriteString(label)
+	b.WriteString(" NOT IN ('You', 'local-user', 'meeting-counterparty') AND ")
+	b.WriteString(label)
+	b.WriteString(" ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("!~ '^[a-z0-9_:-]+$'")
+		return
+	}
+	b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+}
+
+func writeSpeakerNumber(b *sql.Builder, s *sql.Selector, label string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(label)
+		b.WriteString(" ~* '^speaker[[:space:]]+[0-9]+$'")
+		return
+	}
+	b.WriteString("(lower(")
+	b.WriteString(label)
+	b.WriteString(") GLOB 'speaker [0-9]' OR lower(")
+	b.WriteString(label)
+	b.WriteString(") GLOB 'speaker [0-9][0-9]' OR lower(")
+	b.WriteString(label)
+	b.WriteString(") GLOB 'speaker [0-9][0-9][0-9]')")
+}
+
+// relationshipSheetActivityPlaceMatch is the opened meeting: where it is,
+// when it starts and ends, the join link, and whether you answered. The
+// calendar id stays hidden. A private or deleted meeting is not on the activity.
+func relationshipSheetActivityPlaceMatch(needle string) predicate.Relationship {
+	switch {
+	case needle == "all day":
+		return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+			writeMeetingFlag(b, s, "allDay")
+			writeMeetingSubjectDiffers(b, s, needle)
+		})
+	case needle == "this meeting was cancelled":
+		return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+			b.WriteString("trim(coalesce(")
+			b.WriteString(interactionJSONExpr(s, "status"))
+			b.WriteString(", '')) = 'cancelled'")
+			writeMeetingSubjectDiffers(b, s, needle)
+		})
+	case needle == "you accepted the invite":
+		return relationshipHasMeetingReply(needle, "accepted")
+	case needle == "you declined the invite":
+		return relationshipHasMeetingReply(needle, "declined")
+	case needle == "you replied maybe":
+		return relationshipHasMeetingReply(needle, "tentative")
+	case needle == "you have not answered the invite":
+		return relationshipHasMeetingReply(needle, "needsaction")
+	case strings.HasPrefix(needle, "location: "):
+		place := strings.TrimSpace(needle[len("location: "):])
+		if place == "" {
+			return nil
+		}
+		return relationshipHasMeetingText("location", place, true)
+	case strings.HasPrefix(needle, "join: "):
+		link := strings.TrimSpace(needle[len("join: "):])
+		if link == "" {
+			return nil
+		}
+		return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+			expr := interactionJSONExpr(s, "conferenceLink")
+			b.WriteString("(lower(trim(coalesce(")
+			b.WriteString(expr)
+			b.WriteString(", ''))) LIKE 'http://%' OR lower(trim(coalesce(")
+			b.WriteString(expr)
+			b.WriteString(", ''))) LIKE 'https://%') AND ")
+			writeNormalizedExpr(b, s, "trim(coalesce("+expr+", ''))")
+			b.WriteString(" = ")
+			b.Arg(link)
+			writeMeetingSubjectDiffers(b, s, link)
+		})
+	case strings.HasPrefix(needle, "starts: "):
+		return relationshipHasMeetingDay(needle, "startsAt", strings.TrimSpace(needle[len("starts: "):]))
+	case strings.HasPrefix(needle, "ends: "):
+		return relationshipHasMeetingDay(needle, "endsAt", strings.TrimSpace(needle[len("ends: "):]))
+	case strings.HasPrefix(needle, "organizer: "):
+		who := strings.TrimSpace(needle[len("organizer: "):])
+		if who == "" || !strings.Contains(who, "@") {
+			return nil
+		}
+		return relationshipHasMeetingText("organizer", who, true)
+	default:
+		if needle == "" {
+			return nil
+		}
+		return relationshipHasMeetingText("description", needle, true)
+	}
+}
+
+func relationshipHasMeetingReply(needle, token string) predicate.Relationship {
+	return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+		expr := interactionJSONExpr(s, "selfResponseStatus")
+		b.WriteString("replace(lower(trim(coalesce(")
+		b.WriteString(expr)
+		b.WriteString(", ''))), '_', '') = ")
+		b.Arg(token)
+		writeMeetingSubjectDiffers(b, s, needle)
+	})
+}
+
+func relationshipHasMeetingDay(needle, key, day string) predicate.Relationship {
+	if day == "" {
+		return nil
+	}
+	return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+		writeMeetingDay(b, s, interactionJSONExpr(s, key))
+		b.WriteString(" = ")
+		b.Arg(day)
+		writeMeetingSubjectDiffers(b, s, day)
+	})
+}
+
+func relationshipHasMeetingText(key, value string, readable bool) predicate.Relationship {
+	if value == "" {
+		return nil
+	}
+	return relationshipHasMeetingDetail(func(b *sql.Builder, s *sql.Selector) {
+		expr := "trim(coalesce(" + interactionJSONExpr(s, key) + ", ''))"
+		if readable {
+			writeReadableMeetingValue(b, s, expr)
+			b.WriteString(" AND ")
+		}
+		writeNormalizedExpr(b, s, expr)
+		b.WriteString(" = ")
+		b.Arg(value)
+		writeMeetingSubjectDiffers(b, s, value)
+	})
+}
+
+func relationshipHasMeetingDetail(apply func(b *sql.Builder, s *sql.Selector)) predicate.Relationship {
+	return relationship.HasCommunicationInteractionsWith(
+		communicationinteraction.DeletedEQ(false),
+		communicationinteraction.VisibilityNEQ("private"),
+		predicate.CommunicationInteraction(func(s *sql.Selector) {
+			s.Where(sql.P(func(b *sql.Builder) {
+				apply(b, s)
+			}))
+		}),
+	)
+}
+
+func interactionJSONExpr(s *sql.Selector, key string) string {
+	column := s.C(communicationinteraction.FieldMetadataJSON)
+	if s.Dialect() == dialect.Postgres {
+		return column + "::jsonb->>'" + key + "'"
+	}
+	return "json_extract(" + column + ", '$." + key + "')"
+}
+
+func writeMeetingFlag(b *sql.Builder, s *sql.Selector, key string) {
+	column := s.C(communicationinteraction.FieldMetadataJSON)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->'")
+		b.WriteString(key)
+		b.WriteString("' = 'true'::jsonb")
+		return
+	}
+	b.WriteString("json_type(")
+	b.WriteString(column)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("') = 'true'")
+}
+
+func writeMeetingSubjectDiffers(b *sql.Builder, s *sql.Selector, value string) {
+	subject := s.C(communicationinteraction.FieldSubject)
+	b.WriteString(" AND ")
+	if s.Dialect() == dialect.Postgres {
+		writeNormalizedExpr(b, s, "btrim(coalesce("+subject+", ''))")
+	} else {
+		writeNormalizedExpr(b, s, "trim(coalesce("+subject+", ''))")
+	}
+	b.WriteString(" <> ")
+	b.Arg(value)
+}
+
+func writeReadableMeetingValue(b *sql.Builder, s *sql.Selector, expr string) {
+	b.WriteString(expr)
+	b.WriteString(" <> '' AND lower(")
+	b.WriteString(expr)
+	b.WriteString(") NOT IN ('local-user', 'meeting-counterparty') AND ")
+	b.WriteString(expr)
+	b.WriteString(" ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("!~ '^[a-z0-9_:-]+$'")
+		return
+	}
+	b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+}
+
+func writeMeetingDay(b *sql.Builder, s *sql.Selector, expr string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("(CASE WHEN btrim(coalesce(")
+		b.WriteString(expr)
+		b.WriteString(", '')) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN to_char(btrim(")
+		b.WriteString(expr)
+		b.WriteString(")::date, 'FMmon FMDD, YYYY') WHEN btrim(coalesce(")
+		b.WriteString(expr)
+		b.WriteString(", '')) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T' THEN to_char((btrim(")
+		b.WriteString(expr)
+		b.WriteString(")::timestamptz AT TIME ZONE 'UTC'), 'FMmon FMDD, YYYY') ELSE '' END)")
+		return
+	}
+	b.WriteString("(CASE WHEN date(")
+	b.WriteString(expr)
+	b.WriteString(") IS NULL THEN '' ELSE CASE strftime('%m', ")
+	b.WriteString(expr)
+	b.WriteString(") WHEN '01' THEN 'jan' WHEN '02' THEN 'feb' WHEN '03' THEN 'mar' WHEN '04' THEN 'apr' WHEN '05' THEN 'may' WHEN '06' THEN 'jun' WHEN '07' THEN 'jul' WHEN '08' THEN 'aug' WHEN '09' THEN 'sep' WHEN '10' THEN 'oct' WHEN '11' THEN 'nov' WHEN '12' THEN 'dec' ELSE '' END || ' ' || CAST(strftime('%d', ")
+	b.WriteString(expr)
+	b.WriteString(") AS INTEGER) || ', ' || strftime('%Y', ")
+	b.WriteString(expr)
+	b.WriteString(") END)")
+}
+
+// relationshipSheetActivitySnapshotMatch is a synced Gmail, calendar, HubSpot,
+// or Slack snapshot. The activity names the last message, their invite reply,
+// the meeting days, the industry, the stage, and the channel. Ids stay hidden.
+// A line that repeats the row summary stays hidden.
+func relationshipSheetActivitySnapshotMatch(needle string) predicate.Relationship {
+	switch needle {
+	case "the last message was sent from this mailbox":
+		return relationship.HasObservationsWith(observationFactFlagSentence("lastOutbound", "true", needle))
+	case "the last message came from them":
+		return relationship.HasObservationsWith(observationFactFlagSentence("lastOutbound", "false", needle))
+	case "they accepted the invite":
+		return relationship.HasObservationsWith(observationFactCompactToken("responseStatus", "accepted", needle))
+	case "they declined the invite":
+		return relationship.HasObservationsWith(observationFactCompactToken("responseStatus", "declined", needle))
+	case "they replied maybe":
+		return relationship.HasObservationsWith(observationFactCompactToken("responseStatus", "tentative", needle))
+	case "they have not answered the invite":
+		return relationship.HasObservationsWith(observationFactCompactToken("responseStatus", "needsaction", needle))
+	}
+	if strings.HasPrefix(needle, "industry: ") {
+		value := strings.TrimSpace(needle[len("industry: "):])
+		if value == "" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationIndustry(value))
+	}
+	if strings.HasPrefix(needle, "hubspot stage: ") {
+		token, ok := activityHubSpotStageToken(strings.TrimSpace(needle[len("hubspot stage: "):]))
+		if !ok {
+			return nil
+		}
+		label := strings.TrimSpace(needle[len("hubspot stage: "):])
+		return relationship.HasObservationsWith(relationshipobservation.Or(
+			observationFactCompactToken("lifecycle_stage", token, label),
+			observationFactCompactToken("lifecyclestage", token, label),
+		))
+	}
+	if strings.HasPrefix(needle, "channel: ") {
+		name := strings.TrimSpace(needle[len("channel: "):])
+		if name == "" || name == "#" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationChannel(name))
+	}
+	if strings.HasPrefix(needle, "organizer: ") {
+		who := strings.TrimSpace(needle[len("organizer: "):])
+		if who == "" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationFactLine("organizer", who))
+	}
+	if day, printed, ok := snapshotDay(needle, "last change: "); ok {
+		return relationship.HasObservationsWith(relationshipobservation.Or(
+			observationFactDay("last_modified_at", day, printed),
+			observationFactDay("hs_lastmodifieddate", day, printed),
+		))
+	}
+	if day, printed, ok := snapshotDay(needle, "starts: "); ok {
+		return relationship.HasObservationsWith(observationFactDay("startsAt", day, printed))
+	}
+	if day, printed, ok := snapshotDay(needle, "ends: "); ok {
+		return relationship.HasObservationsWith(observationFactDay("endsAt", day, printed))
+	}
+	return nil
+}
+
+func activityHubSpotStageToken(label string) (string, bool) {
+	stages := map[string]string{
+		"subscriber":               "subscriber",
+		"lead":                     "lead",
+		"marketing qualified lead": "marketingqualifiedlead",
+		"sales qualified lead":     "salesqualifiedlead",
+		"opportunity":              "opportunity",
+		"customer":                 "customer",
+		"evangelist":               "evangelist",
+		"other":                    "other",
+		"former customer":          "formercustomer",
+	}
+	token, ok := stages[label]
+	return token, ok
+}
+
+func snapshotDay(needle, marker string) (string, string, bool) {
+	if !strings.HasPrefix(needle, marker) {
+		return "", "", false
+	}
+	rest := strings.TrimSpace(needle[len(marker):])
+	_, printed, ok := activityMessageDay(marker+rest, marker)
+	if !ok || strings.ToLower(printed) != rest {
+		return "", "", false
+	}
+	return strings.ToLower(printed), printed, true
+}
+
+func observationFactCompactToken(key, token, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(replace(lower(")
+			writeActivityFactTrim(b, s, facts, key)
+			b.WriteString("), '_', '') = ")
+			b.Arg(token)
+			b.WriteString(" AND lower(")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func observationIndustry(value string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeActivityFactTrim(b, s, facts, "industry")
+			b.WriteString(" <> '' AND ")
+			writeActivityFactTrim(b, s, facts, "industry")
+			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
+			writeNormalizedActivityFact(b, s, facts, "industry")
+			b.WriteString(" = ")
+			b.Arg(value)
+			b.WriteString(" AND ((")
+			writeIndustryEnum(b, s, facts)
+			b.WriteString(" AND lower(")
+			writeSummaryTrim(b, s, summary)
+			b.WriteString(") <> ")
+			b.Arg(value)
+			b.WriteString(") OR (NOT (")
+			writeIndustryEnum(b, s, facts)
+			b.WriteString(") AND lower(")
+			writeSummaryTrim(b, s, summary)
+			b.WriteString(") <> lower(")
+			writeActivityFactTrim(b, s, facts, "industry")
+			b.WriteString("))))")
+		}))
+	})
+}
+
+func writeIndustryEnum(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		writeActivityFactTrim(b, s, facts, "industry")
+		b.WriteString(" ~ '^[A-Z0-9_]+$' AND strpos(")
+		writeActivityFactTrim(b, s, facts, "industry")
+		b.WriteString(", '_') > 0")
+		return
+	}
+	writeActivityFactTrim(b, s, facts, "industry")
+	b.WriteString(" <> '' AND ")
+	writeActivityFactTrim(b, s, facts, "industry")
+	b.WriteString(" NOT GLOB '*[^A-Z0-9_]*' AND ")
+	writeActivityFactTrim(b, s, facts, "industry")
+	b.WriteString(" GLOB '*_*'")
+}
+
+func writeSummaryTrim(b *sql.Builder, s *sql.Selector, summary string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+	} else {
+		b.WriteString("trim(coalesce(")
+	}
+	b.WriteString(summary)
+	b.WriteString(", ''))")
+}
+
+func observationChannel(shown string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeChannelName(b, s, facts)
+			b.WriteString(" <> '' AND ")
+			writeChannelName(b, s, facts)
+			b.WriteString(" <> 'local-user' AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("strpos(")
+			} else {
+				b.WriteString("instr(")
+			}
+			writeChannelName(b, s, facts)
+			b.WriteString(", 'Slack channel ') <> 1 AND ")
+			writeNormalizedExpr(b, s, channelDisplayedSQL(s, facts))
+			b.WriteString(" = ")
+			b.Arg(shown)
+			b.WriteString(" AND ")
+			writeSummaryTrim(b, s, summary)
+			b.WriteString(" <> ")
+			b.WriteString(channelDisplayedSQL(s, facts))
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeChannelName(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'channel_name', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.channel_name'), ''))")
+}
+
+func channelDisplayedSQL(s *sql.Selector, facts string) string {
+	name := "trim(coalesce(json_extract(" + facts + ", '$.channel_name'), ''))"
+	if s.Dialect() == dialect.Postgres {
+		name = "btrim(coalesce(" + facts + "::jsonb->>'channel_name', ''))"
+	}
+	return "(CASE WHEN " + name + " LIKE '#%' THEN " + name + " ELSE '#' || " + name + " END)"
+}
+
+func observationFactDay(key, day, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeMeetingDay(b, s, factJSONExpr(s, facts, key))
+			b.WriteString(" = ")
+			b.Arg(day)
+			b.WriteString(" AND ")
+			writeSummaryTrim(b, s, summary)
+			b.WriteString(" <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func factJSONExpr(s *sql.Selector, facts, key string) string {
+	if s.Dialect() == dialect.Postgres {
+		return facts + "::jsonb->>'" + key + "'"
+	}
+	return "json_extract(" + facts + ", '$." + key + "')"
+}
+
+// relationshipSheetActivityVisibilityMatch is who can see an opened activity.
+// "The message is saved", "Only the subject and people are saved", and
+// "Only you can see this" are the stored visibility.
+func relationshipSheetActivityVisibilityMatch(needle string) predicate.Relationship {
+	var token string
+	switch needle {
+	case "the message is saved":
+		token = "full"
+	case "only the subject and people are saved":
+		token = "metadata"
+	case "only you can see this":
+		token = "private"
+	default:
+		return nil
+	}
+	preds := []predicate.Relationship{
+		relationship.HasObservationsWith(observationFactExact("visibility", token, needle)),
+	}
+	if token != "private" {
+		preds = append(preds, relationship.HasCommunicationInteractionsWith(
+			communicationinteraction.DeletedEQ(false),
+			communicationinteraction.VisibilityEQ(token),
+			predicate.CommunicationInteraction(func(s *sql.Selector) {
+				s.Where(sql.P(func(b *sql.Builder) {
+					b.WriteString("1 = 1")
+					writeMeetingSubjectDiffers(b, s, needle)
+				}))
+			}),
+		))
+	}
+	if len(preds) == 1 {
+		return preds[0]
+	}
+	return relationship.Or(preds...)
 }
 
 // relationshipSheetActivityPromiseStateMatch is who made a confirmed promise,
@@ -3763,6 +5515,11 @@ func relationshipSheetActivityTranscriptMatch(needle string) predicate.Relations
 		{"the recording is kept", "always"},
 		{"the recording is not kept", "never"},
 	} {
+		// The Fireflies note says "how long the recording is kept". That is
+		// the import caveat, not an activity whose recording is kept.
+		if sentence.phrase == "the recording is kept" && labelPhraseMatches("imported from fireflies. the meeting service still decides consent and how long the recording is kept.", needle) {
+			continue
+		}
 		if strings.Contains(needle, sentence.phrase) {
 			preds = append(preds, relationship.HasObservationsWith(
 				observationFactExact("audio_retention", sentence.token, sentence.phrase),
@@ -3780,6 +5537,18 @@ func relationshipSheetActivityTranscriptMatch(needle string) predicate.Relations
 	if model := relationshipSheetActivityFactMatch(needle, "model: ", "transcription_model"); model != nil {
 		preds = append(preds, model)
 	}
+	if engines, ok := activityTranscriptEngines[needle]; ok {
+		preds = append(preds, relationship.HasObservationsWith(observationFactLowerIn("transcription_engine", engines)))
+	}
+	if models, ok := activityTranscriptModels[needle]; ok {
+		preds = append(preds, relationship.HasObservationsWith(observationFactLowerIn("transcription_model", models)))
+	}
+	if needle == "the microphone was silent" {
+		preds = append(preds, relationship.HasObservationsWith(observationSilentTrack("mic")))
+	}
+	if needle == "the other side was silent" {
+		preds = append(preds, relationship.HasObservationsWith(observationSilentTrack("system")))
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -3788,6 +5557,75 @@ func relationshipSheetActivityTranscriptMatch(needle string) predicate.Relations
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// The activity names Whisper, Parakeet, Deepgram, and Oppulence Cloud. The
+// stored engine stays whisper.cpp, whisper-local, or solomon.
+var activityTranscriptEngines = map[string][]string{
+	"transcribed with parakeet":                   {"parakeet"},
+	"transcribed with whisper":                    {"whisper", "whisper.cpp", "whisper-local"},
+	"transcribed with deepgram":                   {"deepgram"},
+	"transcribed with oppulence cloud (deepgram)": {"solomon"},
+}
+
+// Settings name the downloaded model. The activity says that name. The stored
+// fact stays the checkpoint filename.
+var activityTranscriptModels = map[string][]string{
+	"model: tiny · english":                                 {"tiny.en-q5_1"},
+	"model: base · english (recommended)":                   {"base.en-q5_1"},
+	"model: base · multilingual":                            {"base-q5_1"},
+	"model: small · english":                                {"small.en-q5_1"},
+	"model: small · multilingual":                           {"small-q5_1"},
+	"model: large v3 turbo · multilingual (fast, accurate)": {"large-v3-turbo-q5_0"},
+	"model: large v3 · multilingual (max accuracy)":         {"large-v3-q5_0"},
+	"model: parakeet v3":                                    {"parakeet-tdt-0.6b-v3", "parakeet-tdt-0.6b-v3-coreml"},
+	"model: parakeet v2":                                    {"parakeet-tdt-0.6b-v2", "parakeet-tdt-0.6b-v2-coreml"},
+	"model: nova 3":                                         {"nova-3"},
+}
+
+func observationFactLowerIn(key string, tokens []string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("lower(")
+			writeActivityFactTrim(b, s, facts, key)
+			b.WriteString(") IN (")
+			for i, token := range tokens {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				b.Arg(strings.ToLower(token))
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func observationSilentTrack(id string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'tracks') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'tracks') AS track WHERE track->>'id' = ")
+				b.Arg(id)
+				b.WriteString(" AND track->>'silent' = 'true')")
+				return
+			}
+			b.WriteString("json_valid(")
+			b.WriteString(facts)
+			b.WriteString(") AND json_type(")
+			b.WriteString(facts)
+			b.WriteString(", '$.tracks') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
+			b.WriteString(facts)
+			b.WriteString(", '$.tracks') AS track WHERE json_extract(track.value, '$.id') = ")
+			b.Arg(id)
+			b.WriteString(" AND json_type(track.value, '$.silent') = 'true')")
+		}))
+	})
 }
 
 // A status change stores open, fulfilled, or cancelled inside commitment_updates.
@@ -4079,17 +5917,3854 @@ func writeNormalizedLabeledFact(b *sql.Builder, s *sql.Selector, facts, key stri
 	b.WriteString(")")
 }
 
+// relationshipSheetActivityRowMatch matches the sentence on the activity
+// row. Gmail, Calendar, HubSpot, and Slack still store "observed". The row
+// says Mail, Meeting with, Company from HubSpot, or Message in. A placeholder
+// name stays the short sentence. "Mail" and "Meeting" stay the headings.
+func relationshipSheetActivityRowMatch(needle string) predicate.Relationship {
+	var preds []predicate.RelationshipObservation
+	if rest, ok := activityRowRest(needle, "mail: "); ok {
+		preds = append(preds, observationSummaryEquals("gmail thread observed: "+rest))
+	}
+	if rest, ok := activityRowRest(needle, "meeting with "); ok {
+		preds = append(preds, observationSummaryEquals("calendar meeting observed with "+rest))
+	}
+	if rest, ok := activityRowRest(needle, "company from hubspot: "); ok && !strings.HasPrefix(rest, "hubspot company ") {
+		preds = append(preds, observationSummaryEquals("hubspot company snapshot: "+rest))
+	}
+	if rest, ok := activityRowRest(needle, "message in #"); ok && !strings.HasPrefix(rest, "slack channel ") {
+		preds = append(preds, observationSummaryEquals("slack message observed in #"+rest))
+	}
+	if needle == "company from hubspot" {
+		preds = append(preds,
+			observationSummaryEquals("hubspot company snapshot:"),
+			observationSummaryEquals("hubspot company snapshot: local-user"),
+			observationSummaryHasPrefix("hubspot company snapshot: hubspot company "),
+		)
+	}
+	if needle == "message in slack" {
+		preds = append(preds,
+			observationSummaryEquals("slack message observed in #"),
+			observationSummaryEquals("slack message observed in #local-user"),
+			observationSummaryHasPrefix("slack message observed in #slack channel "),
+		)
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+func activityRowRest(needle, prefix string) (string, bool) {
+	if !strings.HasPrefix(needle, prefix) {
+		return "", false
+	}
+	rest := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+	if rest == "" || rest == "local-user" || rest == "meeting-counterparty" {
+		return "", false
+	}
+	return rest, true
+}
+
+func observationSummaryEquals(normalized string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeNormalizedSummary(b, s)
+			b.WriteString(" = ")
+			b.Arg(normalized)
+		}))
+	})
+}
+
+func observationSummaryHasPrefix(normalizedPrefix string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeNormalizedSummary(b, s)
+			b.WriteString(" LIKE ")
+			b.Arg(escapePersonSearchLike(normalizedPrefix) + "%")
+			b.WriteString(" ESCAPE '!'")
+		}))
+	})
+}
+
+func writeNormalizedSummary(b *sql.Builder, s *sql.Selector) {
+	column := s.C(relationshipobservation.FieldSummary)
+	trim := "trim"
+	if s.Dialect() == dialect.Postgres {
+		trim = "btrim"
+	}
+	b.WriteString(trim)
+	b.WriteString("(replace(replace(replace(lower(")
+	b.WriteString(trim)
+	b.WriteString("(coalesce(")
+	b.WriteString(column)
+	b.WriteString(", ''))), '-', ' '), '_', ' '), '.', ' '))")
+}
+
+// relationshipSheetActivityRecordMatch matches a person you added and a
+// decision on the activity row. The stored summary still says "added by the
+// user" or names the model sentence. A one-word name is "You added a person."
+func relationshipSheetActivityRecordMatch(needle string) predicate.Relationship {
+	var preds []predicate.RelationshipObservation
+	if rest, ok := addedPersonRest(needle); ok {
+		preds = append(preds, observationSummaryEquals(rest+" added by the user"))
+	}
+	if needle == "you added a person" {
+		preds = append(preds, observationSummaryAddedPerson())
+	}
+	recorded := map[string]string{
+		"you corrected what was said":       "user corrected reviewed conversation evidence",
+		"you chose which detail is current": "user resolved a typed relationship contradiction",
+		"you decided a suggested change":    "user decided a proposed conversation change",
+		"they responded to the shared plan": "counterparty responded to a shared mutual action plan",
+	}
+	if stored, ok := recorded[needle]; ok {
+		preds = append(preds, observationSummaryEquals(stored))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+func addedPersonRest(needle string) (string, bool) {
+	const prefix = "you added "
+	if !strings.HasPrefix(needle, prefix) {
+		return "", false
+	}
+	rest := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+	if rest == "" || rest == "a person" || addedPersonToken(rest) {
+		return "", false
+	}
+	return rest, true
+}
+
+func addedPersonToken(name string) bool {
+	if name == "" {
+		return true
+	}
+	for _, r := range name {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '_', r == ':', r == '-':
+			continue
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func observationSummaryAddedPerson() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationshipobservation.FieldSummary)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("lower(btrim(coalesce(")
+				b.WriteString(column)
+				b.WriteString(", ''))) ~ ")
+				b.Arg(`^[a-z0-9_:-]* added by the user\.?$`)
+				return
+			}
+			b.WriteString("((lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", ''))) GLOB ")
+			b.Arg("* added by the user")
+			b.WriteString(" OR lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", ''))) GLOB ")
+			b.Arg("* added by the user.")
+			b.WriteString(") AND (CASE WHEN lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", ''))) GLOB ")
+			b.Arg("* added by the user.")
+			b.WriteString(" THEN substr(lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", ''))), 1, length(lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", '')))) - length(")
+			b.Arg(" added by the user.")
+			b.WriteString(")) ELSE substr(lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", ''))), 1, length(lower(trim(coalesce(")
+			b.WriteString(column)
+			b.WriteString(", '')))) - length(")
+			b.Arg(" added by the user")
+			b.WriteString(")) END) NOT GLOB ")
+			b.Arg("*[^a-z0-9_:-]*")
+			b.WriteString(")")
+		}))
+	})
+}
+
+// relationshipSheetActivityStoryMatch matches the activity row when the
+// stored summary is a mail thread, a reviewed conversation, a promise, an
+// attendance line, a promise update, or an outcome. The row says "4 messages
+// with acme.com" while the note still says "4-message thread with acme.com".
+func relationshipSheetActivityStoryMatch(needle string) predicate.Relationship {
+	var preds []predicate.RelationshipObservation
+	if count, who, ok := activityStoryMail(needle); ok {
+		preds = append(preds, observationSummaryEquals(fmt.Sprintf("%d message thread with %s", count, who)))
+	}
+	if title, lines, claims, ok := activityStoryConversation(needle); ok {
+		preds = append(preds, observationSummaryEquals(fmt.Sprintf("%s · %d segments · %d material claims", title, lines, claims)))
+	}
+	if text, dropped, ok := activityStoryOwnerRest(needle, "we made this promise"); ok {
+		for _, summary := range activityStoryCommittedSummaries("we", text, dropped) {
+			preds = append(preds, observationSummaryEquals(summary))
+		}
+	}
+	if text, dropped, ok := activityStoryOwnerRest(needle, "they made this promise"); ok {
+		preds = append(preds, observationSummaryTheyCommitted(text, dropped)...)
+	}
+	if name, text, dropped, ok := activityStoryNamedPromise(needle); ok {
+		for _, summary := range activityStoryCommittedSummaries(name, text, dropped) {
+			preds = append(preds, observationSummaryEquals(summary))
+		}
+	}
+	if count, title, ok := activityStoryAttendance(needle); ok {
+		preds = append(preds, observationSummaryEquals(fmt.Sprintf("%d external participant(s) on \"%s\"", count, title)))
+	}
+	if status, text, dropped, ok := activityStoryPromiseUpdate(needle); ok {
+		if dropped {
+			preds = append(preds, observationSummaryEquals("commitment marked "+status+": local user"))
+		} else {
+			preds = append(preds, observationSummaryEquals("commitment marked "+status+": "+text))
+		}
+	}
+	if kind, ok := activityStoryOutcomeLabels[needle]; ok {
+		preds = append(preds, observationSummaryEquals("action outcome observed: "+kind))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+var (
+	activityStoryMailPattern         = regexp.MustCompile(`^(\d+) messages? with (.+)$`)
+	activityStoryConversationPattern = regexp.MustCompile(`^(.+) · (\d+) lines? in the transcript · (\d+) claims?$`)
+	activityStoryPeoplePattern       = regexp.MustCompile(`^(\d+) people from outside the company on (.+)$`)
+)
+
+var activityStoryOutcomeLabels = map[string]string{
+	"message sent":             "sent",
+	"delivered":                "delivered",
+	"bounced":                  "bounced",
+	"they replied":             "replied",
+	"meeting booked":           "meeting booked",
+	"won":                      "won",
+	"lost":                     "lost",
+	"dismissed":                "dismissed",
+	"not a good suggestion":    "bad recommendation",
+	"deal moved forward":       "deal advanced",
+	"onboarding moved forward": "onboarding progressed",
+	"renewed":                  "renewed",
+	"escalated":                "escalated",
+	"they left":                "churned",
+	"corrected":                "corrected",
+}
+
+func activityStoryCount(raw string) (int, bool) {
+	count, err := strconv.Atoi(raw)
+	if err != nil || count < 0 || raw != strconv.Itoa(count) {
+		return 0, false
+	}
+	return count, true
+}
+
+func activityStoryMail(needle string) (int, string, bool) {
+	match := activityStoryMailPattern.FindStringSubmatch(needle)
+	if match == nil {
+		return 0, "", false
+	}
+	count, ok := activityStoryCount(match[1])
+	if !ok {
+		return 0, "", false
+	}
+	who := strings.TrimSpace(match[2])
+	switch who {
+	case "", "local user", "meeting counterparty", "an external contact":
+		return 0, "", false
+	case "someone outside the company":
+		who = "an external contact"
+	}
+	return count, who, true
+}
+
+func activityStoryConversation(needle string) (string, int, int, bool) {
+	match := activityStoryConversationPattern.FindStringSubmatch(needle)
+	if match == nil {
+		return "", 0, 0, false
+	}
+	title := strings.TrimSpace(match[1])
+	lines, linesOK := activityStoryCount(match[2])
+	claims, claimsOK := activityStoryCount(match[3])
+	if title == "" || title == "local user" || !linesOK || !claimsOK {
+		return "", 0, 0, false
+	}
+	return title, lines, claims, true
+}
+
+func activityStoryOwnerRest(needle, phrase string) (string, bool, bool) {
+	if needle == phrase {
+		return "", true, true
+	}
+	prefix := phrase + ": "
+	if !strings.HasPrefix(needle, prefix) {
+		return "", false, false
+	}
+	text := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+	if text == "" || text == "local user" || text == "meeting counterparty" {
+		return "", false, false
+	}
+	return text, false, true
+}
+
+func activityStoryCommittedSummaries(who, text string, dropped bool) []string {
+	if !dropped {
+		return []string{who + " committed to: " + text}
+	}
+	return []string{
+		who + " committed to: local user",
+		who + " committed to: meeting counterparty",
+	}
+}
+
+func activityStoryNamedPromise(needle string) (string, string, bool, bool) {
+	const marker = " made this promise"
+	index := strings.Index(needle, marker)
+	if index <= 0 {
+		return "", "", false, false
+	}
+	name := strings.TrimSpace(needle[:index])
+	if name == "" || name == "we" || name == "they" || addedPersonToken(name) || activityStoryUnnamedOwner(name) {
+		return "", "", false, false
+	}
+	rest := needle[index+len(marker):]
+	if rest == "" {
+		return name, "", true, true
+	}
+	if !strings.HasPrefix(rest, ": ") {
+		return "", "", false, false
+	}
+	text := strings.TrimSpace(rest[len(": "):])
+	if text == "" || text == "local user" || text == "meeting counterparty" {
+		return "", "", false, false
+	}
+	return name, text, false, true
+}
+
+func activityStoryUnnamedOwner(name string) bool {
+	switch name {
+	case "local user", "meeting counterparty", "other", "unknown speaker":
+		return true
+	}
+	return activityStorySpeaker(name)
+}
+
+func activityStorySpeaker(name string) bool {
+	const prefix = "speaker "
+	if !strings.HasPrefix(name, prefix) {
+		return false
+	}
+	digits := name[len(prefix):]
+	if digits == "" {
+		return false
+	}
+	for _, r := range digits {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func observationSummaryTheyCommitted(text string, dropped bool) []predicate.RelationshipObservation {
+	suffixes := []string{" committed to: " + text}
+	if dropped {
+		suffixes = []string{" committed to: local user", " committed to: meeting counterparty"}
+	}
+	var preds []predicate.RelationshipObservation
+	for _, who := range []string{"local user", "meeting counterparty", "other", "unknown speaker"} {
+		for _, suffix := range suffixes {
+			preds = append(preds, observationSummaryEquals(who+suffix))
+		}
+	}
+	for _, suffix := range suffixes {
+		preds = append(preds, observationSummaryCommittedUnnamed(suffix))
+	}
+	return preds
+}
+
+func observationSummaryCommittedUnnamed(suffix string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(length(")
+			writeNormalizedSummary(b, s)
+			b.WriteString(") > length(")
+			b.Arg(suffix)
+			b.WriteString(") AND substr(")
+			writeNormalizedSummary(b, s)
+			b.WriteString(", length(")
+			writeNormalizedSummary(b, s)
+			b.WriteString(") - length(")
+			b.Arg(suffix)
+			b.WriteString(") + 1) = ")
+			b.Arg(suffix)
+			b.WriteString(" AND ")
+			writeCommittedWhoUnnamed(b, s, suffix)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeCommittedWho(b *sql.Builder, s *sql.Selector, suffix string) {
+	b.WriteString("substr(")
+	writeNormalizedSummary(b, s)
+	b.WriteString(", 1, length(")
+	writeNormalizedSummary(b, s)
+	b.WriteString(") - length(")
+	b.Arg(suffix)
+	b.WriteString("))")
+}
+
+func writeCommittedWhoUnnamed(b *sql.Builder, s *sql.Selector, suffix string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("((")
+		writeCommittedWho(b, s, suffix)
+		b.WriteString(" ~ ")
+		b.Arg(`^speaker [0-9]+$`)
+		b.WriteString(") OR ((")
+		writeCommittedWho(b, s, suffix)
+		b.WriteString(" ~ ")
+		b.Arg(`^[a-z0-9_:]+$`)
+		b.WriteString(") AND (")
+		writeCommittedWho(b, s, suffix)
+		b.WriteString(") <> ")
+		b.Arg("we")
+		b.WriteString("))")
+		return
+	}
+	b.WriteString("((length(")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(") > 8 AND substr(")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(", 1, 8) = ")
+	b.Arg("speaker ")
+	b.WriteString(" AND substr(")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(", 9) <> '' AND substr(")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(", 9) NOT GLOB ")
+	b.Arg("*[^0-9]*")
+	b.WriteString(") OR ((")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(") <> '' AND (")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(") <> ")
+	b.Arg("we")
+	b.WriteString(" AND (")
+	writeCommittedWho(b, s, suffix)
+	b.WriteString(") NOT GLOB ")
+	b.Arg("*[^a-z0-9_:]*")
+	b.WriteString("))")
+}
+
+func activityStoryAttendance(needle string) (int, string, bool) {
+	const nobody = "no one from outside the company on "
+	const one = "1 person from outside the company on "
+	if strings.HasPrefix(needle, nobody) {
+		title := strings.TrimSpace(strings.TrimPrefix(needle, nobody))
+		if title == "" || title == "local user" {
+			return 0, "", false
+		}
+		return 0, title, true
+	}
+	if strings.HasPrefix(needle, one) {
+		title := strings.TrimSpace(strings.TrimPrefix(needle, one))
+		if title == "" || title == "local user" {
+			return 0, "", false
+		}
+		return 1, title, true
+	}
+	match := activityStoryPeoplePattern.FindStringSubmatch(needle)
+	if match == nil {
+		return 0, "", false
+	}
+	count, ok := activityStoryCount(match[1])
+	title := strings.TrimSpace(match[2])
+	if !ok || count < 2 || title == "" || title == "local user" {
+		return 0, "", false
+	}
+	return count, title, true
+}
+
+func activityStoryPromiseUpdate(needle string) (string, string, bool, bool) {
+	labels := []struct{ phrase, status string }{
+		{"this promise was kept", "fulfilled"},
+		{"this promise was called off", "cancelled"},
+		{"this promise is still open", "open"},
+	}
+	for _, label := range labels {
+		if needle == label.phrase {
+			return label.status, "", true, true
+		}
+		prefix := label.phrase + ": "
+		if !strings.HasPrefix(needle, prefix) {
+			continue
+		}
+		text := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+		if text == "" || text == "local user" {
+			return "", "", false, false
+		}
+		return label.status, text, false, true
+	}
+	return "", "", false, false
+}
+
+// relationshipSheetActivityFollowUpMatch is a proposed follow-up on the
+// opened activity. The line names the follow-up and the reason a person can
+// read. The draft, the channel, and the action id stay hidden. A due day on
+// that follow-up is "Due: Aug 1, 2026". A line that repeats the row summary
+// stays hidden.
+func relationshipSheetActivityFollowUpMatch(needle string) predicate.Relationship {
+	for _, item := range activityFollowUpLabels {
+		prefix := item.phrase + ": "
+		if !strings.HasPrefix(needle, prefix) {
+			continue
+		}
+		reason := strings.TrimSpace(needle[len(prefix):])
+		if reason == "" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationActionPack(item.actionType, reason))
+	}
+	start, ok := activityDueDay(needle)
+	if !ok {
+		return nil
+	}
+	printed := start.Format("Jan 2, 2006")
+	if strings.ToLower(printed) != strings.TrimSpace(strings.TrimPrefix(needle, "due: ")) {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationActionPackDue(strings.ToLower(printed), printed))
+}
+
+var activityFollowUpLabels = []struct{ phrase, actionType string }{
+	{"warm follow up", "warm_follow_up"},
+	{"proposal nudge", "proposal_nudge"},
+	{"referral reconnect", "referral_reconnect"},
+	{"customer risk", "customer_risk"},
+	{"meeting follow up", "meeting_follow_up"},
+	{"meeting recap", "meeting_recap"},
+	{"crm update", "crm_update"},
+	{"follow up task", "follow_up_task"},
+	{"calendar hold", "calendar_hold"},
+	{"promise follow up", "commitment_rescue"},
+}
+
+func observationActionPack(actionType, reason string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			writeActionPackArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeActionPackRows(b, s, facts)
+			b.WriteString(" AS action WHERE ")
+			writeActionType(b, s)
+			b.WriteString(" = ")
+			b.Arg(actionType)
+			b.WriteString(" AND ")
+			b.WriteString(printedActionReasonExpr(s))
+			b.WriteString(" ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("!~ '^[a-z0-9_:-]+$'")
+			} else {
+				b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+			}
+			b.WriteString(" AND ")
+			writeNormalizedSQLText(b, s, printedActionReasonExpr(s))
+			b.WriteString(" = ")
+			b.Arg(reason)
+			b.WriteString(" AND ")
+			writeNormalizedSQLText(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
+			b.Arg(reason)
+			b.WriteString("))")
+		}))
+	})
+}
+
+func observationActionPackDue(day, printed string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeActionPackArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeActionPackRows(b, s, facts)
+			b.WriteString(" AS action WHERE ")
+			writeMeetingDay(b, s, actionDueExpr(s))
+			b.WriteString(" = ")
+			b.Arg(day)
+			b.WriteString(") AND ")
+			writeSummaryTrim(b, s, summary)
+			b.WriteString(" <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeActionPackArray(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'action_pack') = 'array'")
+		return
+	}
+	b.WriteString("json_valid(")
+	b.WriteString(facts)
+	b.WriteString(") AND json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.action_pack') = 'array'")
+}
+
+func writeActionPackRows(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'action_pack')")
+		return
+	}
+	b.WriteString("json_each(")
+	b.WriteString(facts)
+	b.WriteString(", '$.action_pack')")
+}
+
+func writeActionType(b *sql.Builder, s *sql.Selector) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("action->>'actionType'")
+		return
+	}
+	b.WriteString("json_extract(action.value, '$.actionType')")
+}
+
+func actionReasonExpr(s *sql.Selector) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce(action->>'reason', ''))"
+	}
+	return "trim(coalesce(json_extract(action.value, '$.reason'), ''))"
+}
+
+func actionDueExpr(s *sql.Selector) string {
+	if s.Dialect() == dialect.Postgres {
+		return "action->>'dueAt'"
+	}
+	return "json_extract(action.value, '$.dueAt')"
+}
+
+func printedActionReasonExpr(s *sql.Selector) string {
+	reason := actionReasonExpr(s)
+	return "(CASE " + reason +
+		" WHEN 'Send a recap grounded in the material statements from this conversation.' THEN 'Send a recap of what was said.'" +
+		" WHEN 'Share the evidence-backed recap with the account team.' THEN 'Share the recap with the account team.'" +
+		" WHEN 'Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.' THEN 'Update the company record from what was said.'" +
+		" WHEN 'Track a spoken commitment until it is fulfilled or renegotiated.' THEN 'Keep this promise until it is kept or changed.'" +
+		" WHEN 'Protect time before the spoken commitment is due.' THEN 'Hold time before this promise is due.'" +
+		" ELSE " + reason + " END)"
+}
+
+// relationshipSheetActivityRecoveryMatch is promise evidence on the opened
+// activity. The line is the sentence the promise check already shows. A
+// promise id and an evidence id stay hidden. A line that repeats the row
+// summary stays hidden.
+func relationshipSheetActivityRecoveryMatch(needle string) predicate.Relationship {
+	for _, item := range activityRecoverySentences {
+		if needle != normalizePersonSearch(item.sentence) {
+			continue
+		}
+		return relationship.HasObservationsWith(observationRecoveryEvidence(item.kind, needle))
+	}
+	return nil
+}
+
+var activityRecoverySentences = []struct{ kind, sentence string }{
+	{"explicit_fulfilled", "A newer source shows this promise was kept."},
+	{"likely_fulfilled", "A newer source suggests this promise was kept. Review it before closing it."},
+	{"superseded", "A later promise replaced this one."},
+	{"renegotiated", "This promise was renegotiated. Review the new terms."},
+	{"blocked", "This promise is blocked. Review it before acting."},
+}
+
+func observationRecoveryEvidence(kind, sentence string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			writeRecoveryArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeRecoveryRows(b, s, facts)
+			b.WriteString(" AS evidence WHERE ")
+			writeRecoveryKind(b, s)
+			b.WriteString(" = ")
+			b.Arg(kind)
+			b.WriteString(") AND ")
+			writeNormalizedSQLText(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
+			b.Arg(sentence)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeRecoveryArray(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'commitment_recovery_evidence') = 'array'")
+		return
+	}
+	b.WriteString("json_valid(")
+	b.WriteString(facts)
+	b.WriteString(") AND json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.commitment_recovery_evidence') = 'array'")
+}
+
+func writeRecoveryRows(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'commitment_recovery_evidence')")
+		return
+	}
+	b.WriteString("json_each(")
+	b.WriteString(facts)
+	b.WriteString(", '$.commitment_recovery_evidence')")
+}
+
+func writeRecoveryKind(b *sql.Builder, s *sql.Selector) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("evidence->>'kind'")
+		return
+	}
+	b.WriteString("json_extract(evidence.value, '$.kind')")
+}
+
+// relationshipSheetSendFailureMatch is the review for a send that stopped.
+// The heading is on every stored error. The line under it is the reason the
+// sheet prints. An unconfirmed send keeps that review instead.
+func relationshipSheetSendFailureMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	if needle == normalizePersonSearch("The last attempt did not send") {
+		return relationship.HasActionsWith(sendFailureVisible())
+	}
+	var earlier []predicate.RevenueAction
+	for _, rule := range sendFailureRules {
+		if needle != normalizePersonSearch(rule.phrase) {
+			earlier = append(earlier, rule.match)
+			continue
+		}
+		preds := []predicate.RevenueAction{sendFailureVisible(), rule.match}
+		for _, prior := range earlier {
+			preds = append(preds, revenueaction.Not(prior))
+		}
+		return relationship.HasActionsWith(revenueaction.And(preds...))
+	}
+	preds := []predicate.RevenueAction{sendFailureVisible(), executionErrorNormalizedEQ(needle)}
+	for _, prior := range earlier {
+		preds = append(preds, revenueaction.Not(prior))
+	}
+	return relationship.HasActionsWith(revenueaction.And(preds...))
+}
+
+type sendFailureRule struct {
+	phrase string
+	match  predicate.RevenueAction
+}
+
+var sendFailureRules = []sendFailureRule{
+	{"Sending is not set up for this workspace yet.", revenueaction.ExecutionErrorContainsFold("no execution backend configured")},
+	{"This channel cannot send yet.", revenueaction.ExecutionErrorContainsFold("no execution backend for channel")},
+	{"This channel is not set up to send yet.", executionErrorPattern("execution backend for channel", "is not configured")},
+	{"Add a recipient before sending.", revenueaction.ExecutionErrorContainsFold("has no recipient email")},
+	{"Write the message before sending.", revenueaction.ExecutionErrorContainsFold("has no proposed message")},
+	{"Slack cannot save a draft. Switch this to send after you review it.", revenueaction.ExecutionErrorContainsFold("Slack has no provider draft")},
+	{"Calendar cannot save a draft. Switch this to send after you review it.", revenueaction.ExecutionErrorContainsFold("Google Calendar has no provider draft")},
+	{"HubSpot cannot save a draft. Switch this to send after you review it.", revenueaction.ExecutionErrorContainsFold("HubSpot has no provider draft")},
+	{"Add a start time before creating the event.", revenueaction.ExecutionErrorContainsFold("needs dueAt")},
+	{"Calendar sending is not set up yet.", revenueaction.ExecutionErrorContainsFold("Google Calendar executor is not configured")},
+	{"Connect Google for the person who will send this, then try again.", revenueaction.ExecutionErrorContainsFold("google is not connected")},
+	{"Google is missing permission for this send. Reconnect, then try again.", executionErrorEither(
+		executionErrorPattern("missing the", "scope"),
+		revenueaction.ExecutionErrorContainsFold("reconnect Google"),
+	)},
+	{"Google stopped accepting the authorization. Reconnect, then try again.", revenueaction.ExecutionErrorContainsFold("refresh token is invalid")},
+	{"Google could not authorize this send. Reconnect, then try again.", revenueaction.ExecutionErrorContainsFold("could not obtain a google access token")},
+	{"Google refused this send. Reconnect Gmail, then try again.", revenueaction.ExecutionErrorContainsFold("returned 403")},
+	{"Choose the Slack channel before sending.", revenueaction.ExecutionErrorContainsFold("Slack action needs target")},
+	{"Link the HubSpot record before sending.", revenueaction.ExecutionErrorContainsFold("HubSpot action needs a relationship resource ref")},
+	{"Google is temporarily limiting Gmail reads for this account. Please try the audit again in about 15 minutes.", executionErrorAll(
+		revenueaction.ExecutionErrorContainsFold("gmail"),
+		executionErrorEither(
+			revenueaction.ExecutionErrorContainsFold("returned 429"),
+			revenueaction.ExecutionErrorContainsFold("user-rate limit exceeded"),
+		),
+	)},
+	{"Too many requests were sent from this workspace. Wait a moment, then try again.", executionErrorEither(
+		revenueaction.ExecutionErrorContainsFold("rate limit"),
+		revenueaction.ExecutionErrorContainsFold("too many requests"),
+		revenueaction.ExecutionErrorContainsFold("(429)"),
+	)},
+	{"Your session could not be refreshed. Sign out and sign in again.", executionErrorEither(
+		revenueaction.ExecutionErrorContainsFold("session refresh is temporarily unavailable"),
+		revenueaction.ExecutionErrorContainsFold("session_unavailable"),
+	)},
+	{"Oppulence could not be reached. Try again in a moment.", executionErrorEither(
+		revenueaction.ExecutionErrorContainsFold("rowboat-api is unreachable"),
+		revenueaction.ExecutionErrorContainsFold("upstream_unavailable"),
+	)},
+	{"Oppulence is temporarily unavailable. Try again in a moment.", executionErrorAll(
+		revenueaction.ExecutionErrorContainsFold("(503)"),
+		executionErrorEither(
+			revenueaction.ExecutionErrorContainsFold("failed"),
+			revenueaction.ExecutionErrorContainsFold("unreachable"),
+			revenueaction.ExecutionErrorContainsFold("unavailable"),
+		),
+	)},
+	{"The last attempt did not send. Fix the draft, then try again.", executionErrorPrefixFold("revenue:")},
+}
+
+func sendFailureVisible() predicate.RevenueAction {
+	return revenueaction.And(
+		revenueaction.ExecutionStatusIn(ExecPending, ExecFailed),
+		revenueaction.Or(
+			revenueaction.ReconciliationStatusIsNil(),
+			revenueaction.ReconciliationStatusNEQ("manual_review"),
+		),
+		executionErrorTrimmed(),
+	)
+}
+
+func executionErrorTrimmed() predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("trim(")
+			b.WriteString(s.C(revenueaction.FieldExecutionError))
+			b.WriteString(") <> ''")
+		}))
+	})
+}
+
+func executionErrorNormalizedEQ(needle string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeNormalizedSQLText(b, s, "trim("+s.C(revenueaction.FieldExecutionError)+")")
+			b.WriteString(" = ")
+			b.Arg(needle)
+		}))
+	})
+}
+
+func executionErrorPrefixFold(prefix string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("lower(trim(")
+			b.WriteString(s.C(revenueaction.FieldExecutionError))
+			b.WriteString(")) LIKE ")
+			b.Arg(strings.ToLower(prefix) + "%")
+		}))
+	})
+}
+
+func executionErrorPattern(parts ...string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := "lower(" + s.C(revenueaction.FieldExecutionError) + ")"
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(column)
+				b.WriteString(" ~ ")
+				b.Arg(strings.Join(parts, ".+"))
+				return
+			}
+			b.WriteString(column)
+			b.WriteString(" GLOB ")
+			b.Arg("*" + strings.Join(parts, "*") + "*")
+		}))
+	})
+}
+
+func executionErrorEither(preds ...predicate.RevenueAction) predicate.RevenueAction {
+	return revenueaction.Or(preds...)
+}
+
+func executionErrorAll(preds ...predicate.RevenueAction) predicate.RevenueAction {
+	return revenueaction.And(preds...)
+}
+
+// relationshipSheetDismissReasonMatch is the reason on a dismissed action.
+// The queue names a stored slug. A reason written in words stays as written.
+func relationshipSheetDismissReasonMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	return relationship.HasActionsWith(
+		revenueaction.QueueStatusEQ(QueueDismissed),
+		dismissReasonShown(needle),
+	)
+}
+
+func dismissReasonShown(needle string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := "trim(" + s.C(revenueaction.FieldDismissReason) + ")"
+			b.WriteString(column)
+			b.WriteString(" <> '' AND (CASE")
+			for _, item := range []struct{ token, label string }{
+				{"not_relevant", "not relevant"},
+				{"already_handled", "already handled"},
+				{"resolved_by_new_evidence", "newer evidence arrived"},
+				{"changed_my_mind", "changed my mind"},
+			} {
+				b.WriteString(" WHEN ")
+				b.WriteString(column)
+				b.WriteString(" = ")
+				b.Arg(item.token)
+				b.WriteString(" THEN ")
+				b.Arg(item.label)
+			}
+			b.WriteString(" WHEN ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(column)
+				b.WriteString(" ~ '^[a-z0-9_]+$' THEN replace(lower(")
+				b.WriteString(column)
+				b.WriteString("), '_', ' ')")
+			} else {
+				b.WriteString(column)
+				b.WriteString(" GLOB '[a-z0-9_]*' AND ")
+				b.WriteString(column)
+				b.WriteString(" NOT GLOB '*[^a-z0-9_]*' THEN replace(lower(")
+				b.WriteString(column)
+				b.WriteString("), '_', ' ')")
+			}
+			b.WriteString(" ELSE ")
+			writeNormalizedSQLText(b, s, column)
+			b.WriteString(" END) = ")
+			b.Arg(needle)
+		}))
+	})
+}
+
+// relationshipSheetReconciliationCheckMatch is the extra line on an
+// unconfirmed send. It names the check, and how many times that check ran.
+// A settled send stays off both sentences. A hidden provider marker stays hidden.
+func relationshipSheetReconciliationCheckMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	if count, ok := reconciliationCheckedCount(needle); ok {
+		return relationship.HasActionsWith(
+			uncertainSendAction(),
+			revenueaction.ReconciliationAttemptsEQ(count),
+		)
+	}
+	var earlier []predicate.RevenueAction
+	for _, rule := range reconciliationCheckRules {
+		if needle != normalizePersonSearch(rule.phrase) {
+			earlier = append(earlier, rule.match)
+			continue
+		}
+		preds := []predicate.RevenueAction{uncertainSendAction(), rule.match}
+		for _, prior := range earlier {
+			preds = append(preds, revenueaction.Not(prior))
+		}
+		return relationship.HasActionsWith(revenueaction.And(preds...))
+	}
+	preds := []predicate.RevenueAction{
+		uncertainSendAction(),
+		reconciliationErrorNormalizedEQ(needle),
+		revenueaction.Not(revenueaction.ReconciliationErrorEQ("provider marker was not found after bounded reconciliation attempts")),
+		revenueaction.Not(revenueaction.ReconciliationErrorEQ("The provider could not confirm this send.")),
+	}
+	for _, prior := range earlier {
+		preds = append(preds, revenueaction.Not(prior))
+	}
+	return relationship.HasActionsWith(revenueaction.And(preds...))
+}
+
+func reconciliationCheckedCount(needle string) (int, bool) {
+	if !strings.HasPrefix(needle, "checked ") {
+		return 0, false
+	}
+	parts := strings.Fields(strings.TrimPrefix(needle, "checked "))
+	if len(parts) != 2 {
+		return 0, false
+	}
+	count, err := strconv.Atoi(parts[0])
+	if err != nil || count < 1 {
+		return 0, false
+	}
+	if count == 1 && parts[1] == "time" {
+		return 1, true
+	}
+	if count > 1 && parts[1] == "times" {
+		return count, true
+	}
+	return 0, false
+}
+
+func uncertainSendAction() predicate.RevenueAction {
+	return revenueaction.Or(
+		revenueaction.ExecutionStatusEQ(ExecAmbiguous),
+		revenueaction.ReconciliationStatusEQ("manual_review"),
+	)
+}
+
+type reconciliationCheckRule struct {
+	phrase string
+	match  predicate.RevenueAction
+}
+
+var reconciliationCheckRules = []reconciliationCheckRule{
+	{"This send has no receipt to check.", executionErrorEither(
+		revenueaction.ReconciliationErrorEQ("execution idempotency key is missing"),
+		revenueaction.ReconciliationErrorEQ("This send has no receipt to check."),
+		revenueaction.ReconciliationErrorContainsFold("reconciliation idempotency key is required"),
+	)},
+	{"Someone else is set to send this, so this workspace cannot confirm it.", revenueaction.ReconciliationErrorEQ("action is assigned to another provider credential")},
+	{"This channel cannot confirm whether the send went out.", executionErrorEither(
+		revenueaction.ReconciliationErrorEQ("execution backend does not support provider reconciliation"),
+		revenueaction.ReconciliationErrorContainsFold("cannot reconcile provider state"),
+	)},
+	{"The provider matched this send but did not return a receipt.", revenueaction.ReconciliationErrorEQ("provider reconciliation reported a match without a receipt")},
+	{"Connect Google for the person who will send this, then try again.", revenueaction.ReconciliationErrorContainsFold("google is not connected")},
+	{"Google stopped accepting the authorization. Reconnect, then try again.", revenueaction.ReconciliationErrorContainsFold("refresh token is invalid")},
+	{"Google is missing permission to check this send. Reconnect, then try again.", executionErrorEither(
+		reconciliationErrorPattern("missing the", "scope"),
+		revenueaction.ReconciliationErrorContainsFold("reconnect Google"),
+	)},
+	{"Google could not authorize this check. Reconnect, then try again.", revenueaction.ReconciliationErrorContainsFold("could not obtain a google access token")},
+	{"Calendar sending is not set up yet.", revenueaction.ReconciliationErrorContainsFold("Google Calendar executor is not configured")},
+	{"Choose the Slack channel before sending.", revenueaction.ReconciliationErrorContainsFold("Slack action needs target")},
+	{"Link the HubSpot record before sending.", revenueaction.ReconciliationErrorContainsFold("HubSpot action needs a relationship resource ref")},
+	{"Slack could not be reached for this check.", revenueaction.ReconciliationErrorContainsFold("resolve Slack workspace")},
+	{"The check could not confirm this send.", reconciliationErrorPrefixFold("revenue:")},
+}
+
+func reconciliationErrorNormalizedEQ(needle string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeNormalizedSQLText(b, s, "trim("+s.C(revenueaction.FieldReconciliationError)+")")
+			b.WriteString(" = ")
+			b.Arg(needle)
+		}))
+	})
+}
+
+func reconciliationErrorPrefixFold(prefix string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("lower(trim(")
+			b.WriteString(s.C(revenueaction.FieldReconciliationError))
+			b.WriteString(")) LIKE ")
+			b.Arg(strings.ToLower(prefix) + "%")
+		}))
+	})
+}
+
+func reconciliationErrorPattern(parts ...string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := "lower(" + s.C(revenueaction.FieldReconciliationError) + ")"
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(column)
+				b.WriteString(" ~ ")
+				b.Arg(strings.Join(parts, ".+"))
+				return
+			}
+			b.WriteString(column)
+			b.WriteString(" GLOB ")
+			b.Arg("*" + strings.Join(parts, "*") + "*")
+		}))
+	})
+}
+
+// relationshipSheetSnoozeWakeMatch is the queue line for a snoozed action.
+// A future wake says "Comes back". Listing reopens a wake that already passed
+// and clears its time, so "Snooze ended" is no longer on the company.
+func relationshipSheetSnoozeWakeMatch(needle string, now time.Time) predicate.Relationship {
+	kind, count, unit, ok := snoozeWakePhrase(needle)
+	if !ok {
+		return nil
+	}
+	lo, hi, ok := snoozeWakeWindow(count, unit)
+	if !ok {
+		return nil
+	}
+	var window predicate.RevenueAction
+	switch kind {
+	case "back":
+		if lo == 0 {
+			window = revenueaction.And(
+				revenueaction.SnoozedUntilGT(now),
+				revenueaction.SnoozedUntilLT(now.Add(hi)),
+			)
+		} else {
+			window = revenueaction.And(
+				revenueaction.SnoozedUntilGTE(now.Add(lo)),
+				revenueaction.SnoozedUntilLT(now.Add(hi)),
+			)
+		}
+	case "ended":
+		if lo == 0 {
+			window = revenueaction.And(
+				revenueaction.SnoozedUntilLTE(now),
+				revenueaction.SnoozedUntilGT(now.Add(-hi)),
+			)
+		} else {
+			window = revenueaction.And(
+				revenueaction.SnoozedUntilLTE(now.Add(-lo)),
+				revenueaction.SnoozedUntilGT(now.Add(-hi)),
+			)
+		}
+	default:
+		return nil
+	}
+	return relationship.HasActionsWith(
+		revenueaction.QueueStatusEQ(QueueSnoozed),
+		window,
+	)
+}
+
+func snoozeWakePhrase(needle string) (kind string, count int, unit time.Duration, ok bool) {
+	var rest string
+	switch {
+	case strings.HasPrefix(needle, "comes back ") && strings.HasSuffix(needle, " from now"):
+		kind = "back"
+		rest = strings.TrimSuffix(strings.TrimPrefix(needle, "comes back "), " from now")
+	case strings.HasPrefix(needle, "snooze ended ") && strings.HasSuffix(needle, " ago"):
+		kind = "ended"
+		rest = strings.TrimSuffix(strings.TrimPrefix(needle, "snooze ended "), " ago")
+	default:
+		return "", 0, 0, false
+	}
+	parts := strings.Fields(rest)
+	if len(parts) != 2 {
+		return "", 0, 0, false
+	}
+	count, err := strconv.Atoi(parts[0])
+	if err != nil || count < 1 {
+		return "", 0, 0, false
+	}
+	switch parts[1] {
+	case "min":
+		if count != 1 {
+			return "", 0, 0, false
+		}
+		unit = time.Minute
+	case "mins":
+		if count < 2 {
+			return "", 0, 0, false
+		}
+		unit = time.Minute
+	case "hour":
+		if count != 1 {
+			return "", 0, 0, false
+		}
+		unit = time.Hour
+	case "hours":
+		if count < 2 {
+			return "", 0, 0, false
+		}
+		unit = time.Hour
+	case "day":
+		if count != 1 {
+			return "", 0, 0, false
+		}
+		unit = 24 * time.Hour
+	case "days":
+		if count < 2 {
+			return "", 0, 0, false
+		}
+		unit = 24 * time.Hour
+	default:
+		return "", 0, 0, false
+	}
+	return kind, count, unit, true
+}
+
+func snoozeWakeWindow(count int, unit time.Duration) (lo, hi time.Duration, ok bool) {
+	switch unit {
+	case time.Minute:
+		if count < 1 || count > 59 {
+			return 0, 0, false
+		}
+		if count == 1 {
+			return 0, 90 * time.Second, true
+		}
+		return time.Duration(count)*time.Minute - 30*time.Second, time.Duration(count)*time.Minute + 30*time.Second, true
+	case time.Hour:
+		if count < 1 || count > 24 {
+			return 0, 0, false
+		}
+		lo = time.Duration(count)*time.Hour - 30*time.Minute
+		hi = time.Duration(count)*time.Hour + 30*time.Minute
+		if lo < time.Hour {
+			lo = time.Hour
+		}
+		if hi > 24*time.Hour {
+			hi = 24 * time.Hour
+		}
+		return lo, hi, lo < hi
+	case 24 * time.Hour:
+		if count < 1 || count > 30 {
+			return 0, 0, false
+		}
+		day := 24 * time.Hour
+		lo = time.Duration(count)*day - day/2
+		hi = time.Duration(count)*day + day/2
+		if lo < day {
+			lo = day
+		}
+		if hi > 30*day {
+			hi = 30 * day
+		}
+		return lo, hi, lo < hi
+	default:
+		return 0, 0, false
+	}
+}
+
+// relationshipSheetSourceBadgeMatch is the badge on a connected source.
+// The directory says "Reconnect required" or "Syncing". The stored status
+// stays on the row. A company matches when it depends on that source.
+func relationshipSheetSourceBadgeMatch(needle string) predicate.Relationship {
+	// The badge is "Google · Active" or "Slack · Out of date". The status
+	// word alone still finds every source in that state. The source name
+	// keeps the row that prints it.
+	if left, right, ok := mailTimelineParts(needle); ok {
+		sources := sourceBadgeFamilies(left)
+		cond := sourceBadgeWriter(right)
+		if len(sources) == 0 || cond == nil {
+			return nil
+		}
+		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
+			writeListedSourceNames(b, sources)
+			b.WriteString(" AND ")
+			cond(b)
+		})
+	}
+	if cond := sourceBadgeWriter(needle); cond != nil {
+		return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
+			cond(b)
+		})
+	}
+	return nil
+}
+
+func sourceBadgeFamilies(label string) []string {
+	switch normalizePersonSearch(label) {
+	case "google":
+		return []string{"google"}
+	case "gmail":
+		return []string{"gmail"}
+	case "calendar":
+		return []string{"calendar"}
+	case "slack":
+		return []string{"slack"}
+	case "hubspot":
+		return []string{"hubspot"}
+	case "the crm":
+		return []string{"crm"}
+	default:
+		return nil
+	}
+}
+
+func sourceBadgeWriter(label string) func(*sql.Builder) {
+	switch normalizePersonSearch(label) {
+	case "not connected":
+		return func(b *sql.Builder) { writeSourceStatusEQ(b, "not_connected") }
+	case "reconnect required":
+		return func(b *sql.Builder) { writeSourceStatusEQ(b, "reconnect_required") }
+	case "disconnected":
+		return func(b *sql.Builder) { writeSourceStatusEQ(b, "disconnected") }
+	case "syncing":
+		return writeSourceBadgeSyncing
+	case "waiting to connect":
+		return func(b *sql.Builder) { writeSourceStatusEQ(b, "authorizing") }
+	case "sync incomplete":
+		return writeSourceBadgeIncomplete
+	case "degraded":
+		return writeSourceBadgeDegraded
+	case "out of date":
+		return writeSourceBadgeStale
+	case "active":
+		return writeSourceBadgeActive
+	default:
+		return nil
+	}
+}
+
+func writeListedSourceNames(b *sql.Builder, sources []string) {
+	b.WriteString("lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN (")
+	for i, source := range sources {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(source)
+	}
+	b.WriteString(")")
+}
+
+func writeSourceStatusEQ(b *sql.Builder, status string) {
+	b.WriteString("src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" = ")
+	b.Arg(status)
+}
+
+func writeSourceNotStopped(b *sql.Builder) {
+	b.WriteString("src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" NOT IN ('not_connected', 'reconnect_required', 'disconnected')")
+}
+
+func writeSourceSyncingFlag(b *sql.Builder) {
+	b.WriteString("(src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" IN ('backfilling', 'rebuilding') OR src.")
+	b.WriteString(relationshipsourcestatus.FieldBackfillPhase)
+	b.WriteString(" IN ('queued', 'running'))")
+}
+
+func writeSourceBadgeSyncing(b *sql.Builder) {
+	writeSourceNotStopped(b)
+	b.WriteString(" AND ")
+	writeSourceSyncingFlag(b)
+}
+
+func writeSourceBadgeIncomplete(b *sql.Builder) {
+	b.WriteString("lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN ('google', 'slack', 'hubspot') AND ")
+	writeSourceNotStopped(b)
+	b.WriteString(" AND NOT ")
+	writeSourceSyncingFlag(b)
+	b.WriteString(" AND src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" <> 'stale' AND src.")
+	b.WriteString(relationshipsourcestatus.FieldCompleteness)
+	b.WriteString(" <> 'complete'")
+}
+
+// A finished history with status degraded still prints "Degraded". A resync
+// source whose history is unfinished prints "Sync incomplete" instead.
+func writeSourceBadgeDegraded(b *sql.Builder) {
+	writeSourceStatusEQ(b, "degraded")
+	b.WriteString(" AND NOT ")
+	writeSourceSyncingFlag(b)
+	b.WriteString(" AND NOT (lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN ('google', 'slack', 'hubspot') AND src.")
+	b.WriteString(relationshipsourcestatus.FieldCompleteness)
+	b.WriteString(" <> 'complete')")
+}
+
+func writeSourceBadgeActive(b *sql.Builder) {
+	b.WriteString("src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" IN ('live', 'connected') AND NOT ")
+	writeSourceSyncingFlag(b)
+	b.WriteString(" AND NOT (lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN ('google', 'slack', 'hubspot') AND src.")
+	b.WriteString(relationshipsourcestatus.FieldCompleteness)
+	b.WriteString(" <> 'complete')")
+}
+
+func writeSourceBadgeStale(b *sql.Builder) {
+	b.WriteString("src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" = 'stale' AND NOT ")
+	writeSourceSyncingFlag(b)
+}
+
+func relationshipDependsOnSource(cond func(b *sql.Builder, s *sql.Selector)) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" AS src WHERE src.")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND ")
+			cond(b, s)
+			b.WriteString(" AND ")
+			writeDependentSource(b, s, "src")
+			b.WriteString(")")
+		}))
+	})
+}
+
+// relationshipSheetSourceErrorMatch is the error under a source badge.
+// The card rewrites a stored worker sentence. A company matches when it
+// depends on the source that stored that error.
+func relationshipSheetSourceErrorMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	for _, rule := range sourceErrorRules {
+		if needle != normalizePersonSearch(rule.phrase) {
+			continue
+		}
+		raw := rule.raw
+		return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+			b.WriteString("(trim(src.")
+			b.WriteString(relationshipsourcestatus.FieldLastError)
+			b.WriteString(") = ")
+			b.Arg(raw)
+			b.WriteString(" OR ")
+			writeNormalizedSQLText(b, s, "trim(src."+relationshipsourcestatus.FieldLastError+")")
+			b.WriteString(" = ")
+			b.Arg(needle)
+			b.WriteString(")")
+		})
+	}
+	if needle == normalizePersonSearch("Reading stopped. Reconnect or try again.") {
+		return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+			b.WriteString("(")
+			writeSourceErrorToken(b, s)
+			b.WriteString(" OR ")
+			writeNormalizedSQLText(b, s, "trim(src."+relationshipsourcestatus.FieldLastError+")")
+			b.WriteString(" = ")
+			b.Arg(needle)
+			b.WriteString(") AND ")
+			writeSourceErrorNotMapped(b)
+		})
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeNormalizedSQLText(b, s, "trim(src."+relationshipsourcestatus.FieldLastError+")")
+		b.WriteString(" = ")
+		b.Arg(needle)
+		b.WriteString(" AND NOT (")
+		writeSourceErrorToken(b, s)
+		b.WriteString(") AND ")
+		writeSourceErrorNotMapped(b)
+	})
+}
+
+type sourceErrorRule struct {
+	phrase string
+	raw    string
+}
+
+var sourceErrorRules = []sourceErrorRule{
+	{"A needed permission is missing. Reconnect to grant it.", "Required provider permission is missing."},
+	{"The connection expired. Reconnect to keep reading.", "Provider authorization expired; reconnect is required."},
+	{"Access was turned off. Reconnect to keep reading.", "Provider access was revoked; reconnect is required."},
+	{"The source is busy. Reading will continue shortly.", "Provider rate limit delayed synchronization."},
+	{"The source is temporarily unavailable.", "Provider is temporarily unavailable."},
+	{"This source is not set up to read yet.", "This provider is not configured on the synchronization worker."},
+	{"Reading lost its place. Start the sync again.", "The provider cursor was lost; a rebuild is required."},
+	{"The connection was canceled.", "Provider authorization was canceled."},
+	{"The connection failed. Reconnect to try again.", "Provider authorization failed; reconnect is required."},
+	{"Public research stopped because this workspace used its research budget.", "Account monitoring stopped early because this workspace reached its research budget for the period."},
+	{"Public research is part of the Intelligence plan. This workspace does not include it.", "Account monitoring is not running because the subscription does not currently include cloud research."},
+	{"Public research stays off until you allow it.", "Account monitoring is not running because cloud research consent has been withdrawn."},
+	{"Public research is paused for this workspace.", "Account monitoring is paused for this workspace."},
+	{"Public research is not available in this workspace.", "Account monitoring is not running because no research provider is configured."},
+	{"Public research did not finish its last check.", "Account monitoring did not finish its last run."},
+}
+
+func writeSourceErrorNotMapped(b *sql.Builder) {
+	b.WriteString("trim(src.")
+	b.WriteString(relationshipsourcestatus.FieldLastError)
+	b.WriteString(") NOT IN (")
+	for i, rule := range sourceErrorRules {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(rule.raw)
+	}
+	b.WriteString(")")
+}
+
+func writeSourceErrorToken(b *sql.Builder, s *sql.Selector) {
+	column := "trim(src." + relationshipsourcestatus.FieldLastError + ")"
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString(" ~ ")
+		b.Arg("^[a-z0-9_:-]+$")
+		return
+	}
+	b.WriteString(column)
+	b.WriteString(" GLOB '[a-z0-9_:-]*' AND ")
+	b.WriteString(column)
+	b.WriteString(" NOT GLOB '*[^a-z0-9_:-]*' AND ")
+	b.WriteString(column)
+	b.WriteString(" <> ''")
+}
+
+// relationshipSheetSourceLagMatch is the lag on a source card. A live source
+// with nothing missing stays off that card, so its lag stays out of search.
+func relationshipSheetSourceLagMatch(needle string, now time.Time) predicate.Relationship {
+	count, unit, ok := sourceLagPhrase(needle)
+	if !ok {
+		return nil
+	}
+	lo, hi, ok := sourceLagBounds(count, unit)
+	if !ok {
+		return nil
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeSourceLagShown(b, s)
+		b.WriteString(" AND ")
+		writeSourceDisplayedLag(b, now, lo, hi)
+	})
+}
+
+// sourceLagPhrase reads the lag line on a source card. That line says
+// "minute" and "minutes". The snooze line says "min" and "mins".
+func sourceLagPhrase(needle string) (count int, unit time.Duration, ok bool) {
+	const suffix = " behind"
+	if !strings.HasSuffix(needle, suffix) {
+		return 0, 0, false
+	}
+	parts := strings.Fields(strings.TrimSuffix(needle, suffix))
+	if len(parts) != 2 {
+		return 0, 0, false
+	}
+	count, err := strconv.Atoi(parts[0])
+	if err != nil || count < 1 {
+		return 0, 0, false
+	}
+	switch parts[1] {
+	case "minute":
+		if count != 1 {
+			return 0, 0, false
+		}
+		return count, time.Minute, true
+	case "minutes":
+		if count < 2 {
+			return 0, 0, false
+		}
+		return count, time.Minute, true
+	case "hour":
+		if count != 1 {
+			return 0, 0, false
+		}
+		return count, time.Hour, true
+	case "hours":
+		if count < 2 {
+			return 0, 0, false
+		}
+		return count, time.Hour, true
+	case "day":
+		if count != 1 {
+			return 0, 0, false
+		}
+		return count, 24 * time.Hour, true
+	case "days":
+		if count < 2 {
+			return 0, 0, false
+		}
+		return count, 24 * time.Hour, true
+	default:
+		return 0, 0, false
+	}
+}
+
+func sourceLagBounds(count int, unit time.Duration) (lo, hi int64, ok bool) {
+	const minute int64 = 60
+	const hour int64 = 3600
+	const day int64 = 86400
+	switch unit {
+	case time.Minute:
+		switch {
+		case count == 1:
+			return 1, 89, true
+		case count >= 2 && count <= 59:
+			return int64(count)*minute - 30, int64(count)*minute + 30 - 1, true
+		case count == 60:
+			return 3570, 3599, true
+		default:
+			return 0, 0, false
+		}
+	case time.Hour:
+		switch {
+		case count == 1:
+			return hour, 5400 - 1, true
+		case count >= 2 && count <= 23:
+			return int64(count)*hour - 1800, int64(count)*hour + 1800 - 1, true
+		case count == 24:
+			return 84600, day - 1, true
+		default:
+			return 0, 0, false
+		}
+	case 24 * time.Hour:
+		switch {
+		case count == 1:
+			return day, day + day/2 - 1, true
+		case count >= 2:
+			return int64(count)*day - day/2, int64(count)*day + day/2 - 1, true
+		default:
+			return 0, 0, false
+		}
+	default:
+		return 0, 0, false
+	}
+}
+
+func writeSourceLagShown(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("NOT EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS earlier WHERE earlier.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = src.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" AND lower(earlier.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") = lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") AND lower(earlier.")
+	b.WriteString(relationshipsourcestatus.FieldSourceAccountID)
+	b.WriteString(") < lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSourceAccountID)
+	b.WriteString(")) AND EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS peer WHERE peer.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = src.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" AND lower(peer.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") = lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") AND (peer.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" <> 'live' OR NOT ")
+	writeAliasMissingScopesEmpty(b, s, "peer")
+	b.WriteString(")) AND (lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") NOT IN ('gmail', 'calendar', 'google') OR (src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" IN ('connected', 'backfilling', 'live', 'stale', 'rebuilding', 'degraded') AND ")
+	writeAliasMissingScopesEmpty(b, s, "src")
+	b.WriteString(" AND (lower(trim(src.")
+	b.WriteString(relationshipsourcestatus.FieldSourceAccountID)
+	b.WriteString(")) NOT IN ('', 'default') OR NOT ")
+	writeAliasJSONEmpty(b, s, "src", relationshipsourcestatus.FieldGrantedScopes)
+	b.WriteString(")))")
+}
+
+func writeAliasJSONEmpty(b *sql.Builder, s *sql.Selector, alias, field string) {
+	column := alias + "." + field
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb)) = 0", column))
+		return
+	}
+	b.WriteString(fmt.Sprintf("json_array_length(coalesce(%s, '[]')) = 0", column))
+}
+
+func writeSourceDisplayedLag(b *sql.Builder, now time.Time, lo, hi int64) {
+	now = now.UTC()
+	b.WriteString("(((src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" IN ('disconnected', 'not_connected', 'authorizing') OR src.")
+	b.WriteString(relationshipsourcestatus.FieldLastSuccessAt)
+	b.WriteString(" IS NULL) AND src.")
+	b.WriteString(relationshipsourcestatus.FieldLagSeconds)
+	b.WriteString(" BETWEEN ")
+	b.Arg(lo)
+	b.WriteString(" AND ")
+	b.Arg(hi)
+	b.WriteString(") OR (src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" NOT IN ('disconnected', 'not_connected', 'authorizing') AND src.")
+	b.WriteString(relationshipsourcestatus.FieldLastSuccessAt)
+	b.WriteString(" IS NOT NULL AND src.")
+	b.WriteString(relationshipsourcestatus.FieldLastSuccessAt)
+	b.WriteString(" > ")
+	b.Arg(now.Add(-time.Duration(hi+1) * time.Second))
+	b.WriteString(" AND src.")
+	b.WriteString(relationshipsourcestatus.FieldLastSuccessAt)
+	b.WriteString(" <= ")
+	b.Arg(now.Add(-time.Duration(lo) * time.Second))
+	b.WriteString("))")
+}
+
+// relationshipSheetSourceHistoryMatch is the sync percent on a source card.
+// The card prints it only for the account it shows, and only when that
+// account has a history total.
+func relationshipSheetSourceHistoryMatch(needle string) predicate.Relationship {
+	percent, ok := sourceHistoryPhrase(needle)
+	if !ok {
+		return nil
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeSourceLagShown(b, s)
+		b.WriteString(" AND src.")
+		b.WriteString(relationshipsourcestatus.FieldBackfillTotal)
+		b.WriteString(" > 0 AND ")
+		writeSourceHistoryPercent(b, s)
+		b.WriteString(" = ")
+		b.Arg(percent)
+	})
+}
+
+func sourceHistoryPhrase(needle string) (int, bool) {
+	const suffix = " of history synced"
+	if !strings.HasSuffix(needle, suffix) {
+		return 0, false
+	}
+	head := strings.TrimSuffix(needle, suffix)
+	if !strings.HasSuffix(head, "%") || strings.Contains(head, " ") {
+		return 0, false
+	}
+	percent, err := strconv.Atoi(strings.TrimSuffix(head, "%"))
+	if err != nil || percent < 0 {
+		return 0, false
+	}
+	return percent, true
+}
+
+// relationshipSheetSourceStatusLineMatch is the sentence under a source card.
+// The card joins the completeness label, the sync percent, and the lag when
+// those are showing. Each piece on its own stays on its own matcher.
+func relationshipSheetSourceStatusLineMatch(needle string, now time.Time) predicate.Relationship {
+	completeness, percent, hasPercent, lagCount, lagUnit, hasLag, ok := sourceCardStatusLine(needle)
+	if !ok {
+		return nil
+	}
+	var lo, hi int64
+	if hasLag {
+		var boundsOK bool
+		lo, hi, boundsOK = sourceLagBounds(lagCount, lagUnit)
+		if !boundsOK {
+			return nil
+		}
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeSourceLagShown(b, s)
+		b.WriteString(" AND src.")
+		b.WriteString(relationshipsourcestatus.FieldCompleteness)
+		b.WriteString(" = ")
+		b.Arg(completeness)
+		if hasPercent {
+			b.WriteString(" AND src.")
+			b.WriteString(relationshipsourcestatus.FieldBackfillTotal)
+			b.WriteString(" > 0 AND ")
+			writeSourceHistoryPercent(b, s)
+			b.WriteString(" = ")
+			b.Arg(percent)
+		} else {
+			b.WriteString(" AND coalesce(src.")
+			b.WriteString(relationshipsourcestatus.FieldBackfillTotal)
+			b.WriteString(", 0) <= 0")
+		}
+		if hasLag {
+			b.WriteString(" AND ")
+			writeSourceDisplayedLag(b, now, lo, hi)
+			return
+		}
+		b.WriteString(" AND coalesce(src.")
+		b.WriteString(relationshipsourcestatus.FieldLagSeconds)
+		b.WriteString(", 0) <= 0")
+	})
+}
+
+func sourceCardStatusLine(needle string) (completeness string, percent int, hasPercent bool, lagCount int, lagUnit time.Duration, hasLag, ok bool) {
+	parts := strings.Split(needle, " · ")
+	if len(parts) < 2 || len(parts) > 3 {
+		return "", 0, false, 0, 0, false, false
+	}
+	completeness, ok = sourceCardCompleteness[parts[0]]
+	if !ok {
+		return "", 0, false, 0, 0, false, false
+	}
+	switch len(parts) {
+	case 3:
+		percent, hasPercent = sourceHistoryPhrase(parts[1])
+		lagCount, lagUnit, hasLag = sourceLagPhrase(parts[2])
+		if !hasPercent || !hasLag {
+			return "", 0, false, 0, 0, false, false
+		}
+		return completeness, percent, true, lagCount, lagUnit, true, true
+	default:
+		if parsed, history := sourceHistoryPhrase(parts[1]); history {
+			return completeness, parsed, true, 0, 0, false, true
+		}
+		if count, unit, lag := sourceLagPhrase(parts[1]); lag {
+			return completeness, 0, false, count, unit, true, true
+		}
+		return "", 0, false, 0, 0, false, false
+	}
+}
+
+var sourceCardCompleteness = map[string]string{
+	"details are current":              "complete",
+	"some details are still missing":   "partial",
+	"details need a refresh":           "stale",
+	"updating from connected sources":  "rebuilding",
+	"a source needs to be reconnected": "disconnected",
+}
+
+func writeSourceHistoryPercent(b *sql.Builder, s *sql.Selector) {
+	completed := "src." + relationshipsourcestatus.FieldBackfillCompleted
+	total := "src." + relationshipsourcestatus.FieldBackfillTotal
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(fmt.Sprintf("cast(round((%s::numeric * 100) / %s) as integer)", completed, total))
+		return
+	}
+	b.WriteString(fmt.Sprintf("cast(round((%s * 100.0) / %s) as integer)", completed, total))
+}
+
+// relationshipSheetSourceReconnectCopyMatch is the completeness line on a
+// source card. The company sheet uses a different sentence for the same fact.
+func relationshipSheetSourceReconnectCopyMatch(needle string) predicate.Relationship {
+	if needle != normalizePersonSearch("A source needs to be reconnected") {
+		return nil
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeSourceLagShown(b, s)
+		b.WriteString(" AND src.")
+		b.WriteString(relationshipsourcestatus.FieldCompleteness)
+		b.WriteString(" = ")
+		b.Arg("disconnected")
+	})
+}
+
+// relationshipSheetSourceCopyMatch is the explanation and the permission
+// lines on a source card. The card is hidden once every account is live and
+// nothing is missing, so those sentences stay out of search then.
+func relationshipSheetSourceCopyMatch(needle string) predicate.Relationship {
+	family, ok := sourceCopyFamily(needle)
+	if !ok {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(")
+			writeSourceFamilyDependency(b, s, family)
+			b.WriteString(" AND ")
+			writeSourceFamilyNeedsAttention(b, s, family)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func sourceCopyFamily(needle string) (string, bool) {
+	phrases := map[string]string{
+		normalizePersonSearch("Read recent mail and meetings to build company history. Sending and calendar changes wait for approval."): "google",
+		"read: mail and calendar":                            "google",
+		"on approval: drafts, sending, and calendar changes": "google",
+		normalizePersonSearch("Read channels and people to add shared context. Posting waits until you approve the exact message."): "slack",
+		"read: channels and people":   "slack",
+		"on approval: post a message": "slack",
+		normalizePersonSearch("Read companies, contacts, and deals. Notes and tasks are created only after you approve them."): "hubspot",
+		"read: companies, contacts, and deals": "hubspot",
+		"on approval: notes and tasks":         "hubspot",
+	}
+	family, ok := phrases[needle]
+	return family, ok
+}
+
+func writeSourceFamilyDependency(b *sql.Builder, s *sql.Selector, family string) {
+	switch family {
+	case "google":
+		writeRelationshipDependsOn(b, s, []string{"gmail", "calendar", "google"}, []string{"email", "gmail", "calendar"})
+	case "slack":
+		writeRelationshipDependsOn(b, s, []string{"slack"}, []string{"slack"})
+	case "hubspot":
+		writeRelationshipDependsOn(b, s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"})
+	default:
+		b.WriteString("0")
+	}
+}
+
+func writeSourceFamilyNeedsAttention(b *sql.Builder, s *sql.Selector, family string) {
+	b.WriteString("(NOT EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS src WHERE src.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.WorkspaceColumn))
+	b.WriteString(" AND lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN ")
+	writeSourceFamilyIn(b, family)
+	b.WriteString(") OR EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS src WHERE src.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.WorkspaceColumn))
+	b.WriteString(" AND lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN ")
+	writeSourceFamilyIn(b, family)
+	b.WriteString(" AND (src.")
+	b.WriteString(relationshipsourcestatus.FieldStatus)
+	b.WriteString(" <> 'live' OR NOT (")
+	writeAliasMissingScopesEmpty(b, s, "src")
+	b.WriteString("))))")
+}
+
+func writeSourceFamilyIn(b *sql.Builder, family string) {
+	switch family {
+	case "google":
+		b.WriteString("('gmail', 'calendar', 'google')")
+	case "slack":
+		b.WriteString("('slack')")
+	case "hubspot":
+		b.WriteString("('hubspot', 'crm')")
+	default:
+		b.WriteString("('')")
+	}
+}
+
+// relationshipSheetSourceMissingMatch is the missing-permission line on a
+// source card. The line names the permissions, not the stored scope ids.
+// A Google account with a missing permission is hidden, so that line stays
+// out of search.
+func relationshipSheetSourceMissingMatch(needle string) predicate.Relationship {
+	const prefix = "missing: "
+	if !strings.HasPrefix(needle, prefix) {
+		return nil
+	}
+	labels := strings.TrimPrefix(needle, prefix)
+	if labels == "" || strings.HasPrefix(labels, ",") || strings.HasSuffix(labels, ",") {
+		return nil
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeSourceLagShown(b, s)
+		b.WriteString(" AND ")
+		writeSourceMissingLabels(b, s)
+		b.WriteString(" = ")
+		b.Arg(labels)
+	})
+}
+
+func writeSourceMissingLabels(b *sql.Builder, s *sql.Selector) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("(SELECT string_agg(label, ', ' ORDER BY ord) FROM (SELECT label, min(ord) AS ord FROM (SELECT ")
+		writeSourceScopeLabel(b, s, "trim(scope.value)")
+		b.WriteString(" AS label, scope.ord FROM jsonb_array_elements_text(coalesce(src.")
+		b.WriteString(relationshipsourcestatus.FieldMissingScopes)
+		b.WriteString(", '[]'::jsonb)) WITH ORDINALITY AS scope(value, ord)) AS mapped WHERE label <> '' GROUP BY label) AS unique_labels)")
+		return
+	}
+	b.WriteString("(SELECT group_concat(label, ', ') FROM (SELECT label FROM (SELECT label, min(ord) AS ord FROM (SELECT ")
+	writeSourceScopeLabel(b, s, "trim(scope.value)")
+	b.WriteString(" AS label, cast(scope.key AS integer) AS ord FROM json_each(coalesce(src.")
+	b.WriteString(relationshipsourcestatus.FieldMissingScopes)
+	b.WriteString(", '[]')) AS scope) AS mapped WHERE label <> '' GROUP BY label) AS unique_labels ORDER BY ord))")
+}
+
+func writeSourceScopeLabel(b *sql.Builder, s *sql.Selector, value string) {
+	b.WriteString("CASE ")
+	b.WriteString(value)
+	for _, item := range sourceScopeLabels {
+		b.WriteString(" WHEN ")
+		b.Arg(item.scope)
+		b.WriteString(" THEN ")
+		b.Arg(item.label)
+	}
+	b.WriteString(" ELSE ")
+	writeSourceScopeFallbackLabel(b, s, value)
+	b.WriteString(" END")
+}
+
+func writeSourceScopeFallbackLabel(b *sql.Builder, s *sql.Selector, value string) {
+	bare := fmt.Sprintf("CASE WHEN instr(%s, '/') > 0 THEN replace(%s, rtrim(%s, replace(%s, '/', '')), '') ELSE %s END", value, value, value, value, value)
+	if s.Dialect() == dialect.Postgres {
+		bare = fmt.Sprintf("CASE WHEN position('/' in %s) > 0 THEN regexp_replace(%s, '^.*/', '') ELSE %s END", value, value, value)
+		b.WriteString(fmt.Sprintf("lower(trim(regexp_replace(regexp_replace(%s, '[._:-]+', ' ', 'g'), '\\s+', ' ', 'g')))", bare))
+		return
+	}
+	spaced := bare
+	for _, mark := range []string{".", "_", ":", "-"} {
+		spaced = fmt.Sprintf("replace(%s, '%s', ' ')", spaced, mark)
+	}
+	for i := 0; i < 4; i++ {
+		spaced = fmt.Sprintf("replace(%s, '  ', ' ')", spaced)
+	}
+	b.WriteString(fmt.Sprintf("lower(trim(%s))", spaced))
+}
+
+var sourceScopeLabels = []struct{ scope, label string }{
+	{"https://www.googleapis.com/auth/gmail.readonly", "mail"},
+	{"https://www.googleapis.com/auth/gmail.compose", "drafts"},
+	{"https://www.googleapis.com/auth/gmail.send", "sending"},
+	{"https://www.googleapis.com/auth/calendar.events.readonly", "calendar"},
+	{"https://www.googleapis.com/auth/calendar.events", "calendar changes"},
+	{"channels:history", "channel history"},
+	{"channels:read", "channels"},
+	{"users:read", "people"},
+	{"chat:write", "post a message"},
+	{"crm.objects.companies.read", "companies"},
+	{"crm.objects.contacts.read", "contacts"},
+	{"crm.objects.deals.read", "deals"},
+	{"crm.objects.notes.write", "notes"},
+	{"crm.objects.tasks.write", "tasks"},
+}
+
+// relationshipSheetSourceLookedMatch is the hover on a source badge.
+// An error on that badge replaces the hover, so the look time stays hidden.
+// The first 30 days read "Last looked 2 hours ago". Older reads switch to the
+// UTC day, "Last looked Sep 4, 2026", which is the sentence on the badge.
+func relationshipSheetSourceLookedMatch(needle string, now time.Time) predicate.Relationship {
+	if kind, count, unit, ok := sourceLookedPhrase(needle); ok {
+		lo, hi, ok := snoozeWakeWindow(count, unit)
+		if !ok {
+			return nil
+		}
+		return sourceLookedAtMatch(func(b *sql.Builder) {
+			writeSourceLookedWindow(b, now, kind, lo, hi)
+		})
+	}
+	const prefix = "last looked "
+	if !strings.HasPrefix(needle, prefix) {
+		return nil
+	}
+	window, ok := calendarLabelWindow(strings.TrimPrefix(needle, prefix), now)
+	if !ok {
+		return nil
+	}
+	return sourceLookedAtMatch(func(b *sql.Builder) {
+		column := "src." + relationshipsourcestatus.FieldLastObservationAt
+		b.WriteString(column)
+		b.WriteString(" > ")
+		b.Arg(window.after.UTC())
+		b.WriteString(" AND ")
+		b.WriteString(column)
+		b.WriteString(" <= ")
+		b.Arg(window.until.UTC())
+	})
+}
+
+func sourceLookedAtMatch(window func(b *sql.Builder)) predicate.Relationship {
+	return relationshipDependsOnSource(func(b *sql.Builder, _ *sql.Selector) {
+		b.WriteString("trim(coalesce(src.")
+		b.WriteString(relationshipsourcestatus.FieldLastError)
+		b.WriteString(", '')) = '' AND src.")
+		b.WriteString(relationshipsourcestatus.FieldLastObservationAt)
+		b.WriteString(" IS NOT NULL AND ")
+		window(b)
+	})
+}
+
+func sourceLookedPhrase(needle string) (kind string, count int, unit time.Duration, ok bool) {
+	const prefix = "last looked "
+	if !strings.HasPrefix(needle, prefix) {
+		return "", 0, 0, false
+	}
+	rest := strings.TrimPrefix(needle, prefix)
+	switch {
+	case strings.HasSuffix(rest, " ago"):
+		return snoozeWakePhrase("snooze ended " + rest)
+	case strings.HasSuffix(rest, " from now"):
+		return snoozeWakePhrase("comes back " + rest)
+	default:
+		return "", 0, 0, false
+	}
+}
+
+func writeSourceLookedWindow(b *sql.Builder, now time.Time, kind string, lo, hi time.Duration) {
+	column := "src." + relationshipsourcestatus.FieldLastObservationAt
+	switch kind {
+	case "back":
+		if lo == 0 {
+			b.WriteString(column)
+			b.WriteString(" > ")
+			b.Arg(now.UTC())
+			b.WriteString(" AND ")
+			b.WriteString(column)
+			b.WriteString(" < ")
+			b.Arg(now.Add(hi).UTC())
+			return
+		}
+		b.WriteString(column)
+		b.WriteString(" >= ")
+		b.Arg(now.Add(lo).UTC())
+		b.WriteString(" AND ")
+		b.WriteString(column)
+		b.WriteString(" < ")
+		b.Arg(now.Add(hi).UTC())
+	case "ended":
+		if lo == 0 {
+			b.WriteString(column)
+			b.WriteString(" <= ")
+			b.Arg(now.UTC())
+			b.WriteString(" AND ")
+			b.WriteString(column)
+			b.WriteString(" > ")
+			b.Arg(now.Add(-hi).UTC())
+			return
+		}
+		b.WriteString(column)
+		b.WriteString(" <= ")
+		b.Arg(now.Add(-lo).UTC())
+		b.WriteString(" AND ")
+		b.WriteString(column)
+		b.WriteString(" > ")
+		b.Arg(now.Add(-hi).UTC())
+	default:
+		b.WriteString("0")
+	}
+}
+
+// relationshipSheetUncertainSendMatch is the review for a send that might
+// already have gone out. The title is on every uncertain send. The line under
+// it is the reconciliation check. A settled send stays off both sentences.
+func relationshipSheetUncertainSendMatch(needle string) predicate.Relationship {
+	uncertain := revenueaction.Or(
+		revenueaction.ExecutionStatusEQ(ExecAmbiguous),
+		revenueaction.ReconciliationStatusEQ("manual_review"),
+	)
+	switch needle {
+	case normalizePersonSearch("This send is not confirmed. Do not try again yet."):
+		return relationship.HasActionsWith(uncertain)
+	case normalizePersonSearch("This send was confirmed."):
+		return relationship.HasActionsWith(
+			revenueaction.ExecutionStatusEQ(ExecAmbiguous),
+			revenueaction.ReconciliationStatusEQ("found"),
+		)
+	case normalizePersonSearch("There is no record of this send."):
+		return relationship.HasActionsWith(
+			revenueaction.ExecutionStatusEQ(ExecAmbiguous),
+			revenueaction.ReconciliationStatusEQ("not_found"),
+		)
+	case normalizePersonSearch("The check could not be finished."):
+		return relationship.HasActionsWith(
+			revenueaction.ExecutionStatusEQ(ExecAmbiguous),
+			revenueaction.ReconciliationStatusEQ("error"),
+		)
+	case normalizePersonSearch("This needs a person to check it."):
+		return relationship.HasActionsWith(revenueaction.ReconciliationStatusEQ("manual_review"))
+	case normalizePersonSearch("Still checking whether this was sent."):
+		return relationship.HasActionsWith(
+			uncertain,
+			revenueaction.Or(
+				revenueaction.ReconciliationStatusIsNil(),
+				revenueaction.ReconciliationStatusNotIn("found", "not_found", "error", "manual_review"),
+			),
+		)
+	default:
+		return nil
+	}
+}
+
+// relationshipSheetGraphExecutionMatch is the Execution word on a graph
+// action. A send that has started is "Sending…". A finished draft is
+// "Drafted". An uncertain send is "Needs reconcile".
+func relationshipSheetGraphExecutionMatch(needle string) predicate.Relationship {
+	switch needle {
+	case normalizePersonSearch("Sending…"):
+		return relationship.HasActionsWith(revenueaction.ExecutionStatusEQ(ExecRequested))
+	case normalizePersonSearch("Drafted"):
+		return relationship.HasActionsWith(
+			revenueaction.ExecutionStatusEQ(ExecSent),
+			revenueaction.ExecutionModeEQ(ExecModeDraft),
+		)
+	case normalizePersonSearch("Needs reconcile"):
+		return relationship.HasActionsWith(revenueaction.ExecutionStatusEQ(ExecAmbiguous))
+	default:
+		return nil
+	}
+}
+
+// relationshipSheetRecoveryStatusMatch is the recovery queue word for an
+// action. Open is "Held". The other stored statuses use the same words the
+// queue filter already prints.
+func relationshipSheetRecoveryStatusMatch(needle string) predicate.Relationship {
+	switch needle {
+	case "held":
+		return relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen))
+	case "snoozed":
+		return relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueSnoozed))
+	case "handled":
+		return relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueHandled))
+	case "dismissed":
+		return relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueDismissed))
+	default:
+		return nil
+	}
+}
+
+// relationshipSheetGraphFreshnessMatch is the State word on a graph evidence
+// node. A meeting or a quoted source from the last 72 hours, including one
+// still ahead of the search, is "Up to date". One older than that and still
+// inside 30 days is "Getting old". Evidence older than 30 days keeps the
+// State word the other searches already use.
+func relationshipSheetGraphFreshnessMatch(needle string, searchedAt time.Time) predicate.Relationship {
+	currentSince := searchedAt.Add(-72 * time.Hour)
+	agingSince := searchedAt.Add(-30 * 24 * time.Hour)
+	switch needle {
+	case "up to date":
+		return relationship.Or(
+			relationship.HasObservationsWith(relationshipobservation.OccurredAtGTE(currentSince)),
+			relationship.HasActionsWith(revenueaction.HasEvidencesWith(
+				revenueevidence.OccurredAtGTE(currentSince),
+			)),
+		)
+	case "getting old":
+		return relationship.Or(
+			relationship.HasObservationsWith(
+				relationshipobservation.OccurredAtLT(currentSince),
+				relationshipobservation.OccurredAtGTE(agingSince),
+			),
+			relationship.HasActionsWith(revenueaction.HasEvidencesWith(
+				revenueevidence.OccurredAtLT(currentSince),
+				revenueevidence.OccurredAtGTE(agingSince),
+			)),
+		)
+	default:
+		return nil
+	}
+}
+
+// relationshipSheetActivityContradictionMatch is a resolved contradiction on
+// the opened activity. Each side names the field and the reading. A case id
+// and an assertion id stay hidden. The canned choice sentence stays hidden.
+// A line that repeats the row summary stays hidden.
+func relationshipSheetActivityContradictionMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationContradictionLine(needle))
+}
+
+func observationContradictionLine(needle string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			writeContradictionObject(b, s, facts)
+			b.WriteString(" AND (")
+			writeContradictionSideMatch(b, s, facts, needle)
+			b.WriteString(" OR ")
+			writeContradictionReasonMatch(b, s, facts, needle)
+			b.WriteString("))")
+		}))
+	})
+}
+
+func writeContradictionObject(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'contradiction_resolution') = 'object'")
+		return
+	}
+	b.WriteString("json_valid(")
+	b.WriteString(facts)
+	b.WriteString(") AND json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.contradiction_resolution') = 'object'")
+}
+
+func writeContradictionSideMatch(b *sql.Builder, s *sql.Selector, facts, needle string) {
+	b.WriteString("(")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'contradiction_resolution'->'sides') = 'array' AND EXISTS (SELECT 1 FROM (SELECT btrim(coalesce(CASE WHEN jsonb_typeof(side->'value') = 'object' AND jsonb_typeof(side->'value'->'value') = 'string' THEN side->'value'->>'value' WHEN jsonb_typeof(side->'value') = 'string' THEN side->>'value' ELSE NULL END, '')) AS reading FROM jsonb_array_elements(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'contradiction_resolution'->'sides') AS side) AS parsed WHERE ")
+	} else {
+		b.WriteString("json_type(")
+		b.WriteString(facts)
+		b.WriteString(", '$.contradiction_resolution.sides') = 'array' AND EXISTS (SELECT 1 FROM (SELECT trim(coalesce(CAST(CASE WHEN json_type(side.value, '$.value') = 'object' AND json_type(side.value, '$.value.value') = 'text' THEN json_extract(side.value, '$.value.value') WHEN json_type(side.value, '$.value') = 'text' THEN json_extract(side.value, '$.value') ELSE NULL END AS TEXT), '')) AS reading FROM json_each(")
+		b.WriteString(facts)
+		b.WriteString(", '$.contradiction_resolution.sides') AS side) AS parsed WHERE ")
+	}
+	b.WriteString("parsed.reading <> '' AND parsed.reading <> 'local-user' AND parsed.reading <> 'meeting-counterparty' AND ")
+	writeReadingKept(b, s, "parsed.reading")
+	b.WriteString(" AND (")
+	writeContradictionDimensionNorm(b, s, facts)
+	b.WriteString(" || ': ' || ")
+	writeShownReadingNorm(b, s, "parsed.reading")
+	b.WriteString(") = ")
+	b.Arg(needle)
+	b.WriteString(" AND ")
+	writeNormalizedSQLText(b, s, summaryTrim(s))
+	b.WriteString(" <> ")
+	writeShownReadingNorm(b, s, "parsed.reading")
+	b.WriteString("))")
+}
+
+func writeContradictionReasonMatch(b *sql.Builder, s *sql.Selector, facts, needle string) {
+	reason := contradictionReasonText(s, facts)
+	b.WriteString("(")
+	writeContradictionReasonTextCheck(b, s, facts)
+	b.WriteString(" AND ")
+	b.WriteString(reason)
+	b.WriteString(" <> 'local-user' AND ")
+	b.WriteString(reason)
+	b.WriteString(" <> 'meeting-counterparty' AND ")
+	b.WriteString(reason)
+	b.WriteString(" <> 'User selected the current value from a focused contradiction case.' AND ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(reason)
+		b.WriteString(" !~ '^[a-z0-9_:-]+$'")
+	} else {
+		b.WriteString(reason)
+		b.WriteString(" GLOB '*[^a-z0-9_:-]*'")
+	}
+	b.WriteString(" AND ")
+	writeNormalizedSQLText(b, s, reason)
+	b.WriteString(" = ")
+	b.Arg(needle)
+	b.WriteString(" AND ")
+	writeNormalizedSQLText(b, s, summaryTrim(s))
+	b.WriteString(" <> ")
+	writeNormalizedSQLText(b, s, contradictionReasonHide(s, reason))
+	b.WriteString(")")
+}
+
+func writeContradictionReasonTextCheck(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'contradiction_resolution'->'reason') = 'string' AND btrim(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'contradiction_resolution'->>'reason') <> ''")
+		return
+	}
+	b.WriteString("json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.contradiction_resolution.reason') = 'text' AND trim(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.contradiction_resolution.reason')) <> ''")
+}
+
+func contradictionReasonText(s *sql.Selector, facts string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(" + facts + "::jsonb->'contradiction_resolution'->>'reason')"
+	}
+	return "trim(json_extract(" + facts + ", '$.contradiction_resolution.reason'))"
+}
+
+func contradictionReasonHide(s *sql.Selector, reason string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "(CASE WHEN strpos(" + reason + ", ': ') > 0 THEN substring(" + reason + " from strpos(" + reason + ", ': ') + 2) ELSE " + reason + " END)"
+	}
+	return "(CASE WHEN instr(" + reason + ", ': ') > 0 THEN substr(" + reason + ", instr(" + reason + ", ': ') + 2) ELSE " + reason + " END)"
+}
+
+func writeContradictionDimensionNorm(b *sql.Builder, s *sql.Selector, facts string) {
+	text := contradictionDimensionText(s, facts)
+	b.WriteString("(CASE WHEN ")
+	b.WriteString(text)
+	b.WriteString(" = '' THEN 'detail' ELSE replace(replace(lower(")
+	b.WriteString(text)
+	b.WriteString("), '_', ' '), '.', ' ') END)")
+}
+
+func contradictionDimensionText(s *sql.Selector, facts string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "(CASE WHEN jsonb_typeof(" + facts + "::jsonb->'contradiction_resolution'->'dimension') = 'string' THEN btrim(" + facts + "::jsonb->'contradiction_resolution'->>'dimension') ELSE '' END)"
+	}
+	return "(CASE WHEN json_type(" + facts + ", '$.contradiction_resolution.dimension') = 'text' THEN trim(json_extract(" + facts + ", '$.contradiction_resolution.dimension')) ELSE '' END)"
+}
+
+func writeShownReadingNorm(b *sql.Builder, s *sql.Selector, reading string) {
+	b.WriteString("(CASE WHEN ")
+	b.WriteString(reading)
+	b.WriteString(" <> '' AND ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(reading)
+		b.WriteString(" ~ '^[a-z0-9_]+$'")
+	} else {
+		b.WriteString(reading)
+		b.WriteString(" NOT GLOB '*[^a-z0-9_]*'")
+	}
+	b.WriteString(" THEN CASE ")
+	b.WriteString(reading)
+	b.WriteString(" WHEN 'unknown' THEN 'not known' WHEN 'historical_unknown' THEN 'not recorded for this date' WHEN 'review_required' THEN 'needs review' WHEN 'stale' THEN 'out of date' ELSE replace(")
+	b.WriteString(reading)
+	b.WriteString(", '_', ' ') END ELSE ")
+	writeNormalizedSQLText(b, s, reading)
+	b.WriteString(" END)")
+}
+
+// relationshipSheetDeltaLineMatch matches one What changed value line.
+// The sheet prints the previous snapshot's value, then the newest, as
+// "Not known → Needs attention". A missing older snapshot is "Unknown".
+func relationshipSheetDeltaLineMatch(needle string) predicate.Relationship {
+	left, right, ok := deltaValueLine(needle)
+	if !ok {
+		return nil
+	}
+	return relationshipHasDeltaValueLine(left, right)
+}
+
+func deltaValueLine(needle string) (string, string, bool) {
+	const arrow = " → "
+	if strings.Count(needle, arrow) != 1 {
+		return "", "", false
+	}
+	parts := strings.Split(needle, arrow)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
+}
+
+type deltaChangeField struct {
+	dimension string
+	key       string
+	array     bool
+}
+
+func deltaChangeFields() []deltaChangeField {
+	return []deltaChangeField{
+		{dimension: "lifecycle", key: "lifecycle"},
+		{dimension: "engagement", key: "engagement"},
+		{dimension: "sentiment", key: "sentiment"},
+		{dimension: "health", key: "health"},
+		{dimension: "summary", key: "summary"},
+		{dimension: "next_action", key: "nextAction"},
+		{dimension: "risks", key: "risks", array: true},
+		{dimension: "milestones", key: "milestones", array: true},
+		{dimension: "evidence"},
+	}
+}
+
+func relationshipHasDeltaValueLine(left, right string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			table := relationshipstatesnapshot.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(table)
+			b.WriteString(" AS cur WHERE cur.")
+			b.WriteString(relationshipstatesnapshot.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND cur.")
+			b.WriteString(relationshipstatesnapshot.FieldVersion)
+			b.WriteString(" = (SELECT MAX(newest.")
+			b.WriteString(relationshipstatesnapshot.FieldVersion)
+			b.WriteString(") FROM ")
+			b.WriteString(table)
+			b.WriteString(" AS newest WHERE newest.")
+			b.WriteString(relationshipstatesnapshot.RelationshipColumn)
+			b.WriteString(" = cur.")
+			b.WriteString(relationshipstatesnapshot.RelationshipColumn)
+			b.WriteString(") AND (")
+			for i, field := range deltaChangeFields() {
+				if i > 0 {
+					b.WriteString(" OR ")
+				}
+				b.WriteByte('(')
+				writeChangedDimensionIncludes(b, s, "cur", field.dimension)
+				b.WriteString(" AND ")
+				writeDeltaSideEqual(b, s, previousSnapshotJSON(), field, left)
+				b.WriteString(" AND ")
+				writeDeltaSideEqual(b, s, "cur."+relationshipstatesnapshot.FieldStateJSON, field, right)
+				b.WriteByte(')')
+			}
+			b.WriteString("))")
+		}))
+	})
+}
+
+func previousSnapshotJSON() string {
+	table := relationshipstatesnapshot.Table
+	return "(SELECT prev." + relationshipstatesnapshot.FieldStateJSON +
+		" FROM " + table + " AS prev WHERE prev." + relationshipstatesnapshot.RelationshipColumn +
+		" = cur." + relationshipstatesnapshot.RelationshipColumn +
+		" AND prev." + relationshipstatesnapshot.FieldVersion +
+		" < cur." + relationshipstatesnapshot.FieldVersion +
+		" ORDER BY prev." + relationshipstatesnapshot.FieldVersion + " DESC LIMIT 1)"
+}
+
+func writeChangedDimensionIncludes(b *sql.Builder, s *sql.Selector, alias, dimension string) {
+	column := alias + "." + relationshipstatesnapshot.FieldChangedDimensions
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(")
+		b.WriteString(column)
+		b.WriteString("::jsonb, '[]'::jsonb)) AS dim(value) WHERE dim.value = ")
+		b.Arg(dimension)
+		b.WriteString(")")
+		return
+	}
+	b.WriteString("EXISTS (SELECT 1 FROM json_each(COALESCE(")
+	b.WriteString(column)
+	b.WriteString(", '[]')) AS dim WHERE dim.value = ")
+	b.Arg(dimension)
+	b.WriteString(")")
+}
+
+func writeDeltaSideEqual(b *sql.Builder, s *sql.Selector, jsonExpr string, field deltaChangeField, needle string) {
+	if field.key == "" {
+		b.WriteString("'unknown' = ")
+		b.Arg(needle)
+		return
+	}
+	writeDeltaShown(b, s, jsonExpr, field)
+	b.WriteString(" = ")
+	b.Arg(needle)
+}
+
+func writeDeltaShown(b *sql.Builder, s *sql.Selector, jsonExpr string, field deltaChangeField) {
+	if field.array {
+		writeDeltaArrayShown(b, s, jsonExpr, field.key)
+		return
+	}
+	writeDeltaScalarShown(b, s, stateJSONText(s, jsonExpr, field.key))
+}
+
+func writeDeltaScalarShown(b *sql.Builder, s *sql.Selector, reading string) {
+	b.WriteString("(CASE WHEN ")
+	b.WriteString(reading)
+	b.WriteString(" = '' THEN 'unknown' ELSE ")
+	writeShownReadingNorm(b, s, reading)
+	b.WriteString(" END)")
+}
+
+func writeDeltaArrayShown(b *sql.Builder, s *sql.Selector, jsonExpr, key string) {
+	length := stateJSONArrayLength(s, jsonExpr, key)
+	kind := stateJSONType(s, jsonExpr, key)
+	b.WriteString("(CASE WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" IS NULL OR ")
+	b.WriteString(kind)
+	b.WriteString(" <> 'array' THEN 'unknown' WHEN ")
+	b.WriteString(length)
+	b.WriteString(" = 0 THEN 'none' WHEN ")
+	b.WriteString(length)
+	b.WriteString(" = 1 THEN ")
+	writeDeltaScalarShown(b, s, stateJSONText(s, jsonExpr, key+"[0]"))
+	b.WriteString(" ELSE coalesce((")
+	writeDeltaArrayJoin(b, s, jsonExpr, key)
+	b.WriteString("), 'none') END)")
+}
+
+// writeDeltaArrayJoin prints every kept value in array order, as
+// "renewal slip, late invoice". A blank value is "Unknown" on the sheet and
+// drops out of the join. An array of blanks is "None".
+func writeDeltaArrayJoin(b *sql.Builder, s *sql.Selector, jsonExpr, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("SELECT string_agg(shown, ', ' ORDER BY ord) FROM (SELECT shown, ord FROM (SELECT ")
+		writeDeltaScalarShown(b, s, "btrim(coalesce(item.value, ''))")
+		b.WriteString(" AS shown, item.ord FROM jsonb_array_elements_text((")
+		b.WriteString(jsonExpr)
+		b.WriteString(")::jsonb->'")
+		b.WriteString(key)
+		b.WriteString("') WITH ORDINALITY AS item(value, ord)) AS mapped WHERE shown <> 'unknown') AS kept")
+		return
+	}
+	b.WriteString("SELECT group_concat(shown, ', ') FROM (SELECT shown, ord FROM (SELECT ")
+	writeDeltaScalarShown(b, s, "trim(coalesce(item.value, ''))")
+	b.WriteString(" AS shown, CAST(item.key AS INTEGER) AS ord FROM json_each(")
+	b.WriteString(jsonExpr)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("') AS item) AS mapped WHERE shown <> 'unknown' ORDER BY ord) AS ordered")
+}
+
+func stateJSONText(s *sql.Selector, jsonExpr, path string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce((" + jsonExpr + ")::jsonb #>> " + postgresJSONPath(path) + ", ''))"
+	}
+	return "trim(coalesce(json_extract(" + jsonExpr + ", '$." + path + "'), ''))"
+}
+
+func stateJSONType(s *sql.Selector, jsonExpr, key string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "jsonb_typeof((" + jsonExpr + ")::jsonb->'" + key + "')"
+	}
+	return "json_type(" + jsonExpr + ", '$." + key + "')"
+}
+
+func stateJSONArrayLength(s *sql.Selector, jsonExpr, key string) string {
+	if s.Dialect() == dialect.Postgres {
+		return "jsonb_array_length((" + jsonExpr + ")::jsonb->'" + key + "')"
+	}
+	return "json_array_length(json_extract(" + jsonExpr + ", '$." + key + "'))"
+}
+
+// postgresJSONPath turns "health" into '{health}' and "risks[0]" into '{risks,0}'.
+func postgresJSONPath(path string) string {
+	path = strings.ReplaceAll(path, "[", ",")
+	path = strings.ReplaceAll(path, "]", "")
+	return "'{" + path + "}'"
+}
+
+// relationshipSheetChangeListMatch matches the history row that names every
+// field that moved. The sheet joins those names in stored order, as
+// "Health, Lifecycle". One field stays on the searches that already name it.
+func relationshipSheetChangeListMatch(needle string) predicate.Relationship {
+	dims, ok := changeDimensionList(needle)
+	if !ok {
+		return nil
+	}
+	return relationshipHasChangedDimensionList(dims)
+}
+
+func changeDimensionList(needle string) ([]string, bool) {
+	if !strings.Contains(needle, ", ") {
+		return nil, false
+	}
+	parts := strings.Split(needle, ", ")
+	if len(parts) < 2 {
+		return nil, false
+	}
+	dims := make([]string, len(parts))
+	for i, part := range parts {
+		dim, ok := changeDimensionValue(part)
+		if !ok {
+			return nil, false
+		}
+		dims[i] = dim
+	}
+	return dims, true
+}
+
+func changeDimensionValue(part string) (string, bool) {
+	switch part {
+	case "supporting evidence":
+		return "evidence", true
+	case "risks":
+		return "risks", true
+	case "milestones":
+		return "milestones", true
+	case "lifecycle":
+		return "lifecycle", true
+	case "engagement":
+		return "engagement", true
+	case "sentiment":
+		return "sentiment", true
+	case "health":
+		return "health", true
+	case "summary":
+		return "summary", true
+	case "next action":
+		return "next_action", true
+	default:
+		return "", false
+	}
+}
+
+func relationshipHasChangedDimensionList(dims []string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			table := relationshipstatesnapshot.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(table)
+			b.WriteString(" AS snap WHERE snap.")
+			b.WriteString(relationshipstatesnapshot.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			writeChangedDimensionCount(b, s, "snap")
+			b.WriteString(" = ")
+			b.Arg(len(dims))
+			for i, dim := range dims {
+				b.WriteString(" AND ")
+				writeChangedDimensionAt(b, s, "snap", i)
+				b.WriteString(" = ")
+				b.Arg(dim)
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeChangedDimensionCount(b *sql.Builder, s *sql.Selector, alias string) {
+	column := alias + "." + relationshipstatesnapshot.FieldChangedDimensions
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("COALESCE(jsonb_array_length(")
+		b.WriteString(column)
+		b.WriteString("::jsonb), 0)")
+		return
+	}
+	b.WriteString("COALESCE(json_array_length(")
+	b.WriteString(column)
+	b.WriteString("), 0)")
+}
+
+func writeChangedDimensionAt(b *sql.Builder, s *sql.Selector, alias string, index int) {
+	column := alias + "." + relationshipstatesnapshot.FieldChangedDimensions
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->>")
+		b.WriteString(strconv.Itoa(index))
+		return
+	}
+	b.WriteString("json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$[")
+	b.WriteString(strconv.Itoa(index))
+	b.WriteString("]')")
+}
+
+func writeReadingKept(b *sql.Builder, s *sql.Selector, reading string) {
+	b.WriteString("NOT (length(")
+	b.WriteString(reading)
+	b.WriteString(") = 36 AND ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(reading)
+		b.WriteString(" ~* '^[0-9a-f-]{36}$'")
+	} else {
+		b.WriteString("lower(")
+		b.WriteString(reading)
+		b.WriteString(") NOT GLOB '*[^0-9a-f-]*'")
+	}
+	b.WriteString(")")
+}
+
+// relationshipSheetActivityClaimMatch is a reviewed conversation on the
+// opened activity. The line names the claim and, when someone was named, who
+// said it. A claim id and a speaker id stay hidden. Lifecycle and sentiment
+// use the company sheet's words. A line that repeats the row summary stays hidden.
+func relationshipSheetActivityClaimMatch(needle string) predicate.Relationship {
+	for _, claim := range activityClaimTitles {
+		prefix := claim.title + ": "
+		if !strings.HasPrefix(needle, prefix) {
+			continue
+		}
+		rest := strings.TrimSpace(needle[len(prefix):])
+		if rest == "" {
+			return nil
+		}
+		value, speaker, spoken := splitActivityClaimSpeaker(rest)
+		if value == "" {
+			return nil
+		}
+		return relationship.HasObservationsWith(observationActivityClaim(claim.kind, value, speaker, spoken, rest))
+	}
+	return nil
+}
+
+var activityClaimTitles = []struct{ title, kind string }{
+	{"risk raised in a conversation", "risk"},
+	{"unresolved objection", "objection"},
+	{"decision", "decision"},
+	{"milestone", "milestone"},
+	{"person", "stakeholder"},
+	{"promise", "commitment"},
+	{"lifecycle", "lifecycle"},
+	{"sentiment", "sentiment"},
+}
+
+func splitActivityClaimSpeaker(rest string) (value, speaker string, spoken bool) {
+	const dash = " — "
+	index := strings.LastIndex(rest, dash)
+	if index < 0 {
+		return rest, "", false
+	}
+	value = strings.TrimSpace(rest[:index])
+	speaker = strings.TrimSpace(rest[index+len(dash):])
+	if value == "" || speaker == "" {
+		return rest, "", false
+	}
+	return value, speaker, true
+}
+
+func activityClaimSheetToken(kind, value string) string {
+	if kind != "lifecycle" && kind != "sentiment" {
+		return ""
+	}
+	switch value {
+	case "not known":
+		return "unknown"
+	case "not recorded for this date":
+		return "historical_unknown"
+	case "needs review":
+		return "review_required"
+	case "needs attention":
+		return "needs_attention"
+	case "at risk":
+		return "at_risk"
+	case "active customer":
+		return "active_customer"
+	case "former customer":
+		return "former_customer"
+	case "out of date":
+		return "stale"
+	default:
+		return ""
+	}
+}
+
+func observationActivityClaim(kind, value, speaker string, spoken bool, rest string) predicate.RelationshipObservation {
+	token := activityClaimSheetToken(kind, value)
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(")
+			writeClaimArray(b, s, facts)
+			b.WriteString(" AND EXISTS (SELECT 1 FROM ")
+			writeClaimRows(b, s, facts)
+			b.WriteString(" AS claim WHERE ")
+			writeClaimKind(b, s)
+			b.WriteString(" = ")
+			b.Arg(kind)
+			b.WriteString(" AND ")
+			writeClaimReadable(b, s, kind)
+			b.WriteString(" AND (")
+			writeNormalizedSQLText(b, s, claimValueExpr(s))
+			b.WriteString(" = ")
+			b.Arg(value)
+			if token != "" {
+				b.WriteString(" OR lower(")
+				b.WriteString(claimValueExpr(s))
+				b.WriteString(") = ")
+				b.Arg(token)
+			}
+			b.WriteString(") AND (")
+			if spoken {
+				b.WriteString("(")
+				writeClaimSpeakerShown(b, s)
+				b.WriteString(" AND ")
+				writeNormalizedSQLText(b, s, claimSpeakerExpr(s))
+				b.WriteString(" = ")
+				b.Arg(speaker)
+				b.WriteString(") OR (NOT ")
+				writeClaimSpeakerShown(b, s)
+				b.WriteString(" AND ")
+				writeNormalizedSQLText(b, s, claimValueExpr(s))
+				b.WriteString(" = ")
+				b.Arg(rest)
+				b.WriteString("))")
+			} else {
+				b.WriteString("NOT ")
+				writeClaimSpeakerShown(b, s)
+				b.WriteString(")")
+			}
+			b.WriteString(") AND ")
+			writeNormalizedSQLText(b, s, summaryTrim(s))
+			b.WriteString(" <> ")
+			b.Arg(rest)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeClaimArray(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'conversation_claims') = 'array'")
+		return
+	}
+	b.WriteString("json_valid(")
+	b.WriteString(facts)
+	b.WriteString(") AND json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.conversation_claims') = 'array'")
+}
+
+func writeClaimRows(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'conversation_claims')")
+		return
+	}
+	b.WriteString("json_each(")
+	b.WriteString(facts)
+	b.WriteString(", '$.conversation_claims')")
+}
+
+func writeClaimKind(b *sql.Builder, s *sql.Selector) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("claim->>'kind'")
+		return
+	}
+	b.WriteString("json_extract(claim.value, '$.kind')")
+}
+
+func claimValueExpr(s *sql.Selector) string {
+	if s.Dialect() == dialect.Postgres {
+		return "(CASE WHEN btrim(coalesce(claim->>'value', '')) <> '' THEN btrim(claim->>'value') ELSE btrim(coalesce(claim->>'exactQuote', '')) END)"
+	}
+	return "(CASE WHEN trim(coalesce(json_extract(claim.value, '$.value'), '')) <> '' THEN trim(json_extract(claim.value, '$.value')) ELSE trim(coalesce(json_extract(claim.value, '$.exactQuote'), '')) END)"
+}
+
+func claimSpeakerExpr(s *sql.Selector) string {
+	if s.Dialect() == dialect.Postgres {
+		return "btrim(coalesce(claim->>'speakerLabel', ''))"
+	}
+	return "trim(coalesce(json_extract(claim.value, '$.speakerLabel'), ''))"
+}
+
+func writeClaimReadable(b *sql.Builder, s *sql.Selector, kind string) {
+	value := claimValueExpr(s)
+	b.WriteString(value)
+	b.WriteString(" <> '' AND lower(")
+	b.WriteString(value)
+	b.WriteString(") NOT IN ('local-user', 'meeting-counterparty')")
+	if kind == "lifecycle" || kind == "sentiment" {
+		return
+	}
+	b.WriteString(" AND ")
+	b.WriteString(value)
+	b.WriteString(" ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("!~ '^[a-z0-9_:-]+$'")
+		return
+	}
+	b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+}
+
+func writeClaimSpeakerShown(b *sql.Builder, s *sql.Selector) {
+	label := claimSpeakerExpr(s)
+	b.WriteString("(")
+	b.WriteString(label)
+	b.WriteString(" <> '' AND ")
+	b.WriteString(label)
+	b.WriteString(" NOT IN ('local-user', 'meeting-counterparty', 'Other', 'Unknown speaker') AND NOT ")
+	writeSpeakerNumber(b, s, label)
+	b.WriteString(" AND ")
+	b.WriteString(label)
+	b.WriteString(" ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("!~ '^[a-z0-9_:-]+$'")
+	} else {
+		b.WriteString("GLOB '*[^a-z0-9_:-]*'")
+	}
+	b.WriteString(")")
+}
+
+// relationshipSheetActivityInviteMatch matches who accepted the invite on
+// the opened attendance activity. Accepted is 0.9. Invited and not confirmed
+// is 0.6. A speaker id stays off the activity.
+func relationshipSheetActivityInviteMatch(needle string) predicate.Relationship {
+	const accepted = "accepted the invite: "
+	const waiting = "had not accepted: "
+	var score float64
+	var who string
+	switch {
+	case strings.HasPrefix(needle, accepted):
+		who = strings.TrimSpace(strings.TrimPrefix(needle, accepted))
+		score = 0.9
+	case strings.HasPrefix(needle, waiting):
+		who = strings.TrimSpace(strings.TrimPrefix(needle, waiting))
+		score = 0.6
+	default:
+		return nil
+	}
+	if who == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationInviteConfidence(who, score))
+}
+
+func observationInviteConfidence(who string, score float64) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'attendance_confidence') = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'attendance_confidence') AS att(key, value) WHERE abs(att.value::double precision - ")
+				b.Arg(score)
+				b.WriteString(") < 0.001 AND ")
+				writeNormalizedSQLText(b, s, "att.key")
+				b.WriteString(" = ")
+				b.Arg(who)
+				b.WriteString(" AND att.key ~ ")
+				b.Arg(`[^a-z0-9_:-]`)
+				b.WriteString(")")
+				return
+			}
+			b.WriteString("json_valid(")
+			b.WriteString(facts)
+			b.WriteString(") AND json_type(")
+			b.WriteString(facts)
+			b.WriteString(", '$.attendance_confidence') = 'object' AND EXISTS (SELECT 1 FROM json_each(")
+			b.WriteString(facts)
+			b.WriteString(", '$.attendance_confidence') AS att WHERE abs(CAST(att.value AS REAL) - ")
+			b.Arg(score)
+			b.WriteString(") < 0.001 AND ")
+			writeNormalizedSQLText(b, s, "att.key")
+			b.WriteString(" = ")
+			b.Arg(who)
+			b.WriteString(" AND att.key GLOB ")
+			b.Arg("*[^a-z0-9_:-]*")
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeNormalizedSQLText(b *sql.Builder, s *sql.Selector, expr string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		b.WriteString(expr)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	b.WriteString(expr)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
+}
+
+// relationshipSheetActivityCaveatMatch matches a capture note on the opened
+// activity. The note still stores the recorder sentence. The activity says
+// who may have missed the meeting, who shared a channel, and which side of
+// the recording stopped. "Your side of the conversation is not being captured."
+// stays that sentence.
+func relationshipSheetActivityCaveatMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	var preds []predicate.RelationshipObservation
+	if stored, ok := activityCaveatExact[needle]; ok {
+		preds = append(preds, observationCaveatEquals(stored))
+	}
+	for _, prefix := range activityCaveatPrefixes[needle] {
+		preds = append(preds, observationCaveatPrefix(prefix))
+	}
+	if impact, ok := activityCaveatGuardian[needle]; ok {
+		preds = append(preds, observationCaveatGuardian(impact))
+	}
+	if stored, ok := activityCaveatShared(needle); ok {
+		preds = append(preds, observationCaveatEquals(stored))
+	}
+	if stored, ok := activityCaveatRooms(needle); ok {
+		preds = append(preds, observationCaveatEquals(stored))
+	}
+	if stored, ok := activityCaveatPending(needle); ok {
+		preds = append(preds, observationCaveatEquals(stored))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+var activityCaveatExact = map[string]string{
+	"someone on the invite may not have joined":                                                            "Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined.",
+	"who spoke is not confirmed":                                                                           "speaker assignment requires review",
+	"the timed recording was not saved with this transcript":                                               "renderer fallback: timed audio evidence was not retained",
+	"a long stretch was split into shorter excerpts":                                                       "long source segments were split into bounded evidence excerpts",
+	"the transcript was shortened":                                                                         "transcript was truncated at the canonical evidence size limit",
+	"speaker names apply only to this meeting":                                                             "remote speaker labels are meeting-scoped",
+	"these are notes from granola, not a word for word transcript":                                         "Granola supplied meeting notes rather than a timestamped verbatim transcript.",
+	"check who spoke and the wording before you rely on this":                                              "Speaker attribution and wording require focused review before material use.",
+	"imported from fireflies the meeting service still decides consent and how long the recording is kept": "Imported from Fireflies; capture consent and audio retention remain governed by the provider.",
+}
+
+var activityCaveatPrefixes = map[string][]string{
+	"the other person was named from the guest list":                                            {"remote speaker was resolved from the 1:1 calendar attendee"},
+	"the recorder stopped before it finished saving. the two sides may be slightly out of sync": {"recovered_without_meta:"},
+	"the microphone could not be recorded": {
+		"mic_raw_fallback_failed:",
+		"mic_format_unsupported:",
+	},
+	"echo cancellation was unavailable, so the microphone was recorded without it":                     {"mic_voice_processing_unavailable:"},
+	"echo cancellation was silent, so the microphone was recorded without it":                          {"mic_voice_processing_silent:"},
+	"the other side could not be recorded. allow screen and system audio recording in system settings": {"system_tap_denied:"},
+	"the other side could not be recorded": {
+		"system_tap_format:",
+		"system_aggregate_failed:",
+		"system_ioproc_failed:",
+		"system_device_start_failed:",
+	},
+	"the other side could not be saved":                                     {"system_writer_failed:"},
+	"the microphone is blocked. allow microphone access in system settings": {"mic_permission_denied:"},
+	"the microphone could not be started":                                   {"mic_engine_start_failed:"},
+	"the microphone recording could not be saved":                           {"mic_writer_failed:"},
+	"the recording could not be saved": {
+		"standby_flush_failed:",
+		"standby_promote_failed:",
+	},
+}
+
+var activityCaveatGuardian = map[string]string{
+	"the microphone is on, but it is silent":                            "The microphone track is advancing but contains no audible signal.",
+	"the microphone stopped while the meeting was still being recorded": "The microphone track stopped advancing while capture continues.",
+	"the other side of the conversation may not be recorded":            "Other participants may not be captured.",
+	"the other side is on, but it is silent":                            "System audio is advancing but contains no audible signal.",
+	"the other side stopped while your microphone kept recording":       "System audio stopped advancing while the microphone continues.",
+	"the recorder stopped reporting, so this meeting may be incomplete": "The recorder stopped reporting progress and evidence may be incomplete.",
+	"the recorder stopped unexpectedly":                                 "The recorder exited unexpectedly.",
+	"recording may stop before the meeting ends":                        "Capture may stop before the meeting ends.",
+	"transcription cannot start with the selected model":                "On-device transcription cannot start with the selected model.",
+	"live notes are behind. the recording is still going":               "Live notes are not keeping up, but the durable audio capture continues.",
+	"the recording is saved, but the transcript has stopped":            "The recording is safe but its transcript is not progressing.",
+	"your side of the conversation is not being captured":               "Your side of the conversation is not being captured.",
+}
+
+var (
+	activityCaveatSharedPattern  = regexp.MustCompile(`^(\d+) (person|people) shared one audio channel$`)
+	activityCaveatRoomsPattern   = regexp.MustCompile(`^(\d+) rooms or bots were left off$`)
+	activityCaveatPendingPattern = regexp.MustCompile(`^(\d+) of (\d+) (person|people) had not accepted$`)
+)
+
+func activityCaveatShared(needle string) (string, bool) {
+	if needle == "1 person shared one audio channel" {
+		return "1 participants shared one audio channel; no per-speaker attribution was attempted.", true
+	}
+	match := activityCaveatSharedPattern.FindStringSubmatch(needle)
+	if match == nil || match[2] != "people" {
+		return "", false
+	}
+	count, ok := activityStoryCount(match[1])
+	if !ok || count == 1 {
+		return "", false
+	}
+	return fmt.Sprintf("%d participants shared one audio channel; no per-speaker attribution was attempted.", count), true
+}
+
+func activityCaveatRooms(needle string) (string, bool) {
+	if needle == "1 room or bot was left off" {
+		return "1 invitee(s) excluded as rooms, resources, or notetaker bots.", true
+	}
+	match := activityCaveatRoomsPattern.FindStringSubmatch(needle)
+	if match == nil {
+		return "", false
+	}
+	count, ok := activityStoryCount(match[1])
+	if !ok || count == 1 {
+		return "", false
+	}
+	return fmt.Sprintf("%d invitee(s) excluded as rooms, resources, or notetaker bots.", count), true
+}
+
+func activityCaveatPending(needle string) (string, bool) {
+	match := activityCaveatPendingPattern.FindStringSubmatch(needle)
+	if match == nil {
+		return "", false
+	}
+	got, gotOK := activityStoryCount(match[1])
+	total, totalOK := activityStoryCount(match[2])
+	if !gotOK || !totalOK {
+		return "", false
+	}
+	if total == 1 && match[3] != "person" {
+		return "", false
+	}
+	if total != 1 && match[3] != "people" {
+		return "", false
+	}
+	return fmt.Sprintf("%d of %d invitee(s) had not accepted at capture time.", got, total), true
+}
+
+func observationCaveatEquals(stored string) predicate.RelationshipObservation {
+	return observationCaveatWhere(func(b *sql.Builder, value string) {
+		b.WriteString(value)
+		b.WriteString(" = ")
+		b.Arg(stored)
+	})
+}
+
+func observationCaveatPrefix(prefix string) predicate.RelationshipObservation {
+	return observationCaveatWhere(func(b *sql.Builder, value string) {
+		b.WriteString(value)
+		b.WriteString(" LIKE ")
+		b.Arg(escapePersonSearchLike(prefix) + "%")
+		b.WriteString(" ESCAPE '!'")
+	})
+}
+
+func observationCaveatGuardian(impact string) predicate.RelationshipObservation {
+	const start = "capture guardian:"
+	const sep = " \u2014 "
+	return observationCaveatWhere(func(b *sql.Builder, value string) {
+		b.WriteString("length(")
+		b.WriteString(value)
+		b.WriteString(") > length(")
+		b.Arg(sep + impact)
+		b.WriteString(") AND substr(")
+		b.WriteString(value)
+		b.WriteString(", 1, length(")
+		b.Arg(start)
+		b.WriteString(")) = ")
+		b.Arg(start)
+		b.WriteString(" AND substr(")
+		b.WriteString(value)
+		b.WriteString(", length(")
+		b.WriteString(value)
+		b.WriteString(") - length(")
+		b.Arg(impact)
+		b.WriteString(") - length(")
+		b.Arg(sep)
+		b.WriteString(") + 1, length(")
+		b.Arg(sep)
+		b.WriteString(")) = ")
+		b.Arg(sep)
+		b.WriteString(" AND substr(")
+		b.WriteString(value)
+		b.WriteString(", length(")
+		b.WriteString(value)
+		b.WriteString(") - length(")
+		b.Arg(impact)
+		b.WriteString(") + 1) = ")
+		b.Arg(impact)
+	})
+}
+
+func observationCaveatWhere(match func(b *sql.Builder, value string)) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'capture_caveats') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'capture_caveats') AS caveat(value) WHERE ")
+				match(b, "caveat.value")
+				b.WriteString(")")
+				return
+			}
+			b.WriteString("json_valid(")
+			b.WriteString(facts)
+			b.WriteString(") AND json_type(")
+			b.WriteString(facts)
+			b.WriteString(", '$.capture_caveats') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
+			b.WriteString(facts)
+			b.WriteString(", '$.capture_caveats') AS caveat WHERE ")
+			match(b, "caveat.value")
+			b.WriteString(")")
+		}))
+	})
+}
+
+// relationshipSheetActivityPlanReplyMatch matches a shared-plan reply on the
+// opened activity. The note still stores confirm, correct, blocked, completed,
+// or comment. The activity says what they did, and a suggested change keeps
+// the words they proposed. A speaker id stays off the activity.
+func relationshipSheetActivityPlanReplyMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	var preds []predicate.RelationshipObservation
+	if kind, ok := activityPlanReplyKinds[needle]; ok {
+		preds = append(preds, observationNestedFactEquals("mutual_action_plan_response", "kind", kind))
+	}
+	if text, ok := activityPlanReplySuggested(needle); ok {
+		preds = append(preds, observationNestedFactShown("mutual_action_plan_response", "proposed_value", text))
+	}
+	preds = append(preds, observationNestedFactShown("mutual_action_plan_response", "comment", needle))
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+var activityPlanReplyKinds = map[string]string{
+	"they confirmed the plan":   "confirm",
+	"they suggested a change":   "correct",
+	"they said this is blocked": "blocked",
+	"they marked this done":     "completed",
+	"they left a comment":       "comment",
+}
+
+func activityPlanReplySuggested(needle string) (string, bool) {
+	const prefix = "suggested: "
+	if !strings.HasPrefix(needle, prefix) {
+		return "", false
+	}
+	text := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+	if text == "" {
+		return "", false
+	}
+	return text, true
+}
+
+func observationNestedFactEquals(object, field, token string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("lower(")
+			writeNestedFactTrim(b, s, facts, object, field)
+			b.WriteString(") = ")
+			b.Arg(token)
+		}))
+	})
+}
+
+func observationNestedFactShown(object, field, normalized string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeNormalizedNestedFact(b, s, facts, object, field)
+			b.WriteString(" = ")
+			b.Arg(normalized)
+			b.WriteString(" AND ")
+			writeNestedFactReadable(b, s, facts, object, field)
+			b.WriteString(" AND ")
+			writeNestedFactTrim(b, s, facts, object, field)
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", '')))")
+		}))
+	})
+}
+
+func writeNestedFactTrim(b *sql.Builder, s *sql.Selector, facts, object, field string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'")
+		b.WriteString(object)
+		b.WriteString("'->>'")
+		b.WriteString(field)
+		b.WriteString("', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(CAST(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.")
+	b.WriteString(object)
+	b.WriteString(".")
+	b.WriteString(field)
+	b.WriteString("') AS TEXT), ''))")
+}
+
+func writeNormalizedNestedFact(b *sql.Builder, s *sql.Selector, facts, object, field string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		writeNestedFactTrim(b, s, facts, object, field)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	writeNestedFactTrim(b, s, facts, object, field)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
+}
+
+func writeNestedFactReadable(b *sql.Builder, s *sql.Selector, facts, object, field string) {
+	writeNestedFactTrim(b, s, facts, object, field)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(" ~ ")
+		b.Arg(`[^a-z0-9_:-]`)
+		return
+	}
+	b.WriteString(" GLOB ")
+	b.Arg("*[^a-z0-9_:-]*")
+}
+
+// relationshipSheetActivityReviewMatch matches a review decision and a
+// correction on the opened activity. The note still stores approve, reject,
+// correct, or defer. The activity says what you did. A stored review id stays
+// off the activity, and the model reason stays off when it only repeats the row.
+func relationshipSheetActivityReviewMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	var preds []predicate.RelationshipObservation
+	if kind, ok := activityReviewKinds[needle]; ok {
+		preds = append(preds, observationNestedFactEquals("review_decision", "kind", kind))
+	}
+	if needle == "you corrected this" {
+		preds = append(preds, observationReviewCorrectedWithoutValue())
+	}
+	if needle == "you set this aside" {
+		preds = append(preds, observationReviewDeferredWithoutDay())
+	}
+	if month, day, year, ok := activityReviewDeferDay(needle); ok {
+		preds = append(preds, observationReviewDeferredOn(month, day, year))
+	}
+	if text, ok := activityReviewCorrectedTo(needle); ok {
+		preds = append(preds, observationReviewCorrectedTo("review_decision", text))
+		preds = append(preds, observationNestedFactShown("review_correction", "corrected_value", text))
+	}
+	preds = append(preds, observationReviewReasonShown("review_decision", needle, "User decided a proposed conversation change."))
+	preds = append(preds, observationReviewReasonShown("review_correction", needle,
+		"User corrected focused conversation evidence.",
+		"User corrected conversation evidence during focused review.",
+	))
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+var activityReviewKinds = map[string]string{
+	"you approved this": "approve",
+	"you rejected this": "reject",
+}
+
+var activityReviewMonths = map[string]string{
+	"jan": "01", "feb": "02", "mar": "03", "apr": "04",
+	"may": "05", "jun": "06", "jul": "07", "aug": "08",
+	"sep": "09", "oct": "10", "nov": "11", "dec": "12",
+}
+
+var activityReviewDeferDayPattern = regexp.MustCompile(`^you set this aside until ([a-z]+) (\d{1,2}), (\d{4})$`)
+
+func activityReviewCorrectedTo(needle string) (string, bool) {
+	const prefix = "corrected to: "
+	if !strings.HasPrefix(needle, prefix) {
+		return "", false
+	}
+	text := strings.TrimSpace(strings.TrimPrefix(needle, prefix))
+	if text == "" {
+		return "", false
+	}
+	return text, true
+}
+
+func activityReviewDeferDay(needle string) (string, string, string, bool) {
+	match := activityReviewDeferDayPattern.FindStringSubmatch(needle)
+	if match == nil {
+		return "", "", "", false
+	}
+	month, ok := activityReviewMonths[match[1]]
+	if !ok {
+		return "", "", "", false
+	}
+	day, err := strconv.Atoi(match[2])
+	if err != nil || day < 1 || day > 31 || match[2] != strconv.Itoa(day) {
+		return "", "", "", false
+	}
+	return month, fmt.Sprintf("%02d", day), match[3], true
+}
+
+func observationReviewCorrectedWithoutValue() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(lower(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "kind")
+			b.WriteString(") = ")
+			b.Arg("correct")
+			b.WriteString(" AND NOT (")
+			writeNestedFactReadable(b, s, facts, "review_decision", "corrected_value")
+			b.WriteString("))")
+		}))
+	})
+}
+
+func observationReviewCorrectedTo(object, normalized string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(lower(")
+			writeNestedFactTrim(b, s, facts, object, "kind")
+			b.WriteString(") = ")
+			b.Arg("correct")
+			b.WriteString(" AND ")
+			writeNormalizedNestedFact(b, s, facts, object, "corrected_value")
+			b.WriteString(" = ")
+			b.Arg(normalized)
+			b.WriteString(" AND ")
+			writeNestedFactReadable(b, s, facts, object, "corrected_value")
+			b.WriteString(" AND ")
+			writeNestedFactTrim(b, s, facts, object, "corrected_value")
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", '')))")
+		}))
+	})
+}
+
+func observationReviewDeferredWithoutDay() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(lower(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "kind")
+			b.WriteString(") = ")
+			b.Arg("defer")
+			b.WriteString(" AND ")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(" !~ ")
+				b.Arg(`^[0-9]{4}-[0-9]{2}-[0-9]{2}`)
+			} else {
+				b.WriteString(" NOT GLOB ")
+				b.Arg("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*")
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func observationReviewDeferredOn(month, day, year string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString("(lower(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "kind")
+			b.WriteString(") = ")
+			b.Arg("defer")
+			b.WriteString(" AND substr(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			b.WriteString(", 1, 4) = ")
+			b.Arg(year)
+			b.WriteString(" AND substr(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			b.WriteString(", 6, 2) = ")
+			b.Arg(month)
+			b.WriteString(" AND substr(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			b.WriteString(", 9, 2) = ")
+			b.Arg(day)
+			b.WriteString(" AND substr(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			b.WriteString(", 5, 1) = '-' AND substr(")
+			writeNestedFactTrim(b, s, facts, "review_decision", "defer_until")
+			b.WriteString(", 8, 1) = '-')")
+		}))
+	})
+}
+
+func observationReviewReasonShown(object, normalized string, hidden ...string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeNormalizedNestedFact(b, s, facts, object, "reason")
+			b.WriteString(" = ")
+			b.Arg(normalized)
+			b.WriteString(" AND ")
+			writeNestedFactReadable(b, s, facts, object, "reason")
+			b.WriteString(" AND ")
+			writeNestedFactTrim(b, s, facts, object, "reason")
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))")
+			for _, sentence := range hidden {
+				b.WriteString(" AND ")
+				writeNestedFactTrim(b, s, facts, object, "reason")
+				b.WriteString(" <> ")
+				b.Arg(sentence)
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+// relationshipSheetEvidenceTrailMatch matches the source line under one
+// detail. The sheet joins every supporting observation, in stored order, as
+// "Google · Sep 6, 2026; HubSpot · Aug 16, 2026". A missing id is left off
+// that line. The linked observation is added when it is not already listed.
+// One source stays on the search that already names it.
+func relationshipSheetEvidenceTrailMatch(needle string) predicate.Relationship {
+	if !strings.Contains(needle, "; ") {
+		return nil
+	}
+	raw := strings.Split(needle, "; ")
+	if len(raw) < 2 {
+		return nil
+	}
+	parts := make([]evidenceTrailPart, 0, len(raw))
+	for _, part := range raw {
+		label, when, ok := mailTimelineParts(part)
+		if !ok {
+			return nil
+		}
+		sources := evidenceTrailSources(label)
+		if len(sources) == 0 {
+			return nil
+		}
+		window, timed := visibleActivityWindow(when, time.Now().UTC())
+		if !timed {
+			return nil
+		}
+		parts = append(parts, evidenceTrailPart{sources: sources, window: window})
+	}
+	return relationshipHasEvidenceTrail(parts)
+}
+
+type evidenceTrailPart struct {
+	sources []string
+	window  relativeWindow
+}
+
+// evidenceTrailSources lists the stored sources that print as this label.
+// The detail line uses the canonical source, so Gmail and Calendar both read
+// "Google", and the CRM reads "HubSpot".
+func evidenceTrailSources(label string) []string {
+	switch normalizePersonSearch(label) {
+	case "google":
+		return []string{"google", "gmail", "calendar"}
+	case "hubspot":
+		return []string{"hubspot", "crm"}
+	case "slack":
+		return []string{"slack"}
+	case "a meeting":
+		return []string{"meeting"}
+	case "a note":
+		return []string{"desktop_note"}
+	case "a voice note":
+		return []string{"voice_note"}
+	case "the browser":
+		return []string{"browser"}
+	case "added by you":
+		return []string{"user"}
+	case "the web":
+		return []string{"web"}
+	case "a connected app":
+		return []string{"composio"}
+	default:
+		return nil
+	}
+}
+
+func relationshipHasEvidenceTrail(parts []evidenceTrailPart) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" AS claim WHERE claim.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			writeEvidenceTrailLength(b, s)
+			b.WriteString(" = ")
+			b.Arg(len(parts))
+			for i, part := range parts {
+				b.WriteString(" AND ")
+				writeEvidenceTrailSourceIn(b, s, i, part.sources)
+				b.WriteString(" AND ")
+				writeEvidenceTrailDuring(b, s, i, part.window)
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeEvidenceTrailLength(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(")
+	writeEvidenceSupportingCount(b, s)
+	b.WriteString(" + ")
+	writeEvidenceEdgeExtra(b, s)
+	b.WriteString(")")
+}
+
+func writeEvidenceSupportingCount(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(SELECT COUNT(*) FROM ")
+	writeEvidenceRefSource(b, s, "ref", "obs")
+	b.WriteString(")")
+}
+
+func writeEvidenceEdgeExtra(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(CASE WHEN claim.")
+	b.WriteString(relationshipassertion.ObservationColumn)
+	b.WriteString(" IS NOT NULL AND EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS edge WHERE ")
+	writeObservationIDEquals(b, s, "edge."+relationshipobservation.FieldID, "claim."+relationshipassertion.ObservationColumn)
+	b.WriteString(") AND NOT EXISTS (SELECT 1 FROM ")
+	writeEvidenceRefFrom(b, s, "listed")
+	b.WriteString(" WHERE ")
+	writeObservationIDEquals(b, s, "listed.value", "claim."+relationshipassertion.ObservationColumn)
+	b.WriteString(") THEN 1 ELSE 0 END)")
+}
+
+func writeEvidenceTrailSourceIn(b *sql.Builder, s *sql.Selector, index int, sources []string) {
+	writeEvidenceTrailColumn(b, s, index, relationshipobservation.FieldSource)
+	b.WriteString(" IN (")
+	for i, source := range sources {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(source)
+	}
+	b.WriteString(")")
+}
+
+func writeEvidenceTrailDuring(b *sql.Builder, s *sql.Selector, index int, window relativeWindow) {
+	writeEvidenceTrailColumn(b, s, index, relationshipobservation.FieldOccurredAt)
+	b.WriteString(" > ")
+	b.Arg(window.after)
+	b.WriteString(" AND ")
+	writeEvidenceTrailColumn(b, s, index, relationshipobservation.FieldOccurredAt)
+	b.WriteString(" <= ")
+	b.Arg(window.until)
+}
+
+func writeEvidenceTrailColumn(b *sql.Builder, s *sql.Selector, index int, column string) {
+	b.WriteString("(CASE WHEN ")
+	b.Arg(index)
+	b.WriteString(" < ")
+	writeEvidenceSupportingCount(b, s)
+	b.WriteString(" THEN (SELECT shown.")
+	b.WriteString(column)
+	b.WriteString(" FROM ")
+	writeEvidenceRefSource(b, s, "ref", "shown")
+	b.WriteString(" WHERE (SELECT COUNT(*) FROM ")
+	writeEvidenceRefSource(b, s, "earlier", "earlier_obs")
+	b.WriteString(" WHERE ")
+	writeEvidenceRefOrder(b, s, "earlier")
+	b.WriteString(" < ")
+	writeEvidenceRefOrder(b, s, "ref")
+	b.WriteString(") = ")
+	b.Arg(index)
+	b.WriteString(") ELSE (SELECT edge.")
+	b.WriteString(column)
+	b.WriteString(" FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS edge WHERE ")
+	writeObservationIDEquals(b, s, "edge."+relationshipobservation.FieldID, "claim."+relationshipassertion.ObservationColumn)
+	b.WriteString(") END)")
+}
+
+func writeEvidenceRefSource(b *sql.Builder, s *sql.Selector, refAlias, obsAlias string) {
+	writeEvidenceRefFrom(b, s, refAlias)
+	b.WriteString(" JOIN ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS ")
+	b.WriteString(obsAlias)
+	b.WriteString(" ON ")
+	writeObservationIDEquals(b, s, obsAlias+"."+relationshipobservation.FieldID, refAlias+".value")
+	b.WriteString(" AND ")
+	b.WriteString(obsAlias)
+	b.WriteString(".")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = claim.")
+	b.WriteString(relationshipassertion.RelationshipColumn)
+}
+
+func writeEvidenceRefFrom(b *sql.Builder, s *sql.Selector, refAlias string) {
+	column := "claim." + relationshipassertion.FieldSupportingObservationIds
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements_text(coalesce(")
+		b.WriteString(column)
+		b.WriteString(", '[]'::jsonb)) WITH ORDINALITY AS ")
+		b.WriteString(refAlias)
+		b.WriteString("(value, ord)")
+		return
+	}
+	b.WriteString("json_each(coalesce(")
+	b.WriteString(column)
+	b.WriteString(", '[]')) AS ")
+	b.WriteString(refAlias)
+}
+
+func writeEvidenceRefOrder(b *sql.Builder, s *sql.Selector, refAlias string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(refAlias)
+		b.WriteString(".ord")
+		return
+	}
+	b.WriteString("CAST(")
+	b.WriteString(refAlias)
+	b.WriteString(".key AS INTEGER)")
+}
+
+func writeObservationIDEquals(b *sql.Builder, s *sql.Selector, idExpr, valueExpr string) {
+	if s.Dialect() == dialect.Postgres && strings.HasSuffix(idExpr, relationshipobservation.FieldID) {
+		b.WriteString(idExpr)
+		b.WriteString("::text = ")
+		if strings.HasSuffix(valueExpr, relationshipassertion.ObservationColumn) {
+			b.WriteString(valueExpr)
+			b.WriteString("::text")
+			return
+		}
+		b.WriteString(valueExpr)
+		return
+	}
+	if s.Dialect() == dialect.Postgres && strings.HasSuffix(valueExpr, relationshipassertion.ObservationColumn) {
+		b.WriteString(idExpr)
+		b.WriteString(" = ")
+		b.WriteString(valueExpr)
+		b.WriteString("::text")
+		return
+	}
+	b.WriteString(idExpr)
+	b.WriteString(" = ")
+	b.WriteString(valueExpr)
+}
+
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {
 	if strings.Contains(needle, "·") {
 		sides := strings.Split(needle, "·")
 		if len(sides) == 2 {
-			source := activitySources(normalizePersonSearch(sides[0]))
-			event := activityEvents(normalizePersonSearch(sides[1]))
+			left := strings.TrimSpace(sides[0])
+			right := strings.TrimSpace(sides[1])
+			source := activitySources(normalizePersonSearch(left))
+			event := activityEvents(normalizePersonSearch(right))
 			if len(source) > 0 && len(event) > 0 {
 				return relationship.HasObservationsWith(relationshipobservation.And(
 					relationshipobservation.SourceIn(source...),
 					relationshipobservation.EventTypeIn(event...),
 				))
+			}
+			// "See where each detail came from" prints the source and the
+			// time as one line. A longer source word such as "calendar" or
+			// "added by you" would otherwise match every event of that
+			// source and drop the clock. A short word such as "gmail" or
+			// "google" matched nothing.
+			if window, timed := visibleActivityWindow(right, time.Now().UTC()); timed {
+				if sources := detailProvenanceSources(left); len(sources) > 0 {
+					return relationship.HasObservationsWith(relationshipobservation.And(
+						relationshipobservation.SourceIn(sources...),
+						relationshipobservation.OccurredAtGT(window.after),
+						relationshipobservation.OccurredAtLTE(window.until),
+					))
+				}
+				return nil
 			}
 		}
 	}
@@ -4137,6 +9812,44 @@ func observationMeetingLinked() predicate.RelationshipObservation {
 	})
 }
 
+// detailProvenanceSources is the source half of the detail line. The sheet
+// prints activitySourceLabel of the canonical source, then the observation
+// time. Gmail and Calendar both read "Google" on that line. The CRM reads
+// "HubSpot". Activity history still names the stored source, so "Gmail" and
+// "Calendar" stay on those rows when the time is typed with them.
+func detailProvenanceSources(label string) []string {
+	switch normalizePersonSearch(label) {
+	case "google":
+		return []string{"google", "gmail", "calendar"}
+	case "gmail":
+		return []string{"gmail"}
+	case "calendar":
+		return []string{"calendar"}
+	case "hubspot":
+		return []string{"hubspot", "crm"}
+	case "the crm":
+		return []string{"crm"}
+	case "slack":
+		return []string{"slack"}
+	case "a meeting":
+		return []string{"meeting"}
+	case "a note":
+		return []string{"desktop_note"}
+	case "a voice note":
+		return []string{"voice_note"}
+	case "the browser":
+		return []string{"browser"}
+	case "added by you":
+		return []string{"user"}
+	case "the web":
+		return []string{"web"}
+	case "a connected app":
+		return []string{"composio"}
+	default:
+		return nil
+	}
+}
+
 func activitySources(needle string) []string {
 	return longestActivityMatches(needle, func(yield func(phrase, value string)) {
 		for _, item := range activitySourceSearchLabels {
@@ -4182,14 +9895,16 @@ func longestActivityMatches(needle string, each func(func(phrase, value string))
 	return values
 }
 
-// relationshipSheetRiskMatch matches the unresolved-risk sentence. "1 unresolved
-// risk" stays off a company whose queue says "2 unresolved risks", and a
-// critical company with no risks does not match.
+// relationshipSheetRiskMatch matches the risk sentence on the attention queue.
+// The queue says "1 risk is still open" and "2 risks are still open". The
+// impact list still says "Unresolved risk". "1 risk is still open" stays off
+// a company whose queue says "2 risks are still open", and a critical company
+// with no risks does not match.
 func relationshipSheetRiskMatch(needle string) predicate.Relationship {
 	var exact []predicate.Relationship
 	for _, health := range []string{"critical", "needs_attention"} {
 		for n := 1; n <= 40; n++ {
-			if needle != normalizePersonSearch(unresolvedRiskExplanation(n, health)) {
+			if needle != normalizePersonSearch(attentionRiskSentence(n, health)) {
 				continue
 			}
 			exact = append(exact, relationship.And(
@@ -4208,7 +9923,13 @@ func relationshipSheetRiskMatch(needle string) predicate.Relationship {
 	if needle == "unresolved risk" {
 		preds = append(preds, relationshipHasUnresolvedRisk())
 	}
-	if needle == "unresolved risks" {
+	if needle == "risk is still open" {
+		preds = append(preds, relationship.And(
+			relationshipHasUnresolvedRisk(),
+			relationshipRiskCount("=", 1),
+		))
+	}
+	if needle == "risks are still open" {
 		preds = append(preds, relationship.And(
 			relationshipHasUnresolvedRisk(),
 			relationshipRiskCount(">=", 2),
@@ -4243,9 +9964,26 @@ func relationshipHasUnresolvedRisk() predicate.Relationship {
 	)
 }
 
+// attentionRiskSentence is the line the attention queue prints. The stored
+// explanation still says "unresolved risk". The queue says the risk is still open.
+func attentionRiskSentence(count int, health string) string {
+	rest := "Health is " + attentionTokenLabel(health) + "."
+	switch health {
+	case "critical":
+		rest = "This company is critical."
+	case "needs_attention":
+		rest = "This company needs attention."
+	}
+	noun := "risks are still open"
+	if count == 1 {
+		noun = "risk is still open"
+	}
+	return fmt.Sprintf("%d %s. %s", count, noun, rest)
+}
+
 // relationshipSheetActionOutcomeMatch matches the sentence for a send that
-// failed, may have gone through, or needs a manual review. "The email action
-// failed" stays off a company whose failed send was Slack.
+// failed, may have gone through, or needs a person to review it. "The email
+// action failed" stays off a company whose failed send was Slack.
 func relationshipSheetActionOutcomeMatch(needle string) predicate.Relationship {
 	type outcomeWarning struct {
 		phrase string
@@ -4265,7 +10003,7 @@ func relationshipSheetActionOutcomeMatch(needle string) predicate.Relationship {
 				relationshipHasActionOutcome(kind, "ambiguous"),
 			},
 			outcomeWarning{
-				normalizePersonSearch(actionOutcomeExplanation(channel, "pending", "manual_review")),
+				normalizePersonSearch(attentionManualReviewSentence(channel)),
 				relationshipHasActionOutcome(kind, "manual_review"),
 			},
 		)
@@ -4292,6 +10030,21 @@ func relationshipSheetActionOutcomeMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// attentionManualReviewSentence is the line the attention queue prints when a
+// send needs a person to look at it. The stored explanation still says manual review.
+func attentionManualReviewSentence(channel string) string {
+	kind := strings.ToLower(attentionTokenLabel(channel))
+	switch kind {
+	case "slack":
+		kind = "Slack"
+	case "crm":
+		kind = "CRM"
+	case "crm task":
+		kind = "CRM task"
+	}
+	return fmt.Sprintf("The %s action needs a person to review it before you try again.", kind)
 }
 
 func relationshipHasActionOutcome(kind, mode string) predicate.Relationship {
@@ -4562,7 +10315,7 @@ func rankingFactorLine(needle string) (rankingLine, bool) {
 	var found rankingLine
 	matched := false
 	for _, label := range rankingFactorLabels {
-		marker := label.label + ": +"
+		marker := label.label + ": "
 		search := needle
 		for {
 			index := strings.Index(search, marker)
@@ -4570,6 +10323,23 @@ func rankingFactorLine(needle string) (rankingLine, bool) {
 				break
 			}
 			rest := search[index+len(marker):]
+			// A positive contribution keeps its plus. The search box turns the
+			// printed minus into a space, so "-2" arrives as "2".
+			sign := 0
+			switch {
+			case strings.HasPrefix(rest, "+"):
+				sign = 1
+				rest = rest[1:]
+			case strings.HasPrefix(rest, "-"):
+				sign = -1
+				rest = rest[1:]
+			case len(rest) > 0 && rest[0] >= '0' && rest[0] <= '9':
+				sign = -1
+			}
+			if sign == 0 {
+				search = search[index+len(marker):]
+				continue
+			}
 			end := 0
 			for end < len(rest) && rest[end] >= '0' && rest[end] <= '9' {
 				end++
@@ -4579,10 +10349,11 @@ func rankingFactorLine(needle string) (rankingLine, bool) {
 				continue
 			}
 			contribution, err := strconv.Atoi(rest[:end])
-			if err != nil {
+			if err != nil || (sign < 0 && contribution == 0) {
 				search = search[index+len(marker):]
 				continue
 			}
+			contribution *= sign
 			after := rest[end:]
 			var reasons []string
 			for _, item := range rankingPrintedReasons {
@@ -4906,7 +10677,8 @@ func relationshipSheetPlanEmptyMatch(needle string) predicate.Relationship {
 // "Draft · Version 1" or "Approved in this workspace · Version 2". A draft or
 // revised plan says "Approve this plan". An approved plan says "Draft an email
 // to share this plan". Each step is the title, or "Send the packet · Ada Quill"
-// when the owner is a person.
+// when the owner is a person. A saved due day is appended as
+// "Due Sep 14, 2026", the UTC day the company record prints.
 func relationshipSheetPlanCardMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	if status, version, ok := planHeadingQuery(needle); ok {
@@ -5085,11 +10857,12 @@ func writePlanStepMatch(b *sql.Builder, s *sql.Selector, line string) {
 		b.WriteString("::jsonb)->'currentRevision'->'items') = 'array' THEN (")
 		b.WriteString(column)
 		b.WriteString("::jsonb)->'currentRevision'->'items' ELSE '[]'::jsonb END) AS item WHERE ")
-		b.WriteString(planItemPrintedSQL(
+		writePlanItemLine(b, s,
 			"item->>'title'",
 			"item->>'ownerParticipantRef'",
 			tokenOwnerSQL("item->>'ownerParticipantRef'"),
-		))
+			"item->>'dueAt'",
+		)
 		b.WriteString(" = ")
 		b.Arg(line)
 		b.WriteString(")")
@@ -5098,14 +10871,28 @@ func writePlanStepMatch(b *sql.Builder, s *sql.Selector, line string) {
 	b.WriteString("EXISTS (SELECT 1 FROM json_each(coalesce(json_extract(")
 	b.WriteString(column)
 	b.WriteString(", '$.currentRevision.items'), '[]')) WHERE ")
-	b.WriteString(planItemPrintedSQL(
+	writePlanItemLine(b, s,
 		"json_extract(value, '$.title')",
 		"json_extract(value, '$.ownerParticipantRef')",
 		tokenOwnerSQL("json_extract(value, '$.ownerParticipantRef')"),
-	))
+		"json_extract(value, '$.dueAt')",
+	)
 	b.WriteString(" = ")
 	b.Arg(line)
 	b.WriteString(")")
+}
+
+func writePlanItemLine(b *sql.Builder, s *sql.Selector, title, owner, token, due string) {
+	base := planItemPrintedSQL(title, owner, token)
+	b.WriteString("CASE WHEN ")
+	writeMeetingDay(b, s, due)
+	b.WriteString(" = '' THEN (")
+	b.WriteString(base)
+	b.WriteString(") ELSE (")
+	b.WriteString(base)
+	b.WriteString(") || ' · due ' || ")
+	writeMeetingDay(b, s, due)
+	b.WriteString(" END")
 }
 
 func planItemPrintedSQL(title, owner, token string) string {
@@ -5179,7 +10966,10 @@ func relationshipLinkedCount(table, column string, n int) predicate.Relationship
 }
 
 // relationshipSheetRecommendationReasonMatch matches the line under What
-// changed. The sheet prints it only when the company has a saved reason.
+// changed and the sentence after "Why the recommendation changed:". The
+// sheet rewrites a missing assertion, a correction, a HubSpot stage, and a
+// quote-backed claim. The stored sentence stays on the record. Search
+// compares the words the sheet prints.
 func relationshipSheetRecommendationReasonMatch(needle string) predicate.Relationship {
 	mode, reason, ok := recommendationReasonQuery(needle)
 	if !ok {
@@ -5187,16 +10977,14 @@ func relationshipSheetRecommendationReasonMatch(needle string) predicate.Relatio
 	}
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
-			column := s.C(relationship.FieldStateReason)
 			if mode == "any" {
 				b.WriteString("trim(COALESCE(")
-				b.WriteString(column)
+				b.WriteString(s.C(relationship.FieldStateReason))
 				b.WriteString(", '')) <> ''")
 				return
 			}
-			b.WriteString("lower(trim(replace(replace(replace(COALESCE(")
-			b.WriteString(column)
-			b.WriteString(", ''), '-', ' '), '_', ' '), '.', ' '))) = ")
+			writeDisplayedProjectionReason(b, s)
+			b.WriteString(" = ")
 			b.Arg(reason)
 		}))
 	})
@@ -5204,19 +10992,147 @@ func relationshipSheetRecommendationReasonMatch(needle string) predicate.Relatio
 
 func recommendationReasonQuery(needle string) (mode, reason string, ok bool) {
 	text := normalizePersonSearch(needle)
+	if text == "" {
+		return "", "", false
+	}
 	const prefix = "why the recommendation changed"
 	if text == prefix || text == prefix+":" {
 		return "any", "", true
 	}
 	const labeled = prefix + ": "
-	if !strings.HasPrefix(text, labeled) {
-		return "", "", false
+	if strings.HasPrefix(text, labeled) {
+		reason = strings.TrimSpace(text[len(labeled):])
+		if reason == "" {
+			return "any", "", true
+		}
+		return "exact", reason, true
 	}
-	reason = strings.TrimSpace(text[len(labeled):])
-	if reason == "" {
-		return "any", "", true
+	// The change list prints the reason with no heading in front of it.
+	return "exact", text, true
+}
+
+// writeDisplayedProjectionReason is projectionReasonCopy in SQL. The claim
+// span is rewritten first, then the named corrections, then each missing
+// assertion. Periods are already spaces, so the quote timestamp's hyphen is
+// a space too.
+func writeDisplayedProjectionReason(b *sql.Builder, s *sql.Selector) {
+	named := [][2]string{
+		{"user corrected focused conversation evidence", "you corrected what was said"},
+		{"user corrected conversation evidence during focused review", "you corrected what was said"},
+		{"user decided a proposed conversation change", "you decided a suggested change"},
+		{"user selected the current value from a focused contradiction case", "you chose the current value"},
+		{"user confirmed this commitment from the cited meeting transcript", "you confirmed this promise from the meeting"},
+		{"hubspot company lifecycle stage", "taken from hubspot"},
 	}
-	return "exact", reason, true
+	gaps := [][2]string{
+		{"no active next action assertion at evaluation time", "no next step is recorded"},
+		{"no active health assertion at evaluation time", "health is not recorded"},
+		{"no active lifecycle assertion at evaluation time", "lifecycle is not recorded"},
+		{"no active engagement assertion at evaluation time", "engagement is not recorded"},
+		{"no active sentiment assertion at evaluation time", "sentiment is not recorded"},
+		{"no active summary assertion at evaluation time", "no summary is recorded"},
+		{"no active risk assertion at evaluation time", "no risk is recorded"},
+		{"no active milestone assertion at evaluation time", "no milestone is recorded"},
+	}
+	for range gaps {
+		b.WriteString("replace(")
+	}
+	for range named {
+		b.WriteString("replace(")
+	}
+	writeClaimSplicedReason(b, s)
+	for _, pair := range named {
+		b.WriteString(", ")
+		b.Arg(pair[0])
+		b.WriteString(", ")
+		b.Arg(pair[1])
+		b.WriteString(")")
+	}
+	for _, pair := range gaps {
+		b.WriteString(", ")
+		b.Arg(pair[0])
+		b.WriteString(", ")
+		b.Arg(pair[1])
+		b.WriteString(")")
+	}
+}
+
+func writeProjectionReasonNorm(b *sql.Builder, s *sql.Selector) {
+	writeNormalizedSQLText(b, s, "COALESCE("+s.C(relationship.FieldStateReason)+", '')")
+}
+
+func writeSQLLocate(b *sql.Builder, s *sql.Selector, haystack func(), needle string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("strpos(")
+	} else {
+		b.WriteString("instr(")
+	}
+	haystack()
+	b.WriteString(", ")
+	b.Arg(needle)
+	b.WriteString(")")
+}
+
+func writeClaimStartPos(b *sql.Builder, s *sql.Selector) {
+	writeSQLLocate(b, s, func() { writeProjectionReasonNorm(b, s) }, "conversation claim ")
+}
+
+func writeClaimMarkerRel(b *sql.Builder, s *sql.Selector) {
+	writeSQLLocate(b, s, func() {
+		b.WriteString("substr(")
+		writeProjectionReasonNorm(b, s)
+		b.WriteString(", ")
+		writeClaimStartPos(b, s)
+		b.WriteString(")")
+	}, ", supported by the exact quote at ")
+}
+
+func writeClaimMarkerPos(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(")
+	writeClaimStartPos(b, s)
+	b.WriteString(" + ")
+	writeClaimMarkerRel(b, s)
+	b.WriteString(" - 1)")
+}
+
+func writeClaimEndRel(b *sql.Builder, s *sql.Selector) {
+	writeSQLLocate(b, s, func() {
+		b.WriteString("substr(")
+		writeProjectionReasonNorm(b, s)
+		b.WriteString(", ")
+		writeClaimMarkerPos(b, s)
+		b.WriteString(")")
+	}, " ms")
+}
+
+func writeClaimSuffixStart(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(")
+	writeClaimMarkerPos(b, s)
+	b.WriteString(" + ")
+	writeClaimEndRel(b, s)
+	b.WriteString(" - 1 + 3)")
+}
+
+func writeClaimSplicedReason(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(CASE WHEN ")
+	writeClaimStartPos(b, s)
+	b.WriteString(" > 0 AND ")
+	writeClaimMarkerRel(b, s)
+	b.WriteString(" > 0 AND ")
+	writeClaimEndRel(b, s)
+	b.WriteString(" > 0 THEN substr(")
+	writeProjectionReasonNorm(b, s)
+	b.WriteString(", 1, ")
+	writeClaimStartPos(b, s)
+	b.WriteString(" - 1) || ")
+	b.Arg("taken from what was said")
+	b.WriteString(" || substr(")
+	writeProjectionReasonNorm(b, s)
+	b.WriteString(", ")
+	writeClaimSuffixStart(b, s)
+	b.WriteString(") ELSE ")
+	writeProjectionReasonNorm(b, s)
+	b.WriteString(" END)")
 }
 
 // relationshipSheetEvidenceExcerptMatch matches the quote under Inspect
@@ -5224,6 +11140,10 @@ func recommendationReasonQuery(needle string) (mode, reason string, ok bool) {
 // A saved excerpt matches the words on that line, including the quotes.
 func relationshipSheetEvidenceExcerptMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
+	// The disclosure is on the sheet whenever a recommendation carries evidence.
+	if labelPhraseMatches("inspect supporting words", needle) {
+		preds = append(preds, relationship.HasActionsWith(revenueaction.HasEvidences()))
+	}
 	if labelPhraseMatches("evidence excerpt unavailable", needle) {
 		preds = append(preds, relationship.HasActionsWith(revenueaction.HasEvidencesWith(evidenceExcerptBlank())))
 	}
@@ -6083,6 +12003,9 @@ func contradictionChosenSourceLabel(source string) string {
 // contradictionSentenceOwnsActivity is true when the query is a closed-case
 // sentence that also contains an activity heading, such as Calendar or A meeting.
 func contradictionSentenceOwnsActivity(needle string) bool {
+	if _, ok := contradictionSourceLine(needle); ok {
+		return true
+	}
 	for _, slug := range contradictionChosenSources() {
 		if labelPhraseMatches("You chose the value from "+contradictionChosenSourceLabel(slug)+".", needle) {
 			return true
@@ -6096,6 +12019,10 @@ func contradictionSentenceOwnsActivity(needle string) bool {
 // so the open suggestion stays off that company. A closed case prints who chose
 // the current value. An open case that still stores that reason does not.
 func relationshipSheetContradictionMatch(needle string) predicate.Relationship {
+	// The badge lists every side in order: "(Added by you vs HubSpot)".
+	if sources, ok := contradictionSourceLine(needle); ok {
+		return relationshipHasContradictionSourceLine(sources)
+	}
 	phrases := contradictionSearchPhrases()
 	chosen := make([]contradictionSearchPhrase, 0)
 	for _, item := range phrases {
@@ -6228,6 +12155,140 @@ func writeContradictionSideCount(b *sql.Builder, s *sql.Selector) {
 	b.WriteString("COALESCE(json_array_length(json_extract(")
 	b.WriteString(column)
 	b.WriteString(", '$.sides')), 0)")
+}
+
+// contradictionSourceLine reads the disagreement badge. The sheet joins every
+// side with " vs " and wraps that list in parentheses. The sources have to
+// stay in that order on one case.
+func contradictionSourceLine(needle string) ([]string, bool) {
+	text := needle
+	if strings.HasPrefix(text, "(") && strings.HasSuffix(text, ")") && len(text) > 2 {
+		text = text[1 : len(text)-1]
+	}
+	if !strings.Contains(text, " vs ") {
+		return nil, false
+	}
+	parts := strings.Split(text, " vs ")
+	if len(parts) < 2 {
+		return nil, false
+	}
+	sources := make([]string, len(parts))
+	for i, part := range parts {
+		source, ok := contradictionSourceValue(part)
+		if !ok {
+			return nil, false
+		}
+		sources[i] = source
+	}
+	return sources, true
+}
+
+func contradictionSourceValue(part string) (string, bool) {
+	switch part {
+	case "your correction":
+		return "user_correction", true
+	case "a connected source":
+		return "source_fact", true
+	case "a rule":
+		return "deterministic", true
+	case "a suggestion":
+		return "ai_inference", true
+	case "gmail":
+		return "gmail", true
+	case "google":
+		return "google", true
+	case "calendar":
+		return "calendar", true
+	case "slack":
+		return "slack", true
+	case "hubspot":
+		return "hubspot", true
+	case "a meeting":
+		return "meeting", true
+	case "a note":
+		return "desktop_note", true
+	case "a voice note":
+		return "voice_note", true
+	case "the browser":
+		return "browser", true
+	case "the crm":
+		return "crm", true
+	case "added by you":
+		return "user", true
+	case "the web":
+		return "web", true
+	case "a connected app":
+		return "composio", true
+	default:
+		return "", false
+	}
+}
+
+func relationshipHasContradictionSourceLine(sources []string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			art := conversationintelligenceartifact.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS eval WHERE eval.")
+			b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND eval.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = 'contradiction_case' AND eval.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(" = (SELECT MAX(newer.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(") FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS newer WHERE newer.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+			b.WriteString(") AND ")
+			writeContradictionSideCount(b, s)
+			b.WriteString(" = ")
+			b.Arg(len(sources))
+			for i, source := range sources {
+				b.WriteString(" AND lower(")
+				if s.Dialect() == dialect.Postgres {
+					b.WriteString("btrim")
+				} else {
+					b.WriteString("trim")
+				}
+				b.WriteString("(coalesce(")
+				writeContradictionSideSource(b, s, i)
+				b.WriteString(", ''))) = ")
+				b.Arg(source)
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeContradictionSideSource(b *sql.Builder, s *sql.Selector, index int) {
+	column := "eval." + conversationintelligenceartifact.FieldPayloadJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->'sides'->")
+		b.WriteString(strconv.Itoa(index))
+		b.WriteString("->>'source'")
+		return
+	}
+	b.WriteString("json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.sides[")
+	b.WriteString(strconv.Itoa(index))
+	b.WriteString("].source')")
 }
 
 // relationshipSheetUncertainClaimMatch matches the sentence under What changed.
@@ -6555,10 +12616,11 @@ func relationshipRowCountAbove(table, column string, n int, visibleOnly bool) pr
 }
 
 // relationshipSheetSuggestionMatch matches suggestion titles the sheet prints
-// from the company stage or from a conversation claim. A risk is not an objection.
+// from the company stage or from a conversation claim. A renewal suggestion
+// says "Up for renewal". A risk is not an objection.
 func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
-	if sheetPhraseMatches("renewal context", needle) {
+	if sheetPhraseMatches("up for renewal", needle) {
 		preds = append(preds, relationship.LifecycleEQ("renewal"))
 	}
 	if sheetPhraseMatches("unresolved objection", needle) {
@@ -6577,6 +12639,9 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	// conversation is the button.
 	if labelPhraseMatches("show earlier evidence", needle) {
 		preds = append(preds, relationshipHasEarlierEvidence())
+	}
+	if badge := relationshipSheetReviewBadgeMatch(needle); badge != nil {
+		preds = append(preds, badge)
 	}
 	if sheetPhraseMatches("look at this quote again", needle) || sheetPhraseMatches("what was said", needle) {
 		preds = append(preds, relationshipHasReviewClaim("claim"))
@@ -6604,6 +12669,309 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipSheetReviewIntroMatch matches the sentence above the review
+// cards. The sheet says it when the newest page has a card. A corrected
+// claim and an approved suggestion leave that page empty. A claim buried
+// under a full page of newer conversations stays on the older-page sentence.
+func relationshipSheetReviewIntroMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("approve, correct, reject, or defer each one before it changes this company", needle) {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeFocusedReviewOnNewestPage(b, s)
+		}))
+	})
+}
+
+func writeFocusedReviewOnNewestPage(b *sql.Builder, s *sql.Selector) {
+	rel := s.C(relationship.FieldID)
+	b.WriteString("EXISTS (SELECT 1 FROM (SELECT paged_obs.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(" AS id, paged_obs.")
+	b.WriteString(relationshipobservation.FieldNormalizedFactsJSON)
+	b.WriteString(" AS facts FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS paged_obs WHERE paged_obs.")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(rel)
+	b.WriteString(" ORDER BY paged_obs.")
+	b.WriteString(relationshipobservation.FieldOccurredAt)
+	b.WriteString(" DESC, paged_obs.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(" DESC LIMIT ")
+	b.WriteString(strconv.Itoa(intelligenceObservationPage))
+	b.WriteString(") AS paged WHERE ")
+	writePagedClaimReview(b, s, rel)
+	b.WriteString(" OR ")
+	writePagedCandidateReview(b, s, rel)
+	b.WriteString(")")
+}
+
+// relationshipSheetRenewalFallbackMatch matches the renewal suggestion when
+// the summary is blank or still a machine token. The card title is already
+// "Up for renewal". The detail says what to decide. A written summary is
+// that detail instead.
+func relationshipSheetRenewalFallbackMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("decide what happens before this renewal", needle) {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.And(
+			sql.EQ(s.C(relationship.FieldLifecycle), "renewal"),
+			sql.P(func(b *sql.Builder) {
+				writeRenewalSummaryUnusable(b, s)
+			}),
+		))
+	})
+}
+
+func writeRenewalSummaryUnusable(b *sql.Builder, s *sql.Selector) {
+	trimmed := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(relationship.FieldSummary))
+	token := trimmed + " <> '' AND " + trimmed + " NOT GLOB '*[^a-z0-9_:-]*'"
+	if s.Dialect() == dialect.Postgres {
+		trimmed = fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(relationship.FieldSummary))
+		token = trimmed + " ~ '^[a-z0-9_:-]+$'"
+	}
+	b.WriteString("(")
+	b.WriteString(trimmed)
+	b.WriteString(" = '' OR ")
+	b.WriteString(trimmed)
+	b.WriteString(" IN (")
+	b.Arg("local-user")
+	b.WriteString(", ")
+	b.Arg("meeting-counterparty")
+	b.WriteString(") OR (")
+	b.WriteString(token)
+	b.WriteString("))")
+}
+
+// relationshipSheetSuggestedReviewMatch matches the title on a proposed
+// review card. The stored label is "Review proposed promise". The card says
+// "A suggested promise is waiting." An approved, corrected, or rejected
+// suggestion leaves the card. A deferred one stays.
+func relationshipSheetSuggestedReviewMatch(needle string) predicate.Relationship {
+	if !suggestedReviewNeedle(needle) {
+		return nil
+	}
+	return relationshipHasOpenCandidate(func(b *sql.Builder, s *sql.Selector) {
+		b.WriteString("(")
+		writeNeedleContainsSentence(b, s, needle, writeSuggestedReviewSentence)
+		b.WriteString(" AND ")
+		writeSuggestedReviewSentence(b, s)
+		b.WriteString(" <> '')")
+	})
+}
+
+func suggestedReviewNeedle(needle string) bool {
+	if strings.Contains(needle, "a suggestion is waiting") {
+		return true
+	}
+	return strings.Contains(needle, "a suggested ") && strings.Contains(needle, " is waiting")
+}
+
+func writeNeedleContainsSentence(b *sql.Builder, s *sql.Selector, needle string, writeSentence func(*sql.Builder, *sql.Selector)) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("strpos(")
+	} else {
+		b.WriteString("instr(")
+	}
+	b.Arg(needle)
+	b.WriteString(", ")
+	writeSentence(b, s)
+	b.WriteString(") > 0")
+}
+
+func writeSuggestedReviewSentence(b *sql.Builder, s *sql.Selector) {
+	kind := "trim(coalesce(json_extract(candidate.value, '$.kind'), ''))"
+	token := kind + " <> '' AND " + kind + " NOT GLOB '*[^a-z0-9_:-]*'"
+	if s.Dialect() == dialect.Postgres {
+		kind = "btrim(coalesce(candidate->>'kind', ''))"
+		token = kind + " ~ '^[a-z0-9_:-]+$'"
+	}
+	named := []string{"promise", "commitment", "risk", "objection", "stakeholder", "next_action", "fact"}
+	b.WriteString("CASE WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" IN (")
+	b.Arg("")
+	b.WriteString(", ")
+	b.Arg("local-user")
+	b.WriteString(", ")
+	b.Arg("meeting-counterparty")
+	b.WriteString(") OR (")
+	b.WriteString(token)
+	b.WriteString(" AND ")
+	b.WriteString(kind)
+	b.WriteString(" NOT IN (")
+	for i, value := range named {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(value)
+	}
+	b.WriteString(")) THEN ")
+	b.Arg("a suggestion is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" IN (")
+	b.Arg("promise")
+	b.WriteString(", ")
+	b.Arg("commitment")
+	b.WriteString(") THEN ")
+	b.Arg("a suggested promise is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" = ")
+	b.Arg("risk")
+	b.WriteString(" THEN ")
+	b.Arg("a suggested risk is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" = ")
+	b.Arg("objection")
+	b.WriteString(" THEN ")
+	b.Arg("a suggested objection is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" = ")
+	b.Arg("stakeholder")
+	b.WriteString(" THEN ")
+	b.Arg("a suggested person is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" = ")
+	b.Arg("next_action")
+	b.WriteString(" THEN ")
+	b.Arg("a suggested next step is waiting")
+	b.WriteString(" WHEN ")
+	b.WriteString(kind)
+	b.WriteString(" = ")
+	b.Arg("fact")
+	b.WriteString(" THEN ")
+	b.Arg("a suggested detail is waiting")
+	b.WriteString(" ELSE ")
+	writeNormalizedSQLText(b, s, "('A suggested ' || "+kind+" || ' is waiting.')")
+	b.WriteString(" END")
+}
+
+// relationshipSheetReviewCardCaveatMatch matches the reason under a proposed
+// review card. The card says "Who accepted this promise is not confirmed."
+// The stored caveat stays "commitment acceptance requires review". A capture
+// note with the same words is a different row. A closed suggestion hides the
+// line.
+func relationshipSheetReviewCardCaveatMatch(needle string) predicate.Relationship {
+	var stored []string
+	for phrase, value := range reviewCardCaveats {
+		if labelPhraseMatches(phrase, needle) {
+			stored = append(stored, value)
+		}
+	}
+	if len(stored) == 0 {
+		return nil
+	}
+	return relationshipHasOpenCandidate(func(b *sql.Builder, s *sql.Selector) {
+		b.WriteString("(")
+		for i, value := range stored {
+			if i > 0 {
+				b.WriteString(" OR ")
+			}
+			writeCandidateCaveatEquals(b, s, value)
+		}
+		b.WriteString(")")
+	})
+}
+
+var reviewCardCaveats = map[string]string{
+	"who spoke is not confirmed":                   "speaker assignment requires review",
+	"who accepted this promise is not confirmed":   "commitment acceptance requires review",
+	"this came from a rule check it before saving": "deterministic fallback candidate requires review",
+}
+
+func relationshipHasOpenCandidate(match func(*sql.Builder, *sql.Selector)) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := "obs." + relationshipobservation.FieldNormalizedFactsJSON
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipobservation.Table)
+			b.WriteString(" AS obs WHERE obs.")
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'conversation_claim_candidates') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'conversation_claim_candidates') AS candidate WHERE ")
+			} else {
+				b.WriteString("json_valid(")
+				b.WriteString(facts)
+				b.WriteString(") AND json_type(")
+				b.WriteString(facts)
+				b.WriteString(", '$.conversation_claim_candidates') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
+				b.WriteString(facts)
+				b.WriteString(", '$.conversation_claim_candidates') AS candidate WHERE ")
+			}
+			match(b, s)
+			b.WriteString(" AND NOT ")
+			writeOpenCandidateDecisionClosed(b, s)
+			b.WriteString("))")
+		}))
+	})
+}
+
+func writeOpenCandidateDecisionClosed(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("EXISTS (SELECT 1 FROM (SELECT ")
+	writeObservationFactText(b, s, "dec", "review_decision", "kind")
+	b.WriteString(" AS kind FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS dec WHERE dec.")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(" AND ")
+	writeObservationFactText(b, s, "dec", "review_decision", "observation_id")
+	b.WriteString(" = ")
+	b.WriteString("obs.")
+	b.WriteString(relationshipobservation.FieldID)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("::text")
+	}
+	b.WriteString(" AND ")
+	writeObservationFactText(b, s, "dec", "review_decision", "candidate_id")
+	b.WriteString(" = ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("candidate->>'candidateId'")
+	} else {
+		b.WriteString("json_extract(candidate.value, '$.candidateId')")
+	}
+	b.WriteString(" ORDER BY dec.")
+	b.WriteString(relationshipobservation.FieldOccurredAt)
+	b.WriteString(" DESC, dec.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(" DESC LIMIT 1) AS latest WHERE latest.kind IN (")
+	b.Arg("approve")
+	b.WriteString(", ")
+	b.Arg("correct")
+	b.WriteString(", ")
+	b.Arg("reject")
+	b.WriteString("))")
+}
+
+func writeCandidateCaveatEquals(b *sql.Builder, s *sql.Selector, stored string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(candidate->'caveats') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(candidate->'caveats') AS caveat(value) WHERE caveat.value = ")
+		b.Arg(stored)
+		b.WriteString(")")
+		return
+	}
+	b.WriteString("json_type(candidate.value, '$.caveats') = 'array' AND EXISTS (SELECT 1 FROM json_each(candidate.value, '$.caveats') AS caveat WHERE caveat.value = ")
+	b.Arg(stored)
+	b.WriteString(")")
 }
 
 // relationshipSheetOlderReviewMatch matches "Older conversations may still
@@ -6857,6 +13225,99 @@ func relationshipHasConversationClaim(match func(*sql.Builder, *sql.Selector)) p
 	})
 }
 
+// relationshipSheetReviewBadgeMatch is the badge on a review card. A stored
+// claim prints "50% · What was said" or "40% · Who said it". A proposed
+// change prints the same "92% · What was said" badge at any confidence, and
+// an approved, corrected, or rejected suggestion leaves the card. The kind
+// alone still finds every card of that kind. The percent stays on the card
+// that prints it.
+func relationshipSheetReviewBadgeMatch(needle string) predicate.Relationship {
+	percent, kind, ok := reviewEvidenceBadge(needle)
+	if !ok {
+		return nil
+	}
+	claim := relationshipHasConversationClaim(func(b *sql.Builder, s *sql.Selector) {
+		writeReviewBadge(b, s, kind, percent)
+	})
+	if kind != "claim" {
+		return claim
+	}
+	open := relationshipHasOpenCandidate(func(b *sql.Builder, s *sql.Selector) {
+		writeRoundedPercent(b, reviewCandidateNumber(s, "confidence"), percent)
+	})
+	return relationship.Or(claim, open)
+}
+
+func reviewEvidenceBadge(needle string) (percent int, kind string, ok bool) {
+	left, right, split := mailTimelineParts(needle)
+	if !split || !strings.HasSuffix(left, "%") {
+		return 0, "", false
+	}
+	raw := strings.TrimSuffix(left, "%")
+	parsed, err := strconv.Atoi(raw)
+	if err != nil || parsed < 0 || parsed > 100 || strconv.Itoa(parsed) != raw {
+		return 0, "", false
+	}
+	switch right {
+	case "what was said":
+		return parsed, "claim", true
+	case "who said it":
+		return parsed, "speaker", true
+	case "who this is":
+		return parsed, "entity", true
+	case "the wording":
+		return parsed, "word", true
+	default:
+		return 0, "", false
+	}
+}
+
+func writeReviewBadge(b *sql.Builder, s *sql.Selector, kind string, percent int) {
+	confidence := reviewClaimNumber(s, "confidence")
+	speaker := reviewClaimNumber(s, "speakerConfidence")
+	switch kind {
+	case "speaker":
+		writeRoundedPercent(b, speaker, percent)
+		b.WriteString(" AND ")
+		b.WriteString(speaker)
+		b.WriteString(" < 0.75")
+	case "word":
+		writeRoundedPercent(b, confidence, percent)
+		b.WriteString(" AND ")
+		b.WriteString(confidence)
+		b.WriteString(" < 0.65")
+	case "entity":
+		if s.Dialect() == dialect.Postgres {
+			b.WriteString("claim->>'kind'")
+		} else {
+			b.WriteString("json_extract(claim.value, '$.kind')")
+		}
+		b.WriteString(" = 'stakeholder' AND ")
+		writeRoundedPercent(b, confidence, percent)
+		b.WriteString(" AND ")
+		b.WriteString(confidence)
+		b.WriteString(" < 0.85")
+	default:
+		writeRoundedPercent(b, confidence, percent)
+		b.WriteString(" AND ")
+		b.WriteString(confidence)
+		b.WriteString(" < 0.75")
+	}
+}
+
+func writeRoundedPercent(b *sql.Builder, expr string, percent int) {
+	lo := float64(percent) - 0.5
+	hi := float64(percent) + 0.5
+	b.WriteString("((")
+	b.WriteString(expr)
+	b.WriteString(") * 100) >= ")
+	b.Arg(lo)
+	b.WriteString(" AND ((")
+	b.WriteString(expr)
+	b.WriteString(") * 100) < ")
+	b.Arg(hi)
+}
+
 func writeReviewClaimCondition(b *sql.Builder, s *sql.Selector, mode string) {
 	confidence := reviewClaimNumber(s, "confidence")
 	speaker := reviewClaimNumber(s, "speakerConfidence")
@@ -6897,6 +13358,13 @@ func reviewClaimNumber(s *sql.Selector, field string) string {
 		return fmt.Sprintf("COALESCE((claim->>'%s')::double precision, 0)", field)
 	}
 	return fmt.Sprintf("COALESCE(json_extract(claim.value, '$.%s'), 0)", field)
+}
+
+func reviewCandidateNumber(s *sql.Selector, field string) string {
+	if s.Dialect() == dialect.Postgres {
+		return fmt.Sprintf("COALESCE((candidate->>'%s')::double precision, 0)", field)
+	}
+	return fmt.Sprintf("COALESCE(json_extract(candidate.value, '$.%s'), 0)", field)
 }
 
 func focusedReviewCount(needle string) (n int, atLeast bool, ok bool) {
@@ -7027,7 +13495,10 @@ func relationshipSheetPrivacyMatch(needle string) predicate.Relationship {
 		preds = append(preds, relationshipHasPolicyCapture("deny"))
 	}
 	if sheetPhraseMatches("ask before capturing", needle) || sheetPhraseMatches("capture: ask before capturing", needle) {
-		preds = append(preds, relationship.Not(relationshipHasPolicyCapture("deny")))
+		preds = append(preds, relationshipShowsAskBeforeCapture())
+	}
+	if sheetPhraseMatches("capture is allowed", needle) || labelPhraseMatches("capture: capture is allowed", needle) {
+		preds = append(preds, relationshipShowsCaptureAllowed())
 	}
 	if sheetPhraseMatches("shared excerpts: off", needle) {
 		preds = append(preds, relationshipHasPolicyBoolFalse("publishEvidence"))
@@ -7105,6 +13576,29 @@ func privacyRetentionDays(needle string) (int, bool) {
 		return 0, false
 	}
 	return parsed, true
+}
+
+// relationshipShowsAskBeforeCapture is the privacy badge "Capture: Ask before
+// capturing". A saved allow rule prints "Capture is allowed" instead. No saved
+// rule still asks before capturing.
+func relationshipShowsAskBeforeCapture() predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationshipHasPolicyCapture("deny")),
+		relationship.Or(
+			relationship.Not(relationshipHasPolicyCapture("allow")),
+			relationshipHasPolicyCapture("require_consent"),
+		),
+	)
+}
+
+// relationshipShowsCaptureAllowed is the privacy badge "Capture: Capture is
+// allowed". A stricter saved rule, or no saved rule, prints a different line.
+func relationshipShowsCaptureAllowed() predicate.Relationship {
+	return relationship.And(
+		relationshipHasPolicyCapture("allow"),
+		relationship.Not(relationshipHasPolicyCapture("deny")),
+		relationship.Not(relationshipHasPolicyCapture("require_consent")),
+	)
 }
 
 func relationshipHasPolicyCapture(capture string) predicate.Relationship {
@@ -7247,6 +13741,11 @@ func writePolicyBoolIsFalse(b *sql.Builder, s *sql.Selector, field string) {
 // deletion line. The receipt is stored on the conversation observation.
 func relationshipSheetGovernanceMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
+	// The card prints three lines. A phrase from one line does not contain
+	// the whole line, so the joined sentence has to be matched on its own.
+	if line := relationshipSheetGovernanceLineMatch(needle); line != nil {
+		preds = append(preds, line)
+	}
 	for _, item := range governanceReceiptPhrases() {
 		if !sheetPhraseMatches(item.phrase, needle) {
 			continue
@@ -7293,6 +13792,235 @@ func relationshipSheetGovernanceMatch(needle string) predicate.Relationship {
 	}
 }
 
+// relationshipSheetGovernanceLineMatch matches one printed receipt line.
+// The first line is the capture and the route. The second is place, how long
+// it is kept, whether people were told, and what happened to the recording.
+// The third is the legal hold and the audio note. Every part has to be on
+// the same receipt.
+func relationshipSheetGovernanceLineMatch(needle string) predicate.Relationship {
+	if !strings.Contains(needle, " · ") {
+		return nil
+	}
+	parts := strings.Split(needle, " · ")
+	for _, part := range parts {
+		if part == "" {
+			return nil
+		}
+	}
+	switch len(parts) {
+	case 2:
+		if on, ok := governanceLegalHoldPart(parts[0]); ok {
+			clip, ok := governanceExcerptValue(parts[1])
+			if !ok {
+				return nil
+			}
+			hold := on
+			return relationshipHasGovernanceLine(&hold, []governanceFieldMatch{{
+				field:  "evidenceClip",
+				equals: []string{clip},
+			}})
+		}
+		capture, ok := governanceCaptureValue(parts[0])
+		if !ok {
+			return nil
+		}
+		route, ok := governanceRouteMatch(parts[1])
+		if !ok {
+			return nil
+		}
+		return relationshipHasGovernanceLine(nil, []governanceFieldMatch{
+			{field: "capturePolicy", equals: []string{capture}},
+			route,
+		})
+	case 4:
+		place, ok := governancePlaceValue(parts[0])
+		if !ok {
+			return nil
+		}
+		retention, ok := governanceRetentionMatch(parts[1])
+		if !ok {
+			return nil
+		}
+		disclosure, ok := governanceDisclosureValue(parts[2])
+		if !ok {
+			return nil
+		}
+		deletion, ok := governanceDeletionMatch(parts[3])
+		if !ok {
+			return nil
+		}
+		return relationshipHasGovernanceLine(nil, []governanceFieldMatch{
+			{field: "region", equals: []string{place}},
+			retention,
+			{field: "participantDisclosure", equals: []string{disclosure}},
+			deletion,
+		})
+	default:
+		return nil
+	}
+}
+
+type governanceFieldMatch struct {
+	field  string
+	equals []string
+	prefix string
+}
+
+func governanceCaptureValue(part string) (string, bool) {
+	switch part {
+	case "captured by hand":
+		return "manual_capture", true
+	case "uploaded on purpose":
+		return "explicit_upload", true
+	case "imported from the meeting service":
+		return "provider_import", true
+	case "started from the calendar or by hand":
+		return "calendar_prompt_or_manual", true
+	case "do not capture":
+		return "deny", true
+	case "ask before capturing":
+		return "require_consent", true
+	case "capture is allowed":
+		return "allow", true
+	default:
+		return "", false
+	}
+}
+
+func governanceRouteMatch(part string) (governanceFieldMatch, bool) {
+	switch part {
+	case "transcribed on this device, then saved here":
+		return governanceFieldMatch{field: "routing", equals: []string{"local_transcription_to_oppulence"}}, true
+	case "stays on this device":
+		return governanceFieldMatch{field: "routing", equals: []string{"local_only"}}, true
+	default:
+		stored, ok := importedGovernanceRoute(part)
+		if !ok {
+			return governanceFieldMatch{}, false
+		}
+		return governanceFieldMatch{field: "routing", equals: []string{stored}}, true
+	}
+}
+
+func governancePlaceValue(part string) (string, bool) {
+	switch part {
+	case "on this device":
+		return "local_device", true
+	case "kept by the meeting service":
+		return "provider_managed", true
+	default:
+		return "", false
+	}
+}
+
+func governanceRetentionMatch(part string) (governanceFieldMatch, bool) {
+	switch part {
+	case "kept until it is transcribed":
+		return governanceFieldMatch{field: "retention", equals: []string{"until_transcribed", "untilTranscribed"}}, true
+	case "kept":
+		return governanceFieldMatch{field: "retention", equals: []string{"always"}}, true
+	case "the meeting service keeps the original the evidence saved here stays":
+		return governanceFieldMatch{field: "retention", equals: []string{"provider_policy_plus_oppulence_evidence"}}, true
+	default:
+		return governanceFieldMatch{}, false
+	}
+}
+
+func governanceDisclosureValue(part string) (string, bool) {
+	switch part {
+	case "people were not told":
+		return "not_recorded", true
+	case "the meeting service says people were told":
+		return "provider_reported", true
+	default:
+		return "", false
+	}
+}
+
+func governanceDeletionMatch(part string) (governanceFieldMatch, bool) {
+	switch part {
+	case "deleted":
+		return governanceFieldMatch{field: "deletionOutcome", prefix: "deleted:"}, true
+	case "the meeting service deleted the original":
+		return governanceFieldMatch{field: "deletionOutcome", prefix: "provider_deleted:"}, true
+	case "scheduled to be deleted after transcription":
+		return governanceFieldMatch{field: "deletionOutcome", equals: []string{"scheduled_after_transcription"}}, true
+	case "kept because of your settings":
+		return governanceFieldMatch{field: "deletionOutcome", equals: []string{"retained_by_user_policy"}}, true
+	case "nothing to delete":
+		return governanceFieldMatch{field: "deletionOutcome", equals: []string{"not_applicable"}}, true
+	case "kept":
+		return governanceFieldMatch{field: "deletionOutcome", equals: []string{"retained"}}, true
+	default:
+		return governanceFieldMatch{}, false
+	}
+}
+
+func governanceExcerptValue(part string) (string, bool) {
+	switch part {
+	case "no audio was kept":
+		return "not_retained", true
+	case "the audio that was kept is encrypted":
+		return "encrypted", true
+	default:
+		return "", false
+	}
+}
+
+func governanceLegalHoldPart(part string) (bool, bool) {
+	switch part {
+	case "legal hold on":
+		return true, true
+	case "legal hold off":
+		return false, true
+	default:
+		return false, false
+	}
+}
+
+func relationshipHasGovernanceLine(hold *bool, fields []governanceFieldMatch) predicate.Relationship {
+	return relationshipHasGovernanceReceipt(func(b *sql.Builder, s *sql.Selector) {
+		wrote := false
+		if hold != nil {
+			writeGovernanceBool(b, s, "legalHold", *hold)
+			wrote = true
+		}
+		for _, field := range fields {
+			if wrote {
+				b.WriteString(" AND ")
+			}
+			writeGovernanceFieldMatch(b, s, field)
+			wrote = true
+		}
+	})
+}
+
+func writeGovernanceFieldMatch(b *sql.Builder, s *sql.Selector, match governanceFieldMatch) {
+	if match.prefix != "" {
+		writeGovernanceText(b, s, match.field)
+		b.WriteString(" LIKE ")
+		b.Arg(escapePersonSearchLike(match.prefix) + "%")
+		b.WriteString(" ESCAPE '!'")
+		return
+	}
+	if len(match.equals) == 1 {
+		writeGovernanceText(b, s, match.field)
+		b.WriteString(" = ")
+		b.Arg(match.equals[0])
+		return
+	}
+	b.WriteByte('(')
+	for i, value := range match.equals {
+		if i > 0 {
+			b.WriteString(" OR ")
+		}
+		writeGovernanceText(b, s, match.field)
+		b.WriteString(" = ")
+		b.Arg(value)
+	}
+	b.WriteByte(')')
+}
+
 type governanceReceiptPhrase struct {
 	phrase string
 	field  string
@@ -7304,7 +14032,7 @@ func governanceReceiptPhrases() []governanceReceiptPhrase {
 	return []governanceReceiptPhrase{
 		{phrase: "captured by hand", field: "capturePolicy", value: "manual_capture"},
 		{phrase: "uploaded on purpose", field: "capturePolicy", value: "explicit_upload"},
-		{phrase: "imported from the provider", field: "capturePolicy", value: "provider_import"},
+		{phrase: "imported from the meeting service", field: "capturePolicy", value: "provider_import"},
 		{phrase: "started from the calendar or by hand", field: "capturePolicy", value: "calendar_prompt_or_manual"},
 		{phrase: "do not capture", field: "capturePolicy", value: "deny"},
 		{phrase: "ask before capturing", field: "capturePolicy", value: "require_consent"},
@@ -7312,18 +14040,19 @@ func governanceReceiptPhrases() []governanceReceiptPhrase {
 		{phrase: "transcribed on this device, then saved here", field: "routing", value: "local_transcription_to_oppulence"},
 		{phrase: "stays on this device", field: "routing", value: "local_only"},
 		{phrase: "on this device", field: "region", value: "local_device"},
-		{phrase: "at the provider", field: "region", value: "provider_managed"},
+		{phrase: "kept by the meeting service", field: "region", value: "provider_managed"},
 		{phrase: "kept until it is transcribed", field: "retention", value: "until_transcribed"},
 		{phrase: "kept until it is transcribed", field: "retention", value: "untilTranscribed"},
-		{phrase: "the provider's policy, plus the evidence saved here", field: "retention", value: "provider_policy_plus_oppulence_evidence"},
+		{phrase: "the meeting service keeps the original. the evidence saved here stays.", field: "retention", value: "provider_policy_plus_oppulence_evidence"},
 		{phrase: "kept", field: "retention", value: "always"},
 		{phrase: "kept", field: "deletionOutcome", value: "retained"},
 		{phrase: "people were not told", field: "participantDisclosure", value: "not_recorded"},
-		{phrase: "the provider says people were told", field: "participantDisclosure", value: "provider_reported"},
+		{phrase: "the meeting service says people were told", field: "participantDisclosure", value: "provider_reported"},
 		{phrase: "scheduled to be deleted after transcription", field: "deletionOutcome", value: "scheduled_after_transcription"},
 		{phrase: "kept because of your settings", field: "deletionOutcome", value: "retained_by_user_policy"},
 		{phrase: "nothing to delete", field: "deletionOutcome", value: "not_applicable"},
 		{phrase: "deleted", field: "deletionOutcome", value: "deleted:", prefix: true},
+		{phrase: "the meeting service deleted the original.", field: "deletionOutcome", value: "provider_deleted:", prefix: true},
 		{phrase: "no audio was kept", field: "evidenceClip", value: "not_retained"},
 		{phrase: "the audio that was kept is encrypted", field: "evidenceClip", value: "encrypted"},
 	}
@@ -7472,7 +14201,8 @@ func relationshipHasGovernanceReceiptPrefix(field, prefix string) predicate.Rela
 	return relationshipHasGovernanceReceipt(func(b *sql.Builder, s *sql.Selector) {
 		writeGovernanceText(b, s, field)
 		b.WriteString(" LIKE ")
-		b.Arg(prefix + "%")
+		b.Arg(escapePersonSearchLike(prefix) + "%")
+		b.WriteString(" ESCAPE '!'")
 	})
 }
 
@@ -7806,6 +14536,134 @@ var actionTypeSearchLabels = []struct {
 	{"promise follow-up", "commitment_rescue"},
 }
 
+func actionAnswerLine(needle string) (string, string, bool) {
+	labels := append([]struct {
+		phrase     string
+		actionType string
+	}{}, actionTypeSearchLabels...)
+	sort.Slice(labels, func(i, j int) bool {
+		return len(normalizePersonSearch(labels[i].phrase)) > len(normalizePersonSearch(labels[j].phrase))
+	})
+	for _, item := range labels {
+		phrase := normalizePersonSearch(item.phrase)
+		if phrase == "" || needle == phrase || strings.HasPrefix(needle, phrase+":") {
+			continue
+		}
+		prefix := phrase + " "
+		if !strings.HasPrefix(needle, prefix) {
+			continue
+		}
+		rest := strings.TrimSpace(needle[len(prefix):])
+		if rest == "" {
+			continue
+		}
+		return item.actionType, rest, true
+	}
+	return "", "", false
+}
+
+func relationshipSheetActionAnswerMatch(needle string) predicate.Relationship {
+	actionType, rest, ok := actionAnswerLine(needle)
+	if !ok {
+		return nil
+	}
+	return relationship.HasActionsWith(
+		revenueaction.ActionTypeEQ(actionType),
+		revenueaction.QueueStatusEQ(QueueOpen),
+		actionAnswerReason(rest),
+	)
+}
+
+func actionAnswerReason(rest string) predicate.RevenueAction {
+	preds := []predicate.RevenueAction{revenueActionReasonNormalized(rest)}
+	if rewritten := rewrittenActionReason(rest); rewritten != nil {
+		preds = append(preds, rewritten)
+	}
+	if len(preds) == 1 {
+		return preds[0]
+	}
+	return revenueaction.Or(preds...)
+}
+
+func rewrittenActionReason(rest string) predicate.RevenueAction {
+	if rest == normalizePersonSearch("You confirmed this follow-up from the meeting.") {
+		return confirmedMeetingReason()
+	}
+	if rest == "confirm this promise from the message" {
+		return revenueActionReasonEquals("An explicit promise in this message needs confirmation.")
+	}
+	for _, item := range printedActionReasons {
+		if rest == normalizePersonSearch(item.display) {
+			return revenueActionReasonEquals(item.stored)
+		}
+	}
+	if days, ok := printedReasonCount(printedProposalReason, rest); ok {
+		return revenueActionReasonEquals(fmt.Sprintf(
+			"You sent a proposal-stage message %d days ago and there has been no reply.", days,
+		))
+	}
+	if who, days, ok := printedWaitingReasonParts(rest); ok {
+		return revenueActionReasonEquals(fmt.Sprintf(
+			"%s asked you something %d days ago and is still waiting on a reply.", who, days,
+		))
+	}
+	if days, ok := printedReasonCount(printedIntroReason, rest); ok {
+		return revenueActionReasonEquals(fmt.Sprintf(
+			"An introduction in this thread has had no contact for %d days.", days,
+		))
+	}
+	if messages, days, ok := printedQuietReasonParts(rest); ok {
+		return revenueActionReasonEquals(fmt.Sprintf(
+			"A warm two-way conversation (%d messages) has been dormant for %d days.", messages, days,
+		))
+	}
+	if days, when, ok := printedFollowReasonParts(rest); ok {
+		return revenueActionReasonEquals(fmt.Sprintf(
+			"A follow-up was promised in this thread and nothing has happened for %d days (last touch %s).",
+			days, when,
+		))
+	}
+	return nil
+}
+
+func revenueActionReasonNormalized(want string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeNormalizedSQLText(b, s, s.C(revenueaction.FieldReason))
+			b.WriteString(" = ")
+			b.Arg(want)
+		}))
+	})
+}
+
+func draftedPromiseOwns(needle string) bool {
+	_, ok := draftedPromiseAnswer(needle)
+	return ok
+}
+
+func draftedPromiseAnswer(needle string) (promiseAnswerShape, bool) {
+	suffix := normalizePersonSearch("no follow-up is drafted")
+	if suffix == "" || needle == suffix || !strings.HasSuffix(needle, suffix) {
+		return promiseAnswerShape{}, false
+	}
+	rest := strings.TrimSpace(strings.TrimSuffix(needle, suffix))
+	if rest == "" {
+		return promiseAnswerShape{}, false
+	}
+	return parsePromiseAnswer(rest)
+}
+
+func relationshipSheetDraftedPromiseMatch(needle string, now time.Time) predicate.Relationship {
+	shape, ok := draftedPromiseAnswer(needle)
+	if !ok {
+		return nil
+	}
+	return relationship.And(
+		relationshipHasPromiseAnswer(shape, now),
+		relationship.Not(relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen))),
+	)
+}
+
 func relationshipSheetActionLabelMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	for _, item := range actionTypeSearchLabels {
@@ -7830,8 +14688,9 @@ func relationshipSheetActionLabelMatch(needle string) predicate.Relationship {
 // relationshipSheetRecommendationBadgeMatch matches the badges on a
 // recommendation. Policy reads "Review required", "Re-check needed",
 // "Not checked", "Cleared", or "Blocked". A decided recommendation reads
-// "Approved" or "Rejected". The corner chip reads "Draft" or "Send".
-// Priority reads "High", "Medium", or "Low".
+// "Approved" or "Rejected". One still waiting reads "Awaiting approval".
+// The corner chip reads "Draft" or "Send". Priority reads "High",
+// "Medium", or "Low".
 func relationshipSheetRecommendationBadgeMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	for _, item := range []struct {
@@ -7852,6 +14711,7 @@ func relationshipSheetRecommendationBadgeMatch(needle string) predicate.Relation
 		phrase string
 		status string
 	}{
+		{"awaiting approval", ApprovalPending},
 		{"approved", ApprovalApproved},
 		{"rejected", ApprovalRejected},
 	} {
@@ -7986,7 +14846,11 @@ func relationshipSheetConfirmedMeetingMatch(needle string) predicate.Relationshi
 	if !labelPhraseMatches("you confirmed this follow-up from the meeting.", needle) {
 		return nil
 	}
-	return relationship.HasActionsWith(predicate.RevenueAction(func(s *sql.Selector) {
+	return relationship.HasActionsWith(confirmedMeetingReason())
+}
+
+func confirmedMeetingReason() predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			column := s.C(revenueaction.FieldReason)
 			b.WriteString("(lower(trim(")
@@ -7999,7 +14863,173 @@ func relationshipSheetConfirmedMeetingMatch(needle string) predicate.Relationshi
 			}
 			b.WriteString(")) GLOB 'you confirmed this follow-up from source evidence meeting/?*.')")
 		}))
-	}))
+	})
+}
+
+// printedActionReasons are conversation follow-ups the queue rewrites. The
+// stored reason stays the longer sentence. The card says the short one.
+var printedActionReasons = []struct {
+	display string
+	stored  string
+}{
+	{"Send a recap of what was said.", "Send a recap grounded in the material statements from this conversation."},
+	{"Share the recap with the account team.", "Share the evidence-backed recap with the account team."},
+	{"Update the company record from what was said.", "Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence."},
+	{"Keep this promise until it is kept or changed.", "Track a spoken commitment until it is fulfilled or renegotiated."},
+	{"Hold time before this promise is due.", "Protect time before the spoken commitment is due."},
+}
+
+var (
+	printedProposalReason = regexp.MustCompile(`^you sent a proposal (\d+) days? ago,? and there has been no reply$`)
+	printedWaitingReason  = regexp.MustCompile(`^(.+?) asked you a question (\d+) days? ago and is still waiting$`)
+	printedIntroReason    = regexp.MustCompile(`^an introduction has had no follow up for (\d+) days?$`)
+	printedQuietReason    = regexp.MustCompile(`^a two way conversation of (\d+) messages? has been quiet for (\d+) days?$`)
+	printedFollowReason   = regexp.MustCompile(`^a follow up was promised,? and nothing has happened for (\d+) days? the last message was (.+)$`)
+)
+
+// relationshipSheetPrintedReasonMatch matches a mail or conversation reason
+// by the sentence the queue prints. The stored reason still uses the detector
+// wording. "You sent a proposal" stays off a company whose reason is a recap.
+func relationshipSheetPrintedReasonMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	add := func(match predicate.RevenueAction) {
+		preds = append(preds, relationship.HasActionsWith(match))
+	}
+	if needle == "confirm this promise from the message" {
+		add(revenueActionReasonEquals("An explicit promise in this message needs confirmation."))
+	}
+	if days, ok := printedReasonCount(printedProposalReason, needle); ok {
+		add(revenueActionReasonEquals(fmt.Sprintf(
+			"You sent a proposal-stage message %d days ago and there has been no reply.", days,
+		)))
+	} else if needle == "you sent a proposal" {
+		add(revenueActionReasonHasPrefix("you sent a proposal-stage message "))
+	}
+	if who, days, ok := printedWaitingReasonParts(needle); ok {
+		add(revenueActionReasonEquals(fmt.Sprintf(
+			"%s asked you something %d days ago and is still waiting on a reply.", who, days,
+		)))
+	} else if needle == "asked you a question" {
+		add(revenueActionReasonContains("asked you something ", " days ago and is still waiting on a reply."))
+	}
+	if days, ok := printedReasonCount(printedIntroReason, needle); ok {
+		add(revenueActionReasonEquals(fmt.Sprintf(
+			"An introduction in this thread has had no contact for %d days.", days,
+		)))
+	} else if needle == "has had no follow up" {
+		add(revenueActionReasonHasPrefix("an introduction in this thread has had no contact for "))
+	}
+	if messages, days, ok := printedQuietReasonParts(needle); ok {
+		add(revenueActionReasonEquals(fmt.Sprintf(
+			"A warm two-way conversation (%d messages) has been dormant for %d days.", messages, days,
+		)))
+	} else if needle == "two way conversation" {
+		add(revenueActionReasonHasPrefix("a warm two-way conversation ("))
+	}
+	if days, when, ok := printedFollowReasonParts(needle); ok {
+		add(revenueActionReasonEquals(fmt.Sprintf(
+			"A follow-up was promised in this thread and nothing has happened for %d days (last touch %s).",
+			days, when,
+		)))
+	} else if needle == "a follow up was promised" {
+		add(revenueActionReasonHasPrefix("a follow-up was promised in this thread and nothing has happened for "))
+	}
+	for _, item := range printedActionReasons {
+		if needle == normalizePersonSearch(item.display) {
+			add(revenueActionReasonEquals(item.stored))
+		}
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func printedReasonCount(pattern *regexp.Regexp, needle string) (int, bool) {
+	match := pattern.FindStringSubmatch(needle)
+	if len(match) != 2 {
+		return 0, false
+	}
+	days, err := strconv.Atoi(match[1])
+	if err != nil || days < 0 {
+		return 0, false
+	}
+	return days, true
+}
+
+func printedWaitingReasonParts(needle string) (string, int, bool) {
+	match := printedWaitingReason.FindStringSubmatch(needle)
+	if len(match) != 3 {
+		return "", 0, false
+	}
+	who := strings.TrimSpace(match[1])
+	days, err := strconv.Atoi(match[2])
+	if who == "" || err != nil || days < 0 {
+		return "", 0, false
+	}
+	return who, days, true
+}
+
+func printedQuietReasonParts(needle string) (int, int, bool) {
+	match := printedQuietReason.FindStringSubmatch(needle)
+	if len(match) != 3 {
+		return 0, 0, false
+	}
+	messages, messageErr := strconv.Atoi(match[1])
+	days, dayErr := strconv.Atoi(match[2])
+	if messageErr != nil || dayErr != nil || messages < 0 || days < 0 {
+		return 0, 0, false
+	}
+	return messages, days, true
+}
+
+func printedFollowReasonParts(needle string) (int, string, bool) {
+	match := printedFollowReason.FindStringSubmatch(needle)
+	if len(match) != 3 {
+		return 0, "", false
+	}
+	days, err := strconv.Atoi(match[1])
+	when := strings.TrimSpace(match[2])
+	if err != nil || days < 0 || when == "" {
+		return 0, "", false
+	}
+	return days, when, true
+}
+
+func revenueActionReasonEquals(reason string) predicate.RevenueAction {
+	want := strings.ToLower(strings.TrimSpace(reason))
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("lower(trim(")
+			b.WriteString(s.C(revenueaction.FieldReason))
+			b.WriteString(")) = ")
+			b.Arg(want)
+		}))
+	})
+}
+
+func revenueActionReasonHasPrefix(prefix string) predicate.RevenueAction {
+	return revenueActionReasonLike(escapePersonSearchLike(strings.ToLower(prefix)) + "%")
+}
+
+func revenueActionReasonContains(left, right string) predicate.RevenueAction {
+	return revenueActionReasonLike("%" + escapePersonSearchLike(strings.ToLower(left)) + "%" + escapePersonSearchLike(strings.ToLower(right)))
+}
+
+func revenueActionReasonLike(pattern string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("lower(trim(")
+			b.WriteString(s.C(revenueaction.FieldReason))
+			b.WriteString(")) LIKE ")
+			b.Arg(pattern)
+			b.WriteString(" ESCAPE '!'")
+		}))
+	})
 }
 
 // relationshipSheetPromiseBadgeMatch matches the status badge on each promise.
@@ -8063,13 +15093,101 @@ func relationshipSheetPromiseDueMatch(needle string) predicate.Relationship {
 	))
 }
 
+// relationshipSheetSourceObservedMatch is the citation clock on the open
+// promises report. The line is "Source observed Sep 30, 2026 at 1:00 PM"
+// in UTC, and the link continues it as "· Open source". A local clock
+// turned that same instant into another hour.
+func relationshipSheetSourceObservedMatch(needle string) predicate.Relationship {
+	start, ok := sourceObservedAt(needle)
+	if !ok {
+		return nil
+	}
+	end := start.Add(time.Minute)
+	return relationship.HasCommitmentsWith(commitment.HasEvidencesWith(
+		revenueevidence.OccurredAtGTE(start),
+		revenueevidence.OccurredAtLT(end),
+	))
+}
+
+func sourceObservedAt(needle string) (time.Time, bool) {
+	needle = normalizePersonSearch(needle)
+	const marker = "source observed "
+	index := strings.LastIndex(needle, marker)
+	if index < 0 || (index > 0 && needle[index-1] != ' ') {
+		return time.Time{}, false
+	}
+	fields := strings.Fields(needle[index+len(marker):])
+	// The link sits on the same line: "· Open source". The clock is the
+	// first six words. A date with no hour stays unmatched.
+	if len(fields) < 6 || fields[3] != "at" {
+		return time.Time{}, false
+	}
+	month, ok := promiseDueMonths[fields[0]]
+	if !ok || !strings.HasSuffix(fields[1], ",") {
+		return time.Time{}, false
+	}
+	day, err := strconv.Atoi(strings.TrimSuffix(fields[1], ","))
+	if err != nil || fields[1] != strconv.Itoa(day)+"," {
+		return time.Time{}, false
+	}
+	year, err := strconv.Atoi(fields[2])
+	if err != nil || len(fields[2]) != 4 {
+		return time.Time{}, false
+	}
+	clock := strings.Split(fields[4], ":")
+	if len(clock) != 2 {
+		return time.Time{}, false
+	}
+	hour, err := strconv.Atoi(clock[0])
+	if err != nil || hour < 1 || hour > 12 || clock[0] != strconv.Itoa(hour) {
+		return time.Time{}, false
+	}
+	minute, err := strconv.Atoi(clock[1])
+	if err != nil || minute < 0 || minute > 59 || len(clock[1]) != 2 {
+		return time.Time{}, false
+	}
+	switch fields[5] {
+	case "am":
+		if hour == 12 {
+			hour = 0
+		}
+	case "pm":
+		if hour != 12 {
+			hour += 12
+		}
+	default:
+		return time.Time{}, false
+	}
+	start := time.Date(year, month, day, hour, minute, 0, 0, time.UTC)
+	if start.Year() != year || start.Month() != month || start.Day() != day {
+		return time.Time{}, false
+	}
+	return start, true
+}
+
 func promiseDueDayStart(needle string) (time.Time, bool) {
 	needle = normalizePersonSearch(needle)
-	const prefix = "due: "
-	if i := strings.LastIndex(needle, prefix); i >= 0 {
-		return parseLeadingDueDate(strings.TrimSpace(needle[i+len(prefix):]), true)
+	if rest, ok := duePhraseRest(needle); ok {
+		return parseLeadingDueDate(rest, true)
 	}
 	return parseLeadingDueDate(needle, false)
+}
+
+// duePhraseRest reads "Due: Oct 3, 2026" and the report line "due Oct 3, 2026".
+// "overdue" contains those letters, so the word has to start the query or
+// follow a space.
+func duePhraseRest(needle string) (string, bool) {
+	for _, marker := range []string{"due: ", "due "} {
+		index := strings.LastIndex(needle, marker)
+		if index < 0 {
+			continue
+		}
+		if index > 0 && needle[index-1] != ' ' {
+			continue
+		}
+		return strings.TrimSpace(needle[index+len(marker):]), true
+	}
+	return "", false
 }
 
 func parseLeadingDueDate(rest string, allowTrailing bool) (time.Time, bool) {
@@ -8309,7 +15427,7 @@ func relationshipJSONArrayCount(field, compare string, n int) predicate.Relation
 		s.Where(sql.P(func(b *sql.Builder) {
 			column := s.C(field)
 			// A correction that only fills one list stores the other as JSON
-			// null. The sheet still prints "None recorded." for that list.
+			// null. The sheet still prints the empty-section line for that list.
 			// jsonb_array_length rejects the null, so a missing list counts as 0.
 			if s.Dialect() == dialect.Postgres {
 				b.WriteString(fmt.Sprintf(
@@ -8505,21 +15623,59 @@ func relationshipOpenActionCount(compare string, n int) predicate.Relationship {
 // same mail is "Your mailbox" for its owner and a different sentence for a
 // teammate. A deleted row is not on the timeline.
 func relationshipSheetMailAccessMatch(actor uuid.UUID, now time.Time, needle string) predicate.Relationship {
+	if timePart, _, ok := mailTimelineParts(needle); ok {
+		if _, parsed := visibleActivityWindow(timePart, time.Now().UTC()); parsed {
+			return nil
+		}
+	}
+	return mailAccessPredicate(actor, now, needle, nil)
+}
+
+// relationshipSheetMailTimelineMatch is the mail row clock and the reason
+// beside it. "Aug 30, 2026 · Your mailbox" is that day's mail in the
+// searcher's mailbox. Mail on another day stays out.
+func relationshipSheetMailTimelineMatch(actor uuid.UUID, now time.Time, needle string) predicate.Relationship {
+	timePart, reason, ok := mailTimelineParts(needle)
+	if !ok {
+		return nil
+	}
+	window, ok := visibleActivityWindow(timePart, time.Now().UTC())
+	if !ok {
+		return nil
+	}
+	return mailAccessPredicate(actor, now, reason, &window)
+}
+
+func mailTimelineParts(needle string) (string, string, bool) {
+	const sep = " · "
+	index := strings.Index(needle, sep)
+	if index <= 0 {
+		return "", "", false
+	}
+	timePart := strings.TrimSpace(needle[:index])
+	reason := strings.TrimSpace(needle[index+len(sep):])
+	if timePart == "" || reason == "" || strings.Contains(reason, sep) {
+		return "", "", false
+	}
+	return timePart, reason, true
+}
+
+func mailAccessPredicate(actor uuid.UUID, now time.Time, needle string, window *relativeWindow) predicate.Relationship {
 	var preds []predicate.Relationship
 	if labelPhraseMatches("your mailbox", needle) {
-		preds = append(preds, relationshipMailAccess(actor, now, "mailbox_owner"))
+		preds = append(preds, relationshipMailAccessDuring(actor, now, "mailbox_owner", window))
 	}
 	if needle == "protected" {
-		preds = append(preds, relationshipMailAccess(actor, now, "protected"))
+		preds = append(preds, relationshipMailAccessDuring(actor, now, "protected", window))
 	}
 	if labelPhraseMatches("kept private", needle) {
-		preds = append(preds, relationshipMailAccess(actor, now, "owner_private"))
+		preds = append(preds, relationshipMailAccessDuring(actor, now, "owner_private", window))
 	}
 	if labelPhraseMatches("shared with you", needle) {
-		preds = append(preds, relationshipMailAccess(actor, now, "explicit_grant"))
+		preds = append(preds, relationshipMailAccessDuring(actor, now, "explicit_grant", window))
 	}
 	if labelPhraseMatches("shared in this workspace", needle) {
-		preds = append(preds, relationshipMailAccess(actor, now, "owner_default"))
+		preds = append(preds, relationshipMailAccessDuring(actor, now, "owner_default", window))
 	}
 	switch len(preds) {
 	case 0:
@@ -8531,7 +15687,7 @@ func relationshipSheetMailAccessMatch(actor uuid.UUID, now time.Time, needle str
 	}
 }
 
-func relationshipMailAccess(actor uuid.UUID, now time.Time, reason string) predicate.Relationship {
+func relationshipMailAccessDuring(actor uuid.UUID, now time.Time, reason string, window *relativeWindow) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			b.WriteString("EXISTS (SELECT 1 FROM ")
@@ -8546,6 +15702,16 @@ func relationshipMailAccess(actor uuid.UUID, now time.Time, reason string) predi
 			b.Arg(false)
 			b.WriteString(" AND ")
 			writeMailAccessReason(b, s, actor, now, reason)
+			if window != nil {
+				b.WriteString(" AND mail.")
+				b.WriteString(communicationinteraction.FieldOccurredAt)
+				b.WriteString(" > ")
+				b.Arg(window.after)
+				b.WriteString(" AND mail.")
+				b.WriteString(communicationinteraction.FieldOccurredAt)
+				b.WriteString(" <= ")
+				b.Arg(window.until)
+			}
 			b.WriteString(")")
 		}))
 	})
@@ -8775,6 +15941,83 @@ func writeMailThreadID(b *sql.Builder, s *sql.Selector) {
 	b.WriteString(", '$.threadId'), '')")
 }
 
+// relationshipSheetVersionLineMatch is the change row "v1 · Sep 6, 2026"
+// and "v1 · 2 hours ago". The number is the snapshot version. Another
+// version on that day stays out.
+func relationshipSheetVersionLineMatch(needle string) predicate.Relationship {
+	version, rest, ok := sheetVersionRest(needle)
+	if !ok {
+		return nil
+	}
+	window, ok := visibleActivityWindow(rest, time.Now().UTC())
+	if !ok {
+		return nil
+	}
+	return relationship.HasSnapshotsWith(
+		relationshipstatesnapshot.VersionEQ(version),
+		relationshipstatesnapshot.CreatedAtGT(window.after),
+		relationshipstatesnapshot.CreatedAtLTE(window.until),
+	)
+}
+
+func sheetVersionRest(needle string) (int, string, bool) {
+	if len(needle) < 4 || needle[0] != 'v' {
+		return 0, "", false
+	}
+	index := 1
+	for index < len(needle) && needle[index] >= '0' && needle[index] <= '9' {
+		index++
+	}
+	if index == 1 {
+		return 0, "", false
+	}
+	version, err := strconv.Atoi(needle[1:index])
+	if err != nil || version < 1 || needle[1:index] != strconv.Itoa(version) {
+		return 0, "", false
+	}
+	const sep = " · "
+	if !strings.HasPrefix(needle[index:], sep) {
+		return 0, "", false
+	}
+	rest := strings.TrimSpace(needle[index+len(sep):])
+	if rest == "" {
+		return 0, "", false
+	}
+	return version, rest, true
+}
+
+// relationshipPrintedTimeMatch finds a company that prints this relative
+// phrase or UTC day. The directory uses the company touch. An email thread
+// uses its own last activity. Activity history, the mail timeline, and a
+// change version print the event time. A deleted mail row is off the timeline.
+func relationshipPrintedTimeMatch(window relativeWindow) predicate.Relationship {
+	return relationship.Or(
+		relationship.And(
+			relationship.LastTouchAtNotNil(),
+			relationship.LastTouchAtGT(window.after),
+			relationship.LastTouchAtLTE(window.until),
+		),
+		relationship.HasMailThreadsWith(
+			mailthread.LastActivityAtNotNil(),
+			mailthread.LastActivityAtGT(window.after),
+			mailthread.LastActivityAtLTE(window.until),
+		),
+		relationship.HasObservationsWith(
+			relationshipobservation.OccurredAtGT(window.after),
+			relationshipobservation.OccurredAtLTE(window.until),
+		),
+		relationship.HasCommunicationInteractionsWith(
+			communicationinteraction.DeletedEQ(false),
+			communicationinteraction.OccurredAtGT(window.after),
+			communicationinteraction.OccurredAtLTE(window.until),
+		),
+		relationship.HasSnapshotsWith(
+			relationshipstatesnapshot.CreatedAtGT(window.after),
+			relationshipstatesnapshot.CreatedAtLTE(window.until),
+		),
+	)
+}
+
 // relationshipSheetMailMatch matches the mail section on the company sheet.
 // An empty mailbox says "No Gmail threads linked yet." A thread with no
 // subject says "Email conversation," a blank address says "Gmail," a missing
@@ -8891,7 +16134,7 @@ func relationshipSheetEmptyCopyMatch(needle string) predicate.Relationship {
 			relationship.Not(relationshipHasMeetingObservation()),
 		))
 	}
-	if labelPhraseMatches("nothing recorded yet.", needle) {
+	if labelPhraseMatches("nothing recorded yet.", needle) || labelPhraseMatches("no activity recorded for this company yet.", needle) {
 		preds = append(preds, relationship.Not(relationship.HasObservations()))
 	}
 	// Activity history shows fifty events, then "Show earlier activity".
@@ -8944,18 +16187,39 @@ func relationshipSheetEmptyCopyMatch(needle string) predicate.Relationship {
 	}
 }
 
-// relationshipSheetNoneRecordedMatch matches "None recorded." Risks,
-// milestones, and the people section each print that line when the list
-// is empty. A company that has a risk, a milestone, and a person does not.
+// relationshipSheetNoneRecordedMatch matches the empty people, risks, and
+// milestones lines. Each section names itself: "No people recorded for this
+// company yet.", and the same shape for risks and milestones. "None recorded."
+// is the older line and still matches a company that is empty in any one of
+// those lists. A company that has a risk, a milestone, and a person does not.
 func relationshipSheetNoneRecordedMatch(needle string) predicate.Relationship {
-	if !labelPhraseMatches("none recorded.", needle) {
-		return nil
+	var preds []predicate.Relationship
+	if labelPhraseMatches("none recorded.", needle) {
+		preds = append(preds, relationship.Or(
+			relationshipRiskCount("=", 0),
+			relationshipMilestoneCount("=", 0),
+			relationshipParticipantCount("=", 0),
+		))
 	}
-	return relationship.Or(
-		relationshipRiskCount("=", 0),
-		relationshipMilestoneCount("=", 0),
-		relationshipParticipantCount("=", 0),
-	)
+	// People is the participant list. An empty risks or milestones array is
+	// that section. A health band can still name risks while this array is empty.
+	if labelPhraseMatches("no people recorded for this company yet.", needle) {
+		preds = append(preds, relationshipParticipantCount("=", 0))
+	}
+	if labelPhraseMatches("no risks recorded for this company yet.", needle) {
+		preds = append(preds, relationshipRiskCount("=", 0))
+	}
+	if labelPhraseMatches("no milestones recorded for this company yet.", needle) {
+		preds = append(preds, relationshipMilestoneCount("=", 0))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
 }
 
 // sheetEmptySentenceOwnsActivity is true when the query is an empty-sheet
@@ -8966,6 +16230,18 @@ func sheetEmptySentenceOwnsActivity(needle string) bool {
 		"no gmail or calendar events yet.",
 		"nothing recorded yet.",
 		"no commitments recorded for this company yet.",
+		"no people recorded for this company yet.",
+		"no risks recorded for this company yet.",
+		"no milestones recorded for this company yet.",
+		"no activity recorded for this company yet.",
+		"no next step is recorded.",
+		"health is not recorded.",
+		"lifecycle is not recorded.",
+		"engagement is not recorded.",
+		"sentiment is not recorded.",
+		"no summary is recorded.",
+		"no risk is recorded.",
+		"no milestone is recorded.",
 		"none recorded.",
 		// "1 Gmail thread is linked." names the Gmail heading too. The sentence
 		// is the unsupported-detail paragraph, not every company with mail.
@@ -10008,7 +17284,27 @@ func writeCurrentAssertionWindow(b *sql.Builder, now time.Time) {
 
 // relationshipSheetStateAnswerMatch matches "What is true now?". The sheet
 // prints "Health: Needs attention" only after that detail is supported.
+// The full answer joins the supported details in order, as
+// "Lifecycle: Prospect · Health: Needs attention".
 func relationshipSheetStateAnswerMatch(needle string, now time.Time) predicate.Relationship {
+	if line, joined := stateAnswerLine(needle, now); joined {
+		if len(line) == 0 {
+			return predicate.Relationship(func(s *sql.Selector) {
+				s.Where(sql.P(func(b *sql.Builder) {
+					b.WriteString("1 = 0")
+				}))
+			})
+		}
+		return relationship.And(line...)
+	}
+	// "2 open promises." is the whole answer when no stage is supported.
+	// A supported stage is printed in front of that sentence.
+	if shape, ok := parsePromiseAnswer(needle); ok {
+		return relationship.And(
+			relationshipHasPromiseAnswer(shape, now),
+			relationship.Not(relationshipHasSupportedStateAnswer(now)),
+		)
+	}
 	var preds []predicate.Relationship
 	for _, dim := range stateAnswerDimensions() {
 		for _, value := range dim.values {
@@ -10037,6 +17333,252 @@ type stateAnswerDimension struct {
 	dimension string
 	values    []string
 	eq        func(string) predicate.Relationship
+}
+
+func stateAnswerOwns(needle string, now time.Time) bool {
+	if _, joined := stateAnswerLine(needle, now); joined {
+		return true
+	}
+	_, ok := parsePromiseAnswer(needle)
+	return ok
+}
+
+func stateAnswerLine(needle string, now time.Time) ([]predicate.Relationship, bool) {
+	if !strings.Contains(needle, " · ") {
+		return nil, false
+	}
+	raw := strings.Split(needle, " · ")
+	dims := stateAnswerDimensions()
+	preds := make([]predicate.Relationship, 0, len(raw)+1)
+	chosen := make([]bool, len(dims))
+	last := -1
+	promiseAt := -1
+	var promisePred predicate.Relationship
+	for i, part := range raw {
+		found := -1
+		var pred predicate.Relationship
+		for index, dim := range dims {
+			for _, value := range dim.values {
+				phrase := normalizePersonSearch(dim.title + ": " + companyRecordSearchLabel(value))
+				if phrase != part {
+					continue
+				}
+				found = index
+				pred = relationship.And(
+					relationshipHasSupportedDimension(dim.dimension, now),
+					dim.eq(value),
+				)
+			}
+		}
+		if found >= 0 {
+			if found <= last {
+				return nil, true
+			}
+			last = found
+			chosen[found] = true
+			preds = append(preds, pred)
+			continue
+		}
+		shape, ok := parsePromiseAnswer(part)
+		if !ok {
+			return nil, false
+		}
+		if promiseAt >= 0 {
+			return nil, true
+		}
+		promiseAt = i
+		promisePred = relationshipHasPromiseAnswer(shape, now)
+	}
+	if promiseAt >= 0 && promiseAt != len(raw)-1 {
+		return nil, true
+	}
+	for i, dim := range dims {
+		if chosen[i] {
+			continue
+		}
+		preds = append(preds, relationship.Not(relationshipHasSupportedDimension(dim.dimension, now)))
+	}
+	if promisePred != nil {
+		preds = append(preds, promisePred)
+	}
+	return preds, true
+}
+
+// promiseAnswerShape is the promise sentence missionControlPromiseAnswer prints.
+// A single confirmed promise names its text. Two or more print a count.
+type promiseAnswerShape struct {
+	open  int
+	risk  int
+	text  string
+	colon bool
+}
+
+func parsePromiseAnswer(part string) (promiseAnswerShape, bool) {
+	part = normalizePersonSearch(part)
+	if part == "" || strings.HasSuffix(part, normalizePersonSearch("no follow-up is drafted")) {
+		return promiseAnswerShape{}, false
+	}
+	if text, ok := promiseColonText(part, "open promise:"); ok {
+		return promiseAnswerShape{open: 1, text: text, colon: true}, true
+	}
+	if text, ok := promiseColonText(part, "at risk promise:"); ok {
+		return promiseAnswerShape{risk: 1, text: text, colon: true}, true
+	}
+	if n, ok := exactCountPhrase(part, " open promises"); ok && n >= 2 {
+		return promiseAnswerShape{open: n}, true
+	}
+	if n, ok := exactCountPhrase(part, " promises are at risk"); ok && n >= 2 {
+		return promiseAnswerShape{risk: n}, true
+	}
+	openLabel, riskLabel, ok := strings.Cut(part, " and ")
+	if !ok || strings.Contains(riskLabel, " and ") {
+		return promiseAnswerShape{}, false
+	}
+	open, openOK := openPromiseCountLabel(openLabel)
+	risk, riskOK := riskPromiseCountLabel(riskLabel)
+	if !openOK || !riskOK {
+		return promiseAnswerShape{}, false
+	}
+	return promiseAnswerShape{open: open, risk: risk}, true
+}
+
+func promiseColonText(part, prefix string) (string, bool) {
+	if !strings.HasPrefix(part, prefix) {
+		return "", false
+	}
+	text := strings.TrimSpace(strings.TrimPrefix(part, prefix))
+	if text == "" || strings.Contains(text, " · ") {
+		return "", false
+	}
+	return text, true
+}
+
+func exactCountPhrase(part, suffix string) (int, bool) {
+	if !strings.HasSuffix(part, suffix) {
+		return 0, false
+	}
+	number := strings.TrimSuffix(part, suffix)
+	if number == "" || strings.Contains(number, " ") {
+		return 0, false
+	}
+	n, err := strconv.Atoi(number)
+	if err != nil || n < 1 || strconv.Itoa(n) != number {
+		return 0, false
+	}
+	return n, true
+}
+
+func openPromiseCountLabel(part string) (int, bool) {
+	if part == "1 open promise" {
+		return 1, true
+	}
+	n, ok := exactCountPhrase(part, " open promises")
+	return n, ok && n >= 2
+}
+
+func riskPromiseCountLabel(part string) (int, bool) {
+	if part == "1 promise at risk" {
+		return 1, true
+	}
+	n, ok := exactCountPhrase(part, " promises at risk")
+	return n, ok && n >= 2
+}
+
+func relationshipHasPromiseAnswer(shape promiseAnswerShape, now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writePromiseAnswerCount(b, s, now, false)
+			b.WriteString(" = ")
+			b.Arg(shape.open)
+			b.WriteString(" AND ")
+			writePromiseAnswerCount(b, s, now, true)
+			b.WriteString(" = ")
+			b.Arg(shape.risk)
+			if shape.colon {
+				b.WriteString(" AND ")
+				writePromiseAnswerText(b, s, now, shape.risk == 1, shape.text)
+			}
+		}))
+	})
+}
+
+func writePromiseAnswerCount(b *sql.Builder, s *sql.Selector, now time.Time, atRisk bool) {
+	b.WriteString("(SELECT COUNT(*) FROM ")
+	b.WriteString(commitment.Table)
+	b.WriteString(" AS promise WHERE promise.")
+	b.WriteString(commitment.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(" AND ")
+	writeVisiblePromiseFilters(b)
+	b.WriteString(" AND ")
+	writePromiseRiskClock(b, now, atRisk)
+	b.WriteString(")")
+}
+
+func writePromiseAnswerText(b *sql.Builder, s *sql.Selector, now time.Time, atRisk bool, text string) {
+	b.WriteString("EXISTS (SELECT 1 FROM ")
+	b.WriteString(commitment.Table)
+	b.WriteString(" AS promise WHERE promise.")
+	b.WriteString(commitment.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(" AND ")
+	writeVisiblePromiseFilters(b)
+	b.WriteString(" AND ")
+	writePromiseRiskClock(b, now, atRisk)
+	b.WriteString(" AND ")
+	writeNormalizedSQLText(b, s, "promise."+commitment.FieldText)
+	b.WriteString(" = ")
+	b.Arg(text)
+	b.WriteString(")")
+}
+
+func writeVisiblePromiseFilters(b *sql.Builder) {
+	b.WriteString("promise.")
+	b.WriteString(commitment.FieldStatus)
+	b.WriteString(" IN (")
+	b.Arg("open")
+	b.WriteString(", ")
+	b.Arg("at_risk")
+	b.WriteString(") AND promise.")
+	b.WriteString(commitment.FieldAcceptance)
+	b.WriteString(" NOT IN (")
+	b.Arg("candidate")
+	b.WriteString(", ")
+	b.Arg("disputed")
+	b.WriteString(") AND trim(promise.")
+	b.WriteString(commitment.FieldText)
+	b.WriteString(") <> ''")
+}
+
+func writePromiseRiskClock(b *sql.Builder, now time.Time, atRisk bool) {
+	soon := now.UTC().Add(72 * time.Hour)
+	if atRisk {
+		b.WriteString("(promise.")
+		b.WriteString(commitment.FieldStatus)
+		b.WriteString(" = ")
+		b.Arg("at_risk")
+		b.WriteString(" OR (promise.")
+		b.WriteString(commitment.FieldDueAt)
+		b.WriteString(" IS NOT NULL AND promise.")
+		b.WriteString(commitment.FieldDueAt)
+		b.WriteString(" < ")
+		b.Arg(soon)
+		b.WriteString("))")
+		return
+	}
+	b.WriteString("promise.")
+	b.WriteString(commitment.FieldStatus)
+	b.WriteString(" <> ")
+	b.Arg("at_risk")
+	b.WriteString(" AND (promise.")
+	b.WriteString(commitment.FieldDueAt)
+	b.WriteString(" IS NULL OR promise.")
+	b.WriteString(commitment.FieldDueAt)
+	b.WriteString(" >= ")
+	b.Arg(soon)
+	b.WriteString(")")
 }
 
 func stateAnswerDimensions() []stateAnswerDimension {
@@ -10158,29 +17700,38 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 		preds = append(preds, relationshipShowsCurrentHeading(now))
 	}
 	if sheetPhraseMatches("needs a review before you act", needle) ||
-		sheetPhraseMatches("identity review is required before acting on this relationship.", needle) {
+		labelPhraseMatches("confirm who this company is before you act.", needle) {
 		preds = append(preds, relationshipShowsAmbiguousHeading(now))
 	}
 	if sheetPhraseMatches("details need a refresh", needle) ||
-		sheetPhraseMatches("a required source is stale or disconnected.", needle) ||
 		sheetPhraseMatches("a source needs reconnecting.", needle) {
 		preds = append(preds, relationshipShowsStaleHeading(now))
 	}
 	if sheetPhraseMatches("updating from connected sources", needle) {
 		preds = append(preds, relationshipShowsRebuildingHeading(now))
 	}
-	if sheetPhraseMatches("a required source is rebuilding; partial state is visible.", needle) ||
-		sheetPhraseMatches("a source is still updating, so only some details are shown.", needle) {
+	if sheetPhraseMatches("a source is still updating, so only some details are shown.", needle) {
 		preds = append(preds, relationshipShowsSourceRebuilding(now))
 	}
-	if sheetPhraseMatches("accepted evidence is waiting for the durable relationship projector.", needle) {
+	if labelPhraseMatches("accepted details are still being saved.", needle) {
 		preds = append(preds, relationship.And(
 			relationshipHasDueProjection(now),
 			relationship.Not(relationshipHasDeadProjection(now)),
 		))
 	}
-	if sheetPhraseMatches("relationship projection requires operator repair before this state is safe to act on.", needle) {
+	if labelPhraseMatches("this company needs a repair before you act on it.", needle) {
 		preds = append(preds, relationshipHasDeadProjection(now))
+	}
+	// The paragraph under "Details are current". "Up to date" is the graph
+	// evidence word, so a shorter question stays on that search.
+	if labelPhraseMatches("the details you can open are up to date.", needle) {
+		preds = append(preds, relationshipShowsCurrentHeading(now))
+	}
+	if labelPhraseMatches("older history is still loading, so only some details are shown.", needle) {
+		preds = append(preds, relationshipShowsBackfillExplanation(now))
+	}
+	if labelPhraseMatches("a source is missing permission for something we need.", needle) {
+		preds = append(preds, relationshipShowsMissingScopeExplanation(now))
 	}
 	// An open duplicate shows Keep separate, Move the evidence, and Decide
 	// later. A resolved duplicate keeps the heading and drops those buttons.
@@ -10695,6 +18246,7 @@ func relationshipShowsPartialHeading(now time.Time) predicate.Relationship {
 }
 
 // relationshipShowsCurrentHeading is the heading "Details are current".
+// The paragraph under it is "The details you can open are up to date."
 func relationshipShowsCurrentHeading(now time.Time) predicate.Relationship {
 	return relationship.And(
 		relationship.Not(relationshipHasUnresolvedIdentity()),
@@ -11056,8 +18608,117 @@ func relationshipProjectionIn(now time.Time, statuses ...string) predicate.Relat
 	})
 }
 
+// relationshipShowsBackfillExplanation is "Older history is still loading, so
+// only some details are shown." A partial connector, or a connector with no
+// status row, is that sentence once every detail already has a source. A
+// missing permission, a reconnect, and a rebuild each replace it.
+func relationshipShowsBackfillExplanation(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationshipHasUnresolvedIdentity()),
+		relationship.Not(relationshipHasBlockingProjection(now)),
+		relationship.Not(relationshipHasEarlySourceStop()),
+		relationshipSupportedDetailCount(len(relationshipProjectionDimensions), now),
+		relationshipHasSourceDependency(),
+		relationship.Not(relationshipDependenciesAreCurrent()),
+		relationship.Not(relationshipHasDependentMissingScopes()),
+	)
+}
+
+// relationshipShowsMissingScopeExplanation is "A source is missing permission
+// for something we need." It wins over a partial backfill on the same
+// connector. A later partial connector with no missing permission, or a
+// connector that has no status row, uses the backfill sentence instead.
+func relationshipShowsMissingScopeExplanation(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationshipHasUnresolvedIdentity()),
+		relationship.Not(relationshipHasBlockingProjection(now)),
+		relationship.Not(relationshipHasEarlySourceStop()),
+		relationshipSupportedDetailCount(len(relationshipProjectionDimensions), now),
+		relationshipHasDependentMissingScopes(),
+		relationship.Not(relationshipHasPartialWithoutMissingScopes()),
+		relationship.Not(relationshipLacksDependentStatus()),
+	)
+}
+
+func relationshipHasDependentMissingScopes() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" AS src WHERE src.")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND NOT ")
+			writeAliasMissingScopesEmpty(b, s, "src")
+			b.WriteString(" AND ")
+			writeDependentSource(b, s, "src")
+			b.WriteString(")")
+		}))
+	})
+}
+
+func relationshipHasPartialWithoutMissingScopes() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" AS src WHERE src.")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND src.")
+			b.WriteString(relationshipsourcestatus.FieldCompleteness)
+			b.WriteString(" = 'partial' AND ")
+			writeAliasMissingScopesEmpty(b, s, "src")
+			b.WriteString(" AND ")
+			writeDependentSource(b, s, "src")
+			b.WriteString(")")
+		}))
+	})
+}
+
+// relationshipLacksDependentStatus is a connector the company names that has
+// no status row. The sheet treats that gap as a partial backfill.
+func relationshipLacksDependentStatus() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.Or(
+			relationshipFamilyWithoutStatus(s, []string{"gmail", "calendar", "google"}, []string{"email", "gmail", "calendar"}, []string{"gmail", "calendar", "google"}),
+			relationshipFamilyWithoutStatus(s, []string{"slack"}, []string{"slack"}, []string{"slack"}),
+			relationshipFamilyWithoutStatus(s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"}, []string{"hubspot", "crm"}),
+		))
+	})
+}
+
+func relationshipFamilyWithoutStatus(s *sql.Selector, sources, channels, statusSources []string) *sql.Predicate {
+	return sql.And(
+		sql.P(func(b *sql.Builder) {
+			writeRelationshipDependsOn(b, s, sources, channels)
+		}),
+		sql.Not(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND lower(")
+			b.WriteString(relationshipsourcestatus.FieldSource)
+			b.WriteString(") IN (")
+			for i, source := range statusSources {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				b.Arg(source)
+			}
+			b.WriteString("))")
+		})),
+	)
+}
+
 // relationshipShowsStaleHeading is "Details need a refresh". The first connector
 // stop is stale or disconnected, and a projector wait has not replaced it.
+// The paragraph is "A source needs reconnecting."
 func relationshipShowsStaleHeading(now time.Time) predicate.Relationship {
 	return relationship.And(
 		relationship.Not(relationshipHasUnresolvedIdentity()),

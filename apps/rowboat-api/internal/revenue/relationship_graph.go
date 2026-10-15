@@ -919,9 +919,11 @@ func graphObservationPresentation(eventType, summary string) (label, detail stri
 }
 
 // graphEventLabel is the activity name when an observation has no summary.
-// thread.updated is "Mail updated", not the stored token.
+// A kept promise from recovery stores commitment_status_changed and no
+// sentence, so the node used to say "Commitment Status Changed".
 func graphEventLabel(eventType string) string {
-	switch strings.ToLower(strings.TrimSpace(eventType)) {
+	key := strings.ToLower(strings.TrimSpace(eventType))
+	switch key {
 	case "thread.updated":
 		return "Mail updated"
 	case "thread", "thread.snapshot", "email_exchanged":
@@ -950,8 +952,82 @@ func graphEventLabel(eventType string) string {
 		return "Note removed"
 	case "commitment_confirmed":
 		return "Promise confirmed"
+	case "commitment_created":
+		return "Promise added"
+	case "commitment_status_changed":
+		return "Promise updated"
+	case "commitment_evidence_observed":
+		return "Promise evidence"
+	case "lifecycle_changed", "lifecycle_observed":
+		return "Lifecycle updated"
+	case "deal_stage_changed":
+		return "Deal stage updated"
+	case "meeting_missing":
+		return "Meeting missing"
+	case "engagement_declined", "engagement_changed":
+		return "Engagement changed"
+	case "contact_departed":
+		return "Contact left"
+	case "meeting_attendance_recorded":
+		return "Attendance"
+	case "conversation_evidence_compiled":
+		return "Conversation reviewed"
+	case "conversation_evidence_corrected":
+		return "Conversation corrected"
+	case "conversation_review_decided":
+		return "Suggestion decided"
+	case "relationship_contradiction_resolved":
+		return "Detail chosen"
+	case "crm.activity":
+		return "CRM activity"
+	case "mutual_action_plan_response_received":
+		return "Plan response"
+	case "oppulence_action":
+		return "Action recorded"
 	default:
+		if kind, ok := strings.CutPrefix(key, "action.outcome."); ok && kind != "" {
+			return graphOutcomeLabel(kind)
+		}
 		return graphTokenLabel(eventType)
+	}
+}
+
+// graphOutcomeLabel names a recorded result when the observation has no summary.
+// The activity heading already uses these words.
+func graphOutcomeLabel(kind string) string {
+	switch kind {
+	case "sent":
+		return "Message sent"
+	case "delivered":
+		return "Delivered"
+	case "bounced":
+		return "Bounced"
+	case "replied":
+		return "They replied"
+	case "meeting_booked":
+		return "Meeting booked"
+	case "won":
+		return "Won"
+	case "lost":
+		return "Lost"
+	case "dismissed":
+		return "Dismissed"
+	case "bad_recommendation":
+		return "Not a good suggestion"
+	case "deal_advanced":
+		return "Deal moved forward"
+	case "onboarding_progressed":
+		return "Onboarding moved forward"
+	case "renewed":
+		return "Renewed"
+	case "escalated":
+		return "Escalated"
+	case "churned":
+		return "They left"
+	case "corrected":
+		return "Corrected"
+	default:
+		return graphTokenLabel(kind)
 	}
 }
 

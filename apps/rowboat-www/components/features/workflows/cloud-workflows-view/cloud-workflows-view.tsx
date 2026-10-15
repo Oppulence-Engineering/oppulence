@@ -84,10 +84,14 @@ import {
   taskVisualWorkflow,
   readableEnum,
   triggerLabel,
+  completedRunCopy,
   runEventBody,
   runEventLabel,
+  runStoredFailureCopy,
+  workflowProgressCopy,
   runReference,
   scheduleHealthLabel,
+  scheduleSyncFailureCopy,
   scheduleMomentLabel,
   workflowListSummary,
   triggerCloudRun,
@@ -274,10 +278,8 @@ export function workflowLastRunReason(
   const storedError = task.lastRunError?.trim() ?? "";
   const raw = pageIsShown && pageError ? pageError : storedError;
   if (!raw) return "";
-  const friendly = friendlyAgentError(raw, "run");
-  if (friendly !== raw) return friendly;
-  const code = pageIsShown && pageError ? pageRun?.errorCode?.trim() : "";
-  return code ? `${code}: ${raw}` : raw;
+  const code = pageIsShown && pageError ? pageRun?.errorCode?.trim() ?? "" : "";
+  return shownRunError(raw, code);
 }
 
 /** Settings already says the schedule is in sync. That is not the last run. */
@@ -519,13 +521,13 @@ export function transcriptLoadNotice(cause: unknown, hadTranscript: boolean): st
     : "The transcript could not be loaded.";
 }
 
+function shownRunError(message: string, code: string): string {
+  return runStoredFailureCopy(message, code);
+}
+
 function runFailureCopy(run: CloudRun): string {
   const message = run.error ?? "";
-  const friendly = friendlyAgentError(message, "run");
-  // The stored code is an API token such as llm_call_failed. Once the message
-  // is rewritten, prefixing that token puts the internal name back on screen.
-  if (friendly !== message) return friendly;
-  return run.errorCode ? `${run.errorCode}: ${message}` : message;
+  return shownRunError(message, run.errorCode?.trim() ?? "");
 }
 
 export function scheduleLabel(task: CloudTask): string {
@@ -1214,7 +1216,7 @@ function RunInspector({
             {(run.status === "failed" || run.status === "stopped") &&
             taskExecutionTarget === "api" ? (
               <Button className="rounded-none" disabled={busy} onClick={onRetry} size="sm">
-                Retry
+                Try again
               </Button>
             ) : null}
           </div>
@@ -1223,7 +1225,7 @@ function RunInspector({
           <div className="space-y-1">
             <Progress value={run.progressPercent} />
             <p className="text-xs text-muted-foreground">
-              {run.progressMessage || `${run.progressPercent}%`}
+              {workflowProgressCopy(run.progressMessage) || `${run.progressPercent}%`}
             </p>
           </div>
         ) : null}
@@ -1246,7 +1248,7 @@ function RunInspector({
           </div>
         </div>
         {run.summary ? (
-          <p className="border border-border p-2.5 text-xs leading-5">{run.summary}</p>
+          <p className="border border-border p-2.5 text-xs leading-5">{completedRunCopy(run.summary)}</p>
         ) : null}
         {runFailureLine(run) ? (
           <p className="border border-destructive/30 bg-destructive/5 p-2.5 text-xs leading-5 text-destructive">
@@ -1832,6 +1834,11 @@ function WorkflowEditor({
                   {scheduleHealthLabel(schedule?.health || task.scheduleSyncState)}
                 </Badge>
               </div>
+              {(schedule?.health || task.scheduleSyncState) === "failed" ? (
+                <p className="text-[12px] text-destructive">
+                  {scheduleSyncFailureCopy(task.scheduleSyncError)}
+                </p>
+              ) : null}
               {task.systemManaged ? (
                 <p className="text-[11px] text-muted-foreground">{maintainedWorkflowNotice()}</p>
               ) : null}

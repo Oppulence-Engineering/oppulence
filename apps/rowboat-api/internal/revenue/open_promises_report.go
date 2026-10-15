@@ -214,19 +214,20 @@ func (r *OpenPromisesReport) Markdown() string {
 	b.WriteString("# Open promises\n\n")
 	fmt.Fprintf(&b, "Promises from the last %d days with no evidence they were kept.\n\n",
 		r.LookbackDays)
-	fmt.Fprintf(&b, "- **%d** promises we made\n", r.OutboundCount)
-	fmt.Fprintf(&b, "- **%d** promises made to us\n", r.InboundCount)
+	fmt.Fprintf(&b, "- **%d** We promised\n", r.OutboundCount)
+	fmt.Fprintf(&b, "- **%d** They promised us\n", r.InboundCount)
 	if shared := sharedPromiseCount(r.Items); shared > 0 {
-		fmt.Fprintf(&b, "- **%d** promises we share\n", shared)
+		fmt.Fprintf(&b, "- **%d** We both promised\n", shared)
 	}
-	fmt.Fprintf(&b, "- **%d** conversations read\n\n", r.ThreadsSeen)
+	fmt.Fprintf(&b, "- **%d** Conversations read\n\n", r.ThreadsSeen)
 	if r.Truncated {
-		b.WriteString("This report shows the first 200 open promises. Open the register for the complete ledger.\n\n")
+		b.WriteString("This report shows the first 200 open promises. Open promises to see the rest.\n\n")
 	}
 
 	if len(r.Items) == 0 {
-		b.WriteString("No open promises were found in this window. ")
-		b.WriteString("That is either good news or a sign the sources are not connected yet.\n")
+		b.WriteString("No open promises found\n\n")
+		fmt.Fprintf(&b, "We read %d conversations and found nothing outstanding. ", r.ThreadsSeen)
+		b.WriteString("That is either good news, or a sign that more sources need connecting.\n")
 		return b.String()
 	}
 
@@ -247,7 +248,7 @@ func (r *OpenPromisesReport) Markdown() string {
 		fmt.Fprintf(&b, "%s · state **%s**", owed, registerStateLabel(item.State))
 		switch {
 		case item.DueAt != nil:
-			fmt.Fprintf(&b, " · due %s", item.DueAt.UTC().Format("2006-01-02"))
+			fmt.Fprintf(&b, " · due %s", reportDueDay(item.DueAt.UTC()))
 		case item.DuePhrase != "":
 			fmt.Fprintf(&b, " · due %q as stated", item.DuePhrase)
 		default:
@@ -262,7 +263,7 @@ func (r *OpenPromisesReport) Markdown() string {
 			fmt.Fprintf(&b, "> %s\n\n", strings.ReplaceAll(quote, "\n", "\n> "))
 		}
 		if item.OccurredAt != nil {
-			fmt.Fprintf(&b, "Source observed %s", item.OccurredAt.UTC().Format(time.RFC3339))
+			fmt.Fprintf(&b, "%s", reportSourceObservedLine(item.OccurredAt.UTC()))
 			if item.SourceURI != "" {
 				fmt.Fprintf(&b, " · %s", item.SourceURI)
 			}
@@ -274,14 +275,28 @@ func (r *OpenPromisesReport) Markdown() string {
 	return b.String()
 }
 
+// reportDueDay is the day the report page prints: "Oct 20, 2026".
+func reportDueDay(at time.Time) string {
+	return at.UTC().Format("Jan 2, 2006")
+}
+
+// reportSourceObservedLine is the citation the report page prints.
+// "Source observed Sep 30, 2026 at 1:00 PM" is that instant in UTC.
+func reportSourceObservedLine(at time.Time) string {
+	return "Source observed " + at.UTC().Format("Jan 2, 2006 at 3:04 PM")
+}
+
+// promiseOwesLabel is the direction the report page prints beside the company.
+// promised_by_them is "they owe us", a mutual promise is "we both owe", and
+// every other direction is "we owe them".
 func promiseOwesLabel(direction string) string {
 	switch direction {
 	case "promised_by_them":
-		return "They owe"
+		return "they owe us"
 	case "mutual":
-		return "We both owe"
+		return "we both owe"
 	default:
-		return "We owe"
+		return "we owe them"
 	}
 }
 

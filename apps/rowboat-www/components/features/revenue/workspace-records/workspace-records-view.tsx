@@ -134,6 +134,7 @@ import {
   personCompanyTitle,
   groupWorkspaceNotes,
   isWorkspaceTask,
+  localDayLabel,
   mergeWorkspaceNotes,
   plateText,
   taskIsDueToday,
@@ -3131,13 +3132,7 @@ export function TasksView({
                     )}
                     variant="secondary"
                   >
-                    {task.dueAt
-                      ? new Date(task.dueAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })
-                      : "No due date"}
+                    {localDayLabel(task.dueAt) || "No due date"}
                   </Badge>
                 </li>
               );

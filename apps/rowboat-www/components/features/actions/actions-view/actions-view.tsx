@@ -35,6 +35,7 @@ import { capture, ActionEvents } from "@/lib/analytics/analytics";
 import { localMomentLabel } from "@/lib/revenue/revenue-records";
 import {
   ActionAPIError,
+  actionFailureReasonCopy,
   actionKindLabel,
   actionParamsLines,
   actionStatusLabel,
@@ -337,8 +338,10 @@ export function ActionsView() {
                     {p.status === "executed" || p.status === "executed_unconfirmed" ? (
                       <ExecutedNote proposal={p} />
                     ) : null}
-                    {p.status === "failed" && p.reason ? (
-                      <p className="text-xs text-red-600 dark:text-red-400">{p.reason}</p>
+                    {p.status === "failed" && actionFailureReasonCopy(p.reason) ? (
+                      <p className="text-xs text-red-600 dark:text-red-400">
+                        {actionFailureReasonCopy(p.reason)}
+                      </p>
                     ) : null}
                     {p.status === "rejected" && p.reason ? (
                       <p className="text-xs text-primary/50">Rejected: {p.reason}</p>

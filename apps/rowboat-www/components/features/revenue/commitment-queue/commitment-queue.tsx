@@ -738,7 +738,7 @@ export function commitmentSearchText(item: CommitmentQueueItem): string {
     item.owner,
     item.counterparty,
     item.text,
-    String(item.confidence),
+    registerConfidenceLabel(item.confidence),
     registerRowStatus(item).label,
     urgencyLabel(item.urgency),
     item.urgency === "due_soon" ? "due soon" : "",
@@ -750,6 +750,7 @@ export function commitmentSearchText(item: CommitmentQueueItem): string {
     promiseDueDay(item.dueAt) ?? "Not confirmed",
     evidence,
     item.nextAction,
+    item.quote?.trim() ? `“${item.quote.trim()}”` : "No exact quote is attached yet.",
   ]
     .filter(Boolean)
     .join(" ");

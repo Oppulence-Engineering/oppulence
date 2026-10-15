@@ -49,13 +49,16 @@ import {
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
   calledModelLabel,
+  completedRunCopy,
   readableEnum,
   runEventBody,
+  workflowProgressCopy,
   transcriptNextEventsLabel,
   triggerLabel,
   runEventLabel,
   runReference,
   scheduleHealthLabel,
+  scheduleSyncFailureCopy,
   compileVisualWorkflow,
   scheduleMomentLabel,
   workflowListSummary,
@@ -104,6 +107,7 @@ describe("CloudWorkflowsView", () => {
     const clock = scheduleMomentLabel(maintained.lastRunAt);
     const maintainedText = workflowLibrarySearchText(maintained);
     expect(maintainedText).toContain(`${clock} · Failed`);
+    expect(maintainedText).toContain("Oct 1, 8:00 AM");
     expect(maintainedText).toContain("Oppulence");
     const own = {
       slug: "custom-follow-up",
@@ -273,6 +277,9 @@ describe("CloudWorkflowsView", () => {
     expect(triggerLabel("cron")).toBe("Scheduled");
     expect(triggerLabel("event")).toBe("Incoming event");
     expect(triggerLabel("manual")).toBe("Started by hand");
+    expect(triggerLabel("retry")).toBe("Tried again");
+    expect(source).toContain('onClick={onRetry} size="sm">');
+    expect(source).not.toContain("\n                Retry\n");
     expect(runRowDetail("failed", "cron")).toBe("Failed · Scheduled");
     expect(runRowDetail("failed", "window")).toBe("Failed · Time window");
     expect(source).toContain("runRowDetail(run.status, run.trigger)");
@@ -298,7 +305,7 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("triggerLabel(run.trigger)");
     expect(source).not.toContain("{readableEnum(run.trigger)}");
     expect(source).toContain("workflowName={taskTitle(task)}");
-    expect(source).toContain('friendlyAgentError(message, "run")');
+    expect(source).toContain("runStoredFailureCopy(message, code)");
     expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(7);
     expect(
       shownWorkflowError(new Error("Workflow request failed (500)"), "Could not create workflow"),
@@ -329,6 +336,21 @@ describe("CloudWorkflowsView", () => {
   it("names schedule health and transcript events", () => {
     expect(scheduleHealthLabel("current")).toBe("In sync");
     expect(scheduleHealthLabel("failed")).toBe("Needs repair");
+    expect(scheduleSyncFailureCopy("temporal unreachable (timed out)")).toBe(
+      "The schedule could not be saved. Try again later.",
+    );
+    expect(scheduleSyncFailureCopy("temporal schedule operation failed")).toBe(
+      "The schedule could not be saved. Try again later.",
+    );
+    expect(scheduleSyncFailureCopy("temporal schedule upsert failed")).toBe(
+      "The schedule could not be saved. Try again later.",
+    );
+    expect(scheduleSyncFailureCopy('invalid cron expression "not a cron"')).toBe(
+      "This schedule could not be read. Open the workflow and save it again.",
+    );
+    expect(scheduleSyncFailureCopy("")).toBe("The schedule could not be saved. Try again later.");
+    expect(source).toContain("scheduleSyncFailureCopy(task.scheduleSyncError)");
+    expect(source).not.toContain("{task.scheduleSyncError}");
     expect(runEventLabel("temporal.failed")).toBe("Failed");
     expect(runEventLabel("runtime.tool_call_started")).toBe("Tool call started");
     expect(runEventLabel("runtime.llm_call_started")).toBe("Model call started");
@@ -336,9 +358,12 @@ describe("CloudWorkflowsView", () => {
     expect(runEventLabel("runtime.final_artifact_ready")).toBe("Result ready");
     expect(runEventLabel("temporal.artifact_updated")).toBe("Result updated");
     expect(runEventLabel("temporal.dead_lettered")).toBe("Could not start");
+    expect(runEventLabel("temporal.signal")).toBe("Update");
     expect(runEventLabel("desktop.ask_human_request")).toBe("Asked for a decision");
     expect(runEventLabel("desktop.spawn_subflow")).toBe("Started a related run");
     expect(runEventLabel("runtime.limit_exceeded")).toBe("Run limit reached");
+    expect(runEventLabel("temporal.retry_requested")).toBe("Trying again");
+    expect(runEventLabel("temporal.cancel_requested")).toBe("Stopping");
   });
 
   it("describes a transcript row without the worker payload", () => {
@@ -369,6 +394,219 @@ describe("CloudWorkflowsView", () => {
         },
       }),
     ).toBe("Calling GPT-4.1.");
+    expect(
+      runEventBody({
+        type: "runtime.llm_call_completed",
+        event: {
+          model: "openai/gpt-4.1",
+          prompt_version: "cloud-runtime-v1",
+          inputTokens: 12,
+          outputTokens: 4,
+        },
+      }),
+    ).toBe("Finished calling GPT-4.1.");
+    expect(
+      runEventBody({
+        type: "runtime.final_artifact_ready",
+        event: { artifactBytes: 240, contentType: "text/markdown" },
+      }),
+    ).toBe("The result is ready.");
+    expect(
+      runEventBody({
+        type: "runtime.limit_exceeded",
+        event: { limit: "tool_calls", value: 9, max: 8 },
+      }),
+    ).toBe("This run reached its limit.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_call_started",
+        event: { tool: "relationship.read", callIndex: 1, trustTier: "read" },
+      }),
+    ).toBe("Using Look up companies and promises.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_call_completed",
+        event: { tool: "connector.read.gmail", resultBytes: 120, latencyMs: 40 },
+      }),
+    ).toBe("Finished using Read Gmail.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_denied",
+        event: { tool: "web.search", reason: "not on the allowlist for this run" },
+      }),
+    ).toBe("Web search is not available in this run.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_call_completed",
+        event: { tool: "connector.read.gmail", error: "google is not connected" },
+      }),
+    ).toBe("Connect Google, then try again.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_call_completed",
+        event: { tool: "connector.read.gmail", error: "tool call denied by human approval gate" },
+      }),
+    ).toBe("Read Gmail was not approved.");
+    expect(
+      runEventBody({
+        type: "runtime.tool_approval_requested",
+        event: { tool: "relationship.read", approvalRequired: true },
+      }),
+    ).toBe("Look up companies and promises needs approval.");
+    expect(
+      runEventBody({
+        type: "desktop.tool_invocation",
+        event: {
+          toolName: "relationship.read",
+          input: '{"relationshipId":"9c8dfa9b-a7b2-46ea-982c-622a914c00e5"}',
+        },
+      }),
+    ).toBe("Using Look up companies and promises.");
+    expect(
+      runEventBody({
+        type: "desktop.tool_result",
+        event: { toolName: "connector.read.gmail", result: { subject: "Hello" } },
+      }),
+    ).toBe("Finished using Read Gmail.");
+    expect(
+      runEventBody({
+        type: "desktop.tool_permission_request",
+        event: {
+          toolCall: {
+            type: "tool-call",
+            toolName: "relationship.read",
+            arguments: { q: "Acme" },
+          },
+        },
+      }),
+    ).toBe("Look up companies and promises needs permission.");
+    expect(
+      runEventBody({
+        type: "desktop.ask_human_request",
+        event: {
+          query: "Which owner should we confirm?",
+          options: ["Avery Chen", "Security review"],
+          toolCallId: "call-1",
+        },
+      }),
+    ).toBe("Which owner should we confirm?\nAvery Chen\nSecurity review");
+    expect(
+      runEventBody({
+        type: "desktop.ask_human_response",
+        event: { response: "Avery Chen", toolCallId: "call-1" },
+      }),
+    ).toBe("Avery Chen");
+    expect(
+      runEventBody({
+        type: "desktop.message",
+        event: {
+          message: {
+            role: "assistant",
+            content: [
+              { type: "text", text: "Confirm the security review owner." },
+              { type: "tool-call", toolName: "relationship.read", arguments: { q: "Acme" } },
+            ],
+          },
+        },
+      }),
+    ).toBe("Confirm the security review owner.");
+    expect(
+      runEventBody({
+        type: "desktop.message",
+        event: {
+          message: {
+            role: "user",
+            content: [{ type: "attachment", path: "/Users/ada/secret.pdf", filename: "secret.pdf" }],
+          },
+        },
+      }),
+    ).toBe("Attached secret.pdf.");
+    expect(
+      runEventBody({
+        type: "desktop.start",
+        event: { model: "openai/gpt-4.1", provider: "openai", permissionMode: "auto" },
+      }),
+    ).toBe("Started with GPT-4.1.");
+    expect(
+      runEventBody({
+        type: "desktop.spawn_subflow",
+        event: { agentName: "meeting-pre-brief" },
+      }),
+    ).toBe("Started Meeting-pre-brief.");
+    expect(runEventBody({ type: "desktop.run_stopped", event: { reason: "user-requested" } })).toBe(
+      "This run was stopped.",
+    );
+    expect(
+      runEventBody({
+        type: "desktop.code_run_event",
+        event: {
+          event: { type: "message", role: "agent", text: "Updated the security review note." },
+        },
+      }),
+    ).toBe("Updated the security review note.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_event",
+        event: { event: { type: "tool_call", title: "Edit the security note", kind: "edit" } },
+      }),
+    ).toBe("Edit the security note.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_event",
+        event: {
+          event: {
+            type: "tool_call_update",
+            status: "completed",
+            diffs: ["/Users/ada/notes/security.md"],
+          },
+        },
+      }),
+    ).toBe("Changed security.md.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_event",
+        event: {
+          event: {
+            type: "plan",
+            entries: [{ content: "Confirm the owner." }, { content: "Send the note." }],
+          },
+        },
+      }),
+    ).toBe("Confirm the owner.\nSend the note.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_permission_request",
+        event: {
+          requestId: "req-1",
+          ask: { title: "Edit the security note", kind: "edit", isRead: false },
+        },
+      }),
+    ).toBe("Edit the security note needs permission.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_event",
+        event: {
+          event: {
+            type: "permission",
+            ask: { title: "Edit the security note", isRead: false },
+            decision: "allow_once",
+            auto: false,
+          },
+        },
+      }),
+    ).toBe("Edit the security note was allowed.");
+    expect(
+      runEventBody({
+        type: "desktop.code_run_event",
+        event: { event: { type: "other", sessionUpdate: "session/update" } },
+      }),
+    ).toBe("Recorded an update.");
+    expect(
+      runEventBody({
+        type: "desktop.llm_stream_event",
+        event: { event: { type: "text-delta", text: "partial" } },
+      }),
+    ).toBe("Recorded an update.");
     expect(calledModelLabel("openai/gpt-4o-mini")).toBe("GPT-4o mini");
     expect(calledModelLabel("anthropic/claude-3-5-sonnet")).toBe("Claude 3.5 Sonnet");
     expect(calledModelLabel("workspace-default")).toBe("workspace-default");
@@ -383,9 +621,134 @@ describe("CloudWorkflowsView", () => {
       }),
     ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
     expect(
+      runEventBody({
+        type: "temporal.dead_lettered",
+        event: {
+          message: "cloud run queue is at global capacity",
+          errorCode: "admission_backpressure",
+          trigger: "schedule",
+          runId: "run-1",
+        },
+      }),
+    ).toBe("Too many workflows are running right now. Try again in a moment.");
+    expect(
+      runEventBody({
+        type: "temporal.dead_lettered",
+        event: {
+          message: "insufficient credits for cloud run preflight",
+          errorCode: "insufficient_credits",
+        },
+      }),
+    ).toBe(
+      "This workspace is out of AI credits. Ask an administrator to add credits, then try again.",
+    );
+    expect(
+      runEventBody({
+        type: "temporal.failed",
+        event: { message: "Failed.", error: "timeout", errorCode: "activity_timeout" },
+      }),
+    ).toBe("This run took too long. Try again.");
+    expect(
+      runEventBody({
+        type: "temporal.failed",
+        event: {
+          message: "Failed.",
+          error: "write artifact",
+          errorCode: "artifact_write_failed",
+        },
+      }),
+    ).toBe("The result could not be saved. Try again.");
+    expect(
+      runEventBody({
+        type: "temporal.retry_requested",
+        event: { message: "Retry requested.", retryOfRunId: "run-0", attempt: 2 },
+      }),
+    ).toBe("Trying this run again.");
+    expect(workflowProgressCopy("Dead-lettered before Temporal start.")).toBe(
+      "This run did not start.",
+    );
+    expect(workflowProgressCopy("Abandoned: workflow stopped heartbeating.")).toBe(
+      "This run stopped responding. Try again.",
+    );
+    expect(workflowProgressCopy("Temporal start failed.")).toBe(
+      "Workflows cannot be started right now. Try again later.",
+    );
+    expect(
+      completedRunCopy(
+        "API worker completed Daily Account Summary via cron trigger. Context: Scheduled cron trigger fired.",
+      ),
+    ).toBe("Finished Daily Account Summary.");
+    expect(completedRunCopy("Found 4 open customer follow-ups.")).toBe(
+      "Found 4 open customer follow-ups.",
+    );
+    expect(source).toContain("completedRunCopy(run.summary)");
+    expect(source).not.toContain("{run.summary}");
+    expect(
+      runEventBody({
+        type: "temporal.completed",
+        event: {
+          message: "Completed.",
+          progress: 100,
+          summary:
+            "API worker completed Daily Account Summary via cron trigger. Context: Scheduled cron trigger fired.",
+        },
+      }),
+    ).toBe("Finished Daily Account Summary.");
+    expect(
+      runEventBody({
+        type: "temporal.completed",
+        event: { message: "Completed.", summary: "Found 4 open customer follow-ups." },
+      }),
+    ).toBe("Found 4 open customer follow-ups.");
+    expect(
+      runEventBody({ type: "temporal.completed", event: { message: "Completed.", progress: 100 } }),
+    ).toBe("Finished.");
+    expect(runEventBody({ event: "Completed." })).toBe("Finished.");
+    expect(
+      runEventBody({
+        type: "temporal.signal",
+        event: { signal: "pause", payload: { note: "hold" } },
+      }),
+    ).toBe("Paused.");
+    expect(runEventBody({ type: "temporal.signal", event: { signal: "resume" } })).toBe(
+      "Running again.",
+    );
+    expect(runEventBody({ type: "temporal.signal", event: { signal: "update_context" } })).toBe(
+      "Updated what this run knows.",
+    );
+    expect(runEventBody({ type: "temporal.signal", event: { signal: "approve_tool" } })).toBe(
+      "Approved.",
+    );
+    expect(runEventBody({ type: "temporal.signal", event: { signal: "deny_tool" } })).toBe(
+      "This tool was not approved.",
+    );
+    expect(
+      runEventBody({
+        type: "temporal.signal",
+        event: { signal: "custom", payload: { token: "secret" } },
+      }),
+    ).toBe("Recorded an update.");
+    expect(
       runEventBody({ type: "runtime.unknown", event: { prompt_version: "cloud-runtime-v1" } }),
     ).toBe("Recorded an update.");
     expect(runEventBody({ event: "Agent step 1." })).toBe("Step 1.");
+    expect(runEventBody({ event: "Building API-native task artifact." })).toBe(
+      "Preparing the result.",
+    );
+    expect(runEventBody({ event: "Waiting for human approval." })).toBe("Waiting for approval.");
+    expect(runEventBody({ event: "Queued retry for API worker." })).toBe("Queued to try again.");
+    expect(workflowProgressCopy("Queued for API worker.")).toBe("Queued to run.");
+    expect(workflowProgressCopy("API worker claimed the run.")).toBe(
+      "Oppulence Cloud started this run.",
+    );
+    expect(workflowProgressCopy("Agent step 3.")).toBe("Step 3.");
+    expect(workflowProgressCopy("Context updated.")).toBe("Updated what this run knows.");
+    expect(workflowProgressCopy("Run paused.")).toBe("Paused.");
+    expect(workflowProgressCopy("Run resumed.")).toBe("Running again.");
+    expect(workflowProgressCopy("Cancellation requested.")).toBe("Stopping this run.");
+    expect(workflowProgressCopy("")).toBe("");
+    expect(workflowProgressCopy("Still reading mail.")).toBe("Still reading mail.");
+    expect(source).toContain("workflowProgressCopy(run.progressMessage)");
     expect(source).toContain("runEventBody(event)");
     expect(source).toContain("The transcript could not be loaded.");
     expect(transcriptLoadNotice(new Error("Workflow request failed (500)"), false)).toBe(
@@ -428,6 +791,13 @@ describe("CloudWorkflowsView", () => {
     expect(scheduleMomentLabel("2026-10-01T08:00:00Z", "America/New_York")).toBe(
       "Oct 1, 4:00 AM (Oct 1, 8:00 AM UTC)",
     );
+    const workflowSource = fs.readFileSync(
+      path.join(process.cwd(), "lib/workflows/cloud-workflows.ts"),
+      "utf8",
+    );
+    expect(workflowSource).toContain('new Intl.DateTimeFormat("en-US"');
+    expect(workflowSource).toContain("hour12: true");
+    expect(workflowSource).not.toContain("DateTimeFormat(undefined");
     expect(scheduleMomentLabel(null, "America/New_York")).toBe("—");
     expect(scheduleNextRunLabel(null, true)).toBe("Could not load the next run.");
     expect(scheduleNextRunLabel("2026-10-01T08:00:00Z", false)).toBe(
@@ -724,6 +1094,38 @@ describe("CloudWorkflowsView", () => {
       ),
     ).toBe("storage: disk full");
     expect(
+      runFailureLine({
+        error: "canceled",
+        errorCode: "workflow_canceled",
+        status: "failed",
+      }),
+    ).toBe("This run was stopped.");
+    expect(
+      runFailureLine({
+        error: "load background task",
+        errorCode: "db_error",
+        status: "failed",
+      }),
+    ).toBe("This run could not be saved. Try again.");
+    expect(
+      workflowLastRunReason(
+        { lastRunAt: "2026-10-02T07:00:00Z", lastRunError: "" },
+        {
+          createdAt: "2026-10-02T07:45:00Z",
+          status: "failed",
+          error: "write artifact",
+          errorCode: "artifact_write_failed",
+        },
+      ),
+    ).toBe("The result could not be saved. Try again.");
+    expect(
+      runFailureLine({
+        error: "timeout",
+        errorCode: "activity_timeout",
+        status: "failed",
+      }),
+    ).toBe("This run took too long. Try again.");
+    expect(
       workflowLastRunReason(
         { lastRunAt: "2026-10-02T07:45:00Z", lastRunError: "activity error" },
         { createdAt: "2026-10-02T07:45:00Z", status: "stopped" },
@@ -923,10 +1325,67 @@ describe("workflow revision conflict", () => {
     expect(workflowFailureCopy("only failed or stopped runs can be retried")).toBe(
       "Only a failed or stopped run can be tried again.",
     );
+    expect(workflowFailureCopy("a retry for this run is already in progress")).toBe(
+      "This run is already being tried again.",
+    );
     expect(workflowFailureCopy("temporal is not configured")).toBe(
       "Workflows cannot be started right now. Try again later.",
     );
+    expect(workflowFailureCopy("could not start temporal workflow")).toBe(
+      "Workflows cannot be started right now. Try again later.",
+    );
+    expect(workflowFailureCopy("could not cancel temporal workflow")).toBe(
+      "This run could not be stopped. Try again.",
+    );
     expect(workflowFailureCopy("could not list runs")).toBeNull();
+    expect(workflowSource).toContain("explainedWorkflowDetail(detail)");
+    expect(
+      runFailureLine({
+        error: "insufficient credits for cloud run preflight",
+        errorCode: "insufficient_credits",
+        status: "failed",
+      }),
+    ).toBe("This workspace is out of AI credits. Ask an administrator to add credits, then try again.");
+    expect(
+      runFailureLine({
+        error:
+          "activity error (type: rowboat.background_tasks.execute_api_task.v1, scheduledEventID: 11): connector_unavailable: google is not connected for this user",
+        errorCode: "connector_unavailable",
+        status: "failed",
+      }),
+    ).toBe("Connect Google, then try again.");
+    expect(
+      runFailureLine({
+        error:
+          "activity error: connector_unavailable: HubSpot is not connected for this user: hubspot: not connected",
+        errorCode: "connector_unavailable",
+        status: "failed",
+      }),
+    ).toBe("Connect HubSpot, then try again.");
+    expect(
+      workflowLastRunReason(
+        {
+          lastRunAt: "2026-10-02T07:45:00Z",
+          lastRunError:
+            "activity error: connector_unavailable: google is not connected for this user",
+        },
+        null,
+      ),
+    ).toBe("Connect Google, then try again.");
+    expect(
+      runFailureLine({
+        error: "run abandoned before Temporal workflow start was confirmed",
+        errorCode: "temporal_start_failed",
+        status: "failed",
+      }),
+    ).toBe("This run did not start. Try again.");
+    expect(
+      runFailureLine({
+        error: "run went silent: no heartbeat for over 15m0s",
+        errorCode: "activity_failed",
+        status: "failed",
+      }),
+    ).toBe("This run stopped responding. Try again.");
     expect(workflowsUnavailableCopy()).toBe(
       "Workflows are not available in this workspace yet.",
     );

@@ -28,6 +28,24 @@ it("hides model and workflow details from agent failures", () => {
   expect(friendlyAgentError("insufficient_credits")).toBe(
     "This workspace is out of AI credits. Ask an administrator to add credits, then try again.",
   );
+  expect(friendlyAgentError("insufficient credits for cloud run preflight", "run")).toBe(
+    "This workspace is out of AI credits. Ask an administrator to add credits, then try again.",
+  );
+  expect(friendlyAgentError("subscription not active for cloud run preflight", "run")).toBe(
+    "An active subscription is required before this workflow can run.",
+  );
+  expect(friendlyAgentError("daily credit limit exceeded for cloud run preflight", "run")).toBe(
+    "This workspace has used its daily AI credits. Try again tomorrow.",
+  );
+  expect(friendlyAgentError("monthly credit limit exceeded for cloud run preflight", "run")).toBe(
+    "This workspace has used its monthly AI credits.",
+  );
+  expect(friendlyAgentError("cloud run queue is at global capacity", "run")).toBe(
+    "Too many workflows are running right now. Try again in a moment.",
+  );
+  expect(friendlyAgentError("cloud run start rate limit exceeded for this user", "run")).toBe(
+    "Too many requests were sent from this workspace. Wait a moment, then try again.",
+  );
   expect(
     friendlyAgentError(
       'activity error (type: rowboat.agent.llm_complete.v1): llm upstream returned status 401: {"error":{"message":"Missing Authentication header","code":401}}',
@@ -44,6 +62,89 @@ it("hides model and workflow details from agent failures", () => {
   ).toBe("The model rejected the API key for this workspace. Nothing was charged.");
   expect(friendlyAgentError("activity error: scheduledEventID=1", "run")).toBe(
     "This run could not finish. Please try again.",
+  );
+  expect(
+    friendlyAgentError(
+      "activity StartToClose timeout (type: rowboat.background_tasks.execute_api_task.v1, scheduledEventID: 11, startedEventID: 12, timeoutType: StartToClose)",
+      "run",
+    ),
+  ).toBe("This run took too long. Try again.");
+  expect(
+    friendlyAgentError(
+      "activity error (type: rowboat.background_tasks.execute_api_task.v1, scheduledEventID: 11): connector_unavailable: google is not connected for this user",
+      "run",
+    ),
+  ).toBe("Connect Google, then try again.");
+  expect(
+    friendlyAgentError(
+      "activity error: connector_unavailable: google refresh token is invalid; the user must reconnect",
+      "run",
+    ),
+  ).toBe("Google stopped accepting the sign-in. Reconnect, then try again.");
+  expect(
+    friendlyAgentError(
+      "connector_unavailable: google connection is missing the https://www.googleapis.com/auth/gmail.readonly scope; reconnect Google to grant it",
+      "run",
+    ),
+  ).toBe("Google is missing a permission. Reconnect, then try again.");
+  expect(
+    friendlyAgentError(
+      "activity error: connector_unavailable: could not obtain a google access token",
+      "run",
+    ),
+  ).toBe("Google could not authorize this. Reconnect, then try again.");
+  expect(
+    friendlyAgentError(
+      "activity error: connector_unavailable: HubSpot is not connected for this user",
+      "run",
+    ),
+  ).toBe("Connect HubSpot, then try again.");
+  expect(friendlyAgentError("HubSpot is not configured on this server", "run")).toBe(
+    "HubSpot is not set up for this workspace yet.",
+  );
+  expect(
+    friendlyAgentError(
+      "that product is not connected yet; link it under Settings, Connected Accounts, More products",
+      "run",
+    ),
+  ).toBe("Connect that product under Settings, then try again.");
+  expect(friendlyAgentError("Composio is not configured on this server", "run")).toBe(
+    "More products are not set up for this workspace yet.",
+  );
+  expect(friendlyAgentError("Composio rejected this deployment's project key", "run")).toBe(
+    "More products could not be reached. Try again later.",
+  );
+  expect(friendlyAgentError("sandbox executor is not configured", "run")).toBe(
+    "Running code is not set up for this workspace yet.",
+  );
+  expect(friendlyAgentError("sandbox image is not configured", "run")).toBe(
+    "Running code is not set up for this workspace yet.",
+  );
+  expect(friendlyAgentError("sandbox execution failed: exit 1", "run")).toBe(
+    "The code could not finish. Try again.",
+  );
+  expect(
+    friendlyAgentError(
+      "tool_not_allowed: tool is not on the allowlist or the run's scope does not permit it",
+      "run",
+    ),
+  ).toBe("This tool is not available in this run.");
+  expect(
+    friendlyAgentError(
+      "tool is not on the allowlist or the run's scope does not permit it",
+    ),
+  ).toBe("This tool is not available in this chat.");
+  expect(friendlyAgentError("llm_call_failed: llm gateway call failed: dial timeout", "run")).toBe(
+    "The model could not be reached. Try again.",
+  );
+  expect(friendlyAgentError("event_bytes limit exceeded (9000 > 1000)", "run")).toBe(
+    "This run reached its limit.",
+  );
+  expect(
+    friendlyAgentError("run abandoned before Temporal workflow start was confirmed", "run"),
+  ).toBe("This run did not start. Try again.");
+  expect(friendlyAgentError("run went silent: no heartbeat for over 15m0s", "run")).toBe(
+    "This run stopped responding. Try again.",
   );
   expect(friendlyAgentError("The agent was canceled.")).toBe("The agent was canceled.");
   expect(friendlyAgentError("rate limit exceeded")).toBe(
@@ -68,7 +169,24 @@ it("hides model and workflow details from agent failures", () => {
     "Related agents are turned off for this chat.",
   );
   expect(toolFailureCopy("denied by registry")).toBe("This tool is not allowed.");
+  expect(toolFailureCopy("tool_not_allowed")).toBe("This tool is not allowed.");
+  expect(toolFailureCopy("connector_unavailable")).toBe(
+    "Connect the account this tool needs, then try again.",
+  );
+  expect(toolFailureCopy("upstream_credits_exhausted")).toBe(
+    "Oppulence cannot reach the model right now. Your workspace credits were not charged. Try again later.",
+  );
+  expect(toolFailureCopy("runtime_tool_budget_exceeded")).toBe("This run reached its limit.");
+  expect(toolFailureCopy("runtime_artifact_too_large")).toBe("This result is too large to keep.");
   expect(toolFailureCopy("llm_call_failed")).toBe("This tool could not finish.");
+  expect(
+    toolFailureCopy(
+      "activity error (type: rowboat.agent.tool.v1, scheduledEventID: 4): connector_unavailable: google is not connected for this user",
+    ),
+  ).toBe("Connect Google, then try again.");
+  expect(toolFailureCopy("activity error: scheduledEventID=1 startedEventID=2")).toBe(
+    "The agent could not complete this request. Please try again.",
+  );
   expect(toolFailureCopy("The mailbox is busy.")).toBe("The mailbox is busy.");
   expect(toolResultCopy({ resultBytes: 42 })).toBe("Finished.");
   expect(toolResultCopy({ subject: "Hello" })).toBeNull();

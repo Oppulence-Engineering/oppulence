@@ -115,12 +115,12 @@ func TestOpenPromisesReportShowsBothDirectionsWithSources(t *testing.T) {
 		"# Open promises",
 		"Promises from the last 90 days with no evidence they were kept.",
 		"| Company | Open promises |",
-		"promises we made",
-		"promises made to us",
+		"We promised",
+		"They promised us",
 		"Ship the migration",
 		"Send the sandbox credentials",
-		"They owe",
-		"We owe",
+		"they owe us",
+		"we owe them",
 		"https://mail.google.com/",
 	} {
 		if !strings.Contains(doc, want) {
@@ -250,7 +250,7 @@ func TestOpenPromisesReportDisclosesTruncation(t *testing.T) {
 	if len(report.Items) != 200 || !report.Truncated {
 		t.Fatalf("report did not disclose truncation: items=%d truncated=%v", len(report.Items), report.Truncated)
 	}
-	if !strings.Contains(report.Markdown(), "first 200") {
+	if !strings.Contains(report.Markdown(), "This report shows the first 200 open promises. Open promises to see the rest.") {
 		t.Fatal("Markdown did not disclose truncation")
 	}
 }
@@ -268,10 +268,10 @@ func TestOpenPromisesReportIsHonestWhenEmpty(t *testing.T) {
 		t.Fatal(err)
 	}
 	doc := report.Markdown()
-	if !strings.Contains(doc, "No open promises were found") {
+	if !strings.Contains(doc, "No open promises found") {
 		t.Fatalf("empty report was not explicit:\n%s", doc)
 	}
-	if !strings.Contains(doc, "sources are not connected") {
+	if !strings.Contains(doc, "We read") || !strings.Contains(doc, "found nothing outstanding") || !strings.Contains(doc, "more sources need connecting") {
 		t.Fatalf("empty report did not name the likely cause:\n%s", doc)
 	}
 }
@@ -333,10 +333,10 @@ func TestOpenPromisesReportNamesAMutualPromise(t *testing.T) {
 		t.Fatalf("a mutual promise was counted as one side's: out=%d in=%d items=%d", report.OutboundCount, report.InboundCount, len(report.Items))
 	}
 	doc := report.Markdown()
-	if !strings.Contains(doc, "We both owe ·") || !strings.Contains(doc, "promises we share") {
+	if !strings.Contains(doc, "we both owe ·") || !strings.Contains(doc, "We both promised") {
 		t.Fatalf("mutual promise was labeled as one side's:\n%s", doc)
 	}
-	if strings.Contains(doc, "We owe ·") {
+	if strings.Contains(doc, "we owe them") {
 		t.Fatalf("mutual promise was also called something we owe:\n%s", doc)
 	}
 }
@@ -421,6 +421,55 @@ func TestOpenPromisesReportKeepsTheSourcePhraseWhenTheExcerptIsBlank(t *testing.
 	}
 	if report.Items[0].SourceURI != "https://mail.google.com/mail/u/0/#inbox/from-the-mail" {
 		t.Fatalf("blank older excerpt was cited instead of the sentence: %q", report.Items[0].SourceURI)
+	}
+}
+
+func TestOpenPromisesMarkdownUsesThePageClock(t *testing.T) {
+	due := time.Date(2026, 9, 14, 17, 0, 0, 0, time.UTC)
+	occurred := time.Date(2026, 9, 6, 12, 0, 0, 0, time.UTC)
+	midnight := time.Date(2026, 9, 30, 0, 0, 0, 0, time.UTC)
+	afternoon := time.Date(2026, 9, 30, 13, 0, 0, 0, time.UTC)
+	if reportDueDay(due) != "Sep 14, 2026" {
+		t.Fatalf("due day = %q", reportDueDay(due))
+	}
+	if reportSourceObservedLine(occurred) != "Source observed Sep 6, 2026 at 12:00 PM" {
+		t.Fatalf("noon = %q", reportSourceObservedLine(occurred))
+	}
+	if reportSourceObservedLine(midnight) != "Source observed Sep 30, 2026 at 12:00 AM" {
+		t.Fatalf("midnight = %q", reportSourceObservedLine(midnight))
+	}
+	if reportSourceObservedLine(afternoon) != "Source observed Sep 30, 2026 at 1:00 PM" {
+		t.Fatalf("afternoon = %q", reportSourceObservedLine(afternoon))
+	}
+	report := &OpenPromisesReport{
+		GeneratedAt:   time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC),
+		LookbackDays:  180,
+		ThreadsSeen:   412,
+		OutboundCount: 1,
+		ByAccount:     map[string]int{"Acme": 1},
+		Items: []ReportItem{{
+			Account:     "Acme",
+			Direction:   "promised_by_me",
+			Text:        "Migration live by the 14th",
+			State:       RegisterAtRisk,
+			DueAt:       &due,
+			Owner:       "alex@example.com",
+			SourceQuote: "We will have the migration live by the 14th.",
+			SourceURI:   "https://mail.google.com/thread-1",
+			OccurredAt:  &occurred,
+		}},
+	}
+	doc := report.Markdown()
+	for _, want := range []string{
+		"due Sep 14, 2026",
+		"Source observed Sep 6, 2026 at 12:00 PM · https://mail.google.com/thread-1",
+	} {
+		if !strings.Contains(doc, want) {
+			t.Fatalf("markdown missing %q\n%s", want, doc)
+		}
+	}
+	if strings.Contains(doc, "due 2026-09-14") || strings.Contains(doc, "2026-09-06T12:00:00Z") {
+		t.Fatalf("markdown kept the machine stamp:\n%s", doc)
 	}
 }
 

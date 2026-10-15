@@ -3,6 +3,7 @@
 import "client-only";
 
 import * as React from "react";
+import { format } from "date-fns";
 import {
   ArrowClockwise,
   CheckCircle,
@@ -47,6 +48,7 @@ import {
   rejectAction,
   RevenueAPIError,
   snoozeWakeCopy,
+  checkoutFailureCopy,
   startCheckout,
 } from "@/lib/revenue/revenue";
 import {
@@ -153,9 +155,48 @@ export function reconciliationErrorCopy(error: string | null | undefined): strin
   ) {
     return "";
   }
-  if (raw === "execution idempotency key is missing" || raw === "This send has no receipt to check.") {
+  if (
+    raw === "execution idempotency key is missing" ||
+    raw === "This send has no receipt to check." ||
+    /reconciliation idempotency key is required/i.test(raw)
+  ) {
     return "This send has no receipt to check.";
   }
+  if (raw === "action is assigned to another provider credential") {
+    return "Someone else is set to send this, so this workspace cannot confirm it.";
+  }
+  if (
+    raw === "execution backend does not support provider reconciliation" ||
+    /cannot reconcile provider state/i.test(raw)
+  ) {
+    return "This channel cannot confirm whether the send went out.";
+  }
+  if (raw === "provider reconciliation reported a match without a receipt") {
+    return "The provider matched this send but did not return a receipt.";
+  }
+  if (/google is not connected/i.test(raw)) {
+    return "Connect Google for the person who will send this, then try again.";
+  }
+  if (/refresh token is invalid/i.test(raw)) {
+    return "Google stopped accepting the authorization. Reconnect, then try again.";
+  }
+  if (/missing the .+ scope|reconnect Google/i.test(raw)) {
+    return "Google is missing permission to check this send. Reconnect, then try again.";
+  }
+  if (/could not obtain a google access token/i.test(raw)) {
+    return "Google could not authorize this check. Reconnect, then try again.";
+  }
+  if (/Google Calendar executor is not configured/i.test(raw)) {
+    return "Calendar sending is not set up yet.";
+  }
+  if (/Slack action needs target/i.test(raw)) return "Choose the Slack channel before sending.";
+  if (/HubSpot action needs a relationship resource ref/i.test(raw)) {
+    return "Link the HubSpot record before sending.";
+  }
+  if (/resolve Slack workspace/i.test(raw)) {
+    return "Slack could not be reached for this check.";
+  }
+  if (/^revenue:/i.test(raw)) return "The check could not confirm this send.";
   return raw;
 }
 
@@ -181,17 +222,28 @@ export function reviewSupportingQuotes(action: {
   return quotes;
 }
 
-function governedSourceLine(action: RevenueAction) {
+/** English month and day, matching the marketing line "Mar 14". */
+export function reviewThreadDay(occurredAt: string | null | undefined): string {
+  const raw = occurredAt?.trim() ?? "";
+  if (!raw) return "";
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return format(parsed, "MMM d");
+}
+
+export function governedSourceLine(action: {
+  evidence: readonly { occurredAt?: string | null }[];
+  recipientEmail?: string | null;
+  reason?: string | null;
+}): string | undefined {
   const evidence = action.evidence[0];
   if (!evidence) {
     const reason = actionReasonCopy(action.reason);
     return reason ? `Source: ${reason}` : undefined;
   }
-  const date = new Date(evidence.occurredAt).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
+  const date = reviewThreadDay(evidence.occurredAt);
   const account = action.recipientEmail ? ` · ${action.recipientEmail}` : "";
+  if (!date) return account ? `Source: thread${account}` : undefined;
   return `Source: thread from ${date}${account}`;
 }
 
@@ -330,7 +382,7 @@ export function ReviewSheet({
       const url = await startCheckout("pro");
       window.location.assign(url);
     } catch (e) {
-      const message = errMessage(e, "Could not start checkout.");
+      const message = checkoutFailureCopy(e);
       setActionError(message);
       onError(message);
       setBusy(null);

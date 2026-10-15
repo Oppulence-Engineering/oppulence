@@ -106,6 +106,35 @@ describe("source product copy", () => {
       ),
     ).toBe("Supporting evidence changed. Lifecycle is not recorded.");
     expect(projectionReasonCopy("The account is healthy.")).toBe("The account is healthy.");
+    expect(projectionReasonCopy("Confirmed in the last meeting.")).toBe(
+      "Confirmed in the last meeting.",
+    );
+    expect(projectionReasonCopy("User corrected focused conversation evidence.")).toBe(
+      "You corrected what was said.",
+    );
+    expect(
+      projectionReasonCopy("User corrected conversation evidence during focused review."),
+    ).toBe("You corrected what was said.");
+    expect(projectionReasonCopy("User decided a proposed conversation change.")).toBe(
+      "You decided a suggested change.",
+    );
+    expect(
+      projectionReasonCopy("User selected the current value from a focused contradiction case."),
+    ).toBe("You chose the current value.");
+    expect(
+      projectionReasonCopy("User confirmed this commitment from the cited meeting transcript."),
+    ).toBe("You confirmed this promise from the meeting.");
+    expect(projectionReasonCopy("HubSpot company lifecycle stage.")).toBe("Taken from HubSpot.");
+    expect(
+      projectionReasonCopy(
+        "Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms.",
+      ),
+    ).toBe("Taken from what was said.");
+    expect(
+      projectionReasonCopy(
+        "Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms. No active lifecycle assertion at evaluation time.",
+      ),
+    ).toBe("Taken from what was said. Lifecycle is not recorded.");
   });
 
   it("reads a saved note instead of the empty payload", () => {
@@ -274,6 +303,15 @@ describe("source product copy", () => {
         channel: "email",
       }).join("\n"),
     ).not.toMatch(/outcome_kind|action_id|meeting_booked|recommendation_revision/);
+    expect(activityHeading("user", "conversation_review_decided")).toBe(
+      "Added by you · Suggestion decided",
+    );
+    expect(activityHeading("user", "relationship_contradiction_resolved")).toBe(
+      "Added by you · Detail chosen",
+    );
+    expect(activityHeading("user", "conversation_review_decided")).not.toContain(
+      "conversation_review_decided",
+    );
     expect(activityHeading("gmail", "thread.updated")).not.toContain("thread.updated");
     expect(activityHeading("desktop_note", "note")).not.toContain("desktop_note");
     expect(mailAccessReason("mailbox_owner")).toBe("Your mailbox");
@@ -328,13 +366,49 @@ describe("source product copy", () => {
     expect(sourceLastErrorCopy("   ")).toBe("");
     expect(
       sourceLastErrorCopy(
-        "Account monitoring is paused for this workspace.",
+        "Account monitoring stopped early because this workspace reached its research budget for the period.",
       ),
-    ).toBe("Account monitoring is paused for this workspace.");
+    ).toBe("Public research stopped because this workspace used its research budget.");
+    expect(
+      sourceLastErrorCopy(
+        "Account monitoring is not running because the subscription does not currently include cloud research.",
+      ),
+    ).toBe("Public research is part of the Intelligence plan. This workspace does not include it.");
+    expect(
+      sourceLastErrorCopy(
+        "Account monitoring is not running because cloud research consent has been withdrawn.",
+      ),
+    ).toBe("Public research stays off until you allow it.");
+    expect(sourceLastErrorCopy("Account monitoring is paused for this workspace.")).toBe(
+      "Public research is paused for this workspace.",
+    );
+    expect(
+      sourceLastErrorCopy(
+        "Account monitoring is not running because no research provider is configured.",
+      ),
+    ).toBe("Public research is not available in this workspace.");
+    expect(sourceLastErrorCopy("Account monitoring did not finish its last run.")).toBe(
+      "Public research did not finish its last check.",
+    );
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     expect(sourceLastLookedTitle(twoHoursAgo)).toBe("Last looked 2 hours ago");
     expect(sourceLastLookedTitle("")).toBe("");
     expect(sourceLastLookedTitle("not-a-date")).toBe("");
+    const lookedOn = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
+    const day = new Date(lookedOn).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    expect(sourceLastLookedTitle(lookedOn)).toBe(`Last looked ${day}`);
+    expect(sourceConnectionLabel({ source: "google", status: "authorizing" })).toBe(
+      "Waiting to connect",
+    );
+    expect(sourceConnectionLabel({ source: "google", status: "rebuilding" })).toBe("Syncing");
+    expect(
+      sourceConnectionLabel({ source: "google", status: "degraded", completeness: "partial" }),
+    ).toBe("Sync incomplete");
     expect(sourceConnectionLabel({ source: "google", status: "not_connected" })).toBe(
       "Not connected",
     );
@@ -785,6 +859,17 @@ describe("source product copy", () => {
           "speaker assignment requires review",
           "renderer fallback: timed audio evidence was not retained",
           "capture guardian: microphone_missing — Your side of the conversation is not being captured.",
+          "capture guardian: microphone_silent — The microphone track is advancing but contains no audible signal.",
+          "capture guardian: microphone_stalled — The microphone track stopped advancing while capture continues.",
+          "capture guardian: system_track_missing — Other participants may not be captured.",
+          "capture guardian: system_track_silent — System audio is advancing but contains no audible signal.",
+          "capture guardian: system_track_stalled — System audio stopped advancing while the microphone continues.",
+          "capture guardian: sidecar_stalled — The recorder stopped reporting progress and evidence may be incomplete.",
+          "capture guardian: sidecar_crashed — The recorder exited unexpectedly.",
+          "capture guardian: disk_pressure — Capture may stop before the meeting ends.",
+          "capture guardian: model_unavailable — On-device transcription cannot start with the selected model.",
+          "capture guardian: live_transcription_stale — Live notes are not keeping up, but the durable audio capture continues.",
+          "capture guardian: post_transcription_stuck — The recording is safe but its transcript is not progressing.",
           "mic_voice_processing_unavailable: echo cancellation unavailable — recording raw mic",
         ],
       }),
@@ -810,6 +895,17 @@ describe("source product copy", () => {
       "Who spoke is not confirmed.",
       "The timed recording was not saved with this transcript.",
       "Your side of the conversation is not being captured.",
+      "The microphone is on, but it is silent.",
+      "The microphone stopped while the meeting was still being recorded.",
+      "The other side of the conversation may not be recorded.",
+      "The other side is on, but it is silent.",
+      "The other side stopped while your microphone kept recording.",
+      "The recorder stopped reporting, so this meeting may be incomplete.",
+      "The recorder stopped unexpectedly.",
+      "Recording may stop before the meeting ends.",
+      "Transcription cannot start with the selected model.",
+      "Live notes are behind. The recording is still going.",
+      "The recording is saved, but the transcript has stopped.",
       "Echo cancellation was unavailable, so the microphone was recorded without it.",
     ]);
     expect(
@@ -972,6 +1068,24 @@ describe("source product copy", () => {
     ).toBe(
       ["The other side could not be recorded.", "The recording could not be saved."].join("\n"),
     );
+    expect(
+      activityEvidenceLines(
+        {
+          envelope: {
+            captureCaveats: [
+              "Granola supplied meeting notes rather than a timestamped verbatim transcript.",
+              "Speaker attribution and wording require focused review before material use.",
+              "Imported from Fireflies; capture consent and audio retention remain governed by the provider.",
+            ],
+          },
+        },
+        null,
+      ),
+    ).toEqual([
+      "These are notes from Granola, not a word-for-word transcript.",
+      "Check who spoke and the wording before you rely on this.",
+      "Imported from Fireflies. The meeting service still decides consent and how long the recording is kept.",
+    ]);
     const spoken = activityEvidenceLines(
       {
         envelope: {
@@ -1059,6 +1173,7 @@ describe("source product copy", () => {
           value: "I will send the proposal.",
           speakerLabel: "You",
         },
+        { id: "claim:person", kind: "stakeholder", value: "Avery Chen is the champion" },
         { id: "claim:review", kind: "claim", value: "one", confidence: 0.2 },
         { id: "claim:again", kind: "risk", value: "Security review may slip", speakerLabel: "Avery" },
       ],
@@ -1096,6 +1211,7 @@ describe("source product copy", () => {
       "Sentiment: Negative",
       "Decision: We decided to renew.",
       "Promise: I will send the proposal. — You",
+      "Person: Avery Chen is the champion",
       "Named from the guest list: Avery",
       "A speaker was not named",
     ]);
@@ -1120,6 +1236,13 @@ describe("source product copy", () => {
             "Thanks for the conversation. Here is my understanding:\n\n- risk: Security review may slip\n\nPlease reply with any corrections.",
           evidenceClaimIds: ["claim:risk"],
           confidence: 0.84,
+        },
+        {
+          id: "action:slack",
+          actionType: "meeting_recap",
+          channel: "slack",
+          reason: "Share the evidence-backed recap with the account team.",
+          proposedMessage: "Conversation recap — Q3 review",
         },
         {
           id: "action:task",
@@ -1155,11 +1278,12 @@ describe("source product copy", () => {
       ],
     });
     expect(lines).toEqual([
-      `${ACTION_TYPE_LABELS.meeting_recap}: Send a recap grounded in the material statements from this conversation.`,
-      `${ACTION_TYPE_LABELS.follow_up_task}: Track a spoken commitment until it is fulfilled or renegotiated.`,
+      `${ACTION_TYPE_LABELS.meeting_recap}: Send a recap of what was said.`,
+      `${ACTION_TYPE_LABELS.meeting_recap}: Share the recap with the account team.`,
+      `${ACTION_TYPE_LABELS.follow_up_task}: Keep this promise until it is kept or changed.`,
       "Due: Aug 1, 2026",
-      `${ACTION_TYPE_LABELS.calendar_hold}: Protect time before the spoken commitment is due.`,
-      `${ACTION_TYPE_LABELS.crm_update}: Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.`,
+      `${ACTION_TYPE_LABELS.calendar_hold}: Hold time before this promise is due.`,
+      `${ACTION_TYPE_LABELS.crm_update}: Update the company record from what was said.`,
     ]);
     expect(lines.join("\n")).not.toMatch(
       /action:email|claim:risk|- risk:|0\.84|Recap: Q3|shadow recap|local-user/,

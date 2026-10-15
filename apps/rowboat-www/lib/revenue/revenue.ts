@@ -342,6 +342,19 @@ export async function startCheckout(plan: "starter" | "pro"): Promise<string> {
   return body.url;
 }
 
+/**
+ * A missing Stripe setup is not a blip. "Please try again" sends someone back
+ * to a button that cannot open checkout until the server is configured.
+ */
+export function checkoutFailureCopy(error: unknown): string {
+  const code =
+    error && typeof error === "object" && "code" in error && typeof error.code === "string"
+      ? error.code
+      : "";
+  if (code === "provider_unconfigured") return "Checkout isn't configured on the server yet.";
+  return "Checkout is temporarily unavailable. Please try again.";
+}
+
 export type LinkWorkspaceInput = LinkRevenueWorkspaceInput;
 
 export const linkWorkspace = (input: LinkWorkspaceInput) =>
@@ -1022,14 +1035,96 @@ const ATTENTION_REASON_LABELS: Record<string, string> = {
 const STORED_OVERDUE_PROMISE =
   /^A confirmed commitment is overdue by (\d+) day(s?)\.$/;
 
-/** Older attention rows said commitment. The company sheet says promise. */
+const SOURCE_DEGRADATION =
+  /^(.+) evidence is incomplete, stale, rebuilding, or missing a required permission\.$/;
+
+/**
+ * Older attention rows said commitment. A source that stopped reading lists
+ * four internal states. Someone who left is named without the stored
+ * semicolon. The queue names the promise, or says to read that source again.
+ */
 export function attentionExplanationCopy(explanation: string | null | undefined): string {
   const raw = explanation?.trim() ?? "";
   const match = STORED_OVERDUE_PROMISE.exec(raw);
-  if (!match?.[1]) return raw;
-  const days = Number(match[1]);
-  const suffix = days === 1 ? "" : "s";
-  return `A confirmed promise is overdue by ${days} day${suffix}.`;
+  if (match?.[1]) {
+    const days = Number(match[1]);
+    const suffix = days === 1 ? "" : "s";
+    return `A confirmed promise is overdue by ${days} day${suffix}.`;
+  }
+  const degraded = SOURCE_DEGRADATION.exec(raw);
+  if (degraded?.[1]) {
+    const who = degraded[1] === "Source" ? "A source" : degraded[1];
+    const verb = who === "A source" || !/\band\b|,/.test(who) ? "needs" : "need";
+    return `${who} ${verb} to be read again or reconnected.`;
+  }
+  const outcome = attentionOutcomeCopy(raw);
+  if (outcome) return outcome;
+  const openRisk =
+    /^(\d+) unresolved risks?\. (This company is critical\.|This company needs attention\.|Health is .+\.)$/.exec(
+      raw,
+    );
+  if (openRisk?.[1] && openRisk[2]) {
+    const noun = openRisk[1] === "1" ? "risk is still open" : "risks are still open";
+    return `${openRisk[1]} ${noun}. ${openRisk[2]}`;
+  }
+  const departed = departedContactCopy(raw);
+  if (departed) return departed;
+  const outside = externalTriggerCopy(raw);
+  if (outside) return outside;
+  return actionReasonCopy(raw);
+}
+
+/** A public-research event stores "Source: https://…". The queue says where it was reported. */
+function externalTriggerCopy(raw: string): string | null {
+  const match = /^(.*) Source: (https?:\/\/\S+)$/.exec(raw);
+  if (!match?.[1] || !match[2]) return null;
+  const body = match[1].trim();
+  if (!body) return null;
+  return `${body} Reported at ${match[2]}.`;
+}
+
+/** A departed contact stores a semicolon and "Quiet for N days". The queue says the mail stopped. */
+function departedContactCopy(raw: string): string | null {
+  const match =
+    /^(.+) has left; mail to that address is no longer delivered\. Quiet for (\d+) days because there is nobody here to reply\.$/.exec(
+      raw,
+    );
+  if (!match?.[1] || !match[2]) return null;
+  const who = match[1];
+  const verb = /\band\b/.test(who) ? "have" : "has";
+  return `${who} ${verb} left, so mail to that address is no longer delivered. It has been quiet for ${countedDays(match[2])} because nobody here can reply.`;
+}
+
+/** Slack and CRM are names. A manual review is a person looking at the action. */
+function attentionActionName(kind: string): string {
+  switch (kind) {
+    case "slack":
+      return "Slack";
+    case "crm":
+      return "CRM";
+    case "crm task":
+      return "CRM task";
+    default:
+      return kind;
+  }
+}
+
+function attentionOutcomeCopy(raw: string): string | null {
+  const failed = /^The (.+) action failed\. Review it before trying again\.$/.exec(raw);
+  if (failed?.[1]) {
+    return `The ${attentionActionName(failed[1])} action failed. Review it before trying again.`;
+  }
+  const ambiguous =
+    /^The (.+) action may have gone through\. Review it before trying again\.$/.exec(raw);
+  if (ambiguous?.[1]) {
+    return `The ${attentionActionName(ambiguous[1])} action may have gone through. Review it before trying again.`;
+  }
+  const review =
+    /^The (.+) action needs a manual review before it can be tried again\.$/.exec(raw);
+  if (review?.[1]) {
+    return `The ${attentionActionName(review[1])} action needs a person to review it before you try again.`;
+  }
+  return null;
 }
 
 /** Impact lists attention reason codes. The queue already has a sentence. */
@@ -1180,12 +1275,70 @@ export function missionControlGapCopy(
 const CONFIRMED_FOLLOW_UP_REASON =
   /^You confirmed this follow-up from source evidence meeting\/.+\.$/;
 
+/**
+ * A conversation compiles these reasons for the model. The activity, queue,
+ * and review sheet say what the person would do.
+ */
+const ACTION_REASON_COPY: Record<string, string> = {
+  "Send a recap grounded in the material statements from this conversation.":
+    "Send a recap of what was said.",
+  "Share the evidence-backed recap with the account team.": "Share the recap with the account team.",
+  "Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.":
+    "Update the company record from what was said.",
+  "Track a spoken commitment until it is fulfilled or renegotiated.":
+    "Keep this promise until it is kept or changed.",
+  "Protect time before the spoken commitment is due.": "Hold time before this promise is due.",
+};
+
+function countedDays(count: string): string {
+  return `${count} ${count === "1" ? "day" : "days"}`;
+}
+
+/**
+ * A mail scan stores a detector sentence. The queue and mail search say what
+ * is waiting. A person's own reason stays as they wrote it.
+ */
+function detectorReasonCopy(raw: string): string | null {
+  const followUp =
+    /^A follow-up was promised in this thread and nothing has happened for (\d+) days \(last touch ([^)]+)\)\.$/.exec(
+      raw,
+    );
+  if (followUp?.[1] && followUp[2]) {
+    return `A follow-up was promised, and nothing has happened for ${countedDays(followUp[1])}. The last message was ${followUp[2]}.`;
+  }
+  const proposal =
+    /^You sent a proposal-stage message (\d+) days ago and there has been no reply\.$/.exec(raw);
+  if (proposal?.[1]) {
+    return `You sent a proposal ${countedDays(proposal[1])} ago, and there has been no reply.`;
+  }
+  const waiting = /^(.+) asked you something (\d+) days ago and is still waiting on a reply\.$/.exec(
+    raw,
+  );
+  if (waiting?.[1] && waiting[2]) {
+    return `${waiting[1]} asked you a question ${countedDays(waiting[2])} ago and is still waiting.`;
+  }
+  const intro = /^An introduction in this thread has had no contact for (\d+) days\.$/.exec(raw);
+  if (intro?.[1]) {
+    return `An introduction has had no follow-up for ${countedDays(intro[1])}.`;
+  }
+  const quiet =
+    /^A warm two-way conversation \((\d+) messages\) has been dormant for (\d+) days\.$/.exec(raw);
+  if (quiet?.[1] && quiet[2]) {
+    const messages = quiet[1] === "1" ? "1 message" : `${quiet[1]} messages`;
+    return `A two-way conversation of ${messages} has been quiet for ${countedDays(quiet[2])}.`;
+  }
+  if (raw === "An explicit promise in this message needs confirmation.") {
+    return "Confirm this promise from the message.";
+  }
+  return null;
+}
+
 /** A confirmed meeting stored the observation id in the reason. The queue names the meeting. */
 export function actionReasonCopy(reason: string | null | undefined): string {
   const raw = reason?.trim() ?? "";
   if (!raw) return "";
   if (CONFIRMED_FOLLOW_UP_REASON.test(raw)) return "You confirmed this follow-up from the meeting.";
-  return raw;
+  return detectorReasonCopy(raw) ?? ACTION_REASON_COPY[raw] ?? raw;
 }
 
 /**
@@ -1284,10 +1437,13 @@ export function relativeTime(iso?: string | null): string {
   if (abs < 3600_000) return fmt(Math.max(1, Math.round(abs / 60_000)), "min");
   if (abs < day) return fmt(Math.round(abs / 3600_000), "hour");
   if (abs < 30 * day) return fmt(Math.round(abs / day), "day");
-  return new Date(iso).toLocaleDateString(undefined, {
+  // Company search reads this same UTC day. A local calendar turned the
+  // badge the person hovered into a different date from the one search uses.
+  return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 

@@ -579,6 +579,65 @@ it("names an overdue promise in an older attention sentence", () => {
     "A confirmed promise is overdue by 3 days.",
   );
   expect(attentionExplanationCopy("No reply in 14 days")).toBe("No reply in 14 days");
+  expect(attentionExplanationCopy("1 unresolved risk. This company is critical.")).toBe(
+    "1 risk is still open. This company is critical.",
+  );
+  expect(attentionExplanationCopy("2 unresolved risks. This company needs attention.")).toBe(
+    "2 risks are still open. This company needs attention.",
+  );
+  expect(attentionExplanationCopy("1 unresolved risk. Health is Healthy.")).toBe(
+    "1 risk is still open. Health is Healthy.",
+  );
+  expect(
+    attentionExplanationCopy(
+      "Google evidence is incomplete, stale, rebuilding, or missing a required permission.",
+    ),
+  ).toBe("Google needs to be read again or reconnected.");
+  expect(
+    attentionExplanationCopy(
+      "Google and Slack evidence is incomplete, stale, rebuilding, or missing a required permission.",
+    ),
+  ).toBe("Google and Slack need to be read again or reconnected.");
+  expect(
+    attentionExplanationCopy(
+      "Source evidence is incomplete, stale, rebuilding, or missing a required permission.",
+    ),
+  ).toBe("A source needs to be read again or reconnected.");
+  expect(
+    attentionExplanationCopy("The email action failed. Review it before trying again."),
+  ).toBe("The email action failed. Review it before trying again.");
+  expect(
+    attentionExplanationCopy(
+      "The crm task action may have gone through. Review it before trying again.",
+    ),
+  ).toBe("The CRM task action may have gone through. Review it before trying again.");
+  expect(
+    attentionExplanationCopy(
+      "The slack action needs a manual review before it can be tried again.",
+    ),
+  ).toBe("The Slack action needs a person to review it before you try again.");
+  expect(
+    attentionExplanationCopy(
+      "Sarah Chen has left; mail to that address is no longer delivered. Quiet for 12 days because there is nobody here to reply.",
+    ),
+  ).toBe(
+    "Sarah Chen has left, so mail to that address is no longer delivered. It has been quiet for 12 days because nobody here can reply.",
+  );
+  expect(
+    attentionExplanationCopy(
+      "Sarah Chen and Ada Lovelace has left; mail to that address is no longer delivered. Quiet for 1 days because there is nobody here to reply.",
+    ),
+  ).toBe(
+    "Sarah Chen and Ada Lovelace have left, so mail to that address is no longer delivered. It has been quiet for 1 day because nobody here can reply.",
+  );
+  expect(
+    attentionExplanationCopy(
+      "Acme announced a Series B. Your last contact there was Sarah Chen (VP Engineering). Source: https://press.example/acme",
+    ),
+  ).toBe(
+    "Acme announced a Series B. Your last contact there was Sarah Chen (VP Engineering). Reported at https://press.example/acme.",
+  );
+  expect(attentionExplanationCopy("Acme launched v2.")).toBe("Acme launched v2.");
 });
 
 it("names a shared plan without the stored hash or a redacted owner", () => {

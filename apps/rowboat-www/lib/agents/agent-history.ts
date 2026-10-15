@@ -33,11 +33,23 @@ export function friendlyAgentError(message: string, subject: "agent" | "run" = "
     return modelOutageCopy();
   }
   if (
-    /status 402|requires more credits|insufficient_credits|credits_exhausted|out of (?:AI )?credits/i.test(
+    /status 402|requires more credits|insufficient_credits|credits_exhausted|out of (?:AI )?credits|insufficient credits for cloud run preflight/i.test(
       message,
     )
   ) {
     return "This workspace is out of AI credits. Ask an administrator to add credits, then try again.";
+  }
+  if (/subscription not active for cloud run preflight/i.test(message)) {
+    return "An active subscription is required before this workflow can run.";
+  }
+  if (/daily credit limit exceeded for cloud run preflight/i.test(message)) {
+    return "This workspace has used its daily AI credits. Try again tomorrow.";
+  }
+  if (/monthly credit limit exceeded for cloud run preflight/i.test(message)) {
+    return "This workspace has used its monthly AI credits.";
+  }
+  if (/cloud run queue is at (?:global|per-user) capacity/i.test(message)) {
+    return "Too many workflows are running right now. Try again in a moment.";
   }
   // A bad or missing provider key comes back wrapped in a Temporal activity
   // error. Match it before the generic activity rewrite, or dogfooding looks
@@ -47,6 +59,61 @@ export function friendlyAgentError(message: string, subject: "agent" | "run" = "
   }
   if (/\brate limit\b|too many requests|\(429\)/i.test(message)) {
     return "Too many requests were sent from this workspace. Wait a moment, then try again.";
+  }
+  // Connector and sandbox refusals are wrapped in the same Temporal activity
+  // error as a random failure. Name the connection before that rewrite.
+  if (/google is not connected/i.test(message)) {
+    return "Connect Google, then try again.";
+  }
+  if (/refresh token is invalid/i.test(message)) {
+    return "Google stopped accepting the sign-in. Reconnect, then try again.";
+  }
+  if (/google connection is missing the .+ scope|reconnect Google to grant it/i.test(message)) {
+    return "Google is missing a permission. Reconnect, then try again.";
+  }
+  if (/could not obtain a google access token/i.test(message)) {
+    return "Google could not authorize this. Reconnect, then try again.";
+  }
+  if (/HubSpot is not connected/i.test(message)) {
+    return "Connect HubSpot, then try again.";
+  }
+  if (/HubSpot is not configured/i.test(message)) {
+    return "HubSpot is not set up for this workspace yet.";
+  }
+  if (/that product is not connected yet/i.test(message)) {
+    return "Connect that product under Settings, then try again.";
+  }
+  if (/Composio is not configured/i.test(message)) {
+    return "More products are not set up for this workspace yet.";
+  }
+  if (/Composio rejected this deployment's project key/i.test(message)) {
+    return "More products could not be reached. Try again later.";
+  }
+  if (/sandbox executor is not configured|sandbox image is not configured/i.test(message)) {
+    return "Running code is not set up for this workspace yet.";
+  }
+  if (/sandbox execution failed/i.test(message)) {
+    return "The code could not finish. Try again.";
+  }
+  if (/tool is not on the allowlist/i.test(message)) {
+    return subject === "run"
+      ? "This tool is not available in this run."
+      : "This tool is not available in this chat.";
+  }
+  if (/llm gateway call failed/i.test(message)) {
+    return "The model could not be reached. Try again.";
+  }
+  if (/\blimit exceeded \(/i.test(message)) {
+    return runLimitCopy();
+  }
+  if (/abandoned before Temporal workflow start was confirmed/i.test(message)) {
+    return "This run did not start. Try again.";
+  }
+  if (/run went silent: no heartbeat/i.test(message)) {
+    return "This run stopped responding. Try again.";
+  }
+  if (/starttoclose timeout|timeoutType: StartToClose|activity timeout/i.test(message)) {
+    return "This run took too long. Try again.";
   }
   if (/activity error|scheduledEventID|startedEventID/i.test(message)) {
     return subject === "run"
@@ -97,10 +164,24 @@ export function toolFailureCopy(result: unknown): string {
       return "This tool needs approval, and approval is turned off.";
     case "denied by registry":
     case "Denied by policy":
+    case "tool_not_allowed":
       return "This tool is not allowed.";
-    default:
+    case "connector_unavailable":
+      return "Connect the account this tool needs, then try again.";
+    case "upstream_credits_exhausted":
+      return modelOutageCopy();
+    case "runtime_deadline_exceeded":
+    case "runtime_llm_budget_exceeded":
+    case "runtime_tool_budget_exceeded":
+      return runLimitCopy();
+    case "runtime_artifact_too_large":
+    case "runtime_event_too_large":
+      return "This result is too large to keep.";
+    default: {
       if (!raw || /^[a-z0-9_:-]+$/.test(raw)) return "This tool could not finish.";
-      return raw;
+      const explained = friendlyAgentError(raw);
+      return explained === raw ? raw : explained;
+    }
   }
 }
 

@@ -151,11 +151,44 @@ const normalizedGraphValue = (value) =>
     .trim()
     .toLowerCase();
 
+// The question turns a hyphen into an underscore before it keeps leftover
+// words. The card still prints the hyphen, so the comparison uses the same
+// spelling on both sides.
+const graphSearchText = (value) => normalizedGraphValue(value).replaceAll("-", "_");
+
+// A calendar snapshot's status is Meeting. That badge is the same word as
+// the meeting source, and the snapshot itself is stored as calendar.
+const GRAPH_MEETING_BADGES = new Set([
+  "meeting",
+  "a meeting",
+  "meeting updated",
+  "meeting missing",
+  "meeting booked",
+]);
+
 /** A kept, missed, waived, or unconfirmed promise is not still overdue. */
 const graphPromiseCanBeOverdue = (status) => {
   const normalized = normalizedGraphValue(status);
   return normalized === "open" || normalized === "at_risk";
 };
+
+// The card and the inspector say Not known. Engagement and sentiment hide
+// their unknown fallback, so those fields are not this sentence.
+function graphNodePrintsNotKnown(node) {
+  const reading = (field) => normalizedGraphValue(node[field]);
+  if (
+    ["freshness", "health", "lifecycle", "status", "approvalStatus", "policyStatus", "executionStatus"].some(
+      (field) => reading(field) === "unknown",
+    )
+  ) {
+    return true;
+  }
+  return (
+    node.kind === "relationship" &&
+    (!node.status || reading("status") === "active") &&
+    (!node.health || reading("health") === "unknown")
+  );
+}
 
 const graphNodeRelationshipIds = (node) => {
   if (node.kind === "relationship") return [node.id.replace(/^relationship:/, "")];
@@ -170,9 +203,358 @@ const graphNodeRelationshipIds = (node) => {
  * deliberately deterministic: it never invents graph facts and every applied
  * filter is returned to the UI for inspection.
  */
+const GRAPH_CHANGE_LABELS = [
+  ["supporting evidence", "evidence"],
+  ["next action", "next_action"],
+  ["milestones", "milestones"],
+  ["risks", "risks"],
+  ["lifecycle", "lifecycle"],
+  ["engagement", "engagement"],
+  ["sentiment", "sentiment"],
+  ["health", "health"],
+  ["summary", "summary"],
+];
+
+// The inspector prints "Changed since you last looked." and, when fields moved,
+// "Changed since you last looked: Supporting evidence."
+function printedGraphChangeDetail(normalized) {
+  const match = /\bchanged since you last looked\b(\s*:\s*([^.]*))?\.?/.exec(normalized);
+  if (!match) return null;
+  const list = (match[2] ?? "").trim();
+  const dimensions = [];
+  if (list) {
+    for (const part of list.split(",")) {
+      const label = part.trim();
+      if (!label) continue;
+      const found = GRAPH_CHANGE_LABELS.find(([name]) => name === label);
+      if (!found) return null;
+      dimensions.push(found[1]);
+    }
+  }
+  return { dimensions, span: match[0] };
+}
+
+const GRAPH_DUE_MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+function graphDueLabel(value) {
+  const date = new Date(value);
+  if (!value || !Number.isFinite(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  })
+    .format(date)
+    .toLowerCase();
+}
+
+// The inspector Due cell prints the UTC day, such as "Oct 20, 2026".
+function printedGraphDueDay(normalized) {
+  const re = new RegExp(
+    `(?:^|\\s)((?:due(?::|\\s+date)?\\s+)?(${GRAPH_DUE_MONTHS.join("|")})\\s+(\\d{1,2}),\\s+(\\d{4})\\b\\.?)`,
+    "g",
+  );
+  const found = [];
+  for (const match of normalized.matchAll(re)) {
+    const rawDay = match[3];
+    const day = Number(rawDay);
+    const year = Number(match[4]);
+    const month = GRAPH_DUE_MONTHS.indexOf(match[2]);
+    if (rawDay !== String(day) || month < 0 || year < 1000) continue;
+    const date = new Date(Date.UTC(year, month, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month || date.getUTCDate() !== day) {
+      continue;
+    }
+    found.push({ label: graphDueLabel(date), span: match[1] });
+  }
+  if (found.length === 0 || found.some((item) => item.label !== found[0].label)) return null;
+  const label = found[0].label;
+  return {
+    label,
+    spans: found.map((item) => item.span),
+    core: new RegExp(`\\b${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b\\.?`, "g"),
+  };
+}
+
+// The graph card prints "80% confidence". "80%" and the word alone are not that badge.
+function printedGraphConfidence(normalized) {
+  const found = [];
+  for (const match of normalized.matchAll(/(?:^|\s)(\d{1,3})% confidence\b/g)) {
+    const raw = match[1];
+    const percent = Number(raw);
+    if (raw === String(percent) && percent >= 0 && percent <= 100) found.push(percent);
+  }
+  if (found.length === 0 || found.some((percent) => percent !== found[0])) return null;
+  return found[0];
+}
+
+// Graph details use these names when the activity has no longer sentence.
+// The inspector still prints the name as Status when a longer sentence is the title.
+// "Promise" in "Promise confirmed" is that name, not a request for every promise.
+// "Company" in "Company added" is that name, not a request for every company.
+// "A note" is the desktop-note badge, not a request for note nodes.
+const GRAPH_NODE_LABELS = [
+  "onboarding moved forward",
+  "engagement changed",
+  "a voice note",
+  "promise confirmed",
+  "promise evidence",
+  "promise updated",
+  "meeting updated",
+  "meeting missing",
+  "meeting booked",
+  "message sent",
+  "company updated",
+  "company record",
+  "company added",
+  "promise added",
+  "person added",
+  "detail chosen",
+  "action recorded",
+  "note removed",
+  "crm activity",
+  "note saved",
+  "a note",
+];
+
+function printedGraphNodeLabels(normalized) {
+  const labels = [];
+  let rest = normalized;
+  for (const label of GRAPH_NODE_LABELS) {
+    const re = new RegExp(`\\b${label.replaceAll(" ", "[ _]")}\\b\\.?`, "g");
+    if (!re.test(rest)) continue;
+    labels.push(label);
+    rest = rest.replace(new RegExp(`\\b${label.replaceAll(" ", "[ _]")}\\b\\.?`, "g"), " ");
+  }
+  return { labels, rest };
+}
+
+// The activity row rewrites a stored snapshot into the sentence a person reads.
+// "Meeting" inside "Meeting with ada@acme.com" is that sentence, not a source.
+// "Review" inside "Mail: Q3 review" is the subject, not a promise that needs review.
+function graphRowTitle(value) {
+  return normalizedGraphValue(value)
+    .replaceAll("-", " ")
+    .replaceAll("_", " ")
+    .replace(/\.$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// "show me" is how someone asks. The rest is the line on the row.
+function graphQuestionTitle(raw) {
+  let title = graphRowTitle(raw);
+  while (GRAPH_ROW_LEADING_STOP.test(title)) {
+    const next = title.replace(GRAPH_ROW_LEADING_STOP, "");
+    if (!next) break;
+    title = next;
+  }
+  return title;
+}
+
+const GRAPH_ROW_LEADING_STOP =
+  /^(?:a|an|and|are|for|from|in|is|me|of|on|show|that|the|this|to|what|which|who|with)\s+/;
+
+function graphRowDetail(value) {
+  if (typeof value !== "string") return "";
+  return value.trim().replace(/\.$/, "").replace(/\s+/g, " ");
+}
+
+function graphRowPlaceholder(value) {
+  return value === "local-user" || value === "meeting-counterparty";
+}
+
+// A speaker id is printed as "They made this promise". A real name has a space
+// or an address, which is the sentence the activity row shows.
+function graphRowUnnamedWho(who) {
+  return (
+    !who ||
+    who === "a person" ||
+    who === "local-user" ||
+    who === "meeting-counterparty" ||
+    who === "other" ||
+    who === "unknown speaker" ||
+    /^speaker\s+\d+$/.test(who) ||
+    /^[a-z0-9_:-]+$/.test(who)
+  );
+}
+
+function graphRowNamedWho(value) {
+  let who = graphRowDetail(value);
+  while (GRAPH_ROW_LEADING_STOP.test(who)) {
+    const next = who.replace(GRAPH_ROW_LEADING_STOP, "");
+    if (!next || graphRowUnnamedWho(next)) break;
+    who = next;
+  }
+  if (graphRowUnnamedWho(who) || who === "we" || who === "they") return "";
+  return who;
+}
+
+function printedGraphRowTitles(normalized) {
+  const labels = [];
+  let rest = normalized;
+  const push = (label, span) => {
+    const printed = graphRowTitle(label);
+    if (!printed || labels.includes(printed)) return;
+    labels.push(printed);
+    rest = rest.replace(span, " ");
+  };
+  const take = (re, labelFrom) => {
+    const match = re.exec(rest);
+    if (!match) return;
+    const label = labelFrom(match);
+    if (!label) return;
+    push(label, match[0]);
+  };
+  const blank = (value) =>
+    !value || value === "local-user" || value === "meeting-counterparty" || value === "a person";
+
+  take(/\byou added a person\b\.?/, () => "you added a person");
+  take(/\byou added\s+(.+?)\.?\s*$/, (match) => {
+    const name = match[1].trim().replace(/\.$/, "").replace(/\s+/g, " ");
+    if (blank(name)) return "";
+    return `you added ${name}`;
+  });
+  take(/\bmeeting with\s+(.+?)\.?\s*$/, (match) => {
+    const guest = match[1].trim().replace(/\.$/, "").replace(/\s+/g, " ");
+    if (!guest || guest === "local-user" || guest === "meeting-counterparty") return "";
+    return `meeting with ${guest}`;
+  });
+  take(/\bmail:\s*(.+?)\.?\s*$/, (match) => {
+    const subject = match[1].trim().replace(/\.$/, "").replace(/\s+/g, " ");
+    if (!subject || subject === "local-user" || subject === "meeting-counterparty") return "";
+    return `mail: ${subject}`;
+  });
+  take(/\bcompany from hubspot:\s*(.+?)\.?\s*$/, (match) => {
+    const name = match[1].trim().replace(/\.$/, "").replace(/\s+/g, " ");
+    if (!name || name === "local-user" || name.startsWith("hubspot company")) return "";
+    return `company from hubspot: ${name}`;
+  });
+  take(/\bcompany from hubspot\b\.?/, () => "company from hubspot");
+  take(/\bmessage in slack\b\.?/, () => "message in slack");
+  take(/\bmessage in #(\S+)\.?\s*$/, (match) => {
+    const channel = match[1].replace(/\.$/, "");
+    if (!channel || channel === "local-user" || channel.startsWith("slack")) return "";
+    return `message in #${channel}`;
+  });
+  // Gmail stores "4-message thread with acme.com". The row says
+  // "4 messages with acme.com". "Review" and "company" in that sentence
+  // name the other party. They are not a promise badge or a company filter.
+  take(/\b(\d+ messages? with .+?)\.?\s*$/, (match) => {
+    const sentence = graphRowDetail(match[1]);
+    const split = /^(\d+) (message|messages) with (.+)$/.exec(sentence);
+    if (!split) return "";
+    const count = split[1];
+    const word = split[2];
+    const who = split[3].trim();
+    if (/^0\d/.test(count)) return "";
+    if ((count === "1") !== (word === "message")) return "";
+    if (
+      !who ||
+      graphRowPlaceholder(who) ||
+      who === "local_user" ||
+      who === "meeting_counterparty" ||
+      who === "an external contact"
+    ) {
+      return "";
+    }
+    return `${count} ${word} with ${who}`;
+  });
+  // "This promise was kept: Send the proposal" is the activity sentence.
+  // "Kept" and "open" inside it are not the promise badges.
+  take(
+    /\b(this promise is still open|this promise is done|this promise was dropped|this promise was kept|this promise was called off|this promise was missed|this promise was waived|this promise was replaced)(?::\s*(.+?))?\.?\s*$/,
+    (match) => {
+      const text = graphRowDetail(match[2]);
+      if (graphRowPlaceholder(text)) return "";
+      return text ? `${match[1]}: ${text}` : match[1];
+    },
+  );
+  take(
+    /\b(we made this promise|they made this promise)(?::\s*(.+?))?\.?\s*$/,
+    (match) => {
+      const text = graphRowDetail(match[2]);
+      if (graphRowPlaceholder(text)) return "";
+      return text ? `${match[1]}: ${text}` : match[1];
+    },
+  );
+  take(/\b(.+?)\s+made this promise(?::\s*(.+?))?\.?\s*$/, (match) => {
+    const who = graphRowNamedWho(match[1]);
+    if (!who) return "";
+    const text = graphRowDetail(match[2]);
+    if (graphRowPlaceholder(text)) return "";
+    const owner = `${who} made this promise`;
+    return text ? `${owner}: ${text}` : owner;
+  });
+  // Attendance and the transcript line name the meeting. "Person", "company",
+  // and "review" in those sentences are not filters.
+  take(
+    /\b((?:no one|1 person|[1-9]\d* people) from outside the company on .+?)\.?\s*$/,
+    (match) => {
+      const sentence = graphRowDetail(match[1]);
+      const split = /^(no one|1 person|[1-9]\d* people) from outside the company on (.+)$/.exec(
+        sentence,
+      );
+      if (!split) return "";
+      const head = split[1];
+      const title = split[2].trim();
+      if (!title || graphRowPlaceholder(title)) return "";
+      if (head.endsWith(" people") && Number(head.split(" ")[0]) < 2) return "";
+      return `${head} from outside the company on ${title}`;
+    },
+  );
+  take(
+    /\b(.+? · (?:\d+ lines|1 line) in the transcript · (?:\d+ claims|1 claim))\.?\s*$/,
+    (match) => {
+      const sentence = graphRowDetail(match[1]);
+      const split =
+        /^(.+?) · (\d+) (line|lines) in the transcript · (\d+) (claim|claims)$/.exec(sentence);
+      if (!split) return "";
+      const title = split[1].trim();
+      const lines = split[2];
+      const lineWord = split[3];
+      const claims = split[4];
+      const claimWord = split[5];
+      if (!title || graphRowPlaceholder(title)) return "";
+      if (/^0\d/.test(lines) || /^0\d/.test(claims)) return "";
+      if ((lines === "1") !== (lineWord === "line")) return "";
+      if ((claims === "1") !== (claimWord === "claim")) return "";
+      return `${title} · ${lines} ${lineWord} in the transcript · ${claims} ${claimWord}`;
+    },
+  );
+  // A reviewed conversation titles the claim. The title word is that line,
+  // not a request for every risk, promise, or lifecycle.
+  take(/\brisk raised in a conversation(?::\s*(.+?))?\.?\s*$/, (match) => {
+    const text = graphRowDetail(match[1]);
+    if (graphRowPlaceholder(text)) return "";
+    return text ? `risk raised in a conversation: ${text}` : "risk raised in a conversation";
+  });
+  for (const title of [
+    "unresolved objection",
+    "milestone",
+    "promise",
+    "lifecycle",
+    "sentiment",
+    "engagement",
+    "health",
+    "person",
+    "decision",
+  ]) {
+    take(new RegExp(`\\b${title}:\\s*(.+?)\\.?\\s*$`), (match) => {
+      const text = graphRowDetail(match[1]);
+      if (!text || graphRowPlaceholder(text)) return "";
+      return `${title}: ${text}`;
+    });
+  }
+  return { labels, rest };
+}
+
 export function parseRelationshipGraphQuery(query) {
   const raw = String(query || "").trim();
-  const normalized = raw.toLowerCase().replaceAll("-", "_");
+  const nodeLabelDetail = printedGraphNodeLabels(raw.toLowerCase().replaceAll("-", "_"));
+  const rowTitleDetail = printedGraphRowTitles(nodeLabelDetail.rest);
+  const normalized = rowTitleDetail.rest;
   const filters = {
     nodeKinds: [],
     lifecycle: [],
@@ -266,7 +648,23 @@ export function parseRelationshipGraphQuery(query) {
       !/\bnot connected\b|\bnot_connected\b/.test(normalized) &&
       /\bconnected\b|\bhide isolated\b|\bunconnected\b|\bhide unconnected\b/.test(normalized),
     freeText: [],
+    confidencePercent: null,
+    nodeLabels: nodeLabelDetail.labels,
+    rowTitles: rowTitleDetail.labels,
   };
+  filters.confidencePercent = printedGraphConfidence(normalized);
+  const changeDetail = printedGraphChangeDetail(normalized);
+  const dueDetail = printedGraphDueDay(normalized);
+  filters.changedDimensions = changeDetail ? changeDetail.dimensions : [];
+  filters.dueLabel = dueDetail ? dueDetail.label : null;
+  // The people list says Unknown person when no name or address was saved.
+  // The word unknown in that name is not a health reading.
+  filters.unknownPerson = /\bunknown person\b/.test(normalized);
+  // The role badge says Former contact. The stored role is former_contact.
+  // "former" is also the start of Former customer, so the badge is the whole phrase.
+  filters.formerContact = /\bformer contacts?\b/.test(normalized);
+  const healthHaystack = normalized.replace(/\bunknown person\b\.?/g, " ");
+  const aliasHaystack = changeDetail ? normalized.replaceAll(changeDetail.span, " ") : normalized;
 
   for (const [alias, kind] of Object.entries(GRAPH_QUERY_NODE_ALIASES)) {
     // "at risk" is the promise badge. "Customer risk" is the follow-up title.
@@ -296,7 +694,7 @@ export function parseRelationshipGraphQuery(query) {
     ) {
       continue;
     }
-    if (new RegExp(`\\b${alias}\\b`).test(normalized) && !filters.nodeKinds.includes(kind)) {
+    if (new RegExp(`\\b${alias}\\b`).test(aliasHaystack) && !filters.nodeKinds.includes(kind)) {
       filters.nodeKinds.push(kind);
     }
   }
@@ -317,13 +715,17 @@ export function parseRelationshipGraphQuery(query) {
   ) {
     filters.health.push("needs_attention");
   }
-  // The company row says Not known. The stored health is unknown.
-  if (/\bnot known\b|\bnot_known\b/.test(normalized) && !filters.health.includes("unknown")) {
-    filters.health.push("unknown");
-  }
+    // The inspector prints Not known for an unknown health, lifecycle, status,
+    // or freshness, and for a company that has no health reading yet.
+    filters.notKnown = /\bnot known\b|\bnot_known\b/.test(normalized);
+    // A date before the record existed says "Not recorded for this date".
+    // The stored token is historical_unknown.
+    filters.notRecorded = /\bnot recorded for this date\b|\bnot_recorded_for_this_date\b/.test(
+      normalized,
+    );
   for (const health of GRAPH_QUERY_HEALTH) {
     if (
-      new RegExp(`\\b${health.replaceAll("_", "[ _]")}\\b`).test(normalized) &&
+      new RegExp(`\\b${health.replaceAll("_", "[ _]")}\\b`).test(healthHaystack) &&
       !filters.health.includes(health)
     ) {
       filters.health.push(health);
@@ -436,14 +838,16 @@ export function parseRelationshipGraphQuery(query) {
   };
   // These phrases are the filter. Leaving "since" or "date" behind turns the
   // question into a text search and hides the company that actually changed.
-  const withoutFilterPhrases = normalized
+  const withoutFilterPhrases = (changeDetail
+    ? normalized.replaceAll(changeDetail.span, " ")
+    : normalized)
     .replace(/\bnot up to date\b/g, " ")
     .replace(/\bnot_up_to_date\b/g, " ")
     .replace(/\bup to date\b/g, " ")
     .replace(/\bup_to_date\b/g, " ")
     .replace(/\bgetting old\b/g, " ")
     .replace(/\bgetting_old\b/g, " ")
-    .replace(/\bout of date\b/g, " ")
+    .replace(/\bout of date\b\.?/g, " ")
     .replace(/\bsince you last looked\b/g, " ")
     .replace(/\byou last looked\b/g, " ")
     .replace(/\bsince my last review\b/g, " ")
@@ -493,8 +897,10 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bkept_promises\b/g, " ")
     .replace(/\bkept_promise\b/g, " ")
     .replace(/\bkept\b/g, " ")
-    .replace(/\bnot known\b/g, " ")
-    .replace(/\bnot_known\b/g, " ")
+    .replace(/\bnot known\b\.?/g, " ")
+    .replace(/\bnot_known\b\.?/g, " ")
+    .replace(/\bnot recorded for this date\b\.?/g, " ")
+    .replace(/\bnot_recorded_for_this_date\b\.?/g, " ")
     .replace(/\bawaiting approvals\b/g, " ")
     .replace(/\bawaiting approval\b/g, " ")
     .replace(/\bawaiting_approvals\b/g, " ")
@@ -533,10 +939,31 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\breplaces\b/g, " ")
     .replace(/\bowns\b/g, " ")
     .replace(/\bsupports\b/g, " ");
-  filters.freeText = withoutFilterPhrases
+  let withoutDue = withoutFilterPhrases;
+  if (dueDetail) {
+    for (const span of dueDetail.spans) withoutDue = withoutDue.replaceAll(span, " ");
+    withoutDue = withoutDue.replace(dueDetail.core, " ");
+  }
+  const withoutConfidence =
+    typeof filters.confidencePercent === "number"
+      ? withoutDue.replace(
+          new RegExp(`\\b${filters.confidencePercent}% confidence\\b\\.?`, "g"),
+          " ",
+        )
+      : withoutDue;
+  filters.freeText = withoutConfidence
+    .replace(/\bunknown person\b\.?/g, " ")
+    .replace(/\bformer contacts?\b\.?/g, " ")
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
-    .filter((token) => token && !recognizedToken(token));
+    .flatMap((token) => {
+      if (!token || token === ".") return [];
+      // The inspector prints Closed, Snoozed, and Primary contact without a
+      // period. A question that ends on that word still means the badge.
+      const stem = token.endsWith(".") ? token.slice(0, -1) : token;
+      if (!stem || recognizedToken(stem)) return [];
+      return [stem];
+    });
 
   const applied = [];
   if (filters.lifecycle.length) applied.push(`lifecycle: ${filters.lifecycle.join(", ")}`);
@@ -567,6 +994,16 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.stale) applied.push("out of date");
   if (filters.current) applied.push("up to date");
   if (filters.aging) applied.push("getting old");
+  if (filters.notRecorded) applied.push("not recorded for this date");
+  if (filters.notKnown) applied.push("not known");
+  if (typeof filters.confidencePercent === "number") {
+    applied.push(`${filters.confidencePercent}% confidence`);
+  }
+  if (filters.dueLabel) applied.push(filters.dueLabel);
+  if (filters.unknownPerson) applied.push("unknown person");
+  if (filters.formerContact) applied.push("former contact");
+  for (const label of filters.nodeLabels) applied.push(label);
+  for (const label of filters.rowTitles) applied.push(label);
   if (filters.meetingFollowUp) applied.push("meeting follow-up");
   else if (filters.promiseFollowUp) applied.push("promise follow-up");
   else if (filters.followUp) applied.push("follow-up");
@@ -574,7 +1011,16 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.calendarHold) applied.push("calendar hold");
   if (filters.crmUpdate) applied.push("crm update");
   if (filters.meetingRecap) applied.push("meeting recap");
-  if (filters.changed) applied.push("changed since you last looked");
+  if (filters.changed) {
+    const names = filters.changedDimensions
+      .map((dimension) => GRAPH_CHANGE_LABELS.find((entry) => entry[1] === dimension)?.[0])
+      .filter(Boolean);
+    applied.push(
+      names.length
+        ? `changed since you last looked: ${names.join(", ")}`
+        : "changed since you last looked",
+    );
+  }
   if (filters.notConnected) applied.push("not connected");
   if (filters.syncing) applied.push("syncing");
   if (filters.sourceActive) applied.push("active");
@@ -632,11 +1078,16 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     );
   }
   if (filters.engagement.length) {
-    constrainBy(
-      (node) =>
-        node.kind === "relationship" &&
-        filters.engagement.includes(normalizedGraphValue(node.engagement)),
-    );
+    constrainBy((node) => {
+      if (node.kind !== "relationship") return false;
+      if (filters.engagement.includes(normalizedGraphValue(node.engagement))) return true;
+      // The inspector Status cell says Dormant for a dormant account.
+      // Engagement uses the same word when the account has gone quiet.
+      return (
+        filters.engagement.includes("dormant") &&
+        normalizedGraphValue(node.status) === "dormant"
+      );
+    });
   }
   if (filters.sentiment.length) {
     constrainBy(
@@ -742,16 +1193,87 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     );
   }
   if (filters.sources.length) {
-    constrainBy((node) => filters.sources.includes(normalizedGraphValue(node.source)));
+    constrainBy((node) => {
+      if (filters.sources.includes(normalizedGraphValue(node.source))) return true;
+      if (!filters.sources.includes("meeting")) return false;
+      return (
+        GRAPH_MEETING_BADGES.has(graphRowTitle(node.status)) ||
+        GRAPH_MEETING_BADGES.has(graphRowTitle(node.label))
+      );
+    });
   }
+  // The source inspector says Out of date when the connection missed its
+  // cadence. That stored status is stale. Freshness can still be current
+  // when the last activity is inside 72 hours.
   if (filters.stale) {
-    constrainBy((node) => normalizedGraphValue(node.freshness) === "stale");
+    constrainBy((node) => {
+      if (normalizedGraphValue(node.freshness) === "stale") return true;
+      return node.kind === "source" && normalizedGraphValue(node.status) === "stale";
+    });
   }
   if (filters.current) {
     constrainBy((node) => normalizedGraphValue(node.freshness) === "current");
   }
   if (filters.aging) {
     constrainBy((node) => normalizedGraphValue(node.freshness) === "aging");
+  }
+  if (filters.notRecorded) {
+    constrainBy((node) =>
+      [
+        "status",
+        "health",
+        "lifecycle",
+        "engagement",
+        "sentiment",
+        "approvalStatus",
+        "policyStatus",
+        "executionStatus",
+        "freshness",
+      ].some((field) => normalizedGraphValue(node[field]) === "historical_unknown"),
+    );
+  }
+  if (filters.notKnown) {
+    constrainBy(graphNodePrintsNotKnown);
+  }
+  if (typeof filters.confidencePercent === "number") {
+    const percent = filters.confidencePercent;
+    constrainBy((node) => {
+      const confidence = node.confidence;
+      if (typeof confidence !== "number" || !Number.isFinite(confidence)) return false;
+      return Math.round(confidence * 100) === percent;
+    });
+  }
+  if (filters.dueLabel) {
+    const label = filters.dueLabel;
+    constrainBy((node) => graphDueLabel(node.dueAt) === label);
+  }
+  if (filters.unknownPerson) {
+    constrainBy(
+      (node) => node.kind === "person" && normalizedGraphValue(node.label) === "unknown person",
+    );
+  }
+  if (filters.formerContact) {
+    constrainBy((node) => {
+      if (node.kind !== "person") return false;
+      const role = normalizedGraphValue(node.role).replaceAll("_", " ").replaceAll("-", " ");
+      return role === "former contact";
+    });
+  }
+  for (const label of filters.nodeLabels) {
+    constrainBy(
+      (node) =>
+        normalizedGraphValue(node.label) === label || normalizedGraphValue(node.status) === label,
+    );
+  }
+  for (const label of filters.rowTitles) {
+    // A confirmed promise keeps the event name on the card and puts the
+    // sentence in the detail. Attendance and transcript sentences are the card.
+    constrainBy(
+      (node) =>
+        graphRowTitle(node.label) === label ||
+        graphRowTitle(node.status) === label ||
+        graphRowTitle(node.summary) === label,
+    );
   }
   if (filters.notConnected) {
     constrainBy(
@@ -845,12 +1367,18 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     });
   }
   if (filters.changed) {
-    constrainBy((node) => node.kind === "relationship" && Boolean(node.changedSinceReview));
+    const dimensions = filters.changedDimensions;
+    constrainBy((node) => {
+      if (node.kind !== "relationship" || !node.changedSinceReview) return false;
+      if (!dimensions.length) return true;
+      const present = Array.isArray(node.changedDimensions) ? node.changedDimensions : [];
+      return dimensions.every((dimension) => present.includes(dimension));
+    });
   }
   if (filters.freeText.length) {
     constrainBy((node) => {
       const haystack = [node.label, node.summary, node.status, node.role, node.source]
-        .map(normalizedGraphValue)
+        .map(graphSearchText)
         .join(" ");
       return filters.freeText.every((token) => haystack.includes(token));
     });
@@ -879,7 +1407,8 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   // Each individual constraint can find useful nodes while their relationship sets have no
   // overlap. Only keep nodes that belong to the final intersection; otherwise a zero-result
   // answer can still render unrelated accounts and evidence in the client.
-  if (constrained) {
+  const dropUnrelatedMatches = () => {
+    if (!constrained) return;
     for (const nodeId of [...matched]) {
       const node = nodesById.get(nodeId);
       if (
@@ -891,6 +1420,32 @@ export function queryRelationshipGraph(graph, query, options = {}) {
         matched.delete(nodeId);
       }
     }
+  };
+  dropUnrelatedMatches();
+
+  // A risk line is "Security review has no owner." "Review" in that line is
+  // not a promise waiting for confirmation, and "renewal" in "renewal slip"
+  // is not the lifecycle. "A meeting note" is that row: "note" and "meeting"
+  // would otherwise ask for a note and a meeting source. A leading "A" or
+  // "The" is how the row is titled, so it comes off both sides before the
+  // line is compared. When the question is the line itself and the badge
+  // reading hid it, keep the line.
+  const questionTitle = graphQuestionTitle(parsed.raw);
+  const printsQuestion = (node) =>
+    questionTitle.includes(" ") &&
+    (graphQuestionTitle(node.label) === questionTitle ||
+      graphQuestionTitle(node.summary) === questionTitle);
+  const printed = nodes.filter(printsQuestion);
+  const printedSurvived = printed.some((node) =>
+    graphNodeRelationshipIds(node).some((id) => relationshipIds.has(id)),
+  );
+  if (printed.length > 0 && constrained && !printedSurvived) {
+    relationshipIds = new Set(allRelationshipIds);
+    matched.clear();
+    constrained = false;
+    constrainBy(printsQuestion);
+    dropUnrelatedMatches();
+    parsed.applied = [questionTitle];
   }
 
   const relationshipNodeIds = new Set(

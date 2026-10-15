@@ -790,10 +790,12 @@ func TestPersonSearchFindsThePrintedLabels(t *testing.T) {
 		row.SetLinkedinURL("https://www.linkedin.com/in/link-rivera")
 	})
 	create("Morgan Lee", func(row *ent.PersonCreate) { row.SetTitle("Account Executive") })
+	create("Riley Chen", func(row *ent.PersonCreate) {
+		row.SetTitle("Finance lead").SetSeniority("ic")
+	})
 	expect := map[string]string{
-		"Not filled in":          "Casey Quinn",
-		"Individual contributor": "Indira Cole",
-		"View profile":           "Link Rivera",
+		"Not filled in": "Casey Quinn",
+		"View profile":  "Link Rivera",
 	}
 	for query, name := range expect {
 		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
@@ -806,6 +808,17 @@ func TestPersonSearchFindsThePrintedLabels(t *testing.T) {
 			}
 			t.Fatalf("query %q = %v err=%v", query, got, err)
 		}
+	}
+	band, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Individual contributor"})
+	if err != nil || band == nil || len(band.Persons) != 2 {
+		t.Fatalf("individual contributor = %+v err=%v", band, err)
+	}
+	gotBand := map[string]bool{}
+	for _, person := range band.Persons {
+		gotBand[person.DisplayName] = true
+	}
+	if !gotBand["Indira Cole"] || !gotBand["Riley Chen"] {
+		t.Fatalf("individual contributor = %+v", band.Persons)
 	}
 	for _, query := range []string{"profile", "contributor", "filled"} {
 		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
@@ -930,6 +943,64 @@ func TestPersonSearchFindsTheAlias(t *testing.T) {
 	if err != nil || label == nil || len(label.Persons) != 1 || label.Persons[0].DisplayName != "Indira Cole" {
 		t.Fatalf("also known as = %+v err=%v", label, err)
 	}
+}
+
+func TestPersonSearchFindsTheAliasLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	create := func(name, email string, aliases []string) {
+		t.Helper()
+		row := f.client.Person.Create().SetDisplayName(name).SetWorkspace(ws).SetUser(f.user)
+		if email != "" {
+			row.SetPrimaryEmail(email)
+		}
+		if aliases != nil {
+			row.SetAliases(aliases)
+		}
+		if _, err := row.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	create("Indira Cole", "ada@acme.example", []string{"Dee Cole"})
+	create("Mina Holt", "", []string{"Dee Cole", "Indy"})
+	create("Owen Blake", "owen@acme.example", []string{"Dee Cole"})
+	create("Casey Quinn", "", nil)
+
+	assertPeople := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, 0, len(found.Persons))
+		for _, row := range found.Persons {
+			got = append(got, row.DisplayName)
+		}
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			seen := false
+			for _, gotName := range got {
+				if gotName == name {
+					seen = true
+				}
+			}
+			if !seen {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertPeople("ada@acme.example · Also known as Dee Cole", "Indira Cole")
+	assertPeople("ada@acme.example · Also known as Dee Cole.", "Indira Cole")
+	assertPeople("No email · Also known as Dee Cole, Indy", "Mina Holt")
+	assertPeople("Dee Cole, Indy", "Mina Holt")
+	assertPeople("Also known as", "Indira Cole", "Mina Holt", "Owen Blake")
+	assertPeople("No email", "Mina Holt", "Casey Quinn")
+	assertPeople("Dee Cole", "Indira Cole", "Mina Holt", "Owen Blake")
 }
 
 func TestPersonSearchIgnoresBlankPrintedFacts(t *testing.T) {
@@ -1089,6 +1160,101 @@ func TestPersonSearchFindsTheCompanyRole(t *testing.T) {
 	if len(found.Persons[0].Edges.Participants) != 1 || found.Persons[0].Edges.Participants[0].Role != "decision_maker" {
 		t.Fatalf("role edge = %+v", found.Persons[0].Edges.Participants)
 	}
+}
+
+func TestPersonSearchFindsTheRoleLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	company := func(name string) uuid.UUID {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row.ID
+	}
+	personRow := func(name, title, seniority string) *ent.Person {
+		t.Helper()
+		row := f.client.Person.Create().SetDisplayName(name).SetWorkspace(ws).SetUser(f.user)
+		if title != "" {
+			row.SetTitle(title)
+		}
+		if seniority != "" {
+			row.SetSeniority(seniority)
+		}
+		saved, err := row.Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return saved
+	}
+	link := func(companyID uuid.UUID, who *ent.Person, role string) {
+		t.Helper()
+		if _, err := f.client.RelationshipParticipant.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetRelationshipID(companyID).SetPerson(who).
+			SetDisplayName(who.DisplayName).SetRole(role).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	maker := personRow("Casey Quinn", "VP Engineering", "")
+	link(company("Quill Atelier"), maker, "decision_maker")
+	both := personRow("Indira Cole", "", "")
+	link(company("Harbor One"), both, "champion")
+	link(company("Harbor Two"), both, "decision_maker")
+	titled := personRow("Mina Holt", "Decision maker", "")
+	link(company("Harbor Three"), titled, "decision_maker")
+	link(company("Harbor Four"), titled, "champion")
+	band := personRow("Jules Pike", "", "ic")
+	link(company("Harbor Five"), band, "blocker")
+	other := personRow("Owen Blake", "VP Engineering", "")
+	link(company("Harbor Six"), other, "champion")
+	titledBand := personRow("Ada Quill", "Finance lead", "ic")
+	link(company("Harbor Seven"), titledBand, "contact")
+
+	assertPeople := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, 0, len(found.Persons))
+		for _, row := range found.Persons {
+			got = append(got, row.DisplayName)
+		}
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			seen := false
+			for _, gotName := range got {
+				if gotName == name {
+					seen = true
+				}
+			}
+			if !seen {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertPeople("VP Engineering · Decision maker", "Casey Quinn")
+	assertPeople("VP Engineering · Decision maker.", "Casey Quinn")
+	assertPeople("Champion, Decision maker", "Indira Cole")
+	assertPeople("Decision maker · Champion", "Mina Holt")
+	assertPeople("Decision maker · Decision maker, Champion")
+	assertPeople("Individual contributor · Blocker", "Jules Pike")
+	assertPeople("Individual contributor", "Jules Pike", "Ada Quill")
+	assertPeople("Individual contributor.", "Jules Pike", "Ada Quill")
+	assertPeople("which people are an individual contributor", "Jules Pike", "Ada Quill")
+	assertPeople("Decision maker", "Casey Quinn", "Indira Cole", "Mina Holt")
+	assertPeople("VP Engineering", "Casey Quinn", "Owen Blake")
+	assertPeople("Finance lead", "Ada Quill")
 }
 
 func TestPersonSearchFindsTheUnknownRole(t *testing.T) {
@@ -1341,6 +1507,190 @@ func TestPersonSearchFindsACalendarLastInteraction(t *testing.T) {
 	if err != nil || inside == nil || len(inside.Persons) != 0 {
 		t.Fatalf("recent calendar day = %+v err=%v", inside, err)
 	}
+}
+
+func TestPersonSearchFindsTheEvidenceTime(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	datedAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	recentAt := time.Now().UTC().Add(-10 * 24 * time.Hour)
+	hourAt := time.Now().UTC().Add(-2 * time.Hour)
+	label := datedAt.Format("Jan 2, 2006")
+
+	create := func(name string, touch time.Time) *ent.Person {
+		t.Helper()
+		row, err := f.client.Person.Create().
+			SetDisplayName(name).
+			SetLastInteractionAt(touch).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	create("Casey Quinn", datedAt)
+	indira := create("Indira Cole", recentAt)
+	morgan := create("Morgan Lee", recentAt)
+	nia := create("Nia Holt", recentAt)
+	quill := create("Quill Morse", recentAt)
+	create("Mira Chen", hourAt)
+
+	fact := func(person *ent.Person, dimension, value, externalID string, at time.Time) {
+		t.Helper()
+		if err := upsertPersonAttributes(f.ctx, f.client, ws, f.user, person, nil, []PersonAttributeInput{{
+			Dimension: dimension, Value: value, SourceType: "source_fact",
+			Source: "gmail", Extractor: "email_signature", Confidence: 0.8, ObservedAt: at,
+			ExternalID: externalID,
+		}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fact(indira, "title", "Designer", "indira-title", datedAt)
+	fact(morgan, "display_name", "Morgan Lee", "morgan-name", datedAt)
+	fact(nia, "title", "Writer", "nia-title", datedAt)
+	fact(quill, "title", "Editor", "quill-title", hourAt)
+	if _, err := f.client.PersonAttribute.Update().
+		Where(
+			personattribute.HasPersonWith(person.IDEQ(nia.ID)),
+			personattribute.DimensionEQ("title"),
+		).
+		SetStatus("retracted").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	names := func(query string) []string {
+		t.Helper()
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, 0, len(found.Persons))
+		for _, row := range found.Persons {
+			got = append(got, row.DisplayName)
+		}
+		return got
+	}
+	assertNames := func(query string, want ...string) {
+		t.Helper()
+		got := names(query)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			found := false
+			for _, gotName := range got {
+				if gotName == name {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertNames(label, "Casey Quinn", "Indira Cole")
+	assertNames(label+".", "Casey Quinn", "Indira Cole")
+	assertNames(recentAt.Format("Jan 2, 2006"))
+	assertNames("2 hours ago", "Quill Morse", "Mira Chen")
+}
+
+func TestPersonSearchFindsTheEvidenceProvenanceLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	datedAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	recentAt := time.Now().UTC().Add(-10 * 24 * time.Hour)
+	hourAt := time.Now().UTC().Add(-2 * time.Hour)
+	label := datedAt.Format("Jan 2, 2006")
+	create := func(name string) *ent.Person {
+		t.Helper()
+		row, err := f.client.Person.Create().
+			SetDisplayName(name).
+			SetLastInteractionAt(recentAt).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	fact := func(row *ent.Person, source, extractor, externalID string, at time.Time) {
+		t.Helper()
+		if err := upsertPersonAttributes(f.ctx, f.client, ws, f.user, row, nil, []PersonAttributeInput{{
+			Dimension: "title", Value: "Designer", SourceType: "source_fact",
+			Source: source, Extractor: extractor, Confidence: 0.8, ObservedAt: at,
+			ExternalID: externalID,
+		}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	create("Casey Quinn")
+	indira := create("Indira Cole")
+	quill := create("Quill Morse")
+	nia := create("Nia Holt")
+	mira := create("Mira Chen")
+	fact(indira, "gmail", "email_signature", "indira-title", datedAt)
+	fact(quill, "gmail", "email_signature", "quill-title", hourAt)
+	fact(nia, "gmail", "unknown", "nia-title", datedAt)
+	fact(mira, "gmail", "email_signature", "mira-title", datedAt)
+	if _, err := f.client.PersonAttribute.Update().
+		Where(
+			personattribute.HasPersonWith(person.IDEQ(mira.ID)),
+			personattribute.DimensionEQ("title"),
+		).
+		SetStatus("retracted").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	names := func(query string) []string {
+		t.Helper()
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, 0, len(found.Persons))
+		for _, row := range found.Persons {
+			got = append(got, row.DisplayName)
+		}
+		return got
+	}
+	assertNames := func(query string, want ...string) {
+		t.Helper()
+		got := names(query)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			found := false
+			for _, gotName := range got {
+				if gotName == name {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertNames("From their email signature · "+label, "Indira Cole")
+	assertNames("From their email signature · "+label+".", "Indira Cole")
+	assertNames("From their email signature · 2 hours ago", "Quill Morse")
+	assertNames("Gmail · "+label, "Nia Holt")
+	assertNames("From their email signature", "Indira Cole", "Quill Morse")
+	assertNames("Gmail", "Nia Holt")
+	assertNames(label + " · From their email signature")
 }
 
 func TestRelativeLabelWindowKeepsAFuturePhraseWithTheNextBucket(t *testing.T) {

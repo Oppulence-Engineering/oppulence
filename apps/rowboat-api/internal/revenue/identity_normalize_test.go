@@ -1555,6 +1555,8 @@ func TestRelationshipSearchFindsTheEmptySheetSentences(t *testing.T) {
 
 	assertCompanyQuery("Nothing recorded yet.", "Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted")
 	assertCompanyQuery("which companies have nothing recorded yet", "Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted")
+	assertCompanyQuery("No activity recorded for this company yet.", "Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted")
+	assertCompanyQuery("which companies have no activity recorded for this company yet", "Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted")
 	assertCompanyQuery(
 		"No commitments recorded for this company yet.",
 		"Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted", "Quay Note", "Quay Meet", "Quay Calendar", "Quay Observed",
@@ -1908,6 +1910,55 @@ func TestRelationshipSearchFindsRecommendationReasons(t *testing.T) {
 	if slow.StateReason != "Replies have slowed." {
 		t.Fatalf("slow reason = %q", slow.StateReason)
 	}
+	correct := func(name, reason string) {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		row, err = f.svc.CorrectRelationship(f.ctx, f.user, row.ID, RelationshipCorrectionInput{
+			Dimension: "health", Value: "healthy", Reason: reason,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if row.StateReason != reason {
+			t.Fatalf("%s reason = %q", name, row.StateReason)
+		}
+	}
+	correct("Reason Gap", "No active health assertion at evaluation time.")
+	correct("Reason Step", "No active next action assertion at evaluation time.")
+	correct("Reason Life", "Supporting evidence changed. No active lifecycle assertion at evaluation time.")
+	correct("Reason Said", "Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms.")
+	correct("Reason Quote", "Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms. No active lifecycle assertion at evaluation time.")
+	correct("Reason Stage", "HubSpot company lifecycle stage.")
+	correct("Reason Meet", "User confirmed this commitment from the cited meeting transcript.")
+	correct("Reason Pick", "User selected the current value from a focused contradiction case.")
+	correct("Reason Edit", "User corrected focused conversation evidence.")
+	correct("Reason Focus", "User corrected conversation evidence during focused review.")
+	correct("Reason Vote", "User decided a proposed conversation change.")
+
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	quiet, err := f.client.Relationship.Query().
+		Where(relationship.DisplayNameEQ("Reason Quiet")).
+		Only(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(quiet).
+		SetSource("user").SetExternalID("reason-quiet-observed").
+		SetEventType("relationship.observed").SetOccurredAt(at).SetReceivedAt(at).
+		SetSummary("A recorded row").SetContentHash("reason-quiet-observed").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -1925,11 +1976,37 @@ func TestRelationshipSearchFindsRecommendationReasons(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Why the recommendation changed", "Reason Health", "Reason Slow")
-	assertCompanyQuery("Why the recommendation changed:", "Reason Health", "Reason Slow")
+	assertCompanyQuery("Why the recommendation changed", "Reason Health", "Reason Slow", "Reason Gap", "Reason Step", "Reason Life", "Reason Said", "Reason Quote", "Reason Stage", "Reason Meet", "Reason Pick", "Reason Edit", "Reason Focus", "Reason Vote")
+	assertCompanyQuery("Why the recommendation changed:", "Reason Health", "Reason Slow", "Reason Gap", "Reason Step", "Reason Life", "Reason Said", "Reason Quote", "Reason Stage", "Reason Meet", "Reason Pick", "Reason Edit", "Reason Focus", "Reason Vote")
 	assertCompanyQuery("Why the recommendation changed: The account is healthy.", "Reason Health")
+	assertCompanyQuery("The account is healthy.", "Reason Health")
 	assertCompanyQuery("Why the recommendation changed: Replies have slowed.", "Reason Slow")
+	assertCompanyQuery("Replies have slowed.", "Reason Slow")
 	assertCompanyQuery("Why the recommendation changed: Supporting evidence changed.")
+	assertCompanyQuery("Health is not recorded.", "Reason Gap")
+	assertCompanyQuery("Why the recommendation changed: Health is not recorded.", "Reason Gap")
+	assertCompanyQuery("No active health assertion at evaluation time.")
+	assertCompanyQuery("Why the recommendation changed: No active health assertion at evaluation time.")
+	assertCompanyQuery("No next step is recorded.", "Reason Step")
+	assertCompanyQuery("Why the recommendation changed: No next step is recorded.", "Reason Step")
+	assertCompanyQuery("Supporting evidence changed. Lifecycle is not recorded.", "Reason Life")
+	assertCompanyQuery("Why the recommendation changed: Supporting evidence changed. Lifecycle is not recorded.", "Reason Life")
+	assertCompanyQuery("Supporting evidence changed. No active lifecycle assertion at evaluation time.")
+	assertCompanyQuery("Taken from what was said.", "Reason Said")
+	assertCompanyQuery("Why the recommendation changed: Taken from what was said.", "Reason Said")
+	assertCompanyQuery("Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms.")
+	assertCompanyQuery("Taken from what was said. Lifecycle is not recorded.", "Reason Quote")
+	assertCompanyQuery("Why the recommendation changed: Taken from what was said. Lifecycle is not recorded.", "Reason Quote")
+	assertCompanyQuery("Taken from HubSpot.", "Reason Stage")
+	assertCompanyQuery("Why the recommendation changed: Taken from HubSpot.", "Reason Stage")
+	assertCompanyQuery("HubSpot company lifecycle stage.")
+	assertCompanyQuery("You confirmed this promise from the meeting.", "Reason Meet")
+	assertCompanyQuery("Why the recommendation changed: You confirmed this promise from the meeting.", "Reason Meet")
+	assertCompanyQuery("You chose the current value.", "Reason Pick")
+	assertCompanyQuery("You corrected what was said.", "Reason Edit", "Reason Focus")
+	assertCompanyQuery("Why the recommendation changed: You corrected what was said.", "Reason Edit", "Reason Focus")
+	assertCompanyQuery("You decided a suggested change.", "Reason Vote")
+	assertCompanyQuery("User decided a proposed conversation change.")
 }
 
 func TestRelationshipSearchFindsUnavailableEvidenceExcerpts(t *testing.T) {
@@ -2028,6 +2105,8 @@ func TestRelationshipSearchFindsUnavailableEvidenceExcerpts(t *testing.T) {
 	}
 	assertCompanyQuery("Evidence excerpt unavailable", "Excerpt Blank", "Excerpt Missing")
 	assertCompanyQuery("“Evidence excerpt unavailable”", "Excerpt Blank", "Excerpt Missing")
+	assertCompanyQuery("Inspect supporting words", "Excerpt Quoted", "Excerpt Blank", "Excerpt Missing")
+	assertCompanyQuery("which recommendation says Inspect supporting words", "Excerpt Quoted", "Excerpt Blank", "Excerpt Missing")
 	assertCompanyQuery("The harbor sentence.", "Excerpt Quoted")
 	assertCompanyQuery("“The harbor sentence.”", "Excerpt Quoted")
 	assertCompanyQuery("harbor")
@@ -2301,6 +2380,466 @@ func TestRelationshipSearchFindsTheActivitySubject(t *testing.T) {
 	assertCompanyQuery("subject")
 }
 
+func TestRelationshipSearchFindsTheActivityRow(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, source, event, summary string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(name).SetEventType(event).
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(`{}`).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Row Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Row Mail", "gmail", "thread.snapshot", "Gmail thread observed: Sandbox login")
+	saveRow("Row Plain", "gmail", "thread.snapshot", "Sandbox login")
+	saveRow("Row Meet", "calendar", "meeting.snapshot", "Calendar meeting observed with ada@acme.com")
+	saveRow("Row Hub", "hubspot", "company.snapshot", "HubSpot company snapshot: Northwind")
+	saveRow("Row Hub ID", "hubspot", "company.snapshot", "HubSpot company snapshot: HubSpot company 99")
+	saveRow("Row Slack", "slack", "message.snapshot", "Slack message observed in #launch")
+	saveRow("Row Slack ID", "slack", "message.snapshot", "Slack message observed in #Slack channel C1")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Mail: Sandbox login", "Row Mail")
+	assertCompanyQuery("Meeting with ada@acme.com", "Row Meet")
+	assertCompanyQuery("Company from HubSpot: Northwind", "Row Hub")
+	assertCompanyQuery("Message in #launch", "Row Slack")
+	assertCompanyQuery("Company from HubSpot", "Row Hub ID")
+	assertCompanyQuery("Message in Slack", "Row Slack ID")
+	assertCompanyQuery("Mail: local-user")
+	assertCompanyQuery("Company from HubSpot: HubSpot company 99")
+	assertCompanyQuery("Message in #Slack channel C1")
+	assertCompanyQuery("Sandbox login")
+}
+
+func TestRelationshipSearchFindsTheActivityRecord(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, source, event, summary string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(name).SetEventType(event).
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(`{}`).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Record Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Record Buyer", "user", "person_added", "Jordan Buyer added by the user")
+	saveRow("Record Token", "user", "person_added", "local-user added by the user")
+	saveRow("Record Ada", "user", "person_added", "Ada added by the user.")
+	saveRow("Record Corrected", "user", "conversation_evidence_corrected", "User corrected reviewed conversation evidence.")
+	saveRow("Record Chose", "user", "relationship_contradiction_resolved", "User resolved a typed relationship contradiction.")
+	saveRow("Record Decided", "user", "conversation_review_decided", "User decided a proposed conversation change.")
+	saveRow("Record Plan", "browser", "mutual_action_plan_response_received", "Counterparty responded to a shared mutual action plan.")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("You added Jordan Buyer.", "Record Buyer")
+	assertCompanyQuery("You added a person.", "Record Token", "Record Ada")
+	assertCompanyQuery("You added Ada.")
+	assertCompanyQuery("You corrected what was said.", "Record Corrected")
+	assertCompanyQuery("You chose which detail is current.", "Record Chose")
+	assertCompanyQuery("You decided a suggested change.", "Record Decided")
+	assertCompanyQuery("They responded to the shared plan.", "Record Plan")
+	assertCompanyQuery("You chose the current value.")
+}
+
+func TestRelationshipSearchFindsTheActivityStory(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, source, event, summary string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(name).SetEventType(event).
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(`{}`).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Story Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Story Mail", "gmail", "email_exchanged", "4-message thread with acme.com")
+	saveRow("Story Outside", "gmail", "email_exchanged", "1-message thread with an external contact")
+	saveRow("Story Talk", "meeting", "conversation_evidence_compiled", "Q3 review · 12 segments · 3 material claims")
+	saveRow("Story We", "meeting", "commitment_confirmed", "We committed to: Send the proposal")
+	saveRow("Story They", "meeting", "commitment_confirmed", "local-user committed to: Send the proposal")
+	saveRow("Story Ada", "meeting", "commitment_confirmed", "Ada Mesa committed to: Send the proposal")
+	saveRow("Story Room", "calendar", "meeting_attendance_recorded", `2 external participant(s) on "Q3 review"`)
+	saveRow("Story Kept", "meeting", "commitment_status_changed", "Commitment marked fulfilled: Send the proposal")
+	saveRow("Story Booked", "desktop_note", "note", "Action outcome observed: meeting booked.")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("4 messages with acme.com", "Story Mail")
+	assertCompanyQuery("1 message with someone outside the company", "Story Outside")
+	assertCompanyQuery("Q3 review · 12 lines in the transcript · 3 claims", "Story Talk")
+	assertCompanyQuery("We made this promise: Send the proposal", "Story We")
+	assertCompanyQuery("They made this promise: Send the proposal", "Story They")
+	assertCompanyQuery("Ada Mesa made this promise: Send the proposal", "Story Ada")
+	assertCompanyQuery("2 people from outside the company on Q3 review", "Story Room")
+	assertCompanyQuery("This promise was kept: Send the proposal", "Story Kept")
+	assertCompanyQuery("Meeting booked", "Story Booked")
+	assertCompanyQuery("4 messages with local-user")
+}
+
+func TestRelationshipSearchFindsTheActivityPlanReply(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("browser").SetExternalID(name).SetEventType("mutual_action_plan_response_received").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("Counterparty responded to a shared mutual action plan.").
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Plan Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Plan Confirm", `{"mutual_action_plan_response":{"kind":"confirm"}}`)
+	saveRow("Plan Change", `{"mutual_action_plan_response":{"kind":"correct","proposed_value":"Send the quote Friday","comment":"Friday works better."}}`)
+	saveRow("Plan Blocked", `{"mutual_action_plan_response":{"kind":"blocked"}}`)
+	saveRow("Plan Done", `{"mutual_action_plan_response":{"kind":"completed"}}`)
+	saveRow("Plan Comment", `{"mutual_action_plan_response":{"kind":"comment","comment":"Looks right."}}`)
+	saveRow("Plan Token", `{"mutual_action_plan_response":{"kind":"correct","proposed_value":"local-user"}}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("They confirmed the plan", "Plan Confirm")
+	assertCompanyQuery("They suggested a change", "Plan Change", "Plan Token")
+	assertCompanyQuery("Suggested: Send the quote Friday", "Plan Change")
+	assertCompanyQuery("Friday works better.", "Plan Change")
+	assertCompanyQuery("They said this is blocked", "Plan Blocked")
+	assertCompanyQuery("They marked this done", "Plan Done")
+	assertCompanyQuery("They left a comment", "Plan Comment")
+	assertCompanyQuery("Looks right.", "Plan Comment")
+	assertCompanyQuery("Suggested: local-user")
+}
+
+func TestRelationshipSearchFindsTheActivityReview(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, event, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("user").SetExternalID(name).SetEventType(event).
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Review Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	decided := "User decided a proposed conversation change."
+	saveRow("Review Approve", "conversation_review_decided", decided, `{"review_decision":{"kind":"approve","reason":"User decided a proposed conversation change."}}`)
+	saveRow("Review Reject", "conversation_review_decided", decided, `{"review_decision":{"kind":"reject","reason":"User decided a proposed conversation change."}}`)
+	saveRow("Review Fix", "conversation_review_decided", decided, `{"review_decision":{"kind":"correct","corrected_value":"Security review is complete","reason":"The customer stated this directly."}}`)
+	saveRow("Review Token", "conversation_review_decided", decided, `{"review_decision":{"kind":"correct","corrected_value":"local-user","reason":"User decided a proposed conversation change."}}`)
+	saveRow("Review Aside", "conversation_review_decided", decided, `{"review_decision":{"kind":"defer"}}`)
+	saveRow("Review Later", "conversation_review_decided", decided, `{"review_decision":{"kind":"defer","defer_until":"2026-10-04T15:04:05.123Z"}}`)
+	saveRow("Review Words", "conversation_evidence_corrected", "User corrected reviewed conversation evidence.", `{"review_correction":{"corrected_value":"Avery","reason":"Calendar attendee confirmed the speaker."}}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("You approved this", "Review Approve")
+	assertCompanyQuery("You rejected this", "Review Reject")
+	assertCompanyQuery("Corrected to: Security review is complete", "Review Fix")
+	assertCompanyQuery("The customer stated this directly.", "Review Fix")
+	assertCompanyQuery("You corrected this", "Review Token")
+	assertCompanyQuery("You set this aside", "Review Aside")
+	assertCompanyQuery("You set this aside until Oct 4, 2026", "Review Later")
+	assertCompanyQuery("Corrected to: Avery", "Review Words")
+	assertCompanyQuery("Calendar attendee confirmed the speaker.", "Review Words")
+	assertCompanyQuery("Corrected to: local-user")
+}
+
+func TestRelationshipSearchFindsTheActivityCaveat(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("calendar").SetExternalID(name).SetEventType("meeting_attendance_recorded").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("2 external participant(s) on \"Q3 review\"").
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Caveat Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Caveat Invite", `{"capture_caveats":["Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined."]}`)
+	saveRow("Caveat Spoke", `{"capture_caveats":["speaker assignment requires review"]}`)
+	saveRow("Caveat Share", `{"capture_caveats":["2 participants shared one audio channel; no per-speaker attribution was attempted."]}`)
+	saveRow("Caveat Room", `{"capture_caveats":["1 invitee(s) excluded as rooms, resources, or notetaker bots."]}`)
+	saveRow("Caveat Rooms", `{"capture_caveats":["2 invitee(s) excluded as rooms, resources, or notetaker bots."]}`)
+	saveRow("Caveat Wait", `{"capture_caveats":["1 of 3 invitee(s) had not accepted at capture time."]}`)
+	saveRow("Caveat Guest", `{"capture_caveats":["remote speaker was resolved from the 1:1 calendar attendee; the system track may still contain other voices"]}`)
+	saveRow("Caveat Mic", `{"capture_caveats":["capture guardian: microphone_silent — The microphone track is advancing but contains no audible signal."]}`)
+	saveRow("Caveat Side", `{"capture_caveats":["capture guardian: microphone_missing — Your side of the conversation is not being captured."]}`)
+	saveRow("Caveat Echo", `{"capture_caveats":["mic_voice_processing_unavailable: echo cancellation unavailable — recording raw mic"]}`)
+	saveRow("Caveat Notes", `{"capture_caveats":["Granola supplied meeting notes rather than a timestamped verbatim transcript."]}`)
+	saveRow("Caveat Check", `{"capture_caveats":["Speaker attribution and wording require focused review before material use."]}`)
+	saveRow("Caveat Import", `{"capture_caveats":["Imported from Fireflies; capture consent and audio retention remain governed by the provider."]}`)
+	saveRow("Caveat Kept", `{"audio_retention":"always"}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Someone on the invite may not have joined.", "Caveat Invite")
+	assertCompanyQuery("Who spoke is not confirmed.", "Caveat Spoke")
+	assertCompanyQuery("2 people shared one audio channel.", "Caveat Share")
+	assertCompanyQuery("1 room or bot was left off.", "Caveat Room")
+	assertCompanyQuery("2 rooms or bots were left off.", "Caveat Rooms")
+	assertCompanyQuery("1 of 3 people had not accepted.", "Caveat Wait")
+	assertCompanyQuery("The other person was named from the guest list.", "Caveat Guest")
+	assertCompanyQuery("The microphone is on, but it is silent.", "Caveat Mic")
+	assertCompanyQuery("Your side of the conversation is not being captured.", "Caveat Side")
+	assertCompanyQuery("Echo cancellation was unavailable, so the microphone was recorded without it.", "Caveat Echo")
+	assertCompanyQuery("These are notes from Granola, not a word-for-word transcript.", "Caveat Notes")
+	assertCompanyQuery("Check who spoke and the wording before you rely on this.", "Caveat Check")
+	assertCompanyQuery("Imported from Fireflies. The meeting service still decides consent and how long the recording is kept.", "Caveat Import")
+	assertCompanyQuery("The recording is kept", "Caveat Kept")
+}
+
+func TestRelationshipSearchFindsTheActivityInvite(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveRow := func(name, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("calendar").SetExternalID(name).SetEventType("meeting_attendance_recorded").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("Attendance").
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Invite Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveRow("Invite Ada", `{"attendance_confidence":{"ada@acme.com":0.9,"sam@acme.com":0.6,"local-user":0.9,"speaker_2":0.6}}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Accepted the invite: ada@acme.com", "Invite Ada")
+	assertCompanyQuery("Had not accepted: sam@acme.com", "Invite Ada")
+	assertCompanyQuery("Accepted the invite: local-user")
+	assertCompanyQuery("Had not accepted: speaker_2")
+}
+
 func TestRelationshipSearchFindsTheActivityDirection(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
@@ -2433,6 +2972,8 @@ func TestRelationshipSearchFindsTheActivityDueDay(t *testing.T) {
 		}
 	}
 	assertCompanyQuery("Due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("due Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("due Oct 3, 2026.", "Day Third", "Day Early", "Day Late")
 	assertCompanyQuery("which activity says due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
 	assertCompanyQuery("Due: Oct 4, 2026", "Day Fourth")
 	assertCompanyQuery("Due: Oct 32, 2026")
@@ -3710,6 +4251,98 @@ func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	assertCompanyQuery("No action is currently recommended", "Quill Atelier")
 }
 
+func TestRelationshipSearchFindsTheNextStepSentence(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	act := func(rel *ent.Relationship, actionType, reason string) {
+		t.Helper()
+		if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: rel.ID,
+			ActionType:     actionType,
+			Channel:        "email",
+			Reason:         reason,
+			PriorityScore:  50,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	meet := makeCompany("Step Meet")
+	act(meet, "meeting_follow_up", "You confirmed this follow-up from the meeting.")
+	other := makeCompany("Step Other")
+	act(other, "meeting_follow_up", "Send the harbor note")
+	warm := makeCompany("Step Warm")
+	act(warm, "warm_follow_up", "Send the harbor note")
+	same := makeCompany("Step Same")
+	act(same, "warm_follow_up", "You confirmed this follow-up from the meeting.")
+	recap := makeCompany("Step Recap")
+	act(recap, "meeting_recap", "Send a recap grounded in the material statements from this conversation.")
+	proposal := makeCompany("Step Proposal")
+	act(proposal, "proposal_nudge", "You sent a proposal-stage message 4 days ago and there has been no reply.")
+	decoy := makeCompany("Step Decoy")
+	act(decoy, "proposal_nudge", "Send the harbor note")
+	one := makeCompany("Step One")
+	seedCommitment(t, f, one, "promised_by_them", "Send the packet", "", nil)
+	two := makeCompany("Step Two")
+	seedCommitment(t, f, two, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, two, "promised_by_them", "Mail the ledger", "", nil)
+	soon := time.Now().Add(24 * time.Hour)
+	risk := makeCompany("Step Risk")
+	seedCommitment(t, f, risk, "promised_by_them", "Hold the quay", "", &soon)
+	seedCommitment(t, f, risk, "promised_by_them", "Mail the quay", "", &soon)
+	mixed := makeCompany("Step Mixed")
+	seedCommitment(t, f, mixed, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, mixed, "promised_by_them", "Mail the ledger", "", &soon)
+	busy := makeCompany("Step Busy")
+	seedCommitment(t, f, busy, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, busy, "promised_by_them", "Mail the ledger", "", nil)
+	act(busy, "warm_follow_up", "Send the harbor note")
+	makeCompany("Step Quiet")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Meeting follow-up. You confirmed this follow-up from the meeting.", "Step Meet")
+	assertCompanyQuery("Meeting follow-up. You confirmed this follow-up from the meeting", "Step Meet")
+	assertCompanyQuery("Meeting follow-up. Send the harbor note", "Step Other")
+	assertCompanyQuery("Warm follow-up. Send the harbor note", "Step Warm", "Step Busy")
+	assertCompanyQuery("Warm follow-up. You confirmed this follow-up from the meeting.", "Step Same")
+	assertCompanyQuery("Meeting recap. Send a recap of what was said.", "Step Recap")
+	assertCompanyQuery("Proposal nudge. You sent a proposal 4 days ago, and there has been no reply.", "Step Proposal")
+	assertCompanyQuery("Meeting follow-up", "Step Meet", "Step Other")
+	assertCompanyQuery("Send the harbor note", "Step Other", "Step Warm", "Step Decoy", "Step Busy")
+	assertCompanyQuery("You confirmed this follow-up from the meeting.", "Step Meet", "Step Same")
+	assertCompanyQuery("Open promise: Send the packet. No follow-up is drafted.", "Step One")
+	assertCompanyQuery("2 open promises. No follow-up is drafted.", "Step Two")
+	assertCompanyQuery("2 open promises. No follow-up is drafted", "Step Two")
+	assertCompanyQuery("2 promises are at risk. No follow-up is drafted.", "Step Risk")
+	assertCompanyQuery("1 open promise and 1 promise at risk. No follow-up is drafted.", "Step Mixed")
+	assertCompanyQuery("At risk promise: Hold the quay. No follow-up is drafted.")
+	assertCompanyQuery("No follow-up is drafted", "Step One", "Step Two", "Step Risk", "Step Mixed")
+	assertCompanyQuery("No action is currently recommended", "Step Quiet")
+}
+
 func TestRelationshipSearchFindsTheConfirmedMeetingReason(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
@@ -3818,6 +4451,78 @@ func TestRelationshipSearchFindsTheConfirmedMeetingReason(t *testing.T) {
 	assertCompanyQuery("xylophone")
 }
 
+func TestRelationshipSearchFindsThePrintedReason(t *testing.T) {
+	f := newFixture(t)
+	makeReason := func(name, reason string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: rel.ID,
+			ActionType:     "warm_follow_up",
+			Channel:        "email",
+			Reason:         reason,
+			PriorityScore:  60,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	makeReason("Lane Quiet", "Send the harbor note.")
+	makeReason("Lane Promise", "An explicit promise in this message needs confirmation.")
+	makeReason("Lane Proposal", "You sent a proposal-stage message 10 days ago and there has been no reply.")
+	makeReason("Lane Waiting", "Casey Lee asked you something 6 days ago and is still waiting on a reply.")
+	makeReason("Lane Intro", "An introduction in this thread has had no contact for 14 days.")
+	makeReason("Lane Dormant", "A warm two-way conversation (8 messages) has been dormant for 30 days.")
+	makeReason("Lane Follow", "A follow-up was promised in this thread and nothing has happened for 14 days (last touch Jan 2).")
+	makeReason("Lane Recap", "Send a recap grounded in the material statements from this conversation.")
+	makeReason("Lane Share", "Share the evidence-backed recap with the account team.")
+	makeReason("Lane Record", "Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence.")
+	makeReason("Lane Keep", "Track a spoken commitment until it is fulfilled or renegotiated.")
+	makeReason("Lane Hold", "Protect time before the spoken commitment is due.")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Confirm this promise from the message.", "Lane Promise")
+	assertCompanyQuery("You sent a proposal 10 days ago, and there has been no reply.", "Lane Proposal")
+	assertCompanyQuery("Casey Lee asked you a question 6 days ago and is still waiting.", "Lane Waiting")
+	assertCompanyQuery("An introduction has had no follow-up for 14 days.", "Lane Intro")
+	assertCompanyQuery("A two-way conversation of 8 messages has been quiet for 30 days.", "Lane Dormant")
+	assertCompanyQuery(
+		"A follow-up was promised, and nothing has happened for 14 days. The last message was Jan 2.",
+		"Lane Follow",
+	)
+	assertCompanyQuery("Send a recap of what was said.", "Lane Recap")
+	assertCompanyQuery("Share the recap with the account team.", "Lane Share")
+	assertCompanyQuery("Update the company record from what was said.", "Lane Record")
+	assertCompanyQuery("Keep this promise until it is kept or changed.", "Lane Keep")
+	assertCompanyQuery("Hold time before this promise is due.", "Lane Hold")
+	assertCompanyQuery("you sent a proposal", "Lane Proposal")
+	assertCompanyQuery("asked you a question", "Lane Waiting")
+	assertCompanyQuery("has had no follow-up", "Lane Intro")
+	assertCompanyQuery("two-way conversation", "Lane Dormant")
+	assertCompanyQuery("a follow-up was promised", "Lane Follow")
+	assertCompanyQuery("You sent a proposal 9 days ago, and there has been no reply.")
+	assertCompanyQuery("Send the harbor note.", "Lane Quiet")
+}
+
 func TestRelationshipSearchFindsPromiseBadges(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
@@ -3921,12 +4626,74 @@ func TestRelationshipSearchFindsThePromiseDueDay(t *testing.T) {
 		}
 	}
 	assertCompanyQuery("Due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("due Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("due Oct 3, 2026.", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("due Oct 3, 2026 · owner alex@example.com", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("overdue Oct 3, 2026")
 	assertCompanyQuery("which promise is due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
 	assertCompanyQuery("Oct 3, 2026", "Day Third", "Day Early", "Day Late")
 	assertCompanyQuery("Due: Oct 4, 2026", "Day Fourth")
 	assertCompanyQuery("Due: Oct 32, 2026")
 	assertCompanyQuery("Oct 3")
 	assertCompanyQuery("due")
+}
+
+func TestRelationshipSearchFindsTheSourceObservedLine(t *testing.T) {
+	f := newFixture(t)
+	observed := time.Date(2026, 9, 30, 13, 0, 0, 0, time.UTC)
+	noon := time.Date(2026, 9, 30, 12, 0, 0, 0, time.UTC)
+	midnight := time.Date(2026, 9, 30, 0, 0, 0, 0, time.UTC)
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	seedReportCommitment(t, f, harbor, "promised_by_me", "Send the harbor note", "", nil, observed)
+	seedReportCommitment(t, f, lumen, "promised_by_me", "Send the lumen note", "", nil, noon)
+	seedReportCommitment(t, f, quill, "promised_by_me", "Send the quill note", "", nil, midnight)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Source observed Sep 30, 2026 at 1:00 PM", "Harbor Ledger")
+	assertCompanyQuery("Source observed Sep 30, 2026 at 1:00 PM.", "Harbor Ledger")
+	assertCompanyQuery("Source observed Sep 30, 2026 at 1:00 PM · Open source", "Harbor Ledger")
+	assertCompanyQuery("Source observed Sep 30, 2026 at 1:00 PM · https://mail.google.com/mail/u/0/#inbox/harbor", "Harbor Ledger")
+	assertCompanyQuery("Source observed Sep 30, 2026 at 12:00 PM", "Lumen Packet")
+	assertCompanyQuery("Source observed Sep 30, 2026 at 12:00 AM", "Quill Atelier")
+	assertCompanyQuery("Source observed Sep 30, 2026")
+	assertCompanyQuery("source observed")
 }
 
 func TestRelationshipSearchFindsPromiseOverflow(t *testing.T) {
@@ -5061,6 +5828,114 @@ func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	sponsorCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Sponsor",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sponsor, err := f.client.Person.Create().
+		SetDisplayName("Nia Chen").
+		SetTitle("Sponsor").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(sponsorCompany).SetPerson(sponsor).
+		SetDisplayName("Nia C").
+		SetRole("executive_sponsor").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	headerCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Header",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(headerCompany).
+		SetDisplayName("Lane Header").
+		SetTitle("Guide").
+		SetRole("primary_contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	unknownCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Unknown",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	unnamed, err := f.client.Person.Create().
+		SetDisplayName(" ").
+		SetTitle("Listener").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(unknownCompany).SetPerson(unnamed).
+		SetDisplayName(" ").
+		SetRole("blocker").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	formerCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Former",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	former, err := f.client.Person.Create().
+		SetDisplayName("Owen Birch").
+		SetTitle("Director").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(formerCompany).SetPerson(former).
+		SetDisplayName("Owen Birch").
+		SetRole("former_contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	mailCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Mail",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mailed, err := f.client.Person.Create().
+		SetDisplayName(" ").
+		SetTitle("Owner").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(mailCompany).SetPerson(mailed).
+		SetDisplayName(" ").
+		SetEmail("lane@example.com").
+		SetRole("owner").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -5082,7 +5957,25 @@ func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
 	assertCompanyQuery("Left the company", "Harbor Left")
 	assertCompanyQuery("No profile details yet", "Harbor Blank")
 	assertCompanyQuery("Champion", "Harbor Blank")
-	assertCompanyQuery("Contact", "Harbor Left")
+	assertCompanyQuery("Contact", "Harbor Left", "Harbor Header", "Harbor Former")
+	assertCompanyQuery("Casey Quinn · Decision maker", "Harbor Maker")
+	assertCompanyQuery("Casey Quinn · Decision maker.", "Harbor Maker")
+	assertCompanyQuery("Casey Quinn · Champion")
+	assertCompanyQuery("Casey Quinn · Buyer")
+	assertCompanyQuery("Ada Mesa · Contact", "Harbor Left")
+	assertCompanyQuery("No Profile · Champion", "Harbor Blank")
+	assertCompanyQuery("Nia Chen · Executive sponsor", "Harbor Sponsor")
+	assertCompanyQuery("Nia C · Executive sponsor")
+	assertCompanyQuery("Lane Header · Primary contact", "Harbor Header")
+	assertCompanyQuery("Unknown person · Blocker", "Harbor Unknown")
+	assertCompanyQuery("Owen Birch · Former contact", "Harbor Former")
+	assertCompanyQuery("Owen Birch · Contact")
+	assertCompanyQuery("lane@example.com · Owner", "Harbor Mail")
+	assertCompanyQuery("Executive sponsor", "Harbor Sponsor")
+	assertCompanyQuery("Primary contact", "Harbor Header")
+	assertCompanyQuery("Blocker", "Harbor Unknown")
+	assertCompanyQuery("Former contact", "Harbor Former")
+	assertCompanyQuery("Owner", "Harbor Mail")
 }
 
 func TestRelationshipSearchFindsAnUnknownPerson(t *testing.T) {
@@ -5226,6 +6119,20 @@ func TestRelationshipSearchFindsTheActivityHeading(t *testing.T) {
 	}
 	writeObservation(exchange, "gmail", "email_exchanged", "harbor-exchange")
 	writeObservation(attend, "calendar", "meeting_attendance_recorded", "harbor-attend")
+	decided, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Decide",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeObservation(decided, "user", "conversation_review_decided", "harbor-decide")
+	chosen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Chosen",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeObservation(chosen, "user", "relationship_contradiction_resolved", "harbor-chosen")
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -5249,9 +6156,13 @@ func TestRelationshipSearchFindsTheActivityHeading(t *testing.T) {
 	assertCompanyQuery("Mail", "Harbor Exchange", "Harbor Mail")
 	assertCompanyQuery("Gmail · Mail updated", "Harbor Mail")
 	assertCompanyQuery("Gmail", "Harbor Mail", "Harbor Exchange")
-	assertCompanyQuery("Added by you", "Harbor Note")
+	assertCompanyQuery("Added by you", "Harbor Note", "Harbor Decide", "Harbor Chosen")
 	assertCompanyQuery("Attendance", "Harbor Attend")
 	assertCompanyQuery("Calendar · Attendance", "Harbor Attend")
+	assertCompanyQuery("Suggestion decided", "Harbor Decide")
+	assertCompanyQuery("Added by you · Suggestion decided", "Harbor Decide")
+	assertCompanyQuery("Detail chosen", "Harbor Chosen")
+	assertCompanyQuery("Added by you · Detail chosen", "Harbor Chosen")
 }
 
 func TestRelationshipSearchFindsTheActivityAttendance(t *testing.T) {
@@ -5293,10 +6204,12 @@ func TestRelationshipSearchFindsTheActivityAttendance(t *testing.T) {
 		"invitee_count":3,
 		"external_count":2,
 		"declined_count":1,
-		"organizer_email":"ada@acme.com"
+		"organizer_email":"ada@acme.com",
+		"external_domains":[{"domain":"acme.com","count":2},{"domain":"birch.example","count":1},{"domain":"local-user","count":1}]
 	}`)
 	saveNote("Cedar Echo", "No recording was saved", `{"recorded":false}`)
 	saveNote("Cedar Size", "A small group was on the invite", `{"meeting_size":"small_group"}`)
+	saveNote("Birch Only", "A saved note", `{"external_domains":[{"domain":"birch.example","count":1},{"domain":"acme","count":4}]}`)
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -5323,8 +6236,2652 @@ func TestRelationshipSearchFindsTheActivityAttendance(t *testing.T) {
 	assertCompanyQuery("1 person declined", "Quill Packet")
 	assertCompanyQuery("Meeting: Q3 review", "Quill Packet")
 	assertCompanyQuery("Organizer: ada@acme.com", "Quill Packet")
+	assertCompanyQuery("Outside domains: acme.com, birch.example", "Quill Packet")
+	assertCompanyQuery("Outside domains: birch.example", "Birch Only")
+	assertCompanyQuery("Outside domains: local-user")
 	assertCompanyQuery("Recorded: false")
 	assertCompanyQuery("evt_18")
+}
+
+func TestRelationshipSearchFindsTheActivityGuest(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Guest Avery", "Q3 review", `{
+		"participant_resolution":[
+			{"speaker_id":"local-user","label":"You","resolution_source":"calendar_contact_or_provider"},
+			{"speaker_id":"meeting-participant:avery","label":"Avery","resolution_source":"calendar_contact_or_provider"},
+			{"speaker_id":"anonymous:1","label":"Speaker 1","resolution_source":"anonymous"}
+		]
+	}`)
+	saveNote("Guest Ada", "Q3 review", `{"participant_resolution":[{"label":"Ada Mesa","resolution_source":"calendar_contact_or_provider"}]}`)
+	saveNote("Guest You", "Q3 review", `{"participant_resolution":[{"label":"You"},{"label":"speaker_2"}]}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Named from the guest list: Avery", "Guest Avery")
+	assertCompanyQuery("Named from the guest list: Ada Mesa", "Guest Ada")
+	assertCompanyQuery("A speaker was not named", "Guest Avery")
+	assertCompanyQuery("Named from the guest list: Speaker 1")
+	assertCompanyQuery("Named from the guest list: You")
+	assertCompanyQuery("Named from the guest list: speaker_2")
+}
+
+func TestRelationshipSearchFindsTheActivityMeeting(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	company := func(name string) *ent.Relationship {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rel
+	}
+	harbor := company("Harbor Room")
+	cancelled := company("Cancelled Day")
+	declined := company("Declined Invite")
+	maybe := company("Maybe Invite")
+	hidden := company("Hidden Room")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 4, 15, 0, 0, 0, time.UTC)
+	internal := auth.WithInternal(context.Background())
+	save := func(rel *ent.Relationship, objectID, visibility, subject, meta string, deleted bool) {
+		t.Helper()
+		if _, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(rel.ID).
+			SetSource("calendar").SetSourceAccountID("owner@x.co").SetProviderObjectID(objectID).
+			SetInteractionType("meeting").SetDirection("").SetSubject(subject).
+			SetOccurredAt(at).SetReceivedAt(at).SetVisibility(visibility).
+			SetContentHash("sha256:" + objectID).SetMetadataJSON(meta).SetDeleted(deleted).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save(harbor, "harbor-room", "full", "Harbor review", `{
+		"location":"Harbor conference room",
+		"organizer":"avery@acme.com",
+		"selfResponseStatus":"accepted",
+		"startsAt":"2026-10-04T15:00:00Z",
+		"endsAt":"2026-10-04T16:00:00Z",
+		"description":"Discuss the harbor quote.",
+		"conferenceLink":"https://meet.example/abc",
+		"status":"confirmed"
+	}`, false)
+	save(cancelled, "cancelled-day", "metadata", "A saved note", `{
+		"allDay":true,
+		"status":"cancelled",
+		"selfResponseStatus":"needsAction",
+		"startsAt":"2026-10-05",
+		"endsAt":"2026-10-06",
+		"location":"local-user",
+		"organizer":"calendar-id"
+	}`, false)
+	save(declined, "declined-invite", "full", "A saved note", `{"selfResponseStatus":"declined"}`, false)
+	save(maybe, "maybe-invite", "full", "A saved note", `{"selfResponseStatus":"tentative"}`, false)
+	save(hidden, "secret-room", "private", "A saved note", `{"location":"Secret room"}`, false)
+	save(hidden, "gone-room", "full", "A saved note", `{"location":"Gone room"}`, true)
+	now := time.Now().UTC()
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(hidden).
+		SetSource("calendar").SetExternalID("hidden-see").SetEventType("meeting").
+		SetOccurredAt(now).SetReceivedAt(now).SetContentHash("hidden-see").
+		SetSummary("A saved note").
+		SetNormalizedFactsJSON(`{"visibility":"private"}`).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Location: Harbor conference room", "Harbor Room")
+	assertCompanyQuery("Join: https://meet.example/abc", "Harbor Room")
+	assertCompanyQuery("Starts: Oct 4, 2026", "Harbor Room")
+	assertCompanyQuery("Ends: Oct 4, 2026", "Harbor Room")
+	assertCompanyQuery("Organizer: avery@acme.com", "Harbor Room")
+	assertCompanyQuery("You accepted the invite", "Harbor Room")
+	assertCompanyQuery("Discuss the harbor quote.", "Harbor Room")
+	assertCompanyQuery("The message is saved", "Harbor Room", "Declined Invite", "Maybe Invite")
+	assertCompanyQuery("All day", "Cancelled Day")
+	assertCompanyQuery("This meeting was cancelled", "Cancelled Day")
+	assertCompanyQuery("You have not answered the invite", "Cancelled Day")
+	assertCompanyQuery("Starts: Oct 5, 2026", "Cancelled Day")
+	assertCompanyQuery("Ends: Oct 6, 2026", "Cancelled Day")
+	assertCompanyQuery("Only the subject and people are saved", "Cancelled Day")
+	assertCompanyQuery("You declined the invite", "Declined Invite")
+	assertCompanyQuery("You replied maybe", "Maybe Invite")
+	assertCompanyQuery("Only you can see this", "Hidden Room")
+	assertCompanyQuery("Location: Secret room")
+	assertCompanyQuery("Location: Gone room")
+	assertCompanyQuery("Location: local-user")
+}
+
+func TestRelationshipSearchFindsTheActivitySnapshot(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, source, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(name).SetEventType("snapshot").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Quill Mail", "gmail", "Gmail thread observed: Harbor quote", `{
+		"threadId":"18abc","lastMessageId":"18def","lastOutbound":true,
+		"subject":"Harbor quote"
+	}`)
+	saveNote("Birch Mail", "gmail", "Gmail thread observed: Birch quote", `{"lastOutbound":false}`)
+	saveNote("Cedar Direction", "gmail", "The last message was sent from this mailbox", `{"lastOutbound":true}`)
+	saveNote("Harbor Guest", "calendar", "Calendar meeting observed with ada@acme.com", `{
+		"eventId":"evt_1","iCalUID":"uid@google",
+		"startsAt":"2026-10-04T15:04:05.123Z","endsAt":"2026-10-04T16:00:00Z",
+		"organizer":"ada@acme.com","summary":"Q3 review","responseStatus":"needsAction"
+	}`)
+	saveNote("Birch Guest", "calendar", "A saved note", `{"responseStatus":"accepted"}`)
+	saveNote("Cedar Guest", "calendar", "A saved note", `{"responseStatus":"declined"}`)
+	saveNote("Maple Guest", "calendar", "A saved note", `{"responseStatus":"tentative"}`)
+	saveNote("Quill Guest", "calendar", "A saved note", `{"responseStatus":"needs_action"}`)
+	saveNote("Hidden Guest", "calendar", "They accepted the invite", `{"responseStatus":"accepted"}`)
+	saveNote("Birch Date", "calendar", "A saved note", `{"startsAt":"2026-10-05","endsAt":"2026-10-06"}`)
+	saveNote("Hidden Day", "calendar", "Oct 4, 2026", `{"startsAt":"2026-10-04T15:00:00Z"}`)
+	saveNote("Harbor Soft", "hubspot", "HubSpot company snapshot: Acme", `{
+		"company_id":"company-1","industry":"COMPUTER_SOFTWARE",
+		"lifecycle_stage":"marketing_qualified_lead",
+		"last_modified_at":"2026-07-31T12:00:00.123456789Z"
+	}`)
+	saveNote("Birch Soft", "hubspot", "A saved note", `{"industry":"Robotics"}`)
+	saveNote("Hidden Soft", "hubspot", "Computer Software", `{"industry":"COMPUTER_SOFTWARE"}`)
+	saveNote("Cedar Stage", "hubspot", "A saved note", `{"lifecyclestage":"former_customer"}`)
+	saveNote("Maple Stage", "hubspot", "A saved note", `{"lifecycle_stage":"customer"}`)
+	saveNote("Hidden Stage", "hubspot", "Customer", `{"lifecycle_stage":"customer"}`)
+	saveNote("Hidden Change", "hubspot", "Jul 31, 2026", `{"hs_lastmodifieddate":"2026-07-31T08:00:00Z"}`)
+	saveNote("Quill Channel", "slack", "Slack message observed in #general", `{
+		"channel_id":"C1","channel_name":"general","message_ts":"1710000000.000100","author_ref":"U1"
+	}`)
+	saveNote("Birch Channel", "slack", "A saved note", `{"channel_name":"#ops-room"}`)
+	saveNote("Cedar Channel", "slack", "A saved note", `{"channel_name":"Slack channel C1"}`)
+	saveNote("Maple Channel", "slack", "A saved note", `{"channel_name":"local-user"}`)
+	saveNote("Hidden Channel", "slack", "#general", `{"channel_name":"general"}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("The last message was sent from this mailbox", "Quill Mail")
+	assertCompanyQuery("The last message came from them", "Birch Mail")
+	assertCompanyQuery("They have not answered the invite", "Harbor Guest", "Quill Guest")
+	assertCompanyQuery("They accepted the invite", "Birch Guest")
+	assertCompanyQuery("They declined the invite", "Cedar Guest")
+	assertCompanyQuery("They replied maybe", "Maple Guest")
+	assertCompanyQuery("Starts: Oct 4, 2026", "Harbor Guest")
+	assertCompanyQuery("Ends: Oct 4, 2026", "Harbor Guest")
+	assertCompanyQuery("Starts: Oct 5, 2026", "Birch Date")
+	assertCompanyQuery("Ends: Oct 6, 2026", "Birch Date")
+	assertCompanyQuery("Organizer: ada@acme.com", "Harbor Guest")
+	assertCompanyQuery("Industry: Computer Software", "Harbor Soft")
+	assertCompanyQuery("Industry: Robotics", "Birch Soft")
+	assertCompanyQuery("HubSpot stage: Marketing qualified lead", "Harbor Soft")
+	assertCompanyQuery("HubSpot stage: Former customer", "Cedar Stage")
+	assertCompanyQuery("HubSpot stage: Customer", "Maple Stage")
+	assertCompanyQuery("Last change: Jul 31, 2026", "Harbor Soft")
+	assertCompanyQuery("Channel: #general", "Quill Channel")
+	assertCompanyQuery("Channel: #ops-room", "Birch Channel")
+	assertCompanyQuery("Channel: #Slack channel C1")
+	assertCompanyQuery("Channel: #local-user")
+	assertCompanyQuery("18abc")
+	assertCompanyQuery("evt_1")
+	assertCompanyQuery("company-1")
+}
+
+func TestRelationshipSearchFindsTheActivityClaim(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Harbor Claim", "A saved note", `{
+		"conversation_claims":[
+			{"id":"claim:risk","kind":"risk","value":"Security review may slip","exactQuote":"Security review may slip","speakerId":"speaker_2","speakerLabel":"Avery"},
+			{"id":"claim:again","kind":"risk","value":"Security review may slip","speakerLabel":"Avery"}
+		]
+	}`)
+	saveNote("Birch Claim", "A saved note", `{
+		"conversation_claims":[
+			{"id":"claim:objection","kind":"objection","value":"The price is too high","speakerLabel":"Speaker 1"},
+			{"id":"claim:decision","kind":"decision","value":"We decided to renew."},
+			{"id":"claim:promise","kind":"commitment","value":"I will send the proposal.","speakerLabel":"You"},
+			{"id":"claim:person","kind":"stakeholder","value":"Avery Chen is the champion"},
+			{"id":"claim:mile","kind":"milestone","value":"The pilot starts in June"}
+		]
+	}`)
+	saveNote("Cedar Claim", "A saved note", `{"conversation_claims":[{"id":"claim:life","kind":"lifecycle","value":"former_customer","exactQuote":"They are a former customer now."}]}`)
+	saveNote("Maple Claim", "A saved note", `{"conversation_claims":[{"id":"claim:feel","kind":"sentiment","value":"negative"}]}`)
+	saveNote("Quill Claim", "A saved note", `{"conversation_claims":[{"id":"claim:unknown","kind":"lifecycle","value":"unknown"}]}`)
+	saveNote("Lane Claim", "A saved note", `{"conversation_claims":[{"id":"claim:risk2","kind":"risk","value":"at_risk"}]}`)
+	saveNote("Quote Claim", "A saved note", `{"conversation_claims":[{"id":"claim:quote","kind":"decision","value":"","exactQuote":"We will renew the harbor contract."}]}`)
+	saveNote("Hidden Claim", "Security review may slip — Avery", `{
+		"conversation_claims":[{"kind":"risk","value":"Security review may slip","speakerLabel":"Avery"}]
+	}`)
+	saveNote("Hidden Period", "We decided to renew.", `{"conversation_claims":[{"kind":"decision","value":"We decided to renew."}]}`)
+	saveNote("Plain Claim", "A saved note", `{"conversation_claims":[{"kind":"risk","value":"Security review may slip","speakerLabel":"Speaker 2"}]}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Risk raised in a conversation: Security review may slip — Avery", "Harbor Claim")
+	assertCompanyQuery("Risk raised in a conversation: Security review may slip", "Plain Claim")
+	assertCompanyQuery("Unresolved objection: The price is too high", "Birch Claim")
+	assertCompanyQuery("Decision: We decided to renew.", "Birch Claim")
+	assertCompanyQuery("Promise: I will send the proposal. — You", "Birch Claim")
+	assertCompanyQuery("Person: Avery Chen is the champion", "Birch Claim")
+	assertCompanyQuery("Milestone: The pilot starts in June", "Birch Claim")
+	assertCompanyQuery("Lifecycle: Former customer", "Cedar Claim")
+	assertCompanyQuery("Sentiment: Negative", "Maple Claim")
+	assertCompanyQuery("Lifecycle: Not known", "Quill Claim")
+	assertCompanyQuery("Decision: We will renew the harbor contract.", "Quote Claim")
+	assertCompanyQuery("Risk raised in a conversation: at risk")
+	assertCompanyQuery("claim:risk")
+	assertCompanyQuery("speaker_2")
+	assertCompanyQuery("former_customer")
+}
+
+func TestRelationshipSearchFindsTheActivityFollowUp(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Harbor Follow", "A saved note", `{
+		"action_pack":[
+			{"id":"action:email","actionType":"meeting_recap","channel":"email","reason":"Send a recap grounded in the material statements from this conversation.","proposedSubject":"Recap: Q3 review"},
+			{"id":"action:slack","actionType":"meeting_recap","channel":"slack","reason":"Share the evidence-backed recap with the account team."},
+			{"id":"action:task","actionType":"follow_up_task","channel":"task","reason":"Track a spoken commitment until it is fulfilled or renegotiated.","dueAt":"2026-08-01T17:00:00.000Z"},
+			{"id":"action:hold","actionType":"calendar_hold","channel":"calendar","reason":"Protect time before the spoken commitment is due.","dueAt":"2026-08-01T17:00:00.000Z"},
+			{"actionType":"crm_update","channel":"crm","reason":"Update CRM fields from quoted lifecycle, risk, sentiment, and stakeholder evidence."}
+		],
+		"legacy_shadow_action_pack":[{"actionType":"meeting_recap","reason":"This shadow recap should stay off the activity."}]
+	}`)
+	saveNote("Birch Follow", "A saved note", `{"action_pack":[{"actionType":"commitment_rescue","reason":"Call Avery about the harbor quote."}]}`)
+	saveNote("Hidden Follow", "Send a recap of what was said.", `{"action_pack":[{"actionType":"meeting_recap","reason":"Send a recap grounded in the material statements from this conversation."}]}`)
+	saveNote("Token Follow", "A saved note", `{"action_pack":[{"actionType":"meeting_recap","reason":"local-user"}]}`)
+	saveNote("Hidden Day", "Aug 1, 2026", `{"action_pack":[{"actionType":"follow_up_task","reason":"Call tomorrow.","dueAt":"2026-08-01T17:00:00Z"}]}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Meeting recap: Send a recap of what was said.", "Harbor Follow")
+	assertCompanyQuery("Meeting recap: Share the recap with the account team.", "Harbor Follow")
+	assertCompanyQuery("Follow-up task: Keep this promise until it is kept or changed.", "Harbor Follow")
+	assertCompanyQuery("Calendar hold: Hold time before this promise is due.", "Harbor Follow")
+	assertCompanyQuery("CRM update: Update the company record from what was said.", "Harbor Follow")
+	assertCompanyQuery("Promise follow-up: Call Avery about the harbor quote.", "Birch Follow")
+	assertCompanyQuery("Due: Aug 1, 2026", "Harbor Follow")
+	assertCompanyQuery("This shadow recap should stay off the activity.")
+	assertCompanyQuery("Recap: Q3 review")
+	assertCompanyQuery("action:email")
+	assertCompanyQuery("local-user")
+}
+
+func TestRelationshipSearchFindsTheActivityRecovery(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Harbor Kept", "A saved note", `{
+		"commitment_recovery_evidence":[{
+			"commitmentId":"9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+			"kind":"explicit_fulfilled",
+			"evidenceRef":"gmail-message:proof-1"
+		}]
+	}`)
+	saveNote("Birch Suggest", "A saved note", `{"commitment_recovery_evidence":[{"kind":"likely_fulfilled"}]}`)
+	saveNote("Cedar Later", "A saved note", `{"commitment_recovery_evidence":[{"kind":"superseded"}]}`)
+	saveNote("Maple Terms", "A saved note", `{"commitment_recovery_evidence":[{"kind":"renegotiated"}]}`)
+	saveNote("Quill Block", "A saved note", `{"commitment_recovery_evidence":[{"kind":"blocked"},{"kind":"blocked"}]}`)
+	saveNote("Lane Pair", "A saved note", `{"commitment_recovery_evidence":[{"kind":"likely_fulfilled"},{"kind":"blocked"}]}`)
+	saveNote("Hidden Kept", "A newer source shows this promise was kept.", `{"commitment_recovery_evidence":[{"kind":"explicit_fulfilled"}]}`)
+	saveNote("Token Kind", "A saved note", `{"commitment_recovery_evidence":[{"kind":"other","evidenceRef":"gmail-message:other"}]}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("A newer source shows this promise was kept.", "Harbor Kept")
+	assertCompanyQuery("A newer source suggests this promise was kept. Review it before closing it.", "Birch Suggest", "Lane Pair")
+	assertCompanyQuery("A later promise replaced this one.", "Cedar Later")
+	assertCompanyQuery("This promise was renegotiated. Review the new terms.", "Maple Terms")
+	assertCompanyQuery("This promise is blocked. Review it before acting.", "Quill Block", "Lane Pair")
+	assertCompanyQuery("explicit_fulfilled")
+	assertCompanyQuery("gmail-message:proof-1")
+	assertCompanyQuery("9c8dfa9b-a7b2-46ea-982c-622a914c00e5")
+}
+
+func TestRelationshipSearchFindsTheActivityContradiction(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Harbor Sides", "A saved note", `{
+		"contradiction_resolution":{
+			"caseId":"case-1",
+			"relationshipId":"9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+			"dimension":"health",
+			"status":"user_resolved",
+			"reason":"User selected the current value from a focused contradiction case.",
+			"sides":[
+				{"assertionId":"a-1","value":{"value":"needs_attention"}},
+				{"assertionId":"a-2","value":"healthy"},
+				{"assertionId":"a-3","value":"local-user"},
+				{"assertionId":"a-4","value":"9c8dfa9b-a7b2-46ea-982c-622a914c00e5"}
+			]
+		}
+	}`)
+	saveNote("Birch Risk", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"risk",
+			"reason":"The customer stated this directly.",
+			"sides":[{"value":{"value":"Security review"}}]
+		}
+	}`)
+	saveNote("Hidden Health", "Needs attention", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"needs_attention"}}]
+		}
+	}`)
+	saveNote("Full Line", "Health: Needs attention", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"needs_attention"}}]
+		}
+	}`)
+	saveNote("Detail Empty", "A saved note", `{
+		"contradiction_resolution":{"sides":[{"value":{"value":"healthy"}}]}
+	}`)
+	saveNote("Next Quote", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"next_action",
+			"sides":[{"value":{"value":"Send the quote"}}]
+		}
+	}`)
+	saveNote("Billing Owner", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"billing_owner",
+			"sides":[{"value":{"value":"active"}}]
+		}
+	}`)
+	saveNote("Not Known", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"unknown"}}]
+		}
+	}`)
+	saveNote("Not Recorded", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"historical_unknown"}}]
+		}
+	}`)
+	saveNote("Needs Review", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"review_required"}}]
+		}
+	}`)
+	saveNote("Out Of Date", "A saved note", `{
+		"contradiction_resolution":{
+			"dimension":"health",
+			"sides":[{"value":{"value":"stale"}}]
+		}
+	}`)
+	saveNote("Hidden Reason", "The customer stated this directly.", `{
+		"contradiction_resolution":{"dimension":"risk","reason":"The customer stated this directly.","sides":[]}
+	}`)
+	saveNote("Colon Reason", "Call Avery", `{
+		"contradiction_resolution":{"dimension":"summary","reason":"Note: Call Avery","sides":[{"value":{"value":"Renewal"}}]}
+	}`)
+	saveNote("Token Reason", "A saved note", `{
+		"contradiction_resolution":{"reason":"local-user","sides":[{"value":"follow_up"}]}
+	}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Health: Needs attention", "Harbor Sides", "Full Line")
+	assertCompanyQuery("Health: Healthy", "Harbor Sides")
+	assertCompanyQuery("Risk: Security review", "Birch Risk")
+	assertCompanyQuery("The customer stated this directly.", "Birch Risk")
+	assertCompanyQuery("Detail: Healthy", "Detail Empty")
+	assertCompanyQuery("Next action: Send the quote", "Next Quote")
+	assertCompanyQuery("Billing owner: Active", "Billing Owner")
+	assertCompanyQuery("Health: Not known", "Not Known")
+	assertCompanyQuery("Health: Not recorded for this date", "Not Recorded")
+	assertCompanyQuery("Health: Needs review", "Needs Review")
+	assertCompanyQuery("Health: Out of date", "Out Of Date")
+	assertCompanyQuery("Summary: Renewal", "Colon Reason")
+	assertCompanyQuery("Note: Call Avery")
+	assertCompanyQuery("Detail: Follow Up", "Token Reason")
+	assertCompanyQuery("which companies have health: needs attention")
+	assertCompanyQuery("User selected the current value from a focused contradiction case.")
+	assertCompanyQuery("case-1")
+	assertCompanyQuery("9c8dfa9b-a7b2-46ea-982c-622a914c00e5")
+	assertCompanyQuery("local-user")
+	assertCompanyQuery("follow_up")
+}
+
+func TestRelationshipSearchFindsTheGraphFreshness(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	saveObservation := func(name, externalID string, occurredAt time.Time) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("meeting_note").
+			SetOccurredAt(occurredAt).SetReceivedAt(now).SetContentHash(externalID).
+			SetSummary("A saved note").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveEvidence := func(name string, occurredAt time.Time) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		action, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+			DedupeKey: name, Reason: "Send the weekly note", ExecutionMode: ExecModeDraft, PriorityScore: 40,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		evidence, err := f.client.RevenueEvidence.Create().
+			SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+			SetSource("gmail").SetSourceRecordID(name).
+			SetContentHash("sha256:" + name).
+			SetExcerpt("The weekly note.").
+			SetOccurredAt(occurredAt).SetObservedAt(now).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := action.Update().AddEvidences(evidence).Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveObservation("Harbor Fresh", "harbor-fresh", now.Add(-time.Hour))
+	saveObservation("Birch Older", "birch-older", now.Add(-5*24*time.Hour))
+	saveObservation("Cedar Stale", "cedar-stale", now.Add(-40*24*time.Hour))
+	saveObservation("Avery Ahead", "avery-ahead", now.Add(time.Hour))
+	saveEvidence("Quill Evidence", now.Add(-2*time.Hour))
+	saveEvidence("North Quote", now.Add(-6*24*time.Hour))
+	lane, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lane Both",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range []struct {
+		id   string
+		when time.Time
+	}{
+		{"lane-both-fresh", now.Add(-time.Hour)},
+		{"lane-both-aging", now.Add(-5 * 24 * time.Hour)},
+	} {
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(lane).
+			SetSource("meeting").SetExternalID(item.id).SetEventType("meeting_note").
+			SetOccurredAt(item.when).SetReceivedAt(now).SetContentHash(item.id).
+			SetSummary("A saved note").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Up to date", "Harbor Fresh", "Avery Ahead", "Quill Evidence", "Lane Both")
+	assertCompanyQuery("Up to date.", "Harbor Fresh", "Avery Ahead", "Quill Evidence", "Lane Both")
+	assertCompanyQuery("Getting old", "Birch Older", "North Quote", "Lane Both")
+	assertCompanyQuery("Getting old.", "Birch Older", "North Quote", "Lane Both")
+	assertCompanyQuery("Out of date")
+	assertCompanyQuery("The details you can open are up to date.")
+	assertCompanyQuery("current")
+	assertCompanyQuery("aging")
+}
+
+func TestRelationshipSearchFindsTheRecoveryStatus(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, status string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("follow_up_task").SetChannel("task").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").
+			SetPriorityScore(40).
+			SetQueueStatus(status).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Queue", QueueOpen)
+	save("Birch Later", QueueSnoozed)
+	save("Cedar Done", QueueHandled)
+	save("Quill Closed", QueueDismissed)
+	lane, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lane Both",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range []struct{ key, status string }{
+		{"lane-open", QueueOpen},
+		{"lane-snoozed", QueueSnoozed},
+	} {
+		if _, err := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(lane).
+			SetActionType("follow_up_task").SetChannel("task").SetDetector("manual").
+			SetDedupeKey(item.key).SetRevisionHash(item.key + "-hash").
+			SetReason("Send the weekly note").
+			SetPriorityScore(40).
+			SetQueueStatus(item.status).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Held", "Harbor Queue", "Lane Both")
+	assertCompanyQuery("Held.", "Harbor Queue", "Lane Both")
+	assertCompanyQuery("Snoozed", "Birch Later", "Lane Both")
+	assertCompanyQuery("Handled", "Cedar Done")
+	assertCompanyQuery("Dismissed", "Quill Closed")
+	assertCompanyQuery("open")
+	assertCompanyQuery("Nothing is snoozed right now.")
+}
+
+func TestRelationshipSearchFindsTheUncertainSend(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, execution, reconciliation string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		create := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("warm_follow_up").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetExecutionStatus(execution)
+		if reconciliation != "" {
+			create.SetReconciliationStatus(reconciliation)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Unsure", ExecAmbiguous, "")
+	save("West Pending", ExecAmbiguous, "pending")
+	save("Birch Receipt", ExecAmbiguous, "found")
+	save("Cedar Absent", ExecAmbiguous, "not_found")
+	save("Maple Fault", ExecAmbiguous, "error")
+	save("Quill Person", ExecPending, "manual_review")
+	save("Lane Check", ExecAmbiguous, "manual_review")
+	save("North Settled", ExecSent, "found")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	title := "This send is not confirmed. Do not try again yet."
+	assertCompanyQuery(title, "Harbor Unsure", "West Pending", "Birch Receipt", "Cedar Absent", "Maple Fault", "Quill Person", "Lane Check")
+	assertCompanyQuery("Still checking whether this was sent.", "Harbor Unsure", "West Pending")
+	assertCompanyQuery("This send was confirmed.", "Birch Receipt")
+	assertCompanyQuery("There is no record of this send.", "Cedar Absent")
+	assertCompanyQuery("The check could not be finished.", "Maple Fault")
+	assertCompanyQuery("This needs a person to check it.", "Quill Person", "Lane Check")
+	assertCompanyQuery("found")
+}
+
+func TestRelationshipSearchFindsTheGraphExecution(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, execution, mode string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("warm_follow_up").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetExecutionStatus(execution).SetExecutionMode(mode).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Start", ExecRequested, ExecModeSend)
+	save("Birch Note", ExecSent, ExecModeDraft)
+	save("Cedar Out", ExecSent, ExecModeSend)
+	save("Quill Check", ExecAmbiguous, ExecModeSend)
+	save("Maple Stop", ExecFailed, ExecModeSend)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Sending…", "Harbor Start")
+	assertCompanyQuery("Drafted", "Birch Note")
+	assertCompanyQuery("Needs reconcile", "Quill Check")
+	assertCompanyQuery("Sending...")
+}
+
+func TestRelationshipSearchFindsTheSendFailure(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, execution, reconciliation, failure string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		create := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("warm_follow_up").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetExecutionStatus(execution).SetExecutionError(failure)
+		if reconciliation != "" {
+			create.SetReconciliationStatus(reconciliation)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Setup", ExecPending, "", "revenue: no execution backend configured")
+	save("Birch Channel", ExecFailed, "", "no execution backend for channel email")
+	save("Cedar Recipient", ExecPending, "", "action has no recipient email")
+	save("Maple Message", ExecPending, "", "action has no proposed message")
+	save("Quill Slack", ExecPending, "", "Slack has no provider draft")
+	save("Lane Calendar", ExecPending, "", "Google Calendar has no provider draft")
+	save("North Hub", ExecPending, "", "HubSpot has no provider draft")
+	save("West Clock", ExecPending, "", "needs dueAt before create")
+	save("Avery Google", ExecPending, "", "google is not connected for the assigned user")
+	save("Birch Refuse", ExecPending, "", "gmail returned 403")
+	save("Maple Burst", ExecPending, "", "revenue: mailbox exploded")
+	save("Quill Bounce", ExecPending, "", "The harbor mailbox bounced.")
+	save("Lane Hidden", ExecAmbiguous, "", "revenue: no execution backend configured")
+	save("West Review", ExecPending, "manual_review", "revenue: no execution backend configured")
+	save("Cedar Blank", ExecPending, "", "   ")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	visible := []string{
+		"Harbor Setup", "Birch Channel", "Cedar Recipient", "Maple Message", "Quill Slack",
+		"Lane Calendar", "North Hub", "West Clock", "Avery Google", "Birch Refuse",
+		"Maple Burst", "Quill Bounce",
+	}
+	assertCompanyQuery("The last attempt did not send", visible...)
+	assertCompanyQuery("Sending is not set up for this workspace yet.", "Harbor Setup")
+	assertCompanyQuery("This channel cannot send yet.", "Birch Channel")
+	assertCompanyQuery("Add a recipient before sending.", "Cedar Recipient")
+	assertCompanyQuery("Write the message before sending.", "Maple Message")
+	assertCompanyQuery("Slack cannot save a draft. Switch this to send after you review it.", "Quill Slack")
+	assertCompanyQuery("Calendar cannot save a draft. Switch this to send after you review it.", "Lane Calendar")
+	assertCompanyQuery("HubSpot cannot save a draft. Switch this to send after you review it.", "North Hub")
+	assertCompanyQuery("Add a start time before creating the event.", "West Clock")
+	assertCompanyQuery("Connect Google for the person who will send this, then try again.", "Avery Google")
+	assertCompanyQuery("Google refused this send. Reconnect Gmail, then try again.", "Birch Refuse")
+	assertCompanyQuery("The last attempt did not send. Fix the draft, then try again.", "Maple Burst")
+	assertCompanyQuery("The harbor mailbox bounced.", "Quill Bounce")
+	assertCompanyQuery("no execution backend configured")
+	assertCompanyQuery("revenue: mailbox exploded")
+}
+
+func TestRelationshipSearchFindsTheDismissReason(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, status, reason string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		create := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("customer_risk").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetQueueStatus(status)
+		if reason != "" {
+			create.SetDismissReason(reason)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Skip", QueueDismissed, "not_relevant")
+	save("Birch Done", QueueDismissed, "already_handled")
+	save("Cedar Fresh", QueueDismissed, "resolved_by_new_evidence")
+	save("Maple Mind", QueueDismissed, "changed_my_mind")
+	save("Quill Token", QueueDismissed, "follow_up")
+	save("Lane Note", QueueDismissed, "Call Avery tomorrow.")
+	save("West Open", QueueOpen, "not_relevant")
+	save("Cedar Empty", QueueDismissed, "")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Not relevant", "Harbor Skip")
+	assertCompanyQuery("Already handled", "Birch Done")
+	assertCompanyQuery("Newer evidence arrived", "Cedar Fresh")
+	assertCompanyQuery("resolved by new evidence")
+	assertCompanyQuery("Changed my mind", "Maple Mind")
+	assertCompanyQuery("Follow Up", "Quill Token")
+	assertCompanyQuery("Call Avery tomorrow.", "Lane Note")
+	assertCompanyQuery("follow_up", "Quill Token")
+}
+
+func TestRelationshipSearchFindsTheReconciliationCheck(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, execution, failure string, attempts int) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		create := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("warm_follow_up").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetExecutionStatus(execution).
+			SetReconciliationAttempts(attempts)
+		if failure != "" {
+			create.SetReconciliationError(failure)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Receipt", ExecAmbiguous, "execution idempotency key is missing", 1)
+	save("Birch Other", ExecAmbiguous, "action is assigned to another provider credential", 3)
+	save("Cedar Channel", ExecAmbiguous, "execution backend does not support provider reconciliation", 0)
+	save("Maple Match", ExecAmbiguous, "provider reconciliation reported a match without a receipt", 0)
+	save("Quill Slack", ExecAmbiguous, "could not resolve Slack workspace", 0)
+	save("Avery Check", ExecAmbiguous, "revenue: something odd", 0)
+	save("Lane Hidden", ExecAmbiguous, "The provider could not confirm this send.", 0)
+	save("West Settled", ExecPending, "execution idempotency key is missing", 2)
+	save("North Note", ExecAmbiguous, "The harbor mailbox bounced.", 0)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("This send has no receipt to check.", "Harbor Receipt")
+	assertCompanyQuery("Someone else is set to send this, so this workspace cannot confirm it.", "Birch Other")
+	assertCompanyQuery("This channel cannot confirm whether the send went out.", "Cedar Channel")
+	assertCompanyQuery("The provider matched this send but did not return a receipt.", "Maple Match")
+	assertCompanyQuery("Slack could not be reached for this check.", "Quill Slack")
+	assertCompanyQuery("The check could not confirm this send.", "Avery Check")
+	assertCompanyQuery("The harbor mailbox bounced.", "North Note")
+	assertCompanyQuery("Checked 1 time.", "Harbor Receipt")
+	assertCompanyQuery("Checked 3 times.", "Birch Other")
+	assertCompanyQuery("Checked 2 times.")
+	assertCompanyQuery("Checked 1 times.")
+	assertCompanyQuery("The provider could not confirm this send.")
+	assertCompanyQuery("provider marker was not found after bounded reconciliation attempts")
+}
+
+func TestRelationshipSearchFindsTheSnoozeWake(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	save := func(name, status string, until time.Time) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("customer_risk").SetChannel("email").SetDetector("manual").
+			SetDedupeKey(name).SetRevisionHash(name + "-hash").
+			SetReason("Send the weekly note").SetPriorityScore(40).
+			SetQueueStatus(status).SetSnoozedUntil(until).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Week", QueueSnoozed, now.Add(7*24*time.Hour))
+	save("Birch Past", QueueSnoozed, now.Add(-2*24*time.Hour))
+	save("Cedar Hour", QueueSnoozed, now.Add(3*time.Hour))
+	save("Maple Day", QueueSnoozed, now.Add(26*time.Hour))
+	save("Quill Open", QueueOpen, now.Add(7*24*time.Hour))
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Comes back 7 days from now.", "Harbor Week")
+	assertCompanyQuery("Comes back 3 hours from now.", "Cedar Hour")
+	assertCompanyQuery("Comes back 1 day from now.", "Maple Day")
+	assertCompanyQuery("Comes back 1 days from now.")
+	// Listing puts an elapsed snooze back on the open queue and clears the
+	// wake, so the "Snooze ended" sentence is no longer on the company.
+	assertCompanyQuery("Snooze ended 2 days ago.")
+	assertCompanyQuery("Snooze ended 7 days ago.")
+}
+
+func TestRelationshipSearchFindsTheSourceBadge(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Grant", "google:company:harbor")
+	save("Birch Cut", "slack:channel:birch")
+	save("Cedar Spin", "hubspot:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, status := range []struct{ source, state, phase string }{
+		{"google", "reconnect_required", "idle"},
+		{"slack", "disconnected", "idle"},
+		{"hubspot", "live", "running"},
+	} {
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource(status.source).SetSourceAccountID("default").
+			SetStatus(status.state).SetBackfillPhase(status.phase).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Reconnect required", "Harbor Grant")
+	assertCompanyQuery("Disconnected", "Birch Cut")
+	assertCompanyQuery("Syncing", "Cedar Spin")
+	assertCompanyQuery("Not connected")
+	assertCompanyQuery("Sync incomplete")
+	assertCompanyQuery("Active")
+}
+
+func TestRelationshipSearchFindsWaitingToConnect(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Wait", ResourceRefs: []string{"google:company:quill"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("google").SetSourceAccountID("default").
+		SetStatus("authorizing").SetBackfillPhase("idle").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Waiting to connect", "Quill Wait")
+	assertCompanyQuery("Google · Waiting to connect", "Quill Wait")
+	assertCompanyQuery("Authorizing")
+	assertCompanyQuery("Updating")
+}
+
+func TestRelationshipSearchFindsDegradedWhenTheBadgeSaysIt(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Quill Whole", "google:company:whole")
+	save("Birch Fail", "slack:channel:fail")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, status := range []struct{ source, completeness string }{
+		{"google", "complete"},
+		{"slack", "stale"},
+	} {
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource(status.source).SetSourceAccountID("default").
+			SetStatus("degraded").SetBackfillPhase("failed").
+			SetCompleteness(status.completeness).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Degraded", "Quill Whole")
+	assertCompanyQuery("Google · Degraded", "Quill Whole")
+	assertCompanyQuery("Sync incomplete", "Birch Fail")
+	assertCompanyQuery("Slack · Sync incomplete", "Birch Fail")
+	assertCompanyQuery("Slack · Degraded")
+}
+
+func TestRelationshipSearchFindsTheOtherSourceBadges(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Off", "google:company:harbor")
+	save("Birch Gap", "hubspot:company:birch")
+	save("Cedar Ready", "slack:channel:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, status := range []struct{ source, state, completeness string }{
+		{"google", "not_connected", "partial"},
+		{"hubspot", "connected", "partial"},
+		{"slack", "live", "complete"},
+	} {
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource(status.source).SetSourceAccountID("default").
+			SetStatus(status.state).SetCompleteness(status.completeness).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Not connected", "Harbor Off")
+	assertCompanyQuery("Sync incomplete", "Birch Gap")
+	assertCompanyQuery("Active", "Cedar Ready")
+	assertCompanyQuery("Reconnect required")
+	assertCompanyQuery("Syncing")
+}
+
+func TestRelationshipSearchFindsTheSourceBadgeLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Grant", "google:company:harbor")
+	save("Birch Cut", "slack:channel:birch")
+	save("Cedar Spin", "hubspot:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, status := range []struct {
+		source, state, phase, completeness string
+	}{
+		{"google", "live", "idle", "complete"},
+		{"slack", "stale", "idle", "stale"},
+		{"hubspot", "connected", "idle", "partial"},
+	} {
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource(status.source).SetSourceAccountID("default").
+			SetStatus(status.state).SetBackfillPhase(status.phase).
+			SetCompleteness(status.completeness).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Active", "Harbor Grant")
+	assertCompanyQuery("Google · Active", "Harbor Grant")
+	assertCompanyQuery("Google · Active.", "Harbor Grant")
+	assertCompanyQuery("Slack · Out of date", "Birch Cut")
+	assertCompanyQuery("Out of date", "Birch Cut")
+	assertCompanyQuery("HubSpot · Sync incomplete", "Cedar Spin")
+	assertCompanyQuery("Sync incomplete", "Cedar Spin")
+	assertCompanyQuery("Google · Out of date")
+	assertCompanyQuery("Slack · Active")
+	assertCompanyQuery("Gmail · Active")
+	assertCompanyQuery("HubSpot · Active")
+}
+
+func TestRelationshipSearchFindsTheSourceError(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Grant", "google:company:harbor")
+	save("Birch Token", "slack:channel:birch")
+	save("Cedar Note", "hubspot:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, status := range []struct{ source, failure string }{
+		{"google", "Required provider permission is missing."},
+		{"slack", "cursor_lost"},
+		{"hubspot", "The harbor mailbox bounced."},
+	} {
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource(status.source).SetSourceAccountID("default").
+			SetStatus("live").SetLastError(status.failure).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("A needed permission is missing. Reconnect to grant it.", "Harbor Grant")
+	assertCompanyQuery("Reading stopped. Reconnect or try again.", "Birch Token")
+	assertCompanyQuery("The harbor mailbox bounced.", "Cedar Note")
+	assertCompanyQuery("Required provider permission is missing.")
+	assertCompanyQuery("cursor_lost")
+	assertCompanyQuery("The connection expired. Reconnect to keep reading.")
+}
+
+func TestRelationshipSearchFindsTheSourceLag(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Pace", "slack:channel:harbor")
+	save("Birch Stall", "hubspot:company:birch")
+	save("North Live", "google:company:north")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("default").
+		SetStatus("connected").SetLastSuccessAt(now.Add(-12 * time.Minute)).
+		SetLagSeconds(5 * 24 * 60 * 60).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("disconnected").SetLagSeconds(2 * 24 * 60 * 60).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("google").SetSourceAccountID("default").
+		SetStatus("live").SetLastSuccessAt(now.Add(-12 * time.Minute)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("12 minutes behind", "Harbor Pace")
+	assertCompanyQuery("2 days behind", "Birch Stall")
+	assertCompanyQuery("5 days behind")
+	assertCompanyQuery("1 minute behind")
+	assertCompanyQuery("12 minute behind")
+}
+
+func TestRelationshipSearchFindsTheSourceLook(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Look", "slack:channel:harbor")
+	save("Birch Hide", "hubspot:company:birch")
+	save("Cedar Day", "google:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("default").
+		SetStatus("live").SetLastObservationAt(now.Add(-2 * time.Hour)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("live").SetLastObservationAt(now.Add(-2 * time.Hour)).
+		SetLastError("cursor_lost").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("google").SetSourceAccountID("default").
+		SetStatus("connected").SetLastObservationAt(now.Add(-26 * time.Hour)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	lookedOn := now.Add(-40 * 24 * time.Hour)
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("dated").
+		SetStatus("live").SetLastObservationAt(lookedOn).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Last looked 2 hours ago.", "Harbor Look")
+	assertCompanyQuery("Last looked 1 day ago.", "Cedar Day")
+	assertCompanyQuery("Last looked 2 hours from now.")
+	assertCompanyQuery("Last looked 2 hour ago.")
+	day := lookedOn.Format("Jan 2, 2006")
+	assertCompanyQuery("Last looked "+day, "Birch Hide")
+	assertCompanyQuery("Last looked "+day+".", "Birch Hide")
+	assertCompanyQuery("Last looked " + now.Add(-2*time.Hour).Format("Jan 2, 2006"))
+}
+
+func TestRelationshipSearchFindsTheSourceHistory(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Half", "slack:channel:harbor")
+	save("Birch Third", "hubspot:company:birch")
+	save("North Live", "google:company:north")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("alpha").
+		SetStatus("connected").SetCompleteness("partial").
+		SetBackfillCompleted(1).SetBackfillTotal(2).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("beta").
+		SetStatus("connected").SetCompleteness("partial").
+		SetBackfillCompleted(1).SetBackfillTotal(8).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("disconnected").SetCompleteness("partial").
+		SetBackfillCompleted(1).SetBackfillTotal(3).
+		SetLagSeconds(2 * 24 * 60 * 60).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("google").SetSourceAccountID("default").
+		SetStatus("live").SetCompleteness("complete").
+		SetBackfillCompleted(1).SetBackfillTotal(2).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("50% of history synced", "Harbor Half")
+	assertCompanyQuery("33% of history synced", "Birch Third")
+	assertCompanyQuery("13% of history synced")
+	assertCompanyQuery("100% of history synced")
+	assertCompanyQuery("0% of history synced")
+	assertCompanyQuery("50 percent of history synced")
+	assertCompanyQuery("Some details are still missing · 50% of history synced", "Harbor Half")
+	assertCompanyQuery("Some details are still missing · 50% of history synced.", "Harbor Half")
+	assertCompanyQuery("Some details are still missing · 33% of history synced · 2 days behind", "Birch Third")
+	assertCompanyQuery("Some details are still missing · 33% of history synced")
+	assertCompanyQuery("Some details are still missing · 13% of history synced")
+	assertCompanyQuery("Details are current · 50% of history synced")
+	assertCompanyQuery("Details need a refresh · 33% of history synced · 2 days behind")
+	assertCompanyQuery("Some details are still missing · 50% of history synced · 12 minutes behind")
+}
+
+func TestRelationshipSearchFindsTheSourceReconnectCopy(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Card", "slack:channel:harbor")
+	save("Birch Live", "hubspot:company:birch")
+	save("Cedar Closed", "google:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("default").
+		SetStatus("connected").SetCompleteness("disconnected").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("live").SetCompleteness("disconnected").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("google").SetSourceAccountID("default").
+		SetStatus("disconnected").SetCompleteness("disconnected").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("A source needs to be reconnected", "Harbor Card")
+	assertCompanyQuery("A source needs to be reconnected.", "Harbor Card")
+}
+
+func TestRelationshipSearchFindsTheSourceCopy(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Slack", "slack:channel:harbor")
+	save("Birch Hub", "hubspot:company:birch")
+	save("Cedar Google", "google:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("default").
+		SetStatus("connected").SetCompleteness("partial").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("live").SetCompleteness("complete").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Read recent mail and meetings to build company history. Sending and calendar changes wait for approval.", "Cedar Google")
+	assertCompanyQuery("Read: Mail and calendar", "Cedar Google")
+	assertCompanyQuery("On approval: Drafts, sending, and calendar changes", "Cedar Google")
+	assertCompanyQuery("Read channels and people to add shared context. Posting waits until you approve the exact message.", "Harbor Slack")
+	assertCompanyQuery("Read: Channels and people", "Harbor Slack")
+	assertCompanyQuery("On approval: Post a message", "Harbor Slack")
+	assertCompanyQuery("Read companies, contacts, and deals. Notes and tasks are created only after you approve them.")
+	assertCompanyQuery("Read: Companies, contacts, and deals")
+	assertCompanyQuery("On approval: Notes and tasks")
+}
+
+func TestRelationshipSearchFindsTheSourceMissing(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Gap", "slack:channel:harbor")
+	save("Birch Note", "hubspot:company:birch")
+	save("Cedar Send", "google:company:cedar")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("default").
+		SetStatus("live").SetCompleteness("partial").
+		SetMissingScopes([]string{"chat:write", "https://example.com/auth/custom.scope"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("connected").SetCompleteness("partial").
+		SetMissingScopes([]string{"crm.objects.notes.write", "crm.objects.tasks.write"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("google").SetSourceAccountID("default").
+		SetStatus("connected").SetCompleteness("partial").
+		SetMissingScopes([]string{"https://www.googleapis.com/auth/gmail.send"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Missing: Post a message, Custom Scope", "Harbor Gap")
+	assertCompanyQuery("Missing: Notes, Tasks", "Birch Note")
+	assertCompanyQuery("Missing: Sending")
+	assertCompanyQuery("Missing: Tasks, Notes")
+	assertCompanyQuery("Missing: Post a message")
+}
+
+func TestRelationshipSearchFindsTheSuggestedReview(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, kind string) (*ent.Relationship, *ent.RelationshipObservation) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := json.Marshal(map[string]any{
+			"conversation_claim_candidates": []map[string]any{{
+				"candidateId": "cand-" + name, "kind": kind,
+				"displayValue": "Noted", "confidence": 0.4,
+				"evidence": []map[string]any{{"exactQuote": "Noted"}},
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("A recorded note").SetNormalizedFactsJSON(string(body)).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rel, row
+	}
+	decide := func(rel *ent.Relationship, obs *ent.RelationshipObservation, name, kind string) {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"review_decision": map[string]any{
+				"item_id": "review:" + name, "kind": kind,
+				"candidate_id": "cand-" + rel.DisplayName, "observation_id": obs.ID.String(),
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("user").SetExternalID(name).SetEventType("conversation_review_decided").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("A recorded decision").SetNormalizedFactsJSON(string(body)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	save("Harbor Promise", "promise")
+	save("Harbor Commit", "commitment")
+	save("Birch Risk", "risk")
+	save("Cedar Step", "next_action")
+	save("Lumen Object", "objection")
+	save("Mesa Person", "stakeholder")
+	save("Aspen Detail", "fact")
+	save("Title Promise", "Promise")
+	save("Harbor Plan", "Harbor plan")
+	save("Quiet Token", "local-user")
+	save("Quiet Party", "meeting-counterparty")
+	save("Quiet Empty", "")
+	save("Quiet Other", "widget")
+	closedRel, closedObs := save("Closed Promise", "promise")
+	decide(closedRel, closedObs, "closed-promise", "approve")
+	deferredRel, deferredObs := save("Deferred Promise", "promise")
+	decide(deferredRel, deferredObs, "deferred-promise", "defer")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("A suggested promise is waiting.", "Harbor Promise", "Harbor Commit", "Title Promise", "Deferred Promise")
+	assertCompanyQuery("A suggested promise is waiting", "Harbor Promise", "Harbor Commit", "Title Promise", "Deferred Promise")
+	assertCompanyQuery("which companies have a suggested promise is waiting", "Harbor Promise", "Harbor Commit", "Title Promise", "Deferred Promise")
+	assertCompanyQuery("A suggested risk is waiting.", "Birch Risk")
+	assertCompanyQuery("A suggested objection is waiting.", "Lumen Object")
+	assertCompanyQuery("A suggested person is waiting.", "Mesa Person")
+	assertCompanyQuery("A suggested next step is waiting.", "Cedar Step")
+	assertCompanyQuery("A suggested detail is waiting.", "Aspen Detail")
+	assertCompanyQuery("A suggested Harbor plan is waiting.", "Harbor Plan")
+	assertCompanyQuery("A suggestion is waiting.", "Quiet Token", "Quiet Party", "Quiet Empty", "Quiet Other")
+	assertCompanyQuery("Review proposed promise")
+	assertCompanyQuery("A suggested waiting is promise")
+}
+
+func TestRelationshipSearchFindsTheReviewCaveat(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name string, caveats []string) (*ent.Relationship, *ent.RelationshipObservation) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := json.Marshal(map[string]any{
+			"conversation_claim_candidates": []map[string]any{{
+				"candidateId": "cand-" + name, "kind": "promise",
+				"displayValue": "Noted", "confidence": 0.4,
+				"caveats":  caveats,
+				"evidence": []map[string]any{{"exactQuote": "Noted"}},
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(name).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("A recorded note").SetNormalizedFactsJSON(string(body)).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rel, row
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	save("Accept Card", []string{"commitment acceptance requires review"})
+	save("Rule Card", []string{"deterministic fallback candidate requires review"})
+	save("Spoke Card", []string{"speaker assignment requires review"})
+	save("Noise Card", []string{"transcript payload was truncated"})
+	closedRel, closedObs := save("Closed Card", []string{"commitment acceptance requires review"})
+	decision, err := json.Marshal(map[string]any{
+		"review_decision": map[string]any{
+			"item_id": "review:closed-card", "kind": "reject",
+			"candidate_id": "cand-Closed Card", "observation_id": closedObs.ID.String(),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(closedRel).
+		SetSource("user").SetExternalID("closed-card").SetEventType("conversation_review_decided").
+		SetOccurredAt(now).SetReceivedAt(now).SetContentHash("closed-card").
+		SetSummary("A recorded decision").SetNormalizedFactsJSON(string(decision)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Who accepted this promise is not confirmed.", "Accept Card")
+	assertCompanyQuery("Who accepted this promise is not confirmed", "Accept Card")
+	assertCompanyQuery("This came from a rule. Check it before saving.", "Rule Card")
+	assertCompanyQuery("Who spoke is not confirmed.", "Spoke Card")
+	assertCompanyQuery("commitment acceptance requires review")
+	assertCompanyQuery("deterministic fallback candidate requires review")
+	assertCompanyQuery("speaker assignment requires review")
+}
+
+func TestRelationshipSearchFindsTheReviewIntro(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveFacts := func(rel *ent.Relationship, externalID string, at time.Time, facts string) *ent.RelationshipObservation {
+		t.Helper()
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(at).SetReceivedAt(at).SetContentHash(externalID).
+			SetSummary("A recorded note").SetNormalizedFactsJSON(facts).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	claim := func(id string, confidence float64) string {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"conversation_claims": []map[string]any{{
+				"id": id, "kind": "risk", "value": "The packet is late",
+				"confidence": confidence, "speakerConfidence": 1,
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(body)
+	}
+	candidate := func(name string) string {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"conversation_claim_candidates": []map[string]any{{
+				"candidateId": "cand-" + name, "kind": "promise",
+				"displayValue": "Noted", "confidence": 0.4,
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(body)
+	}
+	now := time.Now().UTC()
+	makeCompany("Intro Quiet")
+	claimRel := makeCompany("Intro Claim")
+	saveFacts(claimRel, "intro-claim", now, claim("intro-claim", 0.5))
+	sure := makeCompany("Intro Sure")
+	saveFacts(sure, "intro-sure", now, claim("intro-sure", 0.95))
+	fixedRel := makeCompany("Intro Fixed")
+	fixedObs := saveFacts(fixedRel, "intro-fixed", now, claim("intro-fixed", 0.5))
+	correction, err := json.Marshal(map[string]any{
+		"review_correction": map[string]any{
+			"review_item_id": reviewItemID(fixedObs.ID.String(), "intro-fixed", "claim"),
+			"kind":           "claim", "claim_id": "intro-fixed",
+			"observation_id": fixedObs.ID.String(), "corrected_value": "The packet is on time",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveFacts(fixedRel, "intro-fixed-correction", now.Add(time.Minute), string(correction))
+	open := makeCompany("Intro Open")
+	saveFacts(open, "intro-open", now, candidate("Intro Open"))
+	closedRel := makeCompany("Intro Closed")
+	closedObs := saveFacts(closedRel, "intro-closed", now, candidate("Intro Closed"))
+	decision, err := json.Marshal(map[string]any{
+		"review_decision": map[string]any{
+			"item_id": "review:intro-closed", "kind": "approve",
+			"candidate_id": "cand-Intro Closed", "observation_id": closedObs.ID.String(),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveFacts(closedRel, "intro-closed-decision", now.Add(time.Minute), string(decision))
+	deferredRel := makeCompany("Intro Deferred")
+	deferredObs := saveFacts(deferredRel, "intro-deferred", now, candidate("Intro Deferred"))
+	deferredDecision, err := json.Marshal(map[string]any{
+		"review_decision": map[string]any{
+			"item_id": "review:intro-deferred", "kind": "defer",
+			"candidate_id": "cand-Intro Deferred", "observation_id": deferredObs.ID.String(),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveFacts(deferredRel, "intro-deferred-decision", now.Add(time.Minute), string(deferredDecision))
+	buried := makeCompany("Intro Buried")
+	older := now.Add(-2 * time.Hour)
+	saveFacts(buried, "intro-buried-claim", older, claim("intro-buried", 0.5))
+	for i := 0; i < intelligenceObservationPage; i++ {
+		externalID := fmt.Sprintf("intro-buried-%03d", i)
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(buried).
+			SetSource("user").SetExternalID(externalID).SetEventType("note").
+			SetOccurredAt(now.Add(-time.Duration(i) * time.Second)).SetReceivedAt(now).
+			SetSummary("A recorded note").SetContentHash(externalID).
+			SetNormalizedFactsJSON("{}").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	want := []string{"Intro Claim", "Intro Open", "Intro Deferred"}
+	assertCompanyQuery("Approve, correct, reject, or defer each one before it changes this company.", want...)
+	assertCompanyQuery("Approve, correct, reject, or defer each one before it changes this company", want...)
+	assertCompanyQuery("which companies say approve, correct, reject, or defer each one before it changes this company", want...)
+}
+
+func TestRelationshipSearchFindsTheRenewalFallback(t *testing.T) {
+	f := newFixture(t)
+	save := func(name, summary, lifecycle string) {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.Relationship.UpdateOneID(row.ID).
+			SetLifecycle(lifecycle).SetSummary(summary).Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Harbor Blank", "", "renewal")
+	save("Harbor Token", "local-user", "renewal")
+	save("Harbor Party", "meeting-counterparty", "renewal")
+	save("Harbor Widget", " next_action ", "renewal")
+	save("Harbor June", "The renewal is in June.", "renewal")
+	save("Harbor Title", "Promise", "renewal")
+	save("Harbor Prospect", "", "prospect")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	want := []string{"Harbor Blank", "Harbor Token", "Harbor Party", "Harbor Widget"}
+	assertCompanyQuery("Decide what happens before this renewal.", want...)
+	assertCompanyQuery("Decide what happens before this renewal", want...)
+	assertCompanyQuery("Up for renewal", "Harbor Blank", "Harbor Token", "Harbor Party", "Harbor Widget", "Harbor June", "Harbor Title")
+}
+
+func TestRelationshipSearchFindsThePersonSeniority(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	addPerson := func(rel *ent.Relationship, name, seniority, title string) {
+		t.Helper()
+		create := f.client.Person.Create().
+			SetDisplayName(name).SetWorkspace(ws).SetUser(f.user)
+		if seniority != "" {
+			create.SetSeniority(seniority)
+		}
+		if title != "" {
+			create.SetTitle(title)
+		}
+		personRow, err := create.Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RelationshipParticipant.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetRelationship(rel).SetPerson(personRow).
+			SetDisplayName(name).SetRole("contact").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	addPerson(makeCompany("Harbor Band"), "Ada Mesa", "ic", "Engineer")
+	addPerson(makeCompany("Harbor Lead"), "North Wind", "manager", "")
+	addPerson(makeCompany("Harbor Chair"), "Riley Chen", "director", "Engineer")
+	addPerson(makeCompany("Harbor Rank"), "Jules Pike", "vp", "")
+	addPerson(makeCompany("Harbor Chief"), "Casey Quinn", "executive", "")
+	addPerson(makeCompany("Harbor Start"), "Mina Cole", "founder", "")
+	addPerson(makeCompany("Harbor Plus"), "Owen Blake", "staff_plus", "")
+	addPerson(makeCompany("Harbor Words"), "Sage Lind", "Principal Engineer", "")
+	addPerson(makeCompany("Harbor Caps"), "Theo Marsh", "IC", "")
+	addPerson(makeCompany("Harbor Quiet"), "No Band", "", "Engineer")
+	addPerson(makeCompany("Harbor Space"), "Blank Band", "   ", "")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Individual contributor", "Harbor Band")
+	assertCompanyQuery("individual contributor", "Harbor Band")
+	assertCompanyQuery("which companies list an individual contributor", "Harbor Band")
+	assertCompanyQuery("ic", "Harbor Caps")
+	assertCompanyQuery("Manager", "Harbor Lead")
+	assertCompanyQuery("which companies have a manager")
+	assertCompanyQuery("Director", "Harbor Chair")
+	assertCompanyQuery("which companies have a director", "Harbor Chair")
+	assertCompanyQuery("VP", "Harbor Rank")
+	assertCompanyQuery("which companies have a vp")
+	assertCompanyQuery("Executive", "Harbor Chief")
+	assertCompanyQuery("Founder", "Harbor Start")
+	assertCompanyQuery("which companies have a founder")
+	assertCompanyQuery("Staff Plus", "Harbor Plus")
+	assertCompanyQuery("Principal Engineer", "Harbor Words")
+	assertCompanyQuery("IC", "Harbor Caps")
+}
+
+func TestRelationshipSearchFindsTheResearchBadge(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	addPerson := func(rel *ent.Relationship, name string) *ent.Person {
+		t.Helper()
+		personRow, err := f.client.Person.Create().
+			SetDisplayName(name).SetWorkspace(ws).SetUser(f.user).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RelationshipParticipant.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetRelationship(rel).SetPerson(personRow).
+			SetDisplayName(name).SetRole("contact").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+		return personRow
+	}
+	addAttribute := func(personRow *ent.Person, dimension, sourceType, status, key string) {
+		t.Helper()
+		if _, err := f.client.PersonAttribute.Create().
+			SetWorkspace(ws).SetUser(f.user).SetPerson(personRow).
+			SetDimension(dimension).SetValue("Ada").
+			SetSourceType(sourceType).SetSource("web").SetExtractor("parallel").
+			SetStatus(status).SetConfidence(0.8).
+			SetObservedAt(now).SetValidFrom(now).
+			SetCitationsJSON(`[{"title":"Bio","url":"https://example.com/bio","excerpts":["Ada"]}]`).
+			SetDedupeKey(key).SetSupportingObservationIds([]string{}).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	addAttribute(addPerson(makeCompany("Harbor Known"), "Ada Mesa"), "alias", "external_research", "active", "badge-alias")
+	addAttribute(addPerson(makeCompany("Harbor Domain"), "North Wind"), "org_domain", "external_research", "active", "badge-domain")
+	addAttribute(addPerson(makeCompany("Harbor Zone"), "Riley Chen"), "timezone", "external_research", "active", "badge-zone")
+	addAttribute(addPerson(makeCompany("Harbor Work"), "Jules Pike"), "work_history", "external_research", "active", "badge-work")
+	addAttribute(addPerson(makeCompany("Harbor Old"), "Casey Quinn"), "alias", "external_research", "superseded", "badge-old")
+	addAttribute(addPerson(makeCompany("Harbor Closed"), "Mina Cole"), "alias", "external_research", "retracted", "badge-closed")
+	addAttribute(addPerson(makeCompany("Harbor Owned"), "Owen Blake"), "alias", "source_fact", "active", "badge-owned")
+	addAttribute(addPerson(makeCompany("Harbor Linked"), "Sage Lind"), "linkedin_url", "external_research", "active", "badge-linked")
+	addAttribute(addPerson(makeCompany("Harbor Band"), "Theo Marsh"), "seniority", "external_research", "active", "badge-band")
+	if _, err := f.client.PersonAttribute.Update().
+		Where(personattribute.DedupeKeyEQ("badge-band")).
+		SetValue("ic").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	addAttribute(addPerson(makeCompany("Harbor Gone"), "Mina Cole"), "employment_status", "external_research", "active", "badge-gone")
+	if _, err := f.client.PersonAttribute.Update().
+		Where(personattribute.DedupeKeyEQ("badge-gone")).
+		SetValue("departed").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	addAttribute(addPerson(makeCompany("Harbor Now"), "Owen Blake"), "employment_status", "external_research", "active", "badge-now")
+	if _, err := f.client.PersonAttribute.Update().
+		Where(personattribute.DedupeKeyEQ("badge-now")).
+		SetValue("active").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	makeCompany("Harbor Quiet")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	known := []string{"Harbor Known", "Harbor Old"}
+	assertCompanyQuery("Also known as", known...)
+	assertCompanyQuery("Also known as.", known...)
+	assertCompanyQuery("which companies say also known as", known...)
+	assertCompanyQuery("Company domain", "Harbor Domain")
+	assertCompanyQuery("Time zone", "Harbor Zone")
+	assertCompanyQuery("Work history", "Harbor Work")
+	assertCompanyQuery("LinkedIn", "Harbor Linked")
+	assertCompanyQuery("timezone")
+	assertCompanyQuery("alias")
+	assertCompanyQuery("Name")
+	assertCompanyQuery("Individual contributor", "Harbor Band")
+	assertCompanyQuery("ic")
+	assertCompanyQuery("Left the company", "Harbor Gone")
+	assertCompanyQuery("Current", "Harbor Now")
 }
 
 func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
@@ -5369,6 +8926,12 @@ func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	saveNote("Cedar Echo", "The transcript was shortened", `{"transcript_payload_truncated":true}`)
 	saveNote("Birch Slide", "A saved note", `{"audio_retention":"always"}`)
 	saveNote("Cedar Mine", "A saved note", `{"audio_retention":"never"}`)
+	saveNote("Whisper Local", "A saved note", `{"transcription_engine":"whisper-local"}`)
+	saveNote("Cloud Solomon", "A saved note", `{"transcription_engine":"solomon"}`)
+	saveNote("Model Base", "A saved note", `{"transcription_model":"base.en-q5_1"}`)
+	saveNote("Model Parakeet", "A saved note", `{"transcription_model":"parakeet-tdt-0.6b-v3-coreml"}`)
+	saveNote("Track Mic", "A saved note", `{"tracks":[{"id":"mic","silent":true,"peak":0},{"id":"system","silent":false,"peak":0.4}]}`)
+	saveNote("Track Room", "A saved note", `{"tracks":[{"id":"system","silent":true,"peak":0},{"id":"room","silent":true,"peak":0}]}`)
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -5389,7 +8952,13 @@ func TestRelationshipSearchFindsTheActivityTranscript(t *testing.T) {
 	assertCompanyQuery("12 lines in the transcript", "Quill Packet")
 	assertCompanyQuery("The transcript was shortened", "Quill Packet")
 	assertCompanyQuery("Transcribed with whisper.cpp", "Quill Packet")
+	assertCompanyQuery("Transcribed with Whisper", "Quill Packet", "Whisper Local")
+	assertCompanyQuery("Transcribed with Oppulence Cloud (Deepgram)", "Cloud Solomon")
 	assertCompanyQuery("Model: ggml-base.en", "Quill Packet")
+	assertCompanyQuery("Model: Base · English (recommended)", "Model Base")
+	assertCompanyQuery("Model: Parakeet v3", "Model Parakeet")
+	assertCompanyQuery("The microphone was silent", "Track Mic")
+	assertCompanyQuery("The other side was silent", "Track Room")
 	assertCompanyQuery("The recording is removed after transcription", "Quill Packet")
 	assertCompanyQuery("The recording is kept", "Birch Slide")
 	assertCompanyQuery("The recording is not kept", "Cedar Mine")
@@ -5772,7 +9341,8 @@ func TestRelationshipSearchFindsTheCompletenessHeading(t *testing.T) {
 	assertCompanyQuery("No account details have a source yet", "Quill Atelier")
 	assertCompanyQuery("Some details are still missing")
 	assertCompanyQuery("Needs a review before you act", "Lumen Packet", "Harbor Ledger")
-	assertCompanyQuery("Identity review is required before acting on this relationship", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Confirm who this company is before you act", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Identity review is required before acting on this relationship")
 	assertCompanyQuery("1 identity review blocks acting", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("1 possible duplicate must be reviewed before you act", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("Keep separate", "Lumen Packet", "Harbor Ledger")
@@ -5962,14 +9532,113 @@ func TestRelationshipSearchFindsTheRefreshHeading(t *testing.T) {
 		}
 	}
 	assertCompanyQuery("Details need a refresh", "Quill Atelier", "Cedar Mill")
-	assertCompanyQuery("A required source is stale or disconnected", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("A source needs reconnecting", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("A required source is stale or disconnected")
 	assertCompanyQuery("Updating from connected sources", "Lumen Packet", "Harbor Ledger", "Northwind")
-	assertCompanyQuery("A required source is rebuilding; partial state is visible", "Lumen Packet")
-	assertCompanyQuery("Accepted evidence is waiting for the durable relationship projector", "Harbor Ledger")
-	assertCompanyQuery("Relationship projection requires operator repair before this state is safe to act on", "Northwind")
+	assertCompanyQuery("A source is still updating, so only some details are shown", "Lumen Packet")
+	assertCompanyQuery("A required source is rebuilding; partial state is visible")
+	assertCompanyQuery("Accepted details are still being saved", "Harbor Ledger")
+	assertCompanyQuery("Accepted evidence is waiting for the durable relationship projector")
+	assertCompanyQuery("This company needs a repair before you act on it", "Northwind")
+	assertCompanyQuery("Relationship projection requires operator repair before this state is safe to act on")
 	assertCompanyQuery("No account details have a source yet", "Mesa Clay")
 	assertCompanyQuery("Some details are still missing")
 	assertCompanyQuery("refresh")
+}
+
+func TestRelationshipSearchFindsTheCompletenessSentences(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name, ref string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, item := range []struct{ dimension, value string }{
+			{"lifecycle", "prospect"},
+			{"engagement", "steady"},
+			{"sentiment", "positive"},
+			{"health", "healthy"},
+			{"summary", "A buyer is in evaluation."},
+			{"next_action", "Send the note."},
+			{"risk", "Delivery ownership is unresolved."},
+			{"milestone", "Technical evaluation started."},
+		} {
+			if _, err := f.svc.CorrectRelationship(f.ctx, f.user, row.ID, RelationshipCorrectionInput{
+				Dimension: item.dimension, Value: item.value, Reason: "Filled in for the sheet.",
+			}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return row
+	}
+	current := makeCompany("Birch Ledger", "hubspot:company:birch")
+	backfill := makeCompany("Cedar Packet", "slack:channel:cedar")
+	scoped := makeCompany("Maple Quay", "google:company:maple")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveStatus := func(source, completeness string, scopes []string) {
+		t.Helper()
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource(source).SetSourceAccountID("default").
+			SetStatus("live").SetCompleteness(completeness).
+			SetMissingScopes(scopes).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveStatus("hubspot", "complete", []string{})
+	saveStatus("slack", "partial", []string{})
+	saveStatus("google", "complete", []string{"crm.objects.contacts.read"})
+
+	assertExplanation := func(id uuid.UUID, status, explanation string) {
+		t.Helper()
+		model, err := f.svc.MissionControl(f.ctx, f.user, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if model.Completeness.Status != status || model.Completeness.Explanation != explanation {
+			t.Fatalf("completeness = %+v, want %s / %s", model.Completeness, status, explanation)
+		}
+	}
+	assertExplanation(current.ID, "complete", "Required source evidence is current.")
+	assertExplanation(backfill.ID, "partial", "Backfill is incomplete; only partial state is shown.")
+	assertExplanation(scoped.ID, "partial", "A required source scope is missing.")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("The details you can open are up to date.", "Birch Ledger")
+	assertCompanyQuery("which sheet says The details you can open are up to date.", "Birch Ledger")
+	assertCompanyQuery("Up to date")
+	assertCompanyQuery("Older history is still loading, so only some details are shown.", "Cedar Packet")
+	assertCompanyQuery("A source is missing permission for something we need.", "Maple Quay")
+	assertCompanyQuery("Required source evidence is current.")
+	assertCompanyQuery("Backfill is incomplete; only partial state is shown.")
+	assertCompanyQuery("A required source scope is missing.")
 }
 
 func TestRelationshipSearchFindsTheMissingNextStep(t *testing.T) {
@@ -6161,13 +9830,16 @@ func TestRelationshipSearchFindsTheSourceWarning(t *testing.T) {
 			}
 		}
 	}
-	hubspot := "HubSpot evidence is incomplete, stale, rebuilding, or missing a required permission."
-	slack := "Slack evidence is incomplete, stale, rebuilding, or missing a required permission."
-	combined := "Google and Slack evidence is incomplete, stale, rebuilding, or missing a required permission."
+	hubspot := "HubSpot needs to be read again or reconnected."
+	slack := "Slack needs to be read again or reconnected."
+	combined := "Google and Slack need to be read again or reconnected."
 	assertCompanyQuery("Source needs reconnecting", "Quill Atelier", "Cedar Mill", "Lumen Packet")
 	assertCompanyQuery(hubspot, "Quill Atelier")
 	assertCompanyQuery(slack, "Cedar Mill")
 	assertCompanyQuery(combined, "Lumen Packet")
+	assertCompanyQuery("HubSpot evidence is incomplete, stale, rebuilding, or missing a required permission.")
+	assertCompanyQuery("Slack evidence is incomplete, stale, rebuilding, or missing a required permission.")
+	assertCompanyQuery("Google and Slack evidence is incomplete, stale, rebuilding, or missing a required permission.")
 	assertCompanyQuery("Google evidence is incomplete, stale, rebuilding, or missing a required permission.")
 	assertCompanyQuery("HubSpot and Slack evidence is incomplete, stale, rebuilding, or missing a required permission.")
 	assertCompanyQuery("reconnecting", "Quill Atelier", "Cedar Mill", "Lumen Packet")
@@ -6255,6 +9927,34 @@ func TestRelationshipSearchFindsTheQuietAccount(t *testing.T) {
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	pylon, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Pylon Works",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(pylon.ID).
+		SetLifecycle("prospect").SetLastTouchAt(quietAt).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"Ada Lovelace", "J.R. Rowe"} {
+		personRow, err := f.client.Person.Create().
+			SetDisplayName(name).
+			SetEmploymentStatus("departed").
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RelationshipParticipant.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetRelationship(pylon).SetPerson(personRow).
+			SetDisplayName(name).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
 	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 100, 0)
 	if err != nil || page == nil {
 		t.Fatal(err)
@@ -6286,6 +9986,9 @@ func TestRelationshipSearchFindsTheQuietAccount(t *testing.T) {
 	if !strings.Contains(got["Mesa Clay"], "Ada Mesa has left") {
 		t.Fatalf("mesa explanation = %q", got["Mesa Clay"])
 	}
+	if !strings.Contains(got["Pylon Works"], "Ada Lovelace and J.R. Rowe has left") {
+		t.Fatalf("pylon explanation = %q", got["Pylon Works"])
+	}
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -6308,8 +10011,32 @@ func TestRelationshipSearchFindsTheQuietAccount(t *testing.T) {
 	assertCompanyQuery("Quiet account", "Quill Atelier", "Lumen Packet")
 	assertCompanyQuery("No recorded interaction", "Quill Atelier", "Lumen Packet")
 	assertCompanyQuery("Prospects are usually contacted again within 30 days", "Quill Atelier")
-	assertCompanyQuery("mail to that address is no longer delivered", "Mesa Clay")
-	assertCompanyQuery("because there is nobody here to reply", "Mesa Clay")
+	assertCompanyQuery("mail to that address is no longer delivered", "Mesa Clay", "Pylon Works")
+	assertCompanyQuery("because nobody here can reply", "Mesa Clay", "Pylon Works")
+	assertCompanyQuery("because there is nobody here to reply")
+	singular := fmt.Sprintf(
+		"Ada Mesa has left, so mail to that address is no longer delivered. It has been quiet for %d days because nobody here can reply.",
+		days,
+	)
+	plural := fmt.Sprintf(
+		"Ada Lovelace and J.R. Rowe have left, so mail to that address is no longer delivered. It has been quiet for %d days because nobody here can reply.",
+		days,
+	)
+	assertCompanyQuery(singular, "Mesa Clay")
+	assertCompanyQuery("which queue says "+singular, "Mesa Clay")
+	assertCompanyQuery(plural, "Pylon Works")
+	assertCompanyQuery(fmt.Sprintf(
+		"Ada Mesa has left; mail to that address is no longer delivered. Quiet for %d days because there is nobody here to reply.",
+		days,
+	))
+	assertCompanyQuery(fmt.Sprintf(
+		"Ada Lovelace and J.R. Rowe has left, so mail to that address is no longer delivered. It has been quiet for %d days because nobody here can reply.",
+		days,
+	))
+	assertCompanyQuery(fmt.Sprintf(
+		"Ada Mesa has left, so mail to that address is no longer delivered. It has been quiet for %d day because nobody here can reply.",
+		days,
+	))
 }
 
 func TestRelationshipSearchFindsTheUnresolvedRisk(t *testing.T) {
@@ -6390,11 +10117,70 @@ func TestRelationshipSearchFindsTheUnresolvedRisk(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("1 unresolved risk. This company is critical.", "Quill Atelier")
-	assertCompanyQuery("2 unresolved risks. This company needs attention.", "Lumen Packet")
+	assertCompanyQuery("1 risk is still open. This company is critical.", "Quill Atelier")
+	assertCompanyQuery("2 risks are still open. This company needs attention.", "Lumen Packet")
+	assertCompanyQuery("risk is still open", "Quill Atelier")
+	assertCompanyQuery("risks are still open", "Lumen Packet")
 	assertCompanyQuery("Unresolved risk", "Quill Atelier", "Lumen Packet")
-	assertCompanyQuery("unresolved risks", "Lumen Packet")
+	assertCompanyQuery("1 unresolved risk. This company is critical.")
+	assertCompanyQuery("unresolved risks")
 	assertCompanyQuery("This company is critical.", "Quill Atelier")
+}
+
+func TestRelationshipSearchFindsTheRiskAndMilestoneLine(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	quill := makeCompany("Quill Atelier")
+	lumen := makeCompany("Lumen Packet")
+	harbor := makeCompany("Harbor Ledger")
+	if _, err := f.client.Relationship.UpdateOneID(quill.ID).
+		SetRisks([]string{"Security review has no owner."}).
+		SetMilestones([]string{"Proposal shared."}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(lumen.ID).
+		SetRisks([]string{"renewal slip"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(harbor.ID).
+		SetRisks([]string{"late invoice"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Security review has no owner.", "Quill Atelier")
+	assertCompanyQuery("Security review has no owner", "Quill Atelier")
+	assertCompanyQuery("renewal slip", "Lumen Packet")
+	assertCompanyQuery("Renewal slip.", "Lumen Packet")
+	assertCompanyQuery("late invoice", "Harbor Ledger")
+	assertCompanyQuery("Proposal shared.", "Quill Atelier")
+	assertCompanyQuery("Proposal shared", "Quill Atelier")
 }
 
 func TestRelationshipSearchFindsTheActionOutcome(t *testing.T) {
@@ -6473,7 +10259,8 @@ func TestRelationshipSearchFindsTheActionOutcome(t *testing.T) {
 	}
 	assertCompanyQuery("The email action failed. Review it before trying again.", "Quill Atelier")
 	assertCompanyQuery("The slack action may have gone through. Review it before trying again.", "Lumen Packet")
-	assertCompanyQuery("The call action needs a manual review before it can be tried again.", "Cedar Mill")
+	assertCompanyQuery("The call action needs a person to review it before you try again.", "Cedar Mill")
+	assertCompanyQuery("The call action needs a manual review before it can be tried again.")
 	assertCompanyQuery("Action needs review", "Quill Atelier", "Lumen Packet", "Cedar Mill")
 	assertCompanyQuery("action failed", "Quill Atelier")
 	assertCompanyQuery("may have gone through", "Lumen Packet")
@@ -7747,6 +11534,119 @@ func TestRelationshipSearchFindsACalendarLastInteraction(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsTheSheetTime(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	datedAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	recentAt := time.Now().UTC().Add(-10 * 24 * time.Hour)
+	hourAt := time.Now().UTC().Add(-2 * time.Hour)
+	label := datedAt.Format("Jan 2, 2006")
+
+	makeCompany := func(name string, touch time.Time) *ent.Relationship {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		saved, err := f.client.Relationship.UpdateOneID(rel.ID).SetLastTouchAt(touch).Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return saved
+	}
+	makeCompany("Directory Touch", datedAt)
+	thread := makeCompany("Thread Day", recentAt)
+	badge := makeCompany("Badge Day", recentAt)
+	timeline := makeCompany("Timeline Day", recentAt)
+	change := makeCompany("Change Day", recentAt)
+	removed := makeCompany("Deleted Day", recentAt)
+	makeCompany("Recent Day", recentAt)
+	hourTouch := makeCompany("Hour Touch", hourAt)
+	hourThread := makeCompany("Hour Thread", recentAt)
+
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).SetProviderThreadID("thread-day").
+		SetLastActivityAt(datedAt).SetRelationship(thread).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).SetProviderThreadID("hour-thread").
+		SetLastActivityAt(hourAt).SetRelationship(hourThread).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(badge).
+		SetSource("gmail").SetExternalID("badge-day").SetEventType("mail").
+		SetOccurredAt(datedAt).SetReceivedAt(datedAt).SetContentHash("badge-day").
+		SetSummary("A dated activity").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(context.Background())
+	saveMail := func(rel *ent.Relationship, id string, at time.Time, deleted bool) {
+		t.Helper()
+		if _, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(rel.ID).
+			SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID(id).
+			SetInteractionType("email").SetDirection("inbound").SetSubject(id).
+			SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+			SetContentHash("sha256:" + id).SetMetadataJSON(`{}`).SetDeleted(deleted).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveMail(timeline, "timeline-day", datedAt, false)
+	saveMail(removed, "deleted-day", datedAt, true)
+	if _, err := f.client.RelationshipStateSnapshot.Create().
+		SetWorkspace(ws).SetRelationship(change).SetUser(f.user).
+		SetVersion(1).SetStateJSON(`{}`).SetStateHash("change-day").
+		SetCreatedAt(datedAt).SetEvaluatedAt(datedAt).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipStateSnapshot.Create().
+		SetWorkspace(ws).SetRelationship(hourTouch).SetUser(f.user).
+		SetVersion(1).SetStateJSON(`{}`).SetStateHash("hour-change").
+		SetCreatedAt(hourAt).SetEvaluatedAt(hourAt).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	day := []string{"Directory Touch", "Thread Day", "Badge Day", "Timeline Day", "Change Day"}
+	assertCompanyQuery(label, day...)
+	assertCompanyQuery(label+".", day...)
+	assertCompanyQuery(recentAt.Format("Jan 2, 2006"))
+	assertCompanyQuery("2 hours ago", "Hour Touch", "Hour Thread")
+	assertCompanyQuery("v1 · "+label, "Change Day")
+	assertCompanyQuery("v1 · "+label+".", "Change Day")
+	assertCompanyQuery("v2 · " + label)
+	assertCompanyQuery("v1")
+	assertCompanyQuery("v1 · 2 hours ago", "Hour Touch")
+}
+
 func TestRelationshipSearchFindsTheQuietCompany(t *testing.T) {
 	f := newFixture(t)
 	quiet, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
@@ -7827,6 +11727,54 @@ func TestRelationshipSearchFindsNotFilledIn(t *testing.T) {
 	if len(got) != 2 || got[0] != "Northwind Quiet" || got[1] != "Quill Atelier" {
 		t.Fatalf("not filled in = %v", got)
 	}
+}
+
+func TestRelationshipSearchFindsTheCategoryLine(t *testing.T) {
+	f := newFixture(t)
+	saveCategories := func(name string, categories []string) {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.Relationship.UpdateOneID(row.ID).
+			SetCompanyCategories(categories).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveCategories("Category Pair", []string{"ledger", "atelier"})
+	saveCategories("Category Swap", []string{"atelier", "ledger"})
+	saveCategories("Category One", []string{"ledger"})
+	saveCategories("Category Three", []string{"ledger", "atelier", "harbor"})
+	saveCategories("Category Spaced", []string{"  ledger  ", "Atelier"})
+	saveCategories("Category Hyphen", []string{"enterprise-sales", "harbor"})
+	saveCategories("Category Quiet", nil)
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("ledger, atelier", "Category Pair", "Category Spaced")
+	assertCompanyQuery("Ledger, Atelier.", "Category Pair", "Category Spaced")
+	assertCompanyQuery("atelier, ledger", "Category Swap")
+	assertCompanyQuery("ledger, harbor")
+	assertCompanyQuery("ledger, atelier, harbor", "Category Three")
+	assertCompanyQuery("enterprise-sales, harbor", "Category Hyphen")
+	assertCompanyQuery("ledger", "Category Pair", "Category Swap", "Category One", "Category Three", "Category Spaced")
 }
 
 func TestRelationshipSearchFindsEngagementAndSentiment(t *testing.T) {
@@ -7980,6 +11928,177 @@ func TestRelationshipSearchFindsTheStateAnswer(t *testing.T) {
 	assertCompanyQuery("Health: Healthy")
 	assertCompanyQuery("Engagement: Declining")
 	assertCompanyQuery("No supported answer yet.", "Birch Slide")
+}
+
+func TestRelationshipSearchFindsTheStateAnswerLine(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	correct := func(rel *ent.Relationship, dimension, value string) {
+		t.Helper()
+		if _, err := f.svc.CorrectRelationship(f.ctx, f.user, rel.ID, RelationshipCorrectionInput{
+			Dimension: dimension, Value: value, Reason: "The buyer confirmed " + dimension + ".",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	both := makeCompany("State Both")
+	correct(both, "lifecycle", "prospect")
+	correct(both, "health", "needs_attention")
+	health := makeCompany("State Health")
+	correct(health, "health", "needs_attention")
+	extra := makeCompany("State Extra")
+	correct(extra, "lifecycle", "prospect")
+	correct(extra, "health", "needs_attention")
+	correct(extra, "engagement", "declining")
+	makeCompany("State Quiet")
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Lifecycle: Prospect · Health: Needs attention", "State Both")
+	assertCompanyQuery("Lifecycle: Prospect · Health: Needs attention.", "State Both")
+	assertCompanyQuery("Health: Needs attention · Lifecycle: Prospect")
+	assertCompanyQuery("Lifecycle: Prospect · Health: Needs attention · Engagement: Declining", "State Extra")
+	assertCompanyQuery("Health: Needs attention", "State Both", "State Health", "State Extra")
+	assertCompanyQuery("Lifecycle: Prospect", "State Both", "State Extra")
+}
+
+func TestRelationshipSearchFindsThePromiseAnswer(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	correct := func(rel *ent.Relationship, dimension, value string) {
+		t.Helper()
+		if _, err := f.svc.CorrectRelationship(f.ctx, f.user, rel.ID, RelationshipCorrectionInput{
+			Dimension: dimension, Value: value, Reason: "The buyer confirmed " + dimension + ".",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	soon := time.Now().Add(24 * time.Hour)
+	later := time.Now().Add(30 * 24 * time.Hour)
+	one := makeCompany("Promise One")
+	seedCommitment(t, f, one, "promised_by_them", "Send the packet", "", nil)
+	spaced := makeCompany("Promise Spaced")
+	seedCommitment(t, f, spaced, "promised_by_them", "Send the packet", "", nil)
+	blank := seedCommitment(t, f, spaced, "promised_by_them", "blank", "", nil)
+	if _, err := f.client.Commitment.UpdateOneID(blank.ID).SetText("  ").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	two := makeCompany("Promise Two")
+	seedCommitment(t, f, two, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, two, "promised_by_them", "Mail the ledger", "", &later)
+	three := makeCompany("Promise Three")
+	seedCommitment(t, f, three, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, three, "promised_by_them", "Mail the ledger", "", nil)
+	seedCommitment(t, f, three, "promised_by_them", "File the note", "", nil)
+	risk := makeCompany("Promise Risk")
+	seedCommitment(t, f, risk, "promised_by_them", "Send the quay risk", "", &soon)
+	seedCommitment(t, f, risk, "promised_by_them", "Mail the quay risk", "", &soon)
+	mixed := makeCompany("Promise Mixed")
+	seedCommitment(t, f, mixed, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, mixed, "promised_by_them", "Mail the ledger", "", &soon)
+	blend := makeCompany("Promise Blend")
+	seedCommitment(t, f, blend, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, blend, "promised_by_them", "Mail the ledger", "", nil)
+	seedCommitment(t, f, blend, "promised_by_them", "File the note", "", &soon)
+	held := makeCompany("Promise Held")
+	seedCommitment(t, f, held, "promised_by_them", "Hold the quay", "", &soon)
+	life := makeCompany("Promise Life")
+	correct(life, "lifecycle", "prospect")
+	seedCommitment(t, f, life, "promised_by_them", "Send the packet", "", nil)
+	extra := makeCompany("Promise Extra")
+	correct(extra, "lifecycle", "prospect")
+	correct(extra, "health", "needs_attention")
+	seedCommitment(t, f, extra, "promised_by_them", "Send the packet", "", nil)
+	stage := makeCompany("Promise Stage")
+	correct(stage, "lifecycle", "prospect")
+	seedCommitment(t, f, stage, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, stage, "promised_by_them", "Mail the ledger", "", nil)
+	guess := makeCompany("Promise Guess")
+	seedCommitment(t, f, guess, "promised_by_them", "Send the packet", "", nil)
+	if _, err := f.client.Commitment.Update().
+		Where(commitment.HasRelationshipWith(relationship.IDEQ(guess.ID))).
+		SetAcceptance("candidate").
+		SetUserConfirmed(false).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	done := makeCompany("Promise Done")
+	finished := seedCommitment(t, f, done, "promised_by_them", "Send the old packet", "", nil)
+	if _, err := f.client.Commitment.UpdateOneID(finished.ID).SetStatus("fulfilled").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	seedCommitment(t, f, done, "promised_by_them", "Mail the ledger", "", nil)
+	makeCompany("Promise Quiet")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("2 open promises", "Promise Two")
+	assertCompanyQuery("2 open promises.", "Promise Two")
+	assertCompanyQuery("3 open promises", "Promise Three")
+	assertCompanyQuery("Open promise: Send the packet", "Promise One", "Promise Spaced")
+	assertCompanyQuery("Open promise: Send the packet.", "Promise One", "Promise Spaced")
+	assertCompanyQuery("Open promise: Mail the ledger", "Promise Done")
+	assertCompanyQuery("Lifecycle: Prospect · Open promise: Send the packet", "Promise Life")
+	assertCompanyQuery("Lifecycle: Prospect · Open promise: Send the packet.", "Promise Life")
+	assertCompanyQuery("Lifecycle: Prospect · Health: Needs attention · Open promise: Send the packet", "Promise Extra")
+	assertCompanyQuery("Lifecycle: Prospect · 2 open promises", "Promise Stage")
+	assertCompanyQuery("Lifecycle: Prospect · Open promise: Send the packet · Health: Needs attention")
+	assertCompanyQuery("Open promise: Send the packet · Lifecycle: Prospect")
+	assertCompanyQuery("1 open promise and 1 promise at risk", "Promise Mixed")
+	assertCompanyQuery("1 open promise and 1 promise at risk.", "Promise Mixed")
+	assertCompanyQuery("2 open promises and 1 promise at risk", "Promise Blend")
+	assertCompanyQuery("1 promise at risk and 1 open promise")
+	assertCompanyQuery("2 promises are at risk", "Promise Risk")
+	assertCompanyQuery("2 promises are at risk.", "Promise Risk")
+	assertCompanyQuery("3 promises are at risk")
+	assertCompanyQuery("At risk promise: Hold the quay", "Promise Held")
+	assertCompanyQuery("At risk promise: Hold the quay.", "Promise Held")
+	assertCompanyQuery("Lifecycle: Prospect", "Promise Life", "Promise Extra", "Promise Stage")
 }
 
 func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
@@ -8659,6 +12778,70 @@ func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
 		"A stronger source already chose the current value.",
 		"contradiction:cedar", 1,
 	)
+	loose := makeCompany("Badge Loose")
+	at := time.Now().UTC()
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(loose).
+		SetSource("user").SetExternalID("badge-loose").SetEventType("note").
+		SetOccurredAt(at).SetReceivedAt(at).SetContentHash("badge-loose").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RevenueAction.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(loose).
+		SetActionType("follow_up_task").SetChannel("task").
+		SetDetector("manual").SetDedupeKey("badge-loose").
+		SetRevisionHash("badge-loose").SetReason("Send the harbor note").
+		SetPriorityScore(40).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	swap := makeCompany("Badge Swap")
+	swapPayload, err := json.Marshal(ConversationContradictionCase{
+		CaseID: "contradiction:swap", RelationshipID: swap.ID.String(), SubjectRef: swap.ID.String(),
+		Dimension: "health", Status: "open", Reason: "Two sources disagree.",
+		Sides: []ConversationContradictionEvidenceSide{
+			{AssertionID: "left", Source: "hubspot"},
+			{AssertionID: "right", Source: "user"},
+		},
+		OpenedAt: time.Now().UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	swapSum := sha256.Sum256(swapPayload)
+	if _, err := f.client.ConversationIntelligenceArtifact.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(swap).
+		SetKind("contradiction_case").SetStableID("contradiction:swap").SetVersion(1).
+		SetStatus("open").SetSubjectRef(swap.ID.String()).
+		SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+		SetPayloadJSON(string(swapPayload)).SetPayloadHash(hex.EncodeToString(swapSum[:])).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	authority := makeCompany("Badge Authority")
+	authorityPayload, err := json.Marshal(ConversationContradictionCase{
+		CaseID: "contradiction:authority", RelationshipID: authority.ID.String(), SubjectRef: authority.ID.String(),
+		Dimension: "health", Status: "open", Reason: "Two sources disagree.",
+		Sides: []ConversationContradictionEvidenceSide{
+			{AssertionID: "left", Source: "user_correction"},
+			{AssertionID: "right", Source: "source_fact"},
+		},
+		OpenedAt: time.Now().UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	authoritySum := sha256.Sum256(authorityPayload)
+	if _, err := f.client.ConversationIntelligenceArtifact.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(authority).
+		SetKind("contradiction_case").SetStableID("contradiction:authority").SetVersion(1).
+		SetStatus("open").SetSubjectRef(authority.ID.String()).
+		SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+		SetPayloadJSON(string(authorityPayload)).SetPayloadHash(hex.EncodeToString(authoritySum[:])).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
 		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
@@ -8675,12 +12858,180 @@ func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Two details disagree", "Quill Atelier")
+	assertCompanyQuery("Two details disagree", "Quill Atelier", "Badge Swap", "Badge Authority")
 	assertCompanyQuery("Which Lifecycle should be the current one?", "Quill Atelier")
-	assertCompanyQuery("Choose the current value from 2 sources.", "Quill Atelier")
-	assertCompanyQuery("Which Health should be the current one?")
+	assertCompanyQuery("Choose the current value from 2 sources.", "Quill Atelier", "Badge Swap", "Badge Authority")
+	assertCompanyQuery("Which Health should be the current one?", "Badge Swap", "Badge Authority")
 	assertCompanyQuery("A stronger source already chose the current value.", "Cedar Mill")
 	assertCompanyQuery("Two sources disagree. Choose which value is current.")
+	assertCompanyQuery("Added by you vs HubSpot", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("(Added by you vs HubSpot)", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("Added by you vs HubSpot.", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("HubSpot vs Added by you", "Badge Swap")
+	assertCompanyQuery("(HubSpot vs Added by you)", "Badge Swap")
+	assertCompanyQuery("Your correction vs A connected source", "Badge Authority")
+	assertCompanyQuery("Your correction vs HubSpot")
+	assertCompanyQuery("Added by you vs HubSpot vs Gmail")
+	assertCompanyQuery("Added by you", "Badge Loose")
+}
+
+func TestRelationshipSearchFindsTheDeltaLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveSnap := func(rel *ent.Relationship, version int, state string, changed []string) {
+		t.Helper()
+		if _, err := f.client.RelationshipStateSnapshot.Create().
+			SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+			SetVersion(version).SetStateJSON(state).
+			SetStateHash(rel.DisplayName + ":" + strconv.Itoa(version)).
+			SetEvaluatedAt(time.Now().UTC()).
+			SetChangedDimensions(changed).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	health := makeCompany("Delta Health")
+	saveSnap(health, 1, `{"health":"unknown"}`, []string{"health"})
+	saveSnap(health, 2, `{"health":"needs_attention"}`, []string{"health"})
+	first := makeCompany("Delta First")
+	saveSnap(first, 1, `{"health":"needs_attention"}`, []string{"health"})
+	reverse := makeCompany("Delta Reverse")
+	saveSnap(reverse, 1, `{"health":"needs_attention"}`, []string{"health"})
+	saveSnap(reverse, 2, `{"health":"unknown"}`, []string{"health"})
+	evidence := makeCompany("Delta Evidence")
+	saveSnap(evidence, 1, `{}`, []string{"evidence"})
+	risk := makeCompany("Delta Risk")
+	saveSnap(risk, 1, `{"risks":[]}`, []string{"risks"})
+	saveSnap(risk, 2, `{"risks":["renewal slip"]}`, []string{"risks"})
+	pair := makeCompany("Delta Pair")
+	saveSnap(pair, 1, `{"risks":[]}`, []string{"risks"})
+	saveSnap(pair, 2, `{"risks":["renewal slip","late invoice"]}`, []string{"risks"})
+	cleared := makeCompany("Delta Cleared")
+	saveSnap(cleared, 1, `{"risks":["renewal slip","late invoice"]}`, []string{"risks"})
+	saveSnap(cleared, 2, `{"risks":[]}`, []string{"risks"})
+	marks := makeCompany("Delta Marks")
+	saveSnap(marks, 1, `{"milestones":["kickoff"]}`, []string{"milestones"})
+	saveSnap(marks, 2, `{"milestones":["security review","signed order"]}`, []string{"milestones"})
+	next := makeCompany("Delta Next")
+	saveSnap(next, 1, `{"nextAction":"Send the packet"}`, []string{"next_action"})
+	stored := makeCompany("Delta Stored")
+	if _, err := f.client.Relationship.UpdateOneID(stored.ID).
+		SetHealth("needs_attention").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Not known → Needs attention", "Delta Health")
+	assertCompanyQuery("Not known → Needs attention.", "Delta Health")
+	assertCompanyQuery("Unknown → Needs attention", "Delta First")
+	assertCompanyQuery("Needs attention → Not known", "Delta Reverse")
+	assertCompanyQuery("Not known → Healthy")
+	assertCompanyQuery("Unknown → Unknown", "Delta Evidence")
+	assertCompanyQuery("None → Renewal slip", "Delta Risk")
+	assertCompanyQuery("None → Renewal slip, late invoice", "Delta Pair")
+	assertCompanyQuery("None → Renewal slip, late invoice.", "Delta Pair")
+	assertCompanyQuery("None → late invoice, renewal slip")
+	assertCompanyQuery("Renewal slip, late invoice → None", "Delta Cleared")
+	assertCompanyQuery("Kickoff → Security review, signed order", "Delta Marks")
+	assertCompanyQuery("Unknown → Send the packet", "Delta Next")
+	assertCompanyQuery("Needs attention", "Delta Stored")
+}
+
+func TestRelationshipSearchFindsTheChangeList(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveSnap := func(rel *ent.Relationship, changed []string) {
+		t.Helper()
+		if _, err := f.client.RelationshipStateSnapshot.Create().
+			SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+			SetVersion(1).SetStateJSON(`{}`).
+			SetStateHash(rel.DisplayName).
+			SetEvaluatedAt(time.Now().UTC()).
+			SetChangedDimensions(changed).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pair := makeCompany("Change Pair")
+	saveSnap(pair, []string{"health", "lifecycle"})
+	swap := makeCompany("Change Swap")
+	saveSnap(swap, []string{"lifecycle", "health"})
+	one := makeCompany("Change One")
+	saveSnap(one, []string{"health"})
+	evidence := makeCompany("Change Evidence")
+	saveSnap(evidence, []string{"evidence", "risks"})
+	three := makeCompany("Change Three")
+	saveSnap(three, []string{"health", "lifecycle", "summary"})
+	next := makeCompany("Change Next")
+	saveSnap(next, []string{"next_action", "summary"})
+	marks := makeCompany("Change Marks")
+	saveSnap(marks, []string{"milestones", "sentiment"})
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Health, Lifecycle", "Change Pair")
+	assertCompanyQuery("Health, Lifecycle.", "Change Pair")
+	assertCompanyQuery("Lifecycle, Health", "Change Swap")
+	assertCompanyQuery("Health, Summary")
+	assertCompanyQuery("Supporting evidence, Risks", "Change Evidence")
+	assertCompanyQuery("Risks, Supporting evidence")
+	assertCompanyQuery("Health, Lifecycle, Summary", "Change Three")
+	assertCompanyQuery("Next action, Summary", "Change Next")
+	assertCompanyQuery("Milestones, Sentiment", "Change Marks")
+	assertCompanyQuery("Health")
 }
 
 func TestRelationshipSearchFindsContradictionReasons(t *testing.T) {
@@ -9156,7 +13507,7 @@ func TestRelationshipSearchFindsSuggestionTitles(t *testing.T) {
 	}
 	assertCompanyQuery("Unresolved objection", "Quill Atelier")
 	assertCompanyQuery("Risk raised in a conversation", "Cedar Mill")
-	assertCompanyQuery("Renewal context", "Harbor Ledger")
+	assertCompanyQuery("Up for renewal", "Harbor Ledger")
 	_ = harbor
 }
 
@@ -9197,13 +13548,68 @@ func TestRelationshipSearchFindsFocusedReview(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	saveCandidate := func(rel *ent.Relationship, confidence float64, externalID string) *ent.RelationshipObservation {
+		t.Helper()
+		facts, err := json.Marshal(map[string]any{
+			"conversation_claim_candidates": []map[string]any{{
+				"candidateId": "cand-" + rel.DisplayName, "kind": "promise",
+				"displayValue": "Noted", "confidence": confidence,
+				"evidence": []map[string]any{{"exactQuote": "Noted"}},
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(externalID).
+			SetSummary("A recorded note").SetNormalizedFactsJSON(string(facts)).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	decideCandidate := func(rel *ent.Relationship, obs *ent.RelationshipObservation, externalID, kind string) {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"review_decision": map[string]any{
+				"item_id": "review:" + externalID, "kind": kind,
+				"candidate_id": "cand-" + rel.DisplayName, "observation_id": obs.ID.String(),
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("user").SetExternalID(externalID).SetEventType("conversation_review_decided").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(externalID).
+			SetSummary("A recorded decision").SetNormalizedFactsJSON(string(body)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
 	quill := makeCompany("Quill Atelier")
 	cedar := makeCompany("Cedar Mill")
 	lumen := makeCompany("Lumen Packet")
 	makeCompany("Harbor Ledger")
+	half := makeCompany("Half Ledger")
+	proposed := makeCompany("Proposed Ledger")
+	closed := makeCompany("Closed Ledger")
+	deferred := makeCompany("Deferred Ledger")
 	saveClaim(quill, "objection", 0.5, 1, "review-quill")
 	saveClaim(cedar, "risk", 0.7, 0.4, "review-cedar")
 	saveClaim(lumen, "stakeholder", 0.8, 1, "review-lumen")
+	saveCandidate(half, 0.5, "review-half")
+	saveCandidate(proposed, 0.92, "review-proposed")
+	closedObs := saveCandidate(closed, 0.92, "review-closed")
+	decideCandidate(closed, closedObs, "review-closed-decision", "approve")
+	deferredObs := saveCandidate(deferred, 0.61, "review-deferred")
+	decideCandidate(deferred, deferredObs, "review-deferred-decision", "defer")
 	labelsOf := func(rel *ent.Relationship) []string {
 		t.Helper()
 		intelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, rel)
@@ -9246,6 +13652,21 @@ func TestRelationshipSearchFindsFocusedReview(t *testing.T) {
 	assertCompanyQuery("The wording", "Quill Atelier")
 	assertCompanyQuery("Name who said this.", "Cedar Mill")
 	assertCompanyQuery("Who said it", "Cedar Mill")
+	assertCompanyQuery("50% · What was said", "Quill Atelier", "Half Ledger")
+	assertCompanyQuery("50% · What was said.", "Quill Atelier", "Half Ledger")
+	assertCompanyQuery("50% · The wording", "Quill Atelier")
+	assertCompanyQuery("70% · What was said", "Cedar Mill")
+	assertCompanyQuery("40% · Who said it", "Cedar Mill")
+	assertCompanyQuery("80% · Who this is", "Lumen Packet")
+	assertCompanyQuery("92% · What was said", "Proposed Ledger")
+	assertCompanyQuery("92% · What was said.", "Proposed Ledger")
+	assertCompanyQuery("61% · What was said", "Deferred Ledger")
+	assertCompanyQuery("92% · Who said it")
+	assertCompanyQuery("61% · The wording")
+	assertCompanyQuery("50% · Who said it")
+	assertCompanyQuery("80% · What was said")
+	assertCompanyQuery("70% · The wording")
+	assertCompanyQuery("40% · The wording")
 	assertCompanyQuery("Confirm who this person is.", "Lumen Packet")
 	assertCompanyQuery("Who this is", "Lumen Packet")
 	assertCompanyQuery("Focused evidence review", "Quill Atelier", "Cedar Mill", "Lumen Packet")
@@ -9436,6 +13857,8 @@ func TestRelationshipSearchFindsPrivacySentences(t *testing.T) {
 	saveArtifact(harbor, "governance_decision", "privacy:harbor:two", 1, decision("privacy:harbor:two"))
 	saveArtifact(lumen, "conversation_policy", "privacy:lumen", 1, policy("deny", false, false, 7))
 	saveArtifact(lumen, "conversation_policy", "privacy:lumen", 2, policy("require_consent", true, true, 30))
+	birch := makeCompany("Birch Permit")
+	saveArtifact(birch, "conversation_policy", "privacy:birch", 1, policy("allow", true, true, 30))
 	quillIntel, err := f.svc.RelationshipIntelligenceFor(f.ctx, quill)
 	if err != nil {
 		t.Fatal(err)
@@ -9480,12 +13903,15 @@ func TestRelationshipSearchFindsPrivacySentences(t *testing.T) {
 	assertCompanyQuery("Retention: 7 days", "Quill Atelier")
 	assertCompanyQuery("1 privacy decision recorded.", "Quill Atelier")
 	assertCompanyQuery("Ask before capturing", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
-	assertCompanyQuery("Shared excerpts: on", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
-	assertCompanyQuery("Plan sharing outside this workspace: allowed", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
-	assertCompanyQuery("Retention: 30 days", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
-	assertCompanyQuery("No privacy decisions recorded.", "Cedar Mill", "Lumen Packet")
+	assertCompanyQuery("Capture: Ask before capturing", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
+	assertCompanyQuery("Shared excerpts: on", "Cedar Mill", "Harbor Ledger", "Lumen Packet", "Birch Permit")
+	assertCompanyQuery("Plan sharing outside this workspace: allowed", "Cedar Mill", "Harbor Ledger", "Lumen Packet", "Birch Permit")
+	assertCompanyQuery("Retention: 30 days", "Cedar Mill", "Harbor Ledger", "Lumen Packet", "Birch Permit")
+	assertCompanyQuery("No privacy decisions recorded.", "Cedar Mill", "Lumen Packet", "Birch Permit")
 	assertCompanyQuery("2 privacy decisions recorded.", "Harbor Ledger")
-	assertCompanyQuery("Capture is allowed")
+	assertCompanyQuery("Capture is allowed", "Birch Permit")
+	assertCompanyQuery("Capture: Capture is allowed", "Birch Permit")
+	assertCompanyQuery("which privacy line says Capture: Capture is allowed", "Birch Permit")
 }
 
 func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
@@ -9564,7 +13990,7 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	saveReceipt(harbor, "consent-harbor-2", ConversationGovernanceReceipt{
 		ReceiptID: "harbor-2", CapturePolicy: "calendar_prompt_or_manual",
 		Routing: "local_only", Region: "local_device", Retention: "untilTranscribed",
-		ParticipantDisclosure: "not_recorded", DeletionOutcome: "scheduled_after_transcription",
+		ParticipantDisclosure: "not_recorded", DeletionOutcome: "provider_deleted:2026-04-02T15:00:00Z",
 		EvidenceClip: "encrypted",
 	})
 	saveDeletion(harbor, "deletion:harbor", "pending", "2026-09-01T00:00:00Z", 1)
@@ -9609,13 +14035,36 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Legal hold off", "Quill Atelier", "Harbor Ledger")
 	assertCompanyQuery("Kept", "Cedar Mill")
 	assertCompanyQuery("Imported from Gmail, then saved here", "Harbor Ledger")
+	assertCompanyQuery("Imported from the meeting service", "Harbor Ledger")
+	assertCompanyQuery("Kept by the meeting service", "Cedar Mill", "Harbor Ledger")
+	assertCompanyQuery("The meeting service keeps the original. The evidence saved here stays.", "Harbor Ledger")
+	assertCompanyQuery("The meeting service says people were told", "Cedar Mill", "Harbor Ledger")
 	assertCompanyQuery("Deleted", "Harbor Ledger")
+	assertCompanyQuery("The meeting service deleted the original.", "Harbor Ledger")
 	assertCompanyQuery("Consent and governance (1)", "Quill Atelier", "Cedar Mill")
 	assertCompanyQuery("Consent and governance (2)", "Harbor Ledger")
 	assertCompanyQuery("Consent and governance", "Quill Atelier", "Cedar Mill", "Harbor Ledger")
 	assertCompanyQuery("Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Last deletion: Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
+	assertCompanyQuery("Captured by hand · Transcribed on this device, then saved here", "Quill Atelier")
+	assertCompanyQuery("Captured by hand · Transcribed on this device, then saved here.", "Quill Atelier")
+	assertCompanyQuery("Captured by hand · Stays on this device")
+	assertCompanyQuery("Uploaded on purpose · Stays on this device", "Cedar Mill")
+	assertCompanyQuery("Imported from the meeting service · Imported from Gmail, then saved here", "Harbor Ledger")
+	assertCompanyQuery("Started from the calendar or by hand · Stays on this device", "Harbor Ledger")
+	assertCompanyQuery("On this device · Kept until it is transcribed · People were not told · Nothing to delete", "Quill Atelier")
+	assertCompanyQuery("On this device · Kept until it is transcribed · People were not told · The meeting service deleted the original.", "Harbor Ledger")
+	assertCompanyQuery("On this device · Kept · People were not told · Nothing to delete")
+	assertCompanyQuery("Kept by the meeting service · Kept · The meeting service says people were told · Kept because of your settings", "Cedar Mill")
+	assertCompanyQuery("Kept by the meeting service · The meeting service keeps the original. The evidence saved here stays. · The meeting service says people were told · Deleted", "Harbor Ledger")
+	assertCompanyQuery("Legal hold off · No audio was kept", "Quill Atelier", "Harbor Ledger")
+	assertCompanyQuery("Legal hold off · No audio was kept.", "Quill Atelier", "Harbor Ledger")
+	assertCompanyQuery("Legal hold on · The audio that was kept is encrypted", "Cedar Mill")
+	assertCompanyQuery("Legal hold off · The audio that was kept is encrypted", "Harbor Ledger")
+	assertCompanyQuery("Legal hold on · No audio was kept")
+	assertCompanyQuery("Legal hold on · Stays on this device")
+	assertCompanyQuery("Transcribed on this device, then saved here · Captured by hand")
 }
 
 func TestRelationshipSearchFindsNoneRecorded(t *testing.T) {
@@ -9706,6 +14155,10 @@ func TestRelationshipSearchFindsNoneRecorded(t *testing.T) {
 	assertCompanyQuery("None recorded.", emptyLists...)
 	assertCompanyQuery("which companies have none recorded", emptyLists...)
 	assertCompanyQuery("none")
+	assertCompanyQuery("No people recorded for this company yet.", "Quay Quiet", "Quay Risks", "Quay Miles")
+	assertCompanyQuery("which companies have no people recorded for this company yet", "Quay Quiet", "Quay Risks", "Quay Miles")
+	assertCompanyQuery("No risks recorded for this company yet.", "Quay Quiet", "Quay Miles", "Quay People")
+	assertCompanyQuery("No milestones recorded for this company yet.", "Quay Quiet", "Quay Risks", "Quay People")
 }
 
 func TestRelationshipSearchFindsProfileFieldCounts(t *testing.T) {
@@ -9773,6 +14226,26 @@ func TestRelationshipSearchFindsProfileFieldCounts(t *testing.T) {
 	addPerson(full, "Riley Chen", "", func(create *ent.PersonCreate) {
 		create.SetTitle("Engineer").SetOrgName("Northwind").SetSeniority("director").SetLocation("Austin")
 	})
+	hidden := makeCompany("Quay Hidden")
+	addPerson(hidden, "Lane Moss", "Hidden Role", func(create *ent.PersonCreate) {
+		create.SetTitle("Engineer")
+	})
+	host := makeCompany("Quay Host")
+	addPerson(host, "Ned Oak", "", func(create *ent.PersonCreate) {
+		create.SetOrgName("acme.example").SetOrgDomain("acme.example")
+	})
+	hosted := makeCompany("Quay Hosted")
+	addPerson(hosted, "Ned Place", "", func(create *ent.PersonCreate) {
+		create.SetOrgName("acme.example").SetOrgDomain("acme.example").SetLocation("Austin")
+	})
+	label := makeCompany("Quay Label")
+	addPerson(label, "Ida West", "", func(create *ent.PersonCreate) {
+		create.SetTitle("Guide").SetOrgName("dogfood-label.example").SetOrgDomain("dogfood-label.example")
+	})
+	band := makeCompany("Quay Band")
+	addPerson(band, "Ada Band", "", func(create *ent.PersonCreate) {
+		create.SetTitle("Engineer").SetSeniority("ic").SetLocation("Austin")
+	})
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -9792,12 +14265,31 @@ func TestRelationshipSearchFindsProfileFieldCounts(t *testing.T) {
 	}
 	assertCompanyQuery("0/4 profile fields", "Quay Empty", "Quay Space")
 	assertCompanyQuery("No profile details yet", "Quay Empty", "Quay Space")
-	assertCompanyQuery("1/4 profile fields", "Quay Title", "Quay Org")
-	assertCompanyQuery("2/4 profile fields", "Quay Half")
-	assertCompanyQuery("3/4 profile fields", "Quay Three")
+	assertCompanyQuery("1/4 profile fields", "Quay Title", "Quay Org", "Quay Hidden", "Quay Host")
+	assertCompanyQuery("2/4 profile fields", "Quay Half", "Quay Hosted", "Quay Label")
+	assertCompanyQuery("3/4 profile fields", "Quay Three", "Quay Band")
 	assertCompanyQuery("4/4 profile fields", "Quay Full")
 	assertCompanyQuery("which companies have 4/4 profile fields", "Quay Full")
 	assertCompanyQuery("profile fields")
+	assertCompanyQuery("Buyer", "Quay Title")
+	assertCompanyQuery("Engineer", "Quay Half", "Quay Three", "Quay Full", "Quay Hidden", "Quay Band")
+	assertCompanyQuery("Northwind", "Quay Org", "Quay Three", "Quay Full")
+	assertCompanyQuery("Austin", "Quay Half", "Quay Full", "Quay Hosted", "Quay Band")
+	assertCompanyQuery("Hidden Role")
+	assertCompanyQuery("Acme", "Quay Host", "Quay Hosted")
+	assertCompanyQuery("Engineer · Austin", "Quay Half")
+	assertCompanyQuery("Engineer · Austin.", "Quay Half")
+	assertCompanyQuery("Austin · Engineer")
+	assertCompanyQuery("Engineer · Northwind")
+	assertCompanyQuery("Engineer · Hidden Role")
+	assertCompanyQuery("Buyer · Austin")
+	assertCompanyQuery("Acme · Austin", "Quay Hosted")
+	assertCompanyQuery("Acme · Austin.", "Quay Hosted")
+	assertCompanyQuery("acme.example · Austin")
+	assertCompanyQuery("Guide · Dogfood Label", "Quay Label")
+	assertCompanyQuery("Guide · dogfood-label.example")
+	assertCompanyQuery("Engineer · Individual contributor · Austin", "Quay Band")
+	assertCompanyQuery("Engineer · ic · Austin")
 }
 
 func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
@@ -9864,6 +14356,30 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 	addAttribute(addPerson(retracted, "Jules Pike"), "external_research", "retracted", "research-retracted", "Engineer")
 	fact := makeCompany("Quay Fact")
 	addAttribute(addPerson(fact, "Casey Quinn"), "source_fact", "active", "research-fact", "Buyer")
+	phone := makeCompany("Quay Phone")
+	if _, err := f.client.PersonAttribute.Create().
+		SetWorkspace(ws).SetUser(f.user).SetPerson(addPerson(phone, "Lane Moss")).
+		SetDimension("phone").SetValue("555-0100").
+		SetSourceType("external_research").SetSource("web").SetExtractor("parallel").
+		SetStatus("active").SetConfidence(0.8).
+		SetObservedAt(now).SetValidFrom(now).
+		SetCitationsJSON(`[{"title":"Bio","url":"https://example.com/bio","excerpts":["555-0100"]}]`).
+		SetDedupeKey("research-phone").SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	band := makeCompany("Quay Band")
+	if _, err := f.client.PersonAttribute.Create().
+		SetWorkspace(ws).SetUser(f.user).SetPerson(addPerson(band, "Ada Band")).
+		SetDimension("seniority").SetValue("ic").
+		SetSourceType("external_research").SetSource("web").SetExtractor("parallel").
+		SetStatus("active").SetConfidence(0.8).
+		SetObservedAt(now).SetValidFrom(now).
+		SetCitationsJSON(`[{"title":"Bio","url":"https://example.com/bio","excerpts":["ic"]}]`).
+		SetDedupeKey("research-band").SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 	makeCompany("Quay None")
 
 	assertCompanyQuery := func(query string, want ...string) {
@@ -9882,21 +14398,32 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Public research · 1 detail", "Quay One")
+	assertCompanyQuery("Public research · 1 detail", "Quay One", "Quay Phone", "Quay Band")
 	assertCompanyQuery("Public research · 2 details", "Quay Two")
 	assertCompanyQuery("which companies have public research · 2 details", "Quay Two")
 	assertCompanyQuery("Public research · 1 details")
 	assertCompanyQuery("Public research · 2 detail")
-	assertCompanyQuery("80% confidence", "Quay One", "Quay Two")
-	assertCompanyQuery("the title is 80% confidence", "Quay One", "Quay Two")
+	assertCompanyQuery("80% confidence", "Quay One", "Quay Two", "Quay Phone", "Quay Band")
+	assertCompanyQuery("the title is 80% confidence", "Quay One", "Quay Two", "Quay Phone", "Quay Band")
 	assertCompanyQuery("confidence")
 	assertCompanyQuery("80%")
-	assertCompanyQuery("Verify source", "Quay One", "Quay Two")
-	assertCompanyQuery("Verify source 1", "Quay One", "Quay Two")
+	assertCompanyQuery("Verify source", "Quay One", "Quay Two", "Quay Phone", "Quay Band")
+	assertCompanyQuery("Verify source 1", "Quay One", "Quay Two", "Quay Phone", "Quay Band")
 	assertCompanyQuery("Verify source 2", "Quay Two")
 	assertCompanyQuery("Verify source 3")
 	assertCompanyQuery("source")
 	assertCompanyQuery("verify")
+	assertCompanyQuery("Engineer", "Quay One", "Quay Two")
+	assertCompanyQuery("Director", "Quay Two")
+	assertCompanyQuery("Buyer")
+	assertCompanyQuery("Title: Engineer · 80% confidence", "Quay One", "Quay Two")
+	assertCompanyQuery("Title: Engineer · 80% confidence.", "Quay One", "Quay Two")
+	assertCompanyQuery("Title: Director · 80% confidence", "Quay Two")
+	assertCompanyQuery("Title: Buyer · 80% confidence")
+	assertCompanyQuery("Title: Engineer · 60% confidence")
+	assertCompanyQuery("Phone: 555-0100 · 80% confidence", "Quay Phone")
+	assertCompanyQuery("Seniority: Individual contributor · 80% confidence", "Quay Band")
+	assertCompanyQuery("Seniority: ic · 80% confidence")
 }
 
 func TestRelationshipSearchFindsTheDuplicateLines(t *testing.T) {
@@ -10228,7 +14755,7 @@ func TestRelationshipSearchFindsTheRecommendationBadges(t *testing.T) {
 	assertCompanyQuery("High", "Review Co", "Cleared Co", "Rejected Co")
 	assertCompanyQuery("Medium", "Stale Co", "Approved Co")
 	assertCompanyQuery("Low", "Pending Co", "Blocked Co")
-	assertCompanyQuery("Awaiting approval")
+	assertCompanyQuery("Awaiting approval", "Review Co", "Stale Co", "Pending Co", "Cleared Co", "Blocked Co")
 	assertCompanyQuery("Approved in this workspace")
 }
 
@@ -10269,7 +14796,7 @@ func TestRelationshipSearchFindsThePlanHeading(t *testing.T) {
 	savePlan(draft, "plan:draft", 1, `{
 		"status": "draft",
 		"currentRevision": {"version": 1, "items": [
-			{"itemId": "item-1", "title": "Send the security packet", "ownerParticipantRef": "Ada Quill"},
+			{"itemId": "item-1", "title": "Send the security packet", "ownerParticipantRef": "Ada Quill", "dueAt": "2026-09-14T16:00:00Z"},
 			{"itemId": "item-2", "title": "  ", "ownerParticipantRef": "owner_token"}
 		]}
 	}`)
@@ -10312,7 +14839,8 @@ func TestRelationshipSearchFindsThePlanHeading(t *testing.T) {
 
 	assertCompanyQuery("Draft · Version 1", "Plan Draft")
 	assertCompanyQuery("Approve this plan", "Plan Draft", "Plan Revised")
-	assertCompanyQuery("Send the security packet · Ada Quill", "Plan Draft")
+	assertCompanyQuery("Send the security packet · Ada Quill · Due Sep 14, 2026", "Plan Draft")
+	assertCompanyQuery("Send the security packet · Ada Quill")
 	assertCompanyQuery("Untitled step", "Plan Draft")
 	assertCompanyQuery("Approved in this workspace · Version 2", "Plan Approved")
 	assertCompanyQuery("Draft an email to share this plan", "Plan Approved")
@@ -10581,6 +15109,12 @@ func TestRelationshipSearchFindsRankingFactors(t *testing.T) {
 	assertCompanyQuery("Due date: +8 · This promise is past due.", "Rank Old")
 	assertCompanyQuery("Source coverage: +4 · How complete the sources are changes where this sits.", "Rank Revised")
 	assertCompanyQuery("which companies show due date: +12 · this promise is past due.", "Rank Due")
+	assertCompanyQuery("Source coverage: -2 · How complete the sources are changes where this sits.", "Rank Cover")
+	assertCompanyQuery("Source coverage: -2 · How complete the sources are changes where this sits", "Rank Cover")
+	assertCompanyQuery("which companies show source coverage: -2 · how complete the sources are changes where this sits.", "Rank Cover")
+	assertCompanyQuery("Source coverage: -4 · How complete the sources are changes where this sits.")
+	assertCompanyQuery("Due date: -12 · This promise is past due.")
+	assertCompanyQuery("Source coverage: +2 · How complete the sources are changes where this sits.")
 }
 
 func TestRelationshipSearchFindsReceiptOverflow(t *testing.T) {
@@ -11118,6 +15652,258 @@ func TestRelationshipSearchFindsOlderReview(t *testing.T) {
 	want := []string{"Older Open", "Older Buried", "Older Fixed", "Older Sure", "Older Heard", "Older Decided"}
 	assertCompanyQuery("Older conversations may still need review.", want...)
 	assertCompanyQuery("Older conversations may still need review", want...)
+}
+
+func TestRelationshipSearchFindsTheDetailProvenanceLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	datedAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	hourAt := time.Now().UTC().Add(-2 * time.Hour)
+	label := datedAt.Format("Jan 2, 2006")
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	writeObservation := func(rel *ent.Relationship, source, event string, at time.Time) {
+		t.Helper()
+		id := rel.DisplayName + "-" + source
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(id).SetSourceVersion("1").
+			SetEventType(event).SetOccurredAt(at).SetReceivedAt(at).
+			SetSummary("Noted the harbor").SetContentHash(id).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	gmail := makeCompany("Dated Gmail")
+	hour := makeCompany("Hour Gmail")
+	calendar := makeCompany("Dated Calendar")
+	slack := makeCompany("Dated Slack")
+	hub := makeCompany("Dated Hub")
+	crm := makeCompany("Dated CRM")
+	makeCompany("Quiet Harbor")
+	writeObservation(gmail, "gmail", "thread.updated", datedAt)
+	writeObservation(hour, "gmail", "thread.updated", hourAt)
+	writeObservation(calendar, "calendar", "meeting.snapshot", datedAt)
+	writeObservation(slack, "slack", "message.posted", datedAt)
+	writeObservation(hub, "hubspot", "company.updated", datedAt)
+	writeObservation(crm, "crm", "crm.activity", datedAt)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Google · "+label, "Dated Gmail", "Dated Calendar")
+	assertCompanyQuery("Google · "+label+".", "Dated Gmail", "Dated Calendar")
+	assertCompanyQuery("Gmail · "+label, "Dated Gmail")
+	assertCompanyQuery("Calendar · "+label, "Dated Calendar")
+	assertCompanyQuery("Google · 2 hours ago", "Hour Gmail")
+	assertCompanyQuery("Slack · "+label, "Dated Slack")
+	assertCompanyQuery("HubSpot · "+label, "Dated Hub", "Dated CRM")
+	assertCompanyQuery("The CRM · "+label, "Dated CRM")
+	assertCompanyQuery("Gmail", "Dated Gmail", "Hour Gmail")
+	assertCompanyQuery("Gmail · Mail updated", "Dated Gmail", "Hour Gmail")
+	assertCompanyQuery("Google")
+	assertCompanyQuery(label + " · Google")
+}
+
+func TestRelationshipSearchFindsTheEvidenceTrail(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	secondAt := time.Now().UTC().Add(-60 * 24 * time.Hour)
+	thirdAt := time.Now().UTC().Add(-75 * 24 * time.Hour)
+	first := firstAt.Format("Jan 2, 2006")
+	second := secondAt.Format("Jan 2, 2006")
+	third := thirdAt.Format("Jan 2, 2006")
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	writeObservation := func(rel *ent.Relationship, source string, at time.Time) *ent.RelationshipObservation {
+		t.Helper()
+		id := rel.DisplayName + "-" + source + "-" + at.Format("20060102")
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(id).SetSourceVersion("1").
+			SetEventType("note").SetOccurredAt(at).SetReceivedAt(at).
+			SetSummary("Noted the harbor").SetContentHash(id).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveClaim := func(rel *ent.Relationship, ids []string, edge *ent.RelationshipObservation) {
+		t.Helper()
+		rank, ok := relationshipAssertionAuthorityRank("source_fact")
+		if !ok {
+			t.Fatal("source_fact rank")
+		}
+		create := f.client.RelationshipAssertion.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetDimension("health").SetValue("healthy").
+			SetSourceType("source_fact").SetAuthorityRank(rank).
+			SetStatus("accepted").
+			SetValidFrom(firstAt).
+			SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+			SetProjectorCompatVersion(relationshipProjectorVersion).
+			SetSupportingObservationIds(ids)
+		if edge != nil {
+			create.SetObservation(edge)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pair := makeCompany("Trail Pair")
+	pairGmail := writeObservation(pair, "gmail", firstAt)
+	pairHub := writeObservation(pair, "hubspot", secondAt)
+	saveClaim(pair, []string{pairGmail.ID.String(), pairHub.ID.String()}, pairGmail)
+	swap := makeCompany("Trail Swap")
+	swapHub := writeObservation(swap, "hubspot", firstAt)
+	swapGmail := writeObservation(swap, "gmail", secondAt)
+	saveClaim(swap, []string{swapHub.ID.String(), swapGmail.ID.String()}, swapHub)
+	loose := makeCompany("Trail Loose")
+	looseGmail := writeObservation(loose, "gmail", firstAt)
+	looseHub := writeObservation(loose, "hubspot", secondAt)
+	saveClaim(loose, []string{looseGmail.ID.String()}, looseGmail)
+	saveClaim(loose, []string{looseHub.ID.String()}, looseHub)
+	edge := makeCompany("Trail Edge")
+	edgeGmail := writeObservation(edge, "gmail", firstAt)
+	edgeHub := writeObservation(edge, "hubspot", secondAt)
+	saveClaim(edge, []string{edgeGmail.ID.String()}, edgeHub)
+	crm := makeCompany("Trail CRM")
+	crmGmail := writeObservation(crm, "gmail", firstAt)
+	crmRow := writeObservation(crm, "crm", secondAt)
+	saveClaim(crm, []string{crmGmail.ID.String(), crmRow.ID.String()}, crmGmail)
+	three := makeCompany("Trail Three")
+	threeGmail := writeObservation(three, "gmail", firstAt)
+	threeHub := writeObservation(three, "hubspot", secondAt)
+	threeSlack := writeObservation(three, "slack", thirdAt)
+	saveClaim(three, []string{threeGmail.ID.String(), threeHub.ID.String(), threeSlack.ID.String()}, threeGmail)
+	missing := makeCompany("Trail Missing")
+	missingGmail := writeObservation(missing, "gmail", firstAt)
+	missingHub := writeObservation(missing, "hubspot", secondAt)
+	saveClaim(missing, []string{"00000000-0000-0000-0000-000000000000", missingGmail.ID.String(), missingHub.ID.String()}, missingGmail)
+	makeCompany("Trail Quiet")
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	forward := "Google · " + first + "; HubSpot · " + second
+	assertCompanyQuery(forward, "Trail Pair", "Trail Edge", "Trail CRM", "Trail Missing")
+	assertCompanyQuery(forward+".", "Trail Pair", "Trail Edge", "Trail CRM", "Trail Missing")
+	assertCompanyQuery("HubSpot · "+first+"; Google · "+second, "Trail Swap")
+	assertCompanyQuery("Google · " + second + "; HubSpot · " + first)
+	assertCompanyQuery("Gmail · " + first + "; HubSpot · " + second)
+	assertCompanyQuery("Google · "+first+"; HubSpot · "+second+"; Slack · "+third, "Trail Three")
+	assertCompanyQuery("Google · "+first, "Trail Pair", "Trail Loose", "Trail Edge", "Trail CRM", "Trail Three", "Trail Missing")
+}
+
+func TestRelationshipSearchFindsTheMailTimelineLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(context.Background())
+	datedAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	hourAt := time.Now().UTC().Add(-2 * time.Hour)
+	label := datedAt.Format("Jan 2, 2006")
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveMail := func(rel *ent.Relationship, at time.Time, deleted bool) {
+		t.Helper()
+		if _, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(rel.ID).
+			SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID(rel.DisplayName).
+			SetInteractionType("email").SetDirection("inbound").SetSubject(rel.DisplayName).
+			SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+			SetContentHash("sha256:" + rel.DisplayName).SetMetadataJSON(`{}`).SetDeleted(deleted).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	dated := makeCompany("Dated Mail")
+	hour := makeCompany("Hour Mail")
+	removed := makeCompany("Removed Mail")
+	saveMail(dated, datedAt, false)
+	saveMail(hour, hourAt, false)
+	saveMail(removed, datedAt, true)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Your mailbox", "Dated Mail", "Hour Mail")
+	assertCompanyQuery(label+" · Your mailbox", "Dated Mail")
+	assertCompanyQuery(label+" · Your mailbox.", "Dated Mail")
+	assertCompanyQuery("2 hours ago · Your mailbox", "Hour Mail")
+	assertCompanyQuery(label + " · Kept private")
 }
 
 func TestRelationshipSearchFindsMailAccess(t *testing.T) {

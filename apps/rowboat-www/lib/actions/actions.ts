@@ -68,6 +68,22 @@ export function actionParamsLines(raw: string): string[] {
   }
 }
 
+/**
+ * A failed action stores the executor error, including an act-seam payload.
+ * The queue says whether it ran. A person's rejection reason is not this string.
+ */
+export function actionFailureReasonCopy(reason: string | null | undefined): string {
+  const raw = (reason ?? "").trim();
+  if (!raw) return "";
+  if (/execution outcome is ambiguous/i.test(raw)) {
+    return "This action may already have run. Check it before trying again.";
+  }
+  if (/^actions:/i.test(raw) || /act seam/i.test(raw)) {
+    return "This action could not run. Try again.";
+  }
+  return raw;
+}
+
 /** The status a person sees on an approval and on its audit trail. */
 export function actionStatusLabel(status: ActionStatus | string): string {
   switch (status) {

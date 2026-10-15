@@ -2,6 +2,9 @@
 
 import "@testing-library/jest-dom/vitest";
 
+import fs from "node:fs";
+import path from "node:path";
+
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -18,11 +21,14 @@ vi.mock("@/lib/revenue/revenue", async () => {
 });
 
 import {
+  formatShortDate,
   TaskCreateDialog,
   taskCompanyMenuLabel,
   taskCompanyRequiredCopy,
   taskNextCompaniesLabel,
 } from "@/components/features/revenue/task-create-dialog/task-create-dialog";
+
+const source = fs.readFileSync(path.join(import.meta.dirname, "task-create-dialog.tsx"), "utf8");
 
 describe("TaskCreateDialog", () => {
   afterEach(() => {
@@ -181,5 +187,12 @@ describe("TaskCreateDialog", () => {
     expect(screen.getByLabelText("Task title")).toHaveValue("Follow up on renewal");
     expect(onSaved).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledWith("Could not create the task.");
+  });
+
+  it("prints the picked day in English", () => {
+    expect(formatShortDate("2026-09-14")).toBe("Sep 14");
+    expect(formatShortDate("not-a-date")).toBe("");
+    expect(source).toContain('format(parsed, "MMM d")');
+    expect(source).not.toContain("toLocaleDateString");
   });
 });

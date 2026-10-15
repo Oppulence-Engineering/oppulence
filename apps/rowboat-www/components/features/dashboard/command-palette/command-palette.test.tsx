@@ -127,6 +127,14 @@ describe("CommandPalette semantic mail search", () => {
           summary: "Ada promised the revised launch plan.",
           threadId: "thread-1",
         },
+        {
+          classification: "deal",
+          counterparty: "buyer@example.com",
+          score: 0.85,
+          subject: "SOW draft",
+          summary: "You sent a proposal-stage message 10 days ago and there has been no reply.",
+          threadId: "thread-2",
+        },
       ],
     });
 
@@ -141,6 +149,15 @@ describe("CommandPalette semantic mail search", () => {
       );
     });
     expect(await screen.findByText("Launch follow-up")).toBeVisible();
+    expect(screen.getByText("Ada promised the revised launch plan.")).toBeVisible();
+    expect(
+      screen.getByText("You sent a proposal 10 days ago, and there has been no reply."),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(
+        "You sent a proposal-stage message 10 days ago and there has been no reply.",
+      ),
+    ).toBeNull();
     expect(screen.getByText("Ada · Promise · 91%")).toBeVisible();
     expect(screen.queryByText("Mail evidence")).toBeNull();
     expect(screen.getByRole("textbox", { name: "Command search" })).toHaveAttribute(

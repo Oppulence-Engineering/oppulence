@@ -42,7 +42,7 @@ import {
   type ConsolePreferences,
   type ConsolePreferencesPatch,
 } from "@/lib/console/console";
-import { startCheckout } from "@/lib/revenue/revenue";
+import { checkoutFailureCopy, startCheckout } from "@/lib/revenue/revenue";
 import { localDayLabel } from "@/lib/revenue/revenue-records";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
@@ -926,18 +926,7 @@ export function usageMeterValue(key: string, value: string | number): string {
   return String(value);
 }
 
-/**
- * A missing Stripe setup is not a blip. "Please try again" sends someone back
- * to a button that cannot open checkout until the server is configured.
- */
-export function checkoutFailureCopy(error: unknown): string {
-  const code =
-    error && typeof error === "object" && "code" in error && typeof error.code === "string"
-      ? error.code
-      : "";
-  if (code === "provider_unconfigured") return "Checkout isn't configured on the server yet.";
-  return "Checkout is temporarily unavailable. Please try again.";
-}
+export { checkoutFailureCopy };
 
 export function PlanSection({ session }: { session: SessionShape }) {
   const billing = session.billing;

@@ -119,7 +119,7 @@ describe("OpenPromisesReportClient", () => {
   it("prints a promise due date on the reader's calendar", () => {
     expect(source).toContain("{promiseDueLabel(item.dueAt)}");
     expect(source).not.toContain("item.dueAt.slice(0, 10)");
-    expect(source).toContain("localMomentLabel(item.occurredAt)");
+    expect(source).toContain("sourceObservedLabel(item.occurredAt)");
     expect(source).not.toContain("new Date(item.occurredAt).toLocaleString()");
   });
 

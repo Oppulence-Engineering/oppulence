@@ -31,6 +31,7 @@ import {
   activitySourceLabel,
   enumLabel,
   participantRoleLabel,
+  sourceConnectionLabel,
 } from "@/lib/revenue/source-product-copy";
 import { useRelationshipGraph } from "@/hooks/queries/use-relationships";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
@@ -238,17 +239,7 @@ type FlowEdge = Edge<{ graphEdge: RelationshipGraphEdge }, "typedEdge">;
 
 function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
   const node = data.graphNode;
-  const badges = [
-    node.role ? participantRoleLabel(node.role) : "",
-    node.kind === "relationship" && node.health
-      ? graphNodeFieldLabel(node.kind, "health", node.health)
-      : node.health && node.health !== "unknown"
-        ? graphNodeFieldLabel(node.kind, "health", node.health)
-        : "",
-    node.approvalStatus ? graphNodeFieldLabel(node.kind, "approval", node.approvalStatus) : "",
-    node.freshness ? graphNodeFieldLabel(node.kind, "freshness", node.freshness) : "",
-    node.confidence === undefined ? "" : personResearchConfidenceLabel(node.confidence),
-  ].filter(Boolean);
+  const badges = graphNodeBadgeLabels(node);
 
   return (
     <div
@@ -795,9 +786,11 @@ function Inspector({
                 {label}
               </dt>
               <dd className="mt-0.5 text-primary/70">
-                {field === "other" || field === "execution"
-                  ? value
-                  : graphNodeFieldLabel(node.kind, field, String(value))}
+                {node.kind === "source" && field === "status"
+                  ? graphSourceStatusLabel(node)
+                  : field === "other" || field === "execution"
+                    ? value
+                    : graphNodeFieldLabel(node.kind, field, String(value))}
               </dd>
             </div>
           ))}
@@ -1306,6 +1299,12 @@ export function graphNodeFieldLabel(kind: string, field: GraphField, value: stri
       case "backfilling":
       case "rebuilding":
         return "Syncing";
+      case "authorizing":
+        return "Waiting to connect";
+      case "degraded":
+        // A failed resync is "Sync incomplete" on the company badge. The
+        // token-only path uses that word; the inspector passes completeness.
+        return "Sync incomplete";
       default:
         break;
     }
@@ -1379,25 +1378,84 @@ export function graphExecutionLabel(
   }
 }
 
+/** The company badge and the graph Status cell share sourceConnectionLabel. */
+export function graphSourceStatusLabel(node: {
+  status?: string;
+  source?: string;
+  metadata?: { completeness?: unknown; backfillPhase?: unknown };
+}): string {
+  if ((node.status ?? "") === "historical_unknown") {
+    return graphDetailLabel("historical_unknown");
+  }
+  const completeness =
+    typeof node.metadata?.completeness === "string" ? node.metadata.completeness : undefined;
+  const backfillPhase =
+    typeof node.metadata?.backfillPhase === "string" ? node.metadata.backfillPhase : undefined;
+  if (node.source) {
+    return sourceConnectionLabel({
+      source: node.source,
+      status: node.status ?? "",
+      completeness,
+      backfillPhase,
+    });
+  }
+  return graphNodeFieldLabel("source", "status", node.status ?? "");
+}
+
+/**
+ * The diagram badge and the table State cell. A healthy source keeps its
+ * freshness word. A connection problem uses the company badge, so a
+ * disconnected source does not read as merely out of date.
+ */
+export function graphNodeBadgeLabels(node: {
+  kind: string;
+  role?: string;
+  health?: string;
+  status?: string;
+  source?: string;
+  approvalStatus?: string;
+  freshness?: string;
+  confidence?: number;
+  metadata?: { completeness?: unknown; backfillPhase?: unknown };
+}): string[] {
+  const sourceState = node.kind === "source" && node.status ? graphSourceStatusLabel(node) : "";
+  const freshness = node.freshness
+    ? graphNodeFieldLabel(node.kind, "freshness", node.freshness)
+    : "";
+  return [
+    node.role ? participantRoleLabel(node.role) : "",
+    node.kind === "relationship" && node.health
+      ? graphNodeFieldLabel(node.kind, "health", node.health)
+      : node.health && node.health !== "unknown"
+        ? graphNodeFieldLabel(node.kind, "health", node.health)
+        : "",
+    node.approvalStatus ? graphNodeFieldLabel(node.kind, "approval", node.approvalStatus) : "",
+    sourceState && sourceState !== "Active" ? sourceState : "",
+    freshness && freshness !== sourceState ? freshness : "",
+    node.confidence === undefined ? "" : personResearchConfidenceLabel(node.confidence),
+  ].filter(Boolean);
+}
+
 export function graphNodeSummaryLabel(node: {
   kind: string;
   role?: string;
   health?: string;
   status?: string;
+  source?: string;
   approvalStatus?: string;
   freshness?: string;
+  metadata?: { completeness?: unknown; backfillPhase?: unknown };
 }): string {
   if (node.kind === "person" && node.role) return participantRoleLabel(node.role);
   if (node.health && node.health !== "unknown") {
     return graphNodeFieldLabel(node.kind, "health", node.health);
   }
-  // The diagram badge shows approval, then freshness. The table's one State
-  // cell has to use that same word, and only then the stored status.
+  // The diagram badge shows approval, then the connection word, then freshness.
+  // The table's one State cell has to use that same first word.
   if (node.approvalStatus) return graphNodeFieldLabel(node.kind, "approval", node.approvalStatus);
-  // The sources page says Not connected before it mentions freshness. A fresh
-  // observation must not hide that the source is not connected.
-  if (node.kind === "source" && node.status === "not_connected") {
-    return graphNodeFieldLabel(node.kind, "status", node.status);
+  if (node.kind === "source" && node.status) {
+    const connection = graphSourceStatusLabel(node);
+    if (connection && connection !== "Active") return connection;
   }
   if (node.freshness && node.freshness !== "unknown") {
     return graphNodeFieldLabel(node.kind, "freshness", node.freshness);
@@ -1411,6 +1469,7 @@ export function graphNodeSummaryLabel(node: {
   ) {
     return "Not known";
   }
+  if (node.kind === "source" && node.status) return graphSourceStatusLabel(node);
   if (node.status) return graphNodeFieldLabel(node.kind, "status", node.status);
   if (node.health === "unknown" || node.freshness === "unknown") return "Not known";
   return "—";

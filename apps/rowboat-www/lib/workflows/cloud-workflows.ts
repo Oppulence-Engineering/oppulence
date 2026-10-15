@@ -10,7 +10,8 @@ import {
   fetchWorkflowTemplates,
 } from "@/hooks/queries/utils/fetch-workflows";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
-import { friendlyAgentError } from "@/lib/agents/agent-history";
+import { friendlyAgentError, runLimitCopy } from "@/lib/agents/agent-history";
+import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { schemaMismatchCopy } from "@/lib/api/request-json";
 import { workflowProductDescription } from "@/lib/workflows/workflow-product-copy";
 
@@ -212,7 +213,7 @@ export function triggerLabel(value: string): string {
     case "manual":
       return "Started by hand";
     case "retry":
-      return "Retry";
+      return "Tried again";
     default:
       return readableEnum(value);
   }
@@ -241,6 +242,19 @@ export function scheduleHealthLabel(value: string): string {
 }
 
 /**
+ * A failed schedule stores a Temporal summary or the cron text. The settings
+ * page says whether the schedule could be saved or read. The expression and
+ * the worker error stay off the page.
+ */
+export function scheduleSyncFailureCopy(error: string | null | undefined): string {
+  const raw = error?.trim() ?? "";
+  if (/^invalid cron expression\b/i.test(raw)) {
+    return "This schedule could not be read. Open the workflow and save it again.";
+  }
+  return "The schedule could not be saved. Try again later.";
+}
+
+/**
  * Transcript types are dotted tokens. The prefix is the emitter. A result is
  * not an artifact, and a question to the person is not an "ask human" event.
  */
@@ -257,8 +271,9 @@ const RUN_EVENT_LABELS: Record<string, string> = {
   artifact_updated: "Result updated",
   final_artifact_ready: "Result ready",
   dead_lettered: "Could not start",
-  cancel_requested: "Cancellation requested",
-  retry_requested: "Retry requested",
+  signal: "Update",
+  cancel_requested: "Stopping",
+  retry_requested: "Trying again",
   run_processing_start: "Run started",
   run_processing_end: "Run finished",
   spawn_subflow: "Started a related run",
@@ -312,8 +327,58 @@ function titledModelRest(rest: string): string {
 const INFRASTRUCTURE_EVENT_COPY: Record<string, string> = {
   "Queued by Temporal schedule.": "Queued on the schedule.",
   "Queued for API worker.": "Queued to run.",
+  "Queued retry for API worker.": "Queued to try again.",
+  "Retry requested.": "Trying this run again.",
   "API worker claimed the run.": "Oppulence Cloud started this run.",
+  "Building API-native task artifact.": "Preparing the result.",
+  "Waiting for human approval.": "Waiting for approval.",
+  "Context updated.": "Updated what this run knows.",
+  "Run paused.": "Paused.",
+  "Run resumed.": "Running again.",
+  "Run completed without artifact changes.": "Finished without changing the result.",
+  "Artifact updated.": "Result updated.",
+  "Cancellation requested.": "Stopping this run.",
+  "Completed.": "Finished.",
+  "Dead-lettered before Temporal start.": "This run did not start.",
+  "Abandoned before Temporal start confirmation.": "This run did not start. Try again.",
+  "Abandoned: workflow stopped heartbeating.": "This run stopped responding. Try again.",
+  "Temporal start failed.": "Workflows cannot be started right now. Try again later.",
+  "Temporal retry start failed.": "This run could not be tried again.",
 };
+
+/**
+ * A finished run stores "Completed." and, beside it, the summary. The worker
+ * fallback names the API worker and the trigger. The transcript says the run
+ * finished, or shows the summary the model wrote.
+ */
+export function completedRunCopy(summary: string): string {
+  const raw = summary.trim();
+  const worker = /^API worker completed (.*?) via \S+ trigger\.(?: Context: [\s\S]*)?$/.exec(raw);
+  if (worker) {
+    const name = worker[1].trim().replace(/[.!?]+$/, "");
+    return name ? `Finished ${name}.` : "Finished.";
+  }
+  if (!raw || raw === "Completed.") return "Finished.";
+  return raw;
+}
+
+/** A signal stores its name and payload. The transcript names the action. */
+export function signalTranscriptCopy(signal: string): string {
+  switch (signal.trim()) {
+    case "pause":
+      return "Paused.";
+    case "resume":
+      return "Running again.";
+    case "update_context":
+      return "Updated what this run knows.";
+    case "approve_tool":
+      return "Approved.";
+    case "deny_tool":
+      return "This tool was not approved.";
+    default:
+      return "Recorded an update.";
+  }
+}
 
 function rewriteInfrastructureEvent(value: string): string {
   const step = /^Agent step (\d+)\.$/.exec(value);
@@ -321,9 +386,289 @@ function rewriteInfrastructureEvent(value: string): string {
   return INFRASTRUCTURE_EVENT_COPY[value] ?? value;
 }
 
+/**
+ * A failed run stores a short worker error beside a code. The runs list and
+ * the transcript use the same sentence. An unknown code keeps its message.
+ */
+export function runStoredFailureCopy(message: string, code: string): string {
+  const friendly = friendlyAgentError(message, "run");
+  if (friendly !== message) return friendly;
+  switch (code) {
+    case "workflow_canceled":
+      return "This run was stopped.";
+    case "activity_timeout":
+    case "runtime_deadline_exceeded":
+      return "This run took too long. Try again.";
+    case "db_error":
+      return "This run could not be saved. Try again.";
+    case "artifact_write_failed":
+      return "The result could not be saved. Try again.";
+    case "task_not_found":
+      return "This workflow could not be found.";
+    case "task_invalid":
+      return "This workflow could not be read. Try again.";
+    case "temporal_signal_failed":
+      return "This run could not be updated. Try again.";
+    case "temporal_cancel_failed":
+      return "This run could not be stopped. Try again.";
+    case "temporal_unavailable":
+    case "temporal_start_failed":
+      return "Workflows cannot be started right now. Try again later.";
+    case "admission_backpressure":
+      return "Too many workflows are running right now. Try again in a moment.";
+    case "admission_rate_limited":
+      return "Too many requests were sent from this workspace. Wait a moment, then try again.";
+    case "llm_call_failed":
+      return "The model could not be reached. Try again.";
+    case "tool_invoke_failed":
+      return "A tool could not finish. Try again.";
+    case "tool_not_allowed":
+      return "This tool is not available in this run.";
+    case "connector_unavailable":
+      return "Connect the account this run needs, then try again.";
+    case "internal":
+    case "activity_failed":
+      return "This run could not finish. Please try again.";
+    default:
+      return code ? `${code}: ${message}` : message;
+  }
+}
+
+/**
+ * The progress line stores the worker sentence. The run uses the same words
+ * as the transcript, so a queued workflow does not say "API worker".
+ */
+export function workflowProgressCopy(message: string): string {
+  const raw = message.trim();
+  if (!raw) return "";
+  const explained = runStoredFailureCopy(raw, "");
+  if (explained !== raw) return explained;
+  return rewriteInfrastructureEvent(raw);
+}
+
 function eventStringField(record: Record<string, unknown>, key: string): string {
   const value = record[key];
   return typeof value === "string" ? value.trim() : "";
+}
+
+function eventKind(type: string): string {
+  return type.trim().replace(/^(temporal|runtime|desktop)\./, "").replaceAll("-", "_");
+}
+
+/**
+ * Tool rows store the tool id. The transcript names that tool. A started or
+ * finished call has no message, so the row used to say "Recorded an update."
+ */
+function eventToolName(record: Record<string, unknown>): string {
+  const direct = eventStringField(record, "tool") || eventStringField(record, "toolName");
+  if (direct) return direct;
+  const call = record.toolCall;
+  if (!call || typeof call !== "object") return "";
+  return eventStringField(call as Record<string, unknown>, "toolName");
+}
+
+function toolTranscriptCopy(type: string, record: Record<string, unknown>): string | null {
+  const stripped = eventKind(type);
+  if (!stripped.startsWith("tool_")) return null;
+  const tool = eventToolName(record);
+  const label = tool ? agentToolLabel(tool) : "";
+  const error = eventStringField(record, "error");
+  const reason = eventStringField(record, "reason");
+  if (/tool call denied by human approval/i.test(error)) {
+    return label ? `${label} was not approved.` : "This tool was not approved.";
+  }
+  if (error) return friendlyAgentError(error, "run");
+  if (stripped === "tool_denied" || /not on the allowlist/i.test(reason)) {
+    return label
+      ? `${label} is not available in this run.`
+      : "This tool is not available in this run.";
+  }
+  if (/approval control source is not configured/i.test(reason)) {
+    return "Approval is not set up for this run.";
+  }
+  if (stripped === "tool_approval_requested") {
+    return label ? `${label} needs approval.` : "Waiting for approval.";
+  }
+  if (stripped === "tool_approval_resolved") {
+    const decision = eventStringField(record, "decision");
+    if (decision === "approved") return label ? `${label} was approved.` : "Approved.";
+    if (decision === "denied") {
+      return label ? `${label} was not approved.` : "This tool was not approved.";
+    }
+  }
+  if (stripped === "tool_permission_request") {
+    return label ? `${label} needs permission.` : "Permission requested.";
+  }
+  if (stripped === "tool_permission_response" || stripped === "tool_permission_auto_decision") {
+    const decision = eventStringField(record, "response") || eventStringField(record, "decision");
+    if (decision === "approve" || decision === "allow") {
+      return label ? `${label} was allowed.` : "Permission granted.";
+    }
+    if (decision === "deny") return label ? `${label} was not allowed.` : "Permission denied.";
+  }
+  if (stripped === "tool_call_started" || stripped === "tool_invocation") {
+    return label ? `Using ${label}.` : "Using a tool.";
+  }
+  if (
+    stripped === "tool_call_completed" ||
+    stripped === "tool_result" ||
+    stripped === "tool_output_stream"
+  ) {
+    return label ? `Finished using ${label}.` : "Finished using a tool.";
+  }
+  if (label) return `Using ${label}.`;
+  return null;
+}
+
+function askOptions(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .map((item) => item.trim())
+    .slice(0, 8);
+}
+
+/** The question is stored beside the tool id. The transcript shows the question. */
+function askHumanCopy(stripped: string, record: Record<string, unknown>): string | null {
+  if (stripped === "ask_human_request") {
+    const query = eventStringField(record, "query");
+    const options = askOptions(record.options);
+    if (query && options.length > 0) return `${query}\n${options.join("\n")}`;
+    return query || "Asked for a decision.";
+  }
+  if (stripped === "ask_human_response") {
+    return eventStringField(record, "response") || "Decision recorded.";
+  }
+  return null;
+}
+
+function messageText(value: unknown): string {
+  if (!value || typeof value !== "object") return "";
+  const content = (value as Record<string, unknown>).content;
+  if (typeof content === "string") return content.trim();
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((part) => {
+      if (!part || typeof part !== "object") return "";
+      const item = part as Record<string, unknown>;
+      if (item.type === "text" && typeof item.text === "string") return item.text.trim();
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function attachmentNames(value: unknown): string[] {
+  if (!value || typeof value !== "object") return [];
+  const content = (value as Record<string, unknown>).content;
+  if (!Array.isArray(content)) return [];
+  return content
+    .map((part) => {
+      if (!part || typeof part !== "object") return "";
+      const item = part as Record<string, unknown>;
+      if (item.type !== "attachment") return "";
+      return typeof item.filename === "string" ? item.filename.trim() : "";
+    })
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+/**
+ * Desktop rows store the run log. A question, a message, and a start or stop
+ * have no "message" string, so the row used to say "Recorded an update."
+ */
+function desktopTranscriptCopy(type: string, record: Record<string, unknown>): string | null {
+  const stripped = eventKind(type);
+  const asked = askHumanCopy(stripped, record);
+  if (asked) return asked;
+  if (stripped === "message") {
+    const text = messageText(record.message);
+    if (text) return text;
+    const files = attachmentNames(record.message);
+    if (files.length === 1) return `Attached ${files[0]}.`;
+    if (files.length > 1) return `Attached ${files.join(", ")}.`;
+    return null;
+  }
+  if (stripped === "spawn_subflow") {
+    const name = eventStringField(record, "agentName").replace(/_+/g, " ").replace(/\s+/g, " ").trim();
+    if (!name) return "Started a related run.";
+    return `Started ${name.charAt(0).toUpperCase()}${name.slice(1)}.`;
+  }
+  if (stripped === "run_stopped") return "This run was stopped.";
+  if (stripped === "start") {
+    const model = calledModelLabel(eventStringField(record, "model"));
+    return model ? `Started with ${model}.` : "Started.";
+  }
+  if (stripped === "run_processing_start") return "Run started.";
+  if (stripped === "run_processing_end") return "Run finished.";
+  if (stripped === "code_run_permission_request") return codePermissionCopy(record.ask, "");
+  if (stripped === "code_run_event") return codeRunCopy(record.event);
+  return null;
+}
+
+function sentence(value: string): string {
+  const text = value.trim();
+  if (!text) return "";
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
+function fileName(path: string): string {
+  const trimmed = path.trim();
+  const slash = Math.max(trimmed.lastIndexOf("/"), trimmed.lastIndexOf("\\"));
+  const name = slash >= 0 ? trimmed.slice(slash + 1).trim() : trimmed;
+  return name;
+}
+
+function codePermissionCopy(ask: unknown, decision: string): string | null {
+  const title =
+    ask && typeof ask === "object" ? eventStringField(ask as Record<string, unknown>, "title") : "";
+  const name = title.replace(/[.!?]$/, "");
+  if (decision === "reject") return name ? `${name} was not allowed.` : "Permission denied.";
+  if (decision === "cancelled") return "This step was cancelled.";
+  if (decision === "allow_once" || decision === "allow_always") {
+    return name ? `${name} was allowed.` : "Permission granted.";
+  }
+  if (decision) return null;
+  return name ? `${name} needs permission.` : "Permission requested.";
+}
+
+/** A code run stores the step under event. The transcript names the step, not the path. */
+function codeRunCopy(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+  const item = value as Record<string, unknown>;
+  const kind = eventStringField(item, "type");
+  if (kind === "message") return eventStringField(item, "text") || null;
+  if (kind === "thought") return "Thinking.";
+  if (kind === "tool_call") {
+    const title = eventStringField(item, "title");
+    return title ? sentence(title) : "Using a tool.";
+  }
+  if (kind === "tool_call_update") {
+    const names = (Array.isArray(item.diffs) ? item.diffs : [])
+      .filter((entry): entry is string => typeof entry === "string")
+      .map(fileName)
+      .filter(Boolean)
+      .slice(0, 3);
+    const status = eventStringField(item, "status");
+    if (status === "failed") return "Could not finish this step.";
+    if (names.length === 1) return `Changed ${names[0]}.`;
+    if (names.length > 1) return `Changed ${names.join(", ")}.`;
+    if (status === "completed") return "Finished this step.";
+    return "Working on this step.";
+  }
+  if (kind === "plan") {
+    const lines = (Array.isArray(item.entries) ? item.entries : [])
+      .map((entry) =>
+        entry && typeof entry === "object"
+          ? sentence(eventStringField(entry as Record<string, unknown>, "content"))
+          : "",
+      )
+      .filter(Boolean)
+      .slice(0, 8);
+    return lines.length > 0 ? lines.join("\n") : null;
+  }
+  if (kind === "permission") return codePermissionCopy(item.ask, eventStringField(item, "decision"));
+  return null;
 }
 
 /**
@@ -336,17 +681,33 @@ export function runEventBody(event: { type?: string; event: unknown }): string {
   if (!event.event || typeof event.event !== "object") return "Recorded an update.";
   const record = event.event as Record<string, unknown>;
   const type = event.type || eventStringField(record, "type");
-  if (type === "runtime.llm_call_started") {
+  if (type === "runtime.llm_call_started" || type === "runtime.llm_call_completed") {
     const model = calledModelLabel(eventStringField(record, "model"));
+    if (type === "runtime.llm_call_completed") {
+      return model ? `Finished calling ${model}.` : "Finished calling the model.";
+    }
     return model ? `Calling ${model}.` : "Calling the model.";
   }
   const message = ["message", "summary", "content"]
     .map((key) => eventStringField(record, key))
     .find(Boolean);
-  if (message && message !== "Failed.") return rewriteInfrastructureEvent(message);
   const error = eventStringField(record, "error");
-  if (error) return friendlyAgentError(error, "run");
+  const code = eventStringField(record, "errorCode");
+  if (message === "Completed.") return completedRunCopy(eventStringField(record, "summary"));
+  if (eventKind(type) === "signal") return signalTranscriptCopy(eventStringField(record, "signal"));
+  if (message && message !== "Failed.") {
+    const explained = runStoredFailureCopy(message, code);
+    if (explained !== message) return explained;
+    return rewriteInfrastructureEvent(message);
+  }
+  const toolCopy = toolTranscriptCopy(type, record);
+  if (toolCopy) return toolCopy;
+  const desktopCopy = desktopTranscriptCopy(type, record);
+  if (desktopCopy) return desktopCopy;
+  if (error || code) return runStoredFailureCopy(error, code);
   if (message) return "This run could not finish.";
+  if (type === "runtime.final_artifact_ready") return "The result is ready.";
+  if (type === "runtime.limit_exceeded") return runLimitCopy();
   return "Recorded an update.";
 }
 
@@ -524,16 +885,30 @@ export function workflowFailureCopy(detail: string): string | null {
     case "only failed or stopped runs can be retried":
       return "Only a failed or stopped run can be tried again.";
     case "a retry for this run is already in progress":
-      return "A retry for this run is already going.";
+      return "This run is already being tried again.";
     case "only api-target runs can be retried by the API worker":
       return "This run can be tried again from the desktop app.";
     case "temporal is not configured":
+    case "could not start temporal workflow":
       return "Workflows cannot be started right now. Try again later.";
+    case "could not cancel temporal workflow":
+      return "This run could not be stopped. Try again.";
     case "run is not temporal-backed":
       return "This run cannot be stopped from here.";
     default:
       return null;
   }
+}
+
+/**
+ * A start refusal is a problem detail. The page only kept the status, so a
+ * workspace out of credits looked like the button had failed. An unknown
+ * detail stays off the page.
+ */
+function explainedWorkflowDetail(detail: string): string | null {
+  if (!detail) return null;
+  const explained = friendlyAgentError(detail, "run");
+  return explained === detail ? null : explained;
 }
 
 async function workflowRequest<T>(
@@ -555,7 +930,7 @@ async function workflowRequest<T>(
     if (response.status === 409 && detail === "revision conflict") {
       throw new Error(workflowConflictCopy("save"));
     }
-    const known = workflowFailureCopy(detail);
+    const known = workflowFailureCopy(detail) ?? explainedWorkflowDetail(detail);
     if (known) throw new Error(known);
     const message =
       body && typeof body === "object" && "message" in body && typeof body.message === "string"
@@ -676,7 +1051,7 @@ export async function deleteCloudTask(task: Pick<CloudTask, "slug" | "revision">
   if (response.status === 409 && detail === "revision conflict") {
     throw new Error(workflowConflictCopy("remove"));
   }
-  const known = workflowFailureCopy(detail);
+  const known = workflowFailureCopy(detail) ?? explainedWorkflowDetail(detail);
   if (known) throw new Error(known);
   const message =
     body && typeof body === "object" && "message" in body && typeof body.message === "string"
@@ -779,11 +1154,15 @@ export function cronClockLabel(cron: string): string {
 }
 
 function formatClock(date: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+  // The schedule row already says "8:00 AM UTC" in English. A browser locale
+  // turned the moment beside it into "1. Okt., 8:00", so searching that row
+  // for "Oct 1, 8:00 AM" missed the workflow.
+  return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    hour12: true,
     timeZone,
   }).format(date);
 }

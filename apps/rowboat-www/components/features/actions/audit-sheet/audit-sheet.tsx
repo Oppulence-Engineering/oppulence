@@ -16,7 +16,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
-import { actionKindLabel, actionStatusLabel, getAudit } from "@/lib/actions/actions";
+import {
+  actionFailureReasonCopy,
+  actionKindLabel,
+  actionStatusLabel,
+  getAudit,
+} from "@/lib/actions/actions";
 import { errMessage } from "@/components/features/revenue/shared/shared";
 import { friendlyRevenueError } from "@/lib/revenue/revenue";
 import { localMomentLabel } from "@/lib/revenue/revenue-records";
@@ -133,7 +138,7 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
                 p.resultRef ? (
                   <code className="font-mono text-primary/50">{p.resultRef}</code>
                 ) : (
-                  p.reason
+                  actionFailureReasonCopy(p.reason)
                 )
               }
             />

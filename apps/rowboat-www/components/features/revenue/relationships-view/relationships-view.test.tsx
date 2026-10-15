@@ -664,7 +664,7 @@ describe("RelationshipsView", () => {
       enrichmentAvailabilityCopy({ available: true, reason: "plan_required", requiredPlan: "pro" }),
     ).toBe("Available on the Pro plan.");
     expect(enrichmentAvailabilityCopy({ available: true, reason: "capability_disabled" })).toBe(
-      "Cloud research is disabled for this workspace.",
+      "Public research is paused for this workspace.",
     );
   });
 
@@ -930,6 +930,29 @@ describe("RelationshipsView", () => {
     expect(actionReasonCopy("You confirmed this follow-up from the meeting.")).toBe(
       "You confirmed this follow-up from the meeting.",
     );
+    expect(actionReasonCopy("Send the harbor note")).toBe("Send the harbor note");
+    expect(
+      actionReasonCopy(
+        "A follow-up was promised in this thread and nothing has happened for 14 days (last touch Jan 2).",
+      ),
+    ).toBe(
+      "A follow-up was promised, and nothing has happened for 14 days. The last message was Jan 2.",
+    );
+    expect(
+      actionReasonCopy("You sent a proposal-stage message 10 days ago and there has been no reply."),
+    ).toBe("You sent a proposal 10 days ago, and there has been no reply.");
+    expect(
+      actionReasonCopy("Casey Lee asked you something 6 days ago and is still waiting on a reply."),
+    ).toBe("Casey Lee asked you a question 6 days ago and is still waiting.");
+    expect(
+      actionReasonCopy("An introduction in this thread has had no contact for 14 days."),
+    ).toBe("An introduction has had no follow-up for 14 days.");
+    expect(
+      actionReasonCopy("A warm two-way conversation (8 messages) has been dormant for 30 days."),
+    ).toBe("A two-way conversation of 8 messages has been quiet for 30 days.");
+    expect(actionReasonCopy("An explicit promise in this message needs confirmation.")).toBe(
+      "Confirm this promise from the message.",
+    );
     expect(source).not.toContain("String(model.evidence.lifecycle?.value ?? \"unknown\")");
     expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Not known");
     expect(source).toContain('<dt className="text-primary/40">Sentiment</dt>');
@@ -1016,6 +1039,9 @@ describe("RelationshipsView", () => {
     expect(governanceDeletionLabel("scheduled_after_transcription")).toBe(
       "Scheduled to be deleted after transcription",
     );
+    expect(governanceDeletionLabel("provider_deleted:2026-04-02T15:00:00.000Z")).toBe(
+      "The meeting service deleted the original.",
+    );
     expect(governanceExcerptLabel("not_retained")).toBe("No audio was kept");
     expect(mailThreadSubjectLabel("   ")).toBe("Email conversation");
     expect(mailThreadSubjectLabel("The quill invoice")).toBe("The quill invoice");
@@ -1031,7 +1057,14 @@ describe("RelationshipsView", () => {
     expect(mailThreadActivityLabel(null)).toBe("Not known");
     expect(mailThreadActivityLabel("")).toBe("Not known");
     expect(mailThreadActivityLabel("not-a-date")).toBe("Not known");
-    expect(mailThreadActivityLabel("2026-08-04T12:00:00Z")).not.toBe("Not known");
+    expect(mailThreadActivityLabel("2026-08-04T12:00:00Z")).toBe(
+      new Date("2026-08-04T12:00:00Z").toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      }),
+    );
     expect(source).toContain("mailThreadActivityLabel(thread.lastActivityAt)");
     expect(source).not.toContain("Unknown date");
     expect(source).not.toContain('thread.subject || "Email conversation"');
@@ -1098,6 +1131,12 @@ describe("RelationshipsView", () => {
     expect(mutualPlanItemLine("Send the harbor note", "Jordan Buyer")).toBe(
       "Send the harbor note · Jordan Buyer",
     );
+    expect(
+      mutualPlanItemLine("Send the harbor note", "Jordan Buyer", "2026-09-14T16:00:00Z"),
+    ).toBe("Send the harbor note · Jordan Buyer · Due Sep 14, 2026");
+    expect(mutualPlanItemLine("Send the harbor note", "plan-participant", "2026-09-14T16:00:00Z")).toBe(
+      "Send the harbor note · Due Sep 14, 2026",
+    );
     expect(mutualPlanItemLine("Send the harbor note", "plan-participant")).toBe(
       "Send the harbor note",
     );
@@ -1131,7 +1170,9 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("{dependency.kind}");
     expect(source).not.toContain("Unknown commitment");
     expect(source).toContain("mutualPlanHeading(plan.status, plan.currentRevision.version)");
-    expect(source).toContain("mutualPlanItemLine(item.title, item.ownerParticipantRef)");
+    expect(source).toContain(
+      "mutualPlanItemLine(item.title, item.ownerParticipantRef, item.dueAt)",
+    );
     expect(source).toContain("mutualPlanApproveLabel()");
     expect(source).toContain("mutualPlanShareLabel()");
     expect(source).not.toContain("Queue exact revision for sharing");
@@ -1306,8 +1347,21 @@ describe("RelationshipsView", () => {
       }),
     ).toBe("You chose the current value.");
     expect(
+      detailEvidenceCopy({
+        supported: true,
+        reason: "User confirmed this commitment from the cited meeting transcript.",
+      }),
+    ).toBe("You confirmed this promise from the meeting.");
+    expect(
       detailEvidenceCopy({ supported: true, reason: "HubSpot company lifecycle stage." }),
     ).toBe("Taken from HubSpot.");
+    expect(
+      detailEvidenceCopy({
+        supported: true,
+        reason:
+          "Conversation claim claim:abc, supported by the exact quote at 1200-3400 ms.",
+      }),
+    ).toBe("Taken from what was said.");
     expect(source).toContain("detailEvidenceCopy(item)");
     expect(source).not.toContain("{item.reason || item.missingReason}");
     expect(

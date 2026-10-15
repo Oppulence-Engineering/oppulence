@@ -27,6 +27,7 @@ import type {
   GoogleConnectionStatus,
 } from "@/lib/api/generated/client/model";
 import { createGoogleCommitmentsAuthorizationURL } from "@/lib/api/connectors/google-oauth";
+import { sourceConnectionLabel } from "@/lib/revenue/source-product-copy";
 import { startHostedOAuth } from "@/lib/api/connectors/hosted-oauth";
 import { GOOGLE_OAUTH_CONNECTED_EVENT } from "@/components/features/connectors/google-oauth-return-handler/google-oauth-return-handler";
 import { planLabel } from "@/lib/product/plan-label";
@@ -116,23 +117,41 @@ function displayDate(value?: string | null): string | null {
 // The Google card used to render a bare connected/not-connected badge, so a
 // dead grant still read as "Active" while every scan failed with a 401. The
 // source status is the only thing that knows whether the token actually works.
-const GOOGLE_HEALTH: Record<string, { label: string; tone: "ok" | "warn" | "bad" | "neutral" }> = {
-  live: { label: "Active", tone: "ok" },
-  connected: { label: "Active", tone: "ok" },
-  backfilling: { label: "Syncing", tone: "warn" },
-  rebuilding: { label: "Updating", tone: "warn" },
-  authorizing: { label: "Waiting for Google", tone: "warn" },
-  degraded: { label: "Limited", tone: "warn" },
-  stale: { label: "Out of date", tone: "warn" },
-  reconnect_required: { label: "Reconnect required", tone: "bad" },
-  disconnected: { label: "Disconnected", tone: "bad" },
+const GOOGLE_HEALTH_TONE: Record<string, "ok" | "warn" | "bad" | "neutral"> = {
+  live: "ok",
+  connected: "ok",
+  backfilling: "warn",
+  rebuilding: "warn",
+  authorizing: "warn",
+  degraded: "warn",
+  stale: "warn",
+  reconnect_required: "bad",
+  disconnected: "bad",
   // Never linked is not a failed grant. Red "Required" looked like Google had broken.
-  not_connected: { label: "Not connected", tone: "neutral" },
+  not_connected: "neutral",
 };
 
-function googleHealth(connected: boolean, sourceStatus?: string) {
-  if (sourceStatus && GOOGLE_HEALTH[sourceStatus]) return GOOGLE_HEALTH[sourceStatus];
-  return connected ? GOOGLE_HEALTH.connected : GOOGLE_HEALTH.not_connected;
+function googleHealth(
+  connected: boolean,
+  sourceStatus?: string,
+  source?: { completeness?: string; backfillPhase?: string },
+) {
+  if (sourceStatus && GOOGLE_HEALTH_TONE[sourceStatus]) {
+    return {
+      // The company badge already names this status. A rebuild is Syncing,
+      // and a grant that has not finished is Waiting to connect.
+      label: sourceConnectionLabel({
+        source: "google",
+        status: sourceStatus,
+        completeness: source?.completeness,
+        backfillPhase: source?.backfillPhase,
+      }),
+      tone: GOOGLE_HEALTH_TONE[sourceStatus],
+    };
+  }
+  return connected
+    ? { label: "Active", tone: "ok" as const }
+    : { label: "Not connected", tone: "neutral" as const };
 }
 
 export type GoogleConnectionAction = "connect" | "reconnect" | "change" | "retry" | "wait";
@@ -142,6 +161,7 @@ export function googleConnectionPresentation(
   connected: boolean | null,
   sourceStatus: string | undefined,
   phase: "loading" | "error" | "ready",
+  source?: { completeness?: string; backfillPhase?: string },
 ): {
   label: string;
   tone: "ok" | "warn" | "bad" | "neutral";
@@ -153,7 +173,7 @@ export function googleConnectionPresentation(
   if (connected == null && phase === "loading") {
     return { label: "Loading…", tone: "neutral", action: "wait" };
   }
-  const health = googleHealth(Boolean(connected), sourceStatus);
+  const health = googleHealth(Boolean(connected), sourceStatus, source);
   const action: GoogleConnectionAction = !connected
     ? "connect"
     : health.tone === "bad"
@@ -260,7 +280,8 @@ function GoogleConnectionSettings() {
   const statusQuery = useGoogleConnectionStatus();
   const sourcesQuery = useRelationshipSourceStatuses();
   const status = statusQuery.data ?? null;
-  const sourceStatus = sourcesQuery.data?.find((entry) => entry.source === "google")?.status;
+  const googleSource = sourcesQuery.data?.find((entry) => entry.source === "google");
+  const sourceStatus = googleSource?.status;
   const [busy, setBusy] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -305,7 +326,7 @@ function GoogleConnectionSettings() {
     : statusQuery.isError
       ? "error"
       : "ready";
-  const health = googleConnectionPresentation(knownConnected, sourceStatus, connectionPhase);
+  const health = googleConnectionPresentation(knownConnected, sourceStatus, connectionPhase, googleSource);
 
   const startConnection = () => {
     if (status?.connected) {

@@ -15,7 +15,9 @@ import {
   graphDetailLabel,
   graphStageReading,
   graphExecutionLabel,
+  graphNodeBadgeLabels,
   graphNodeFieldLabel,
+  graphSourceStatusLabel,
   graphPromiseDirection,
   graphNodeSummaryLabel,
   graphStateFromSearch,
@@ -157,11 +159,105 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphNodeSummaryLabel({ kind: "evidence", status: "Promise confirmed" })).toBe(
       "Promise confirmed",
     );
+    expect(graphNodeFieldLabel("relationship", "status", "dormant")).toBe("Dormant");
+    expect(graphNodeFieldLabel("relationship", "status", "closed")).toBe("Closed");
+    expect(graphNodeFieldLabel("relationship", "status", "archived")).toBe("Archived");
     expect(graphNodeFieldLabel("source", "status", "live")).toBe("Active");
     expect(graphNodeFieldLabel("source", "status", "connected")).toBe("Active");
     expect(graphNodeFieldLabel("source", "status", "stale")).toBe("Out of date");
     expect(graphNodeFieldLabel("source", "status", "reconnect_required")).toBe("Reconnect required");
     expect(graphNodeFieldLabel("source", "status", "backfilling")).toBe("Syncing");
+    expect(graphNodeFieldLabel("source", "status", "rebuilding")).toBe("Syncing");
+    expect(graphNodeFieldLabel("source", "status", "authorizing")).toBe("Waiting to connect");
+    expect(graphNodeFieldLabel("source", "status", "degraded")).toBe("Sync incomplete");
+    expect(
+      graphSourceStatusLabel({
+        status: "degraded",
+        source: "google",
+        metadata: { completeness: "stale" },
+      }),
+    ).toBe("Sync incomplete");
+    expect(
+      graphSourceStatusLabel({
+        status: "degraded",
+        source: "google",
+        metadata: { completeness: "complete" },
+      }),
+    ).toBe("Degraded");
+    expect(
+      graphSourceStatusLabel({
+        status: "degraded",
+        source: "meeting",
+        metadata: { completeness: "stale" },
+      }),
+    ).toBe("Degraded");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "source",
+        status: "degraded",
+        source: "google",
+        metadata: { completeness: "stale" },
+      }),
+    ).toBe("Sync incomplete");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "source",
+        status: "degraded",
+        source: "google",
+        freshness: "current",
+        metadata: { completeness: "stale" },
+      }),
+    ).toBe("Sync incomplete");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "source",
+        status: "disconnected",
+        source: "google",
+        freshness: "stale",
+      }),
+    ).toBe("Disconnected");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "source",
+        status: "stale",
+        source: "google",
+        freshness: "current",
+        metadata: { completeness: "complete" },
+      }),
+    ).toBe("Out of date");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "source",
+        status: "historical_unknown",
+        source: "google",
+        freshness: "unknown",
+      }),
+    ).toBe("Not recorded for this date");
+    expect(
+      graphSourceStatusLabel({
+        status: "historical_unknown",
+        source: "google",
+      }),
+    ).toBe("Not recorded for this date");
+    expect(
+      graphNodeBadgeLabels({
+        kind: "source",
+        status: "disconnected",
+        source: "slack",
+        freshness: "stale",
+      })[0],
+    ).toBe("Disconnected");
+    expect(
+      graphNodeBadgeLabels({
+        kind: "source",
+        status: "live",
+        source: "google",
+        freshness: "current",
+        metadata: { completeness: "complete" },
+      }),
+    ).toEqual(["Up to date"]);
+    expect(source).toContain("graphNodeBadgeLabels(node)");
+    expect(source).toContain("graphSourceStatusLabel(node)");
     expect(graphNodeSummaryLabel({ kind: "source", status: "stale" })).toBe("Out of date");
     expect(graphNodeFieldLabel("commitment", "status", "open")).toBe("Open");
     expect(graphNodeFieldLabel("commitment", "status", "at_risk")).toBe("At risk");

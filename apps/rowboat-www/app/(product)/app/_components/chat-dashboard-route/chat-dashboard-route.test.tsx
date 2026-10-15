@@ -76,6 +76,8 @@ describe("ChatDashboardRoute", () => {
     expect(source).not.toContain('className="col-start-2 mt-3 text-xs capitalize text-primary/60"');
     expect(source).not.toContain('item.status === "resolving" ? "Submitting decision…" : item.status');
     expect(source).toContain("toolFailureCopy(item.result)");
+    expect(source).toContain("const failure = item.status === \"error\" ? toolFailureCopy(item.result) : \"\"");
+    expect(source).not.toContain("errorText={toolFailureCopy(item.result)}");
     expect(source).toContain("toolResultCopy(item.result)");
     expect(source).toContain("toolArgumentsVisible(item.input)");
     expect(source).toContain("artifactReadOnlyCopy(chat.artifact.resource.kind)");

@@ -134,5 +134,14 @@ describe("validated console adapter", () => {
     expect(consoleFailureCopy("console resource already exists")).toBe("This is already saved.");
     expect(consoleFailureCopy("request body exceeds 262144 bytes")).toBe("This is too large to save.");
     expect(consoleFailureCopy("Try later")).toBeNull();
+    expect(consoleFailureCopy("invalid console input: relationshipId is required for relationship scope")).toBe(
+      "Choose a company before saving this view.",
+    );
+    expect(
+      consoleFailureCopy(
+        'invalid console input: payload does not match the resource kind: json: unknown field "extra"',
+      ),
+    ).toBe("This could not be saved. Try again.");
+    expect(consoleFailureCopy("resourceId must be a UUID")).toBe("This could not be found.");
   });
 });

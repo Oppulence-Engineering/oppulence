@@ -207,6 +207,7 @@ import {
   attentionWithoutTasks,
   companyName,
   personCompanyTitle,
+  promiseDueDay,
   workspaceTaskIds,
 } from "@/lib/revenue/revenue-records";
 
@@ -648,7 +649,7 @@ export function enrichmentAvailabilityCopy(status: {
       ? `Available on the ${plan} plan.`
       : "This workspace plan does not include public research.";
   }
-  if (status.reason === "capability_disabled") return "Cloud research is disabled for this workspace.";
+  if (status.reason === "capability_disabled") return "Public research is paused for this workspace.";
   return "Public research stays off until you allow it.";
 }
 
@@ -2800,15 +2801,22 @@ export function mutualPlanHeading(status: string, version: number): string {
 
 /**
  * A plan step names its owner when that owner is a person. A redacted token
- * and a bare id are not a name.
+ * and a bare id are not a name. A saved due day is the UTC day the rest of
+ * this company uses, written "Due Sep 14, 2026".
  */
-export function mutualPlanItemLine(title: string, owner?: string | null): string {
+export function mutualPlanItemLine(
+  title: string,
+  owner?: string | null,
+  dueAt?: string | null,
+): string {
   const name = title.trim() || "Untitled step";
   const who = (owner ?? "").trim();
-  if (!who || who === "plan-participant") return name;
-  if (/^[0-9a-f-]{36}$/i.test(who)) return name;
-  if (/^[a-z0-9_:-]+$/.test(who)) return name;
-  return `${name} · ${who}`;
+  const named =
+    !who || who === "plan-participant" || /^[0-9a-f-]{36}$/i.test(who) || /^[a-z0-9_:-]+$/.test(who)
+      ? ""
+      : who;
+  const day = promiseDueDay(dueAt);
+  return [name, named, day ? `Due ${day}` : ""].filter(Boolean).join(" · ");
 }
 
 export function mutualPlanApproveLabel(): string {
@@ -3089,6 +3097,7 @@ export function governanceDisclosureLabel(disclosure: string): string {
 /** What happened to the recording after it was used. */
 export function governanceDeletionLabel(outcome: string): string {
   if (outcome.startsWith("deleted:")) return "Deleted";
+  if (outcome.startsWith("provider_deleted:")) return "The meeting service deleted the original.";
   switch (outcome) {
     case "scheduled_after_transcription":
       return "Scheduled to be deleted after transcription";
@@ -3397,28 +3406,15 @@ export function uncertainClaimCopy(count: number): string {
 
 /**
  * Missing-detail text is stored for the model. The sheet says what the person
- * can do about it. A review reason that still says "User", and a HubSpot
- * lifecycle stage, are rewritten. Any other supported detail keeps the reason
- * that was recorded.
+ * can do about it. A supported detail uses the same words as What changed.
+ * Any other supported detail keeps the reason that was recorded.
  */
-const DETAIL_REASON_COPY: Record<string, string> = {
-  "User corrected focused conversation evidence.": "You corrected what was said.",
-  "User corrected conversation evidence during focused review.": "You corrected what was said.",
-  "User decided a proposed conversation change.": "You decided a suggested change.",
-  "User selected the current value from a focused contradiction case.":
-    "You chose the current value.",
-  "HubSpot company lifecycle stage.": "Taken from HubSpot.",
-};
-
 export function detailEvidenceCopy(item: {
   supported: boolean;
   reason?: string;
   missingReason?: string;
 }): string {
-  if (item.supported) {
-    const reason = item.reason?.trim() ?? "";
-    return DETAIL_REASON_COPY[reason] ?? reason;
-  }
+  if (item.supported) return projectionReasonCopy(item.reason?.trim() ?? "");
   const missing = item.missingReason?.trim() ?? "";
   if (missing === "" || missing.includes("asOf boundary")) {
     return "Nothing connected has filled this in.";
@@ -5221,7 +5217,7 @@ export function RelationshipSheet({
                           <ul className="mt-1 list-disc pl-4 text-primary/60">
                             {plan.currentRevision.items.map((item) => (
                               <li key={item.itemId}>
-                                {mutualPlanItemLine(item.title, item.ownerParticipantRef)}
+                                {mutualPlanItemLine(item.title, item.ownerParticipantRef, item.dueAt)}
                               </li>
                             ))}
                           </ul>

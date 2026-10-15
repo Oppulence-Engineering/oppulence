@@ -344,25 +344,73 @@ test("asking kept finds a promise the company card calls kept", () => {
 
 test("asking not known finds a company whose health is unknown", () => {
   const parsed = parseRelationshipGraphQuery("not known");
-  assert.deepEqual(parsed.filters.health, ["unknown"]);
+  assert.equal(parsed.filters.notKnown, true);
+  assert.deepEqual(parsed.filters.health, []);
   assert.deepEqual(parsed.filters.freeText, []);
-  assert.deepEqual(parsed.applied, ["health: unknown"]);
+  assert.deepEqual(parsed.applied, ["not known"]);
 
   const hyphenated = parseRelationshipGraphQuery("not-known");
-  assert.deepEqual(hyphenated.filters.health, ["unknown"]);
+  assert.equal(hyphenated.filters.notKnown, true);
+  assert.deepEqual(hyphenated.filters.health, []);
   assert.deepEqual(hyphenated.filters.freeText, []);
+
+  const dotted = parseRelationshipGraphQuery("Not known.");
+  assert.equal(dotted.filters.notKnown, true);
+  assert.deepEqual(dotted.filters.freeText, []);
 
   const graph = {
     nodes: [
       { id: "relationship:plain", kind: "relationship", label: "Quay Plain", health: "unknown" },
-      { id: "relationship:healthy", kind: "relationship", label: "Quay Healthy", health: "healthy" },
+      {
+        id: "relationship:fresh",
+        kind: "relationship",
+        label: "Quay Fresh",
+        health: "healthy",
+        status: "active",
+      },
+      {
+        id: "source:fresh",
+        kind: "source",
+        label: "Gmail",
+        relationshipId: "fresh",
+        source: "gmail",
+        status: "live",
+        freshness: "unknown",
+      },
+      {
+        id: "relationship:life",
+        kind: "relationship",
+        label: "Quay Life",
+        health: "healthy",
+        status: "active",
+        lifecycle: "unknown",
+      },
+      { id: "relationship:blank", kind: "relationship", label: "Quay Blank", status: "active" },
+      {
+        id: "relationship:healthy",
+        kind: "relationship",
+        label: "Quay Healthy",
+        health: "healthy",
+        status: "active",
+        lifecycle: "active_customer",
+        freshness: "current",
+      },
     ],
     edges: [],
   };
-  const result = queryRelationshipGraph(graph, "not known");
-  assert.deepEqual(result.relationshipIds, ["plain"]);
-  assert.equal(result.visibleNodeIds.includes("relationship:healthy"), false);
-  assert.equal(result.answer, "1 relationship matches health: unknown.");
+  for (const query of ["not known", "Not known.", "not-known"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds.sort(), [
+      "blank",
+      "fresh",
+      "life",
+      "plain",
+    ]);
+  }
+  assert.equal(
+    queryRelationshipGraph(graph, "not known").visibleNodeIds.includes("relationship:healthy"),
+    false,
+  );
+  assert.equal(queryRelationshipGraph(graph, "not known").answer, "4 relationships match not known.");
 });
 
 test("asking declining finds a company whose engagement is declining", () => {
@@ -1111,6 +1159,84 @@ test("the graph's own change and freshness words are the filter, not a text sear
   );
   assert.deepEqual(matched.relationshipIds, ["shift"]);
   assert.equal(matched.answer, "1 relationship matches changed since you last looked.");
+  assert.deepEqual(
+    queryRelationshipGraph(
+      {
+        nodes: [
+          {
+            id: "relationship:shift",
+            kind: "relationship",
+            label: "Quay Shift",
+            changedSinceReview: true,
+          },
+          {
+            id: "relationship:still",
+            kind: "relationship",
+            label: "Quay Still",
+            changedSinceReview: false,
+          },
+        ],
+        edges: [],
+      },
+      "Changed since you last looked.",
+    ).relationshipIds,
+    ["shift"],
+  );
+
+  const detailed = {
+    nodes: [
+      {
+        id: "relationship:ev",
+        kind: "relationship",
+        label: "Quay Evidence",
+        changedSinceReview: true,
+        changedDimensions: ["evidence"],
+      },
+      {
+        id: "relationship:both",
+        kind: "relationship",
+        label: "Quay Both",
+        changedSinceReview: true,
+        changedDimensions: ["health", "evidence"],
+      },
+      {
+        id: "relationship:risk",
+        kind: "relationship",
+        label: "Quay Risk",
+        changedSinceReview: true,
+        changedDimensions: ["risks"],
+      },
+      {
+        id: "relationship:quiet",
+        kind: "relationship",
+        label: "Quay Quiet",
+        changedSinceReview: false,
+        changedDimensions: ["evidence"],
+      },
+    ],
+    edges: [],
+  };
+  const evidenceSentence = "Changed since you last looked: Supporting evidence.";
+  const evidenceQuery = parseRelationshipGraphQuery(evidenceSentence);
+  assert.equal(evidenceQuery.filters.changed, true);
+  assert.deepEqual(evidenceQuery.filters.changedDimensions, ["evidence"]);
+  assert.deepEqual(evidenceQuery.filters.nodeKinds, []);
+  assert.deepEqual(evidenceQuery.filters.freeText, []);
+  assert.deepEqual(queryRelationshipGraph(detailed, evidenceSentence).relationshipIds.sort(), [
+    "both",
+    "ev",
+  ]);
+  assert.deepEqual(
+    queryRelationshipGraph(detailed, "Changed since you last looked: Risks.").relationshipIds,
+    ["risk"],
+  );
+  assert.deepEqual(
+    queryRelationshipGraph(
+      detailed,
+      "Changed since you last looked: Health, Supporting evidence.",
+    ).relationshipIds,
+    ["both"],
+  );
 
   const datedGraph = queryRelationshipGraph(
     {
@@ -1590,6 +1716,276 @@ test("saved graph views preserve a bounded neighborhood focus", () => {
   assert.equal(createRelationshipGraphSavedView({ state: { focusDepth: 8 } }).state.focusDepth, 2);
 });
 
+test("asking not recorded for this date finds a record that did not exist yet", () => {
+  const parsed = parseRelationshipGraphQuery("Not recorded for this date");
+  assert.equal(parsed.filters.notRecorded, true);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["not recorded for this date"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:later", kind: "relationship", label: "Quay Later", status: "historical_unknown" },
+      { id: "relationship:source", kind: "relationship", label: "Quay Source" },
+      {
+        id: "source:later",
+        kind: "source",
+        label: "Gmail",
+        relationshipId: "source",
+        source: "gmail",
+        status: "historical_unknown",
+      },
+      { id: "relationship:now", kind: "relationship", label: "Quay Now", status: "active", health: "healthy" },
+    ],
+    edges: [],
+  };
+  assert.deepEqual(queryRelationshipGraph(graph, "Not recorded for this date").relationshipIds.sort(), [
+    "later",
+    "source",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Not recorded for this date.").relationshipIds.sort(), [
+    "later",
+    "source",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "show me Not recorded for this date").relationshipIds.sort(), [
+    "later",
+    "source",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "historical unknown").relationshipIds, []);
+});
+
+test("asking for a confidence badge finds the promise that prints that percent", () => {
+  const exact = parseRelationshipGraphQuery("80% confidence");
+  assert.equal(exact.filters.confidencePercent, 80);
+  assert.deepEqual(exact.filters.freeText, []);
+  assert.deepEqual(exact.applied, ["80% confidence"]);
+
+  const dotted = parseRelationshipGraphQuery("80% confidence.");
+  assert.equal(dotted.filters.confidencePercent, 80);
+  assert.deepEqual(dotted.filters.freeText, []);
+
+  const shown = parseRelationshipGraphQuery("show me 80% confidence");
+  assert.equal(shown.filters.confidencePercent, 80);
+  assert.deepEqual(shown.filters.freeText, []);
+
+  assert.equal(parseRelationshipGraphQuery("80%").filters.confidencePercent, null);
+  assert.equal(parseRelationshipGraphQuery("confidence").filters.confidencePercent, null);
+  assert.equal(
+    parseRelationshipGraphQuery("65% confidence and 40% confidence").filters.confidencePercent,
+    null,
+  );
+  assert.equal(parseRelationshipGraphQuery("065% confidence").filters.confidencePercent, null);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:quoted", kind: "relationship", label: "Quay Quoted" },
+      {
+        id: "commitment:quoted",
+        kind: "commitment",
+        label: "Send the security packet",
+        relationshipId: "quoted",
+        status: "open",
+        confidence: 0.8,
+      },
+      { id: "relationship:rounded", kind: "relationship", label: "Quay Rounded" },
+      {
+        id: "commitment:rounded",
+        kind: "commitment",
+        label: "Send the rounded packet",
+        relationshipId: "rounded",
+        status: "open",
+        confidence: 0.804,
+      },
+      { id: "relationship:lower", kind: "relationship", label: "Quay Lower" },
+      {
+        id: "commitment:lower",
+        kind: "commitment",
+        label: "Send the renewal note",
+        relationshipId: "lower",
+        status: "open",
+        confidence: 0.4,
+      },
+      { id: "relationship:plain", kind: "relationship", label: "Quay Plain" },
+      {
+        id: "commitment:plain",
+        kind: "commitment",
+        label: "Send the agenda",
+        relationshipId: "plain",
+        status: "open",
+      },
+      { id: "relationship:sure", kind: "relationship", label: "Quay Sure" },
+      {
+        id: "commitment:sure",
+        kind: "commitment",
+        label: "Send the sure packet",
+        relationshipId: "sure",
+        status: "open",
+        confidence: 0.855,
+      },
+      { id: "relationship:later", kind: "relationship", label: "Quay Later", status: "historical_unknown" },
+    ],
+    edges: [],
+  };
+
+  for (const query of ["80% confidence", "80% confidence.", "show me 80% confidence"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds.sort(), ["quoted", "rounded"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "86% confidence").relationshipIds, ["sure"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "40% confidence").relationshipIds, ["lower"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "80%").relationshipIds, []);
+  assert.deepEqual(queryRelationshipGraph(graph, "confidence").relationshipIds, []);
+  assert.deepEqual(queryRelationshipGraph(graph, "Not recorded for this date").relationshipIds, ["later"]);
+});
+
+test("asking for the due day finds the promise that prints that day", () => {
+  const exact = parseRelationshipGraphQuery("Oct 20, 2026");
+  assert.equal(exact.filters.dueLabel, "oct 20, 2026");
+  assert.deepEqual(exact.filters.freeText, []);
+  assert.deepEqual(exact.applied, ["oct 20, 2026"]);
+
+  const prefixed = parseRelationshipGraphQuery("Due: Oct 20, 2026");
+  assert.equal(prefixed.filters.dueLabel, "oct 20, 2026");
+  assert.deepEqual(prefixed.filters.freeText, []);
+
+  const dated = parseRelationshipGraphQuery("due date Oct 20, 2026.");
+  assert.equal(dated.filters.dueLabel, "oct 20, 2026");
+  assert.deepEqual(dated.filters.freeText, []);
+
+  assert.equal(parseRelationshipGraphQuery("Oct 20").filters.dueLabel, null);
+  assert.equal(parseRelationshipGraphQuery("Oct 05, 2026").filters.dueLabel, null);
+  assert.equal(parseRelationshipGraphQuery("Oct 20, 2026 and Nov 2, 2026").filters.dueLabel, null);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:due", kind: "relationship", label: "Quay Due" },
+      {
+        id: "commitment:due",
+        kind: "commitment",
+        label: "Send the security packet",
+        relationshipId: "due",
+        status: "open",
+        dueAt: "2026-10-20T15:00:00.000Z",
+      },
+      { id: "relationship:next", kind: "relationship", label: "Quay Next" },
+      {
+        id: "commitment:next",
+        kind: "commitment",
+        label: "Send the renewal note",
+        relationshipId: "next",
+        status: "open",
+        dueAt: "2026-11-02T00:30:00.000Z",
+      },
+      { id: "relationship:open", kind: "relationship", label: "Quay Open" },
+      {
+        id: "commitment:open",
+        kind: "commitment",
+        label: "Send the agenda",
+        relationshipId: "open",
+        status: "open",
+      },
+    ],
+    edges: [],
+  };
+  for (const query of ["Oct 20, 2026", "Oct 20, 2026.", "Due: Oct 20, 2026", "show me due Oct 20, 2026"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["due"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Nov 2, 2026").relationshipIds, ["next"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Oct 20").relationshipIds, []);
+});
+
+test("asking for an unknown person finds the person with no name", () => {
+  const parsed = parseRelationshipGraphQuery("Unknown person");
+  assert.equal(parsed.filters.unknownPerson, true);
+  assert.deepEqual(parsed.filters.health, []);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["nodes: person", "unknown person"]);
+
+  const dotted = parseRelationshipGraphQuery("Unknown person.");
+  assert.equal(dotted.filters.unknownPerson, true);
+  assert.deepEqual(dotted.filters.freeText, []);
+
+  const known = parseRelationshipGraphQuery("Not known");
+  assert.equal(known.filters.unknownPerson, false);
+  assert.equal(known.filters.notKnown, true);
+  assert.deepEqual(known.filters.health, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:healthy", kind: "relationship", label: "Quay Healthy", health: "healthy" },
+      {
+        id: "person:unknown",
+        kind: "person",
+        label: "Unknown person",
+        relationshipId: "healthy",
+        role: "contact",
+      },
+      { id: "relationship:sick", kind: "relationship", label: "Quay Sick", health: "unknown" },
+      {
+        id: "person:ada",
+        kind: "person",
+        label: "Ada Lovelace",
+        relationshipId: "sick",
+        role: "champion",
+      },
+    ],
+    edges: [],
+  };
+  for (const query of ["Unknown person", "Unknown person.", "show me Unknown person"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["healthy"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Not known").relationshipIds, ["sick"]);
+});
+
+test("asking for a former contact finds that role", () => {
+  const parsed = parseRelationshipGraphQuery("Former contact");
+  assert.equal(parsed.filters.formerContact, true);
+  assert.deepEqual(parsed.filters.lifecycle, []);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["former contact"]);
+
+  const dotted = parseRelationshipGraphQuery("Former contact.");
+  assert.equal(dotted.filters.formerContact, true);
+  assert.deepEqual(dotted.filters.freeText, []);
+
+  const customer = parseRelationshipGraphQuery("Former customer");
+  assert.equal(customer.filters.formerContact, false);
+  assert.deepEqual(customer.filters.lifecycle, ["former_customer"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:roles", kind: "relationship", label: "Quay Roles" },
+      {
+        id: "person:former",
+        kind: "person",
+        label: "Ada Former",
+        relationshipId: "roles",
+        role: "former_contact",
+      },
+      {
+        id: "person:primary",
+        kind: "person",
+        label: "Ada Primary",
+        relationshipId: "roles",
+        role: "primary_contact",
+      },
+      { id: "relationship:current", kind: "relationship", label: "Quay Current" },
+      {
+        id: "person:now",
+        kind: "person",
+        label: "Ada Now",
+        relationshipId: "current",
+        role: "contact",
+      },
+      { id: "relationship:left", kind: "relationship", label: "Quay Left", lifecycle: "former_customer" },
+    ],
+    edges: [],
+  };
+  for (const query of ["Former contact", "Former contact.", "show me Former contact"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["roles"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Former customer").relationshipIds, ["left"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Primary contact").relationshipIds, ["roles"]);
+});
+
 test("every contracted capability has an explicit surface in web and desktop", () => {
   const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   const clientSources = {
@@ -1652,6 +2048,1381 @@ test("an imported transcript retry keeps the same idempotency identity", () => {
     buildImportedTranscriptObservation(input).externalId,
     buildImportedTranscriptObservation(input).externalId,
   );
+});
+
+test("asking for an activity name finds the detail that prints that name", () => {
+  const confirmed = parseRelationshipGraphQuery("Promise confirmed");
+  assert.deepEqual(confirmed.filters.nodeLabels, ["promise confirmed"]);
+  assert.deepEqual(confirmed.filters.nodeKinds, []);
+  assert.deepEqual(confirmed.filters.freeText, []);
+  assert.deepEqual(confirmed.applied, ["promise confirmed"]);
+
+  const dotted = parseRelationshipGraphQuery("Promise confirmed.");
+  assert.deepEqual(dotted.filters.nodeLabels, ["promise confirmed"]);
+  assert.deepEqual(dotted.filters.freeText, []);
+
+  const evidence = parseRelationshipGraphQuery("Promise evidence");
+  assert.deepEqual(evidence.filters.nodeLabels, ["promise evidence"]);
+  assert.deepEqual(evidence.filters.nodeKinds, []);
+
+  const person = parseRelationshipGraphQuery("Person added");
+  assert.deepEqual(person.filters.nodeLabels, ["person added"]);
+  assert.deepEqual(person.filters.nodeKinds, []);
+  assert.deepEqual(person.filters.freeText, []);
+
+  const note = parseRelationshipGraphQuery("A note");
+  assert.deepEqual(note.filters.nodeLabels, ["a note"]);
+  assert.deepEqual(note.filters.nodeKinds, []);
+  assert.deepEqual(note.filters.freeText, []);
+
+  const voice = parseRelationshipGraphQuery("A voice note");
+  assert.deepEqual(voice.filters.nodeLabels, ["a voice note"]);
+  assert.deepEqual(voice.filters.nodeKinds, []);
+  assert.deepEqual(voice.filters.sources, []);
+
+  const changed = parseRelationshipGraphQuery("Engagement changed");
+  assert.deepEqual(changed.filters.nodeLabels, ["engagement changed"]);
+  assert.equal(changed.filters.changed, false);
+  assert.deepEqual(changed.filters.freeText, []);
+
+  const sent = parseRelationshipGraphQuery("Message sent");
+  assert.deepEqual(sent.filters.nodeLabels, ["message sent"]);
+  assert.equal(sent.filters.sent, false);
+  assert.deepEqual(sent.filters.freeText, []);
+
+  const onboarding = parseRelationshipGraphQuery("Onboarding moved forward");
+  assert.deepEqual(onboarding.filters.nodeLabels, ["onboarding moved forward"]);
+  assert.deepEqual(onboarding.filters.lifecycle, []);
+  assert.deepEqual(onboarding.filters.freeText, []);
+
+  const desktop = parseRelationshipGraphQuery("desktop notes");
+  assert.deepEqual(desktop.filters.nodeLabels, []);
+  assert.deepEqual(desktop.filters.sources, ["desktop_note"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:confirmed", kind: "relationship", label: "Quay Confirmed" },
+      {
+        id: "evidence:confirmed",
+        kind: "evidence",
+        label: "Promise confirmed",
+        relationshipId: "confirmed",
+      },
+      { id: "relationship:word", kind: "relationship", label: "Quay Word" },
+      {
+        id: "commitment:word",
+        kind: "commitment",
+        label: "Confirmed the date",
+        relationshipId: "word",
+        status: "open",
+      },
+      { id: "relationship:both", kind: "relationship", label: "Quay Both" },
+      {
+        id: "commitment:both",
+        kind: "commitment",
+        label: "Send the note",
+        relationshipId: "both",
+        status: "open",
+      },
+      {
+        id: "evidence:both",
+        kind: "evidence",
+        label: "Other detail",
+        relationshipId: "both",
+      },
+      { id: "relationship:evidence", kind: "relationship", label: "Quay Evidence" },
+      {
+        id: "evidence:evidence",
+        kind: "evidence",
+        label: "Promise evidence",
+        relationshipId: "evidence",
+      },
+      { id: "relationship:added", kind: "relationship", label: "Quay Added" },
+      {
+        id: "evidence:added",
+        kind: "evidence",
+        label: "Person added",
+        relationshipId: "added",
+      },
+      { id: "relationship:ada", kind: "relationship", label: "Quay Ada" },
+      {
+        id: "person:ada",
+        kind: "person",
+        label: "Ada Lovelace",
+        relationshipId: "ada",
+        role: "champion",
+      },
+      { id: "relationship:noted", kind: "relationship", label: "Quay Noted" },
+      {
+        id: "source:noted",
+        kind: "source",
+        label: "A note",
+        relationshipId: "noted",
+        source: "desktop_note",
+      },
+      { id: "relationship:standup", kind: "relationship", label: "Quay Standup" },
+      {
+        id: "note:standup",
+        kind: "note",
+        label: "Standup",
+        relationshipId: "standup",
+      },
+      { id: "relationship:voice", kind: "relationship", label: "Quay Voice" },
+      {
+        id: "source:voice",
+        kind: "source",
+        label: "A voice note",
+        relationshipId: "voice",
+        source: "voice_note",
+      },
+      { id: "relationship:engaged", kind: "relationship", label: "Quay Engaged" },
+      {
+        id: "evidence:engaged",
+        kind: "evidence",
+        label: "Engagement changed",
+        relationshipId: "engaged",
+      },
+      { id: "relationship:shift", kind: "relationship", label: "Quay Shift", changedSinceReview: true },
+      { id: "relationship:sent", kind: "relationship", label: "Quay Sent" },
+      {
+        id: "evidence:sent",
+        kind: "evidence",
+        label: "Message sent",
+        relationshipId: "sent",
+      },
+      { id: "relationship:out", kind: "relationship", label: "Quay Out" },
+      {
+        id: "action:out",
+        kind: "action",
+        label: "Warm follow-up",
+        relationshipId: "out",
+        executionStatus: "sent",
+      },
+      { id: "relationship:forward", kind: "relationship", label: "Quay Forward" },
+      {
+        id: "evidence:forward",
+        kind: "evidence",
+        label: "Onboarding moved forward",
+        relationshipId: "forward",
+      },
+      {
+        id: "relationship:stage",
+        kind: "relationship",
+        label: "Quay Stage",
+        lifecycle: "onboarding",
+      },
+      { id: "relationship:company", kind: "relationship", label: "Quay Company" },
+      {
+        id: "evidence:company",
+        kind: "evidence",
+        label: "Company added",
+        relationshipId: "company",
+      },
+      { id: "relationship:summary", kind: "relationship", label: "Quay Summary" },
+      {
+        id: "evidence:summary",
+        kind: "evidence",
+        label: "Harbor joined the workspace",
+        status: "Company added",
+        relationshipId: "summary",
+      },
+      { id: "relationship:salt", kind: "relationship", label: "Added Salt" },
+      { id: "relationship:mail", kind: "relationship", label: "Quay Mail" },
+      {
+        id: "evidence:mail",
+        kind: "evidence",
+        label: "Mail updated",
+        relationshipId: "mail",
+      },
+      { id: "relationship:updated", kind: "relationship", label: "Quay Updated" },
+      {
+        id: "evidence:updated",
+        kind: "evidence",
+        label: "Company updated",
+        relationshipId: "updated",
+      },
+      { id: "relationship:record", kind: "relationship", label: "Quay Record" },
+      {
+        id: "evidence:record",
+        kind: "evidence",
+        label: "Company record",
+        relationshipId: "record",
+      },
+      { id: "relationship:recorded", kind: "relationship", label: "Quay Recorded" },
+      {
+        id: "evidence:recorded",
+        kind: "evidence",
+        label: "Recorded",
+        relationshipId: "recorded",
+      },
+      { id: "relationship:chosen", kind: "relationship", label: "Quay Chosen" },
+      {
+        id: "evidence:chosen",
+        kind: "evidence",
+        label: "Detail chosen",
+        relationshipId: "chosen",
+      },
+      { id: "relationship:quote", kind: "relationship", label: "Quay Quote" },
+      {
+        id: "evidence:quote",
+        kind: "evidence",
+        label: "A quote was chosen",
+        relationshipId: "quote",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of ["Promise confirmed", "Promise confirmed.", "show me Promise confirmed"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["confirmed"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Promise evidence").relationshipIds, ["evidence"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Person added").relationshipIds, ["added"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "A note").relationshipIds, ["noted"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "A note.").relationshipIds, ["noted"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "A voice note").relationshipIds, ["voice"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Engagement changed").relationshipIds, ["engaged"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Message sent").relationshipIds, ["sent"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Onboarding moved forward").relationshipIds, ["forward"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Changed since you last looked.").relationshipIds, ["shift"]);
+
+  const company = parseRelationshipGraphQuery("Company added");
+  assert.deepEqual(company.filters.nodeLabels, ["company added"]);
+  assert.deepEqual(company.filters.nodeKinds, []);
+  assert.deepEqual(company.filters.freeText, []);
+  assert.deepEqual(parseRelationshipGraphQuery("Company added.").filters.freeText, []);
+  assert.deepEqual(parseRelationshipGraphQuery("Company updated").filters.nodeKinds, []);
+  assert.deepEqual(parseRelationshipGraphQuery("Company record").filters.nodeLabels, ["company record"]);
+  const chosen = parseRelationshipGraphQuery("Detail chosen");
+  assert.deepEqual(chosen.filters.nodeLabels, ["detail chosen"]);
+  assert.deepEqual(chosen.filters.nodeKinds, []);
+  assert.deepEqual(chosen.filters.freeText, []);
+
+  for (const query of ["Company added", "Company added.", "show me Company added"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds.sort(), ["company", "summary"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Company updated").relationshipIds, ["updated"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Company record").relationshipIds, ["record"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Detail chosen").relationshipIds, ["chosen"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Detail chosen.").relationshipIds, ["chosen"]);
+});
+
+test("asking for an activity sentence finds the row that prints it", () => {
+  const meeting = parseRelationshipGraphQuery("Meeting with ada@acme.com");
+  assert.deepEqual(meeting.filters.rowTitles, ["meeting with ada@acme.com"]);
+  assert.deepEqual(meeting.filters.sources, []);
+  assert.deepEqual(meeting.filters.freeText, []);
+
+  const mail = parseRelationshipGraphQuery("Mail: Q3 review");
+  assert.deepEqual(mail.filters.rowTitles, ["mail: q3 review"]);
+  assert.equal(mail.filters.promiseReview, false);
+  assert.deepEqual(mail.filters.freeText, []);
+
+  const added = parseRelationshipGraphQuery("You added a person.");
+  assert.deepEqual(added.filters.rowTitles, ["you added a person"]);
+  assert.deepEqual(added.filters.nodeKinds, []);
+  assert.deepEqual(added.filters.freeText, []);
+
+  assert.deepEqual(parseRelationshipGraphQuery("You added Ada.").filters.rowTitles, ["you added ada"]);
+  const hubspot = parseRelationshipGraphQuery("Company from HubSpot");
+  assert.deepEqual(hubspot.filters.rowTitles, ["company from hubspot"]);
+  assert.deepEqual(hubspot.filters.sources, []);
+  assert.deepEqual(hubspot.filters.nodeKinds, []);
+  const namedHub = parseRelationshipGraphQuery("Company from HubSpot: Acme");
+  assert.deepEqual(namedHub.filters.rowTitles, ["company from hubspot: acme"]);
+  assert.deepEqual(namedHub.filters.sources, []);
+  const slack = parseRelationshipGraphQuery("Message in Slack");
+  assert.deepEqual(slack.filters.rowTitles, ["message in slack"]);
+  assert.deepEqual(slack.filters.sources, []);
+  assert.deepEqual(parseRelationshipGraphQuery("Message in #design").filters.rowTitles, [
+    "message in #design",
+  ]);
+  assert.deepEqual(parseRelationshipGraphQuery("meeting").filters.rowTitles, []);
+  assert.deepEqual(parseRelationshipGraphQuery("meeting").filters.sources, ["meeting"]);
+  assert.deepEqual(parseRelationshipGraphQuery("hubspot").filters.sources, ["hubspot"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:meet", kind: "relationship", label: "Quay Meet" },
+      {
+        id: "evidence:meet",
+        kind: "evidence",
+        label: "Meeting with ada@acme.com",
+        status: "Meeting",
+        source: "calendar",
+        relationshipId: "meet",
+      },
+      { id: "relationship:source", kind: "relationship", label: "Quay Source" },
+      {
+        id: "source:meet",
+        kind: "source",
+        label: "A meeting",
+        source: "meeting",
+        relationshipId: "source",
+      },
+      { id: "relationship:mail", kind: "relationship", label: "Quay Mail" },
+      {
+        id: "evidence:mail",
+        kind: "evidence",
+        label: "Mail: Q3 review",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "mail",
+      },
+      { id: "relationship:review", kind: "relationship", label: "Quay Review" },
+      {
+        id: "commitment:review",
+        kind: "commitment",
+        label: "Send the notes",
+        status: "review",
+        relationshipId: "review",
+      },
+      { id: "relationship:blank", kind: "relationship", label: "Quay Blank" },
+      {
+        id: "evidence:blank",
+        kind: "evidence",
+        label: "You added a person.",
+        status: "Person added",
+        source: "user",
+        relationshipId: "blank",
+      },
+      { id: "relationship:ada", kind: "relationship", label: "Quay Ada" },
+      {
+        id: "person:ada",
+        kind: "person",
+        label: "Ada Lovelace",
+        role: "champion",
+        relationshipId: "ada",
+      },
+      {
+        id: "evidence:ada",
+        kind: "evidence",
+        label: "You added Ada.",
+        status: "Person added",
+        source: "user",
+        relationshipId: "ada",
+      },
+      { id: "relationship:hub", kind: "relationship", label: "Quay Hub" },
+      {
+        id: "evidence:hub",
+        kind: "evidence",
+        label: "Company from HubSpot",
+        status: "Company record",
+        source: "hubspot",
+        relationshipId: "hub",
+      },
+      { id: "relationship:hubonly", kind: "relationship", label: "Quay Hub Only" },
+      {
+        id: "source:hubonly",
+        kind: "source",
+        label: "HubSpot",
+        source: "hubspot",
+        relationshipId: "hubonly",
+      },
+      { id: "relationship:acme", kind: "relationship", label: "Acme" },
+      {
+        id: "evidence:acme",
+        kind: "evidence",
+        label: "Company from HubSpot: Acme",
+        source: "hubspot",
+        relationshipId: "acme",
+      },
+      { id: "relationship:slack", kind: "relationship", label: "Quay Slack" },
+      {
+        id: "evidence:slack",
+        kind: "evidence",
+        label: "Message in Slack",
+        status: "Message",
+        source: "slack",
+        relationshipId: "slack",
+      },
+      { id: "relationship:channel", kind: "relationship", label: "Quay Channel" },
+      {
+        id: "evidence:channel",
+        kind: "evidence",
+        label: "Message in #design",
+        status: "Message",
+        source: "slack",
+        relationshipId: "channel",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of ["Meeting with ada@acme.com", "Meeting with ada@acme.com.", "show me Meeting with ada@acme.com"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["meet"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Mail: Q3 review").relationshipIds, ["mail"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "You added a person.").relationshipIds, ["blank"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "You added Ada.").relationshipIds, ["ada"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Company from HubSpot").relationshipIds, ["hub"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Company from HubSpot: Acme").relationshipIds, ["acme"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Message in Slack").relationshipIds, ["slack"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Message in #design").relationshipIds, ["channel"]);
+});
+
+test("asking for a promise or attendance sentence finds the row that prints it", () => {
+  const stillOpen = parseRelationshipGraphQuery("This promise is still open: Send the proposal");
+  assert.deepEqual(stillOpen.filters.rowTitles, ["this promise is still open: send the proposal"]);
+  assert.equal(stillOpen.filters.open, false);
+  assert.deepEqual(stillOpen.filters.nodeKinds, []);
+  assert.deepEqual(stillOpen.filters.freeText, []);
+
+  const kept = parseRelationshipGraphQuery("This promise was kept.");
+  assert.deepEqual(kept.filters.rowTitles, ["this promise was kept"]);
+  assert.equal(kept.filters.kept, false);
+  assert.deepEqual(kept.filters.nodeKinds, []);
+
+  const ours = parseRelationshipGraphQuery("We made this promise: Send the proposal");
+  assert.deepEqual(ours.filters.rowTitles, ["we made this promise: send the proposal"]);
+  assert.deepEqual(ours.filters.nodeKinds, []);
+  assert.equal(ours.filters.direction, "");
+
+  const outside = parseRelationshipGraphQuery("1 person from outside the company on Q3 review");
+  assert.deepEqual(outside.filters.rowTitles, [
+    "1 person from outside the company on q3 review",
+  ]);
+  assert.deepEqual(outside.filters.nodeKinds, []);
+  assert.equal(outside.filters.promiseReview, false);
+  assert.deepEqual(outside.filters.freeText, []);
+
+  const transcript = parseRelationshipGraphQuery(
+    "Q3 review · 12 lines in the transcript · 3 claims",
+  );
+  assert.deepEqual(transcript.filters.rowTitles, [
+    "q3 review · 12 lines in the transcript · 3 claims",
+  ]);
+  assert.equal(transcript.filters.promiseReview, false);
+  assert.deepEqual(transcript.filters.freeText, []);
+
+  const risk = parseRelationshipGraphQuery(
+    "Risk raised in a conversation: the renewal slipped",
+  );
+  assert.deepEqual(risk.filters.rowTitles, [
+    "risk raised in a conversation: the renewal slipped",
+  ]);
+  assert.deepEqual(risk.filters.nodeKinds, []);
+  assert.deepEqual(risk.filters.lifecycle, []);
+
+  const lifecycle = parseRelationshipGraphQuery("Lifecycle: Active customer");
+  assert.deepEqual(lifecycle.filters.rowTitles, ["lifecycle: active customer"]);
+  assert.deepEqual(lifecycle.filters.lifecycle, []);
+  assert.deepEqual(lifecycle.filters.freeText, []);
+
+  const sentiment = parseRelationshipGraphQuery("Sentiment: Negative");
+  assert.deepEqual(sentiment.filters.rowTitles, ["sentiment: negative"]);
+  assert.deepEqual(sentiment.filters.sentiment, []);
+
+  assert.deepEqual(parseRelationshipGraphQuery("Promise: Send the proposal").filters.nodeKinds, []);
+  assert.deepEqual(parseRelationshipGraphQuery("Milestone: kickoff complete").filters.nodeKinds, []);
+  assert.deepEqual(
+    parseRelationshipGraphQuery("Person: Avery Chen is the champion").filters.nodeKinds,
+    [],
+  );
+  assert.deepEqual(
+    parseRelationshipGraphQuery("Decision: We decided to renew.").filters.lifecycle,
+    [],
+  );
+  assert.deepEqual(
+    parseRelationshipGraphQuery("Decision: We decided to renew.").filters.rowTitles,
+    ["decision: we decided to renew"],
+  );
+  assert.deepEqual(parseRelationshipGraphQuery("Unresolved objection").filters.rowTitles, []);
+  assert.equal(parseRelationshipGraphQuery("open").filters.open, true);
+  assert.deepEqual(parseRelationshipGraphQuery("open").filters.rowTitles, []);
+  assert.equal(parseRelationshipGraphQuery("kept").filters.kept, true);
+  assert.deepEqual(parseRelationshipGraphQuery("promises").filters.nodeKinds, ["commitment"]);
+  assert.equal(parseRelationshipGraphQuery("review").filters.promiseReview, true);
+  assert.deepEqual(parseRelationshipGraphQuery("active customer").filters.lifecycle, ["active_customer"]);
+  assert.deepEqual(parseRelationshipGraphQuery("active customer").filters.rowTitles, []);
+  assert.deepEqual(parseRelationshipGraphQuery("negative").filters.sentiment, ["negative"]);
+  assert.deepEqual(parseRelationshipGraphQuery("negative").filters.rowTitles, []);
+  assert.deepEqual(parseRelationshipGraphQuery("risk").filters.nodeKinds, ["risk"]);
+  assert.deepEqual(parseRelationshipGraphQuery("risk").filters.rowTitles, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:open", kind: "relationship", label: "Quay Open" },
+      {
+        id: "evidence:open",
+        kind: "evidence",
+        label: "This promise is still open: Send the proposal",
+        status: "Promise updated",
+        source: "meeting",
+        relationshipId: "open",
+      },
+      { id: "relationship:promise", kind: "relationship", label: "Quay Promise" },
+      {
+        id: "commitment:promise",
+        kind: "commitment",
+        label: "Send the proposal",
+        status: "open",
+        relationshipId: "promise",
+      },
+      { id: "relationship:kept", kind: "relationship", label: "Quay Kept" },
+      {
+        id: "evidence:kept",
+        kind: "evidence",
+        label: "This promise was kept",
+        status: "Promise updated",
+        relationshipId: "kept",
+      },
+      { id: "relationship:met", kind: "relationship", label: "Quay Met" },
+      {
+        id: "commitment:met",
+        kind: "commitment",
+        label: "Send the proposal",
+        status: "fulfilled",
+        relationshipId: "met",
+      },
+      { id: "relationship:we", kind: "relationship", label: "Quay We" },
+      {
+        id: "evidence:we",
+        kind: "evidence",
+        label: "Promise confirmed",
+        summary: "We made this promise: Send the proposal",
+        status: "Promise confirmed",
+        source: "meeting",
+        relationshipId: "we",
+      },
+      { id: "relationship:they", kind: "relationship", label: "Quay They" },
+      {
+        id: "evidence:they",
+        kind: "evidence",
+        label: "Promise confirmed",
+        summary: "They made this promise.",
+        status: "Promise confirmed",
+        relationshipId: "they",
+      },
+      { id: "relationship:ada", kind: "relationship", label: "Quay Ada" },
+      {
+        id: "evidence:ada",
+        kind: "evidence",
+        label: "Promise confirmed",
+        summary: "Ada Mesa made this promise: Send the proposal",
+        status: "Promise confirmed",
+        relationshipId: "ada",
+      },
+      { id: "relationship:room", kind: "relationship", label: "Quay Room" },
+      {
+        id: "evidence:room",
+        kind: "evidence",
+        label: "1 person from outside the company on Q3 review",
+        status: "Meeting",
+        source: "calendar",
+        relationshipId: "room",
+      },
+      { id: "relationship:crowd", kind: "relationship", label: "Quay Crowd" },
+      {
+        id: "evidence:crowd",
+        kind: "evidence",
+        label: "2 people from outside the company on Q3 review",
+        status: "Meeting",
+        relationshipId: "crowd",
+      },
+      { id: "relationship:none", kind: "relationship", label: "Quay None" },
+      {
+        id: "evidence:none",
+        kind: "evidence",
+        label: "No one from outside the company on Q3 review",
+        status: "Meeting",
+        relationshipId: "none",
+      },
+      { id: "relationship:talk", kind: "relationship", label: "Quay Talk" },
+      {
+        id: "evidence:talk",
+        kind: "evidence",
+        label: "Q3 review · 12 lines in the transcript · 3 claims",
+        status: "Meeting",
+        source: "meeting",
+        relationshipId: "talk",
+      },
+      { id: "relationship:line", kind: "relationship", label: "Quay Line" },
+      {
+        id: "evidence:line",
+        kind: "evidence",
+        label: "Q3 review · 1 line in the transcript · 1 claim",
+        status: "Meeting",
+        relationshipId: "line",
+      },
+      { id: "relationship:review", kind: "relationship", label: "Quay Review" },
+      {
+        id: "commitment:review",
+        kind: "commitment",
+        label: "Q3 review",
+        status: "review",
+        relationshipId: "review",
+      },
+      { id: "relationship:risk", kind: "relationship", label: "Quay Risk" },
+      {
+        id: "evidence:risk",
+        kind: "evidence",
+        label: "Risk raised in a conversation: the renewal slipped",
+        status: "Meeting",
+        relationshipId: "risk",
+      },
+      { id: "relationship:life", kind: "relationship", label: "Quay Life", lifecycle: "prospect" },
+      {
+        id: "evidence:life",
+        kind: "evidence",
+        label: "Lifecycle: Active customer",
+        relationshipId: "life",
+      },
+      { id: "relationship:feel", kind: "relationship", label: "Quay Feel", sentiment: "positive" },
+      {
+        id: "evidence:feel",
+        kind: "evidence",
+        label: "Sentiment: Negative",
+        relationshipId: "feel",
+      },
+      { id: "relationship:mile", kind: "relationship", label: "Quay Mile" },
+      {
+        id: "evidence:mile",
+        kind: "evidence",
+        label: "Milestone: kickoff complete",
+        relationshipId: "mile",
+      },
+      { id: "relationship:word", kind: "relationship", label: "Quay Word" },
+      {
+        id: "evidence:word",
+        kind: "evidence",
+        label: "Promise: Send the proposal",
+        relationshipId: "word",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of [
+    "This promise is still open: Send the proposal",
+    "This promise is still open: Send the proposal.",
+    "show me This promise is still open: Send the proposal",
+  ]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["open"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "This promise was kept").relationshipIds, ["kept"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "This promise was called off: Send the proposal").relationshipIds, []);
+  assert.deepEqual(
+    queryRelationshipGraph(graph, "We made this promise: Send the proposal").relationshipIds,
+    ["we"],
+  );
+  assert.deepEqual(queryRelationshipGraph(graph, "They made this promise.").relationshipIds, ["they"]);
+  assert.deepEqual(
+    queryRelationshipGraph(graph, "show me Ada Mesa made this promise: Send the proposal").relationshipIds,
+    ["ada"],
+  );
+  assert.deepEqual(
+    queryRelationshipGraph(graph, "1 person from outside the company on Q3 review").relationshipIds,
+    ["room"],
+  );
+  assert.deepEqual(
+    queryRelationshipGraph(graph, "2 people from outside the company on Q3 review").relationshipIds,
+    ["crowd"],
+  );
+  assert.deepEqual(
+    queryRelationshipGraph(graph, "No one from outside the company on Q3 review").relationshipIds,
+    ["none"],
+  );
+  assert.deepEqual(
+    queryRelationshipGraph(graph, "Q3 review · 12 lines in the transcript · 3 claims").relationshipIds,
+    ["talk"],
+  );
+  assert.deepEqual(
+    queryRelationshipGraph(graph, "Q3 review · 1 line in the transcript · 1 claim").relationshipIds,
+    ["line"],
+  );
+  assert.deepEqual(
+    queryRelationshipGraph(graph, "Risk raised in a conversation: the renewal slipped").relationshipIds,
+    ["risk"],
+  );
+  assert.deepEqual(queryRelationshipGraph(graph, "Lifecycle: Active customer").relationshipIds, ["life"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Sentiment: Negative").relationshipIds, ["feel"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Milestone: kickoff complete").relationshipIds, ["mile"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Promise: Send the proposal").relationshipIds, ["word"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "open").relationshipIds, ["promise"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "kept").relationshipIds, ["met"]);
+});
+
+test("asking for a hyphenated name finds the row that prints the hyphen", () => {
+  const parsed = parseRelationshipGraphQuery("Nova-3");
+  assert.deepEqual(parsed.filters.freeText, ["nova_3"]);
+  assert.deepEqual(parsed.filters.sources, []);
+
+  const model = parseRelationshipGraphQuery("Model: Nova-3");
+  assert.deepEqual(model.filters.freeText, ["model", "nova_3"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:nova", kind: "relationship", label: "Nova-3" },
+      {
+        id: "evidence:nova",
+        kind: "evidence",
+        label: "Model: Nova-3",
+        status: "Meeting",
+        source: "meeting",
+        relationshipId: "nova",
+      },
+      { id: "relationship:acme", kind: "relationship", label: "Acme-Corp" },
+      { id: "relationship:plain", kind: "relationship", label: "Acme Corp" },
+    ],
+    edges: [],
+  };
+
+  assert.deepEqual(queryRelationshipGraph(graph, "Nova-3").relationshipIds, ["nova"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Model: Nova-3").relationshipIds, ["nova"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Acme-Corp").relationshipIds, ["acme"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Acme Corp").relationshipIds.sort(), ["acme", "plain"]);
+});
+
+test("asking meeting finds a calendar row whose status is Meeting", () => {
+  const parsed = parseRelationshipGraphQuery("Meeting");
+  assert.deepEqual(parsed.filters.sources, ["meeting"]);
+  assert.deepEqual(parsed.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:cal", kind: "relationship", label: "Quay Calendar" },
+      {
+        id: "evidence:cal",
+        kind: "evidence",
+        label: "Q3 review",
+        status: "Meeting",
+        source: "calendar",
+        relationshipId: "cal",
+      },
+      { id: "relationship:updated", kind: "relationship", label: "Quay Updated" },
+      {
+        id: "evidence:updated",
+        kind: "evidence",
+        label: "The guest list changed",
+        status: "Meeting updated",
+        source: "calendar",
+        relationshipId: "updated",
+      },
+      { id: "relationship:source", kind: "relationship", label: "Quay Source" },
+      {
+        id: "source:meet",
+        kind: "source",
+        label: "A meeting",
+        source: "meeting",
+        relationshipId: "source",
+      },
+      { id: "relationship:mail", kind: "relationship", label: "Quay Mail" },
+      {
+        id: "evidence:mail",
+        kind: "evidence",
+        label: "Mail: Q3 review",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "mail",
+      },
+      { id: "relationship:follow", kind: "relationship", label: "Quay Follow" },
+      {
+        id: "action:follow",
+        kind: "action",
+        label: "Meeting follow-up",
+        status: "open",
+        relationshipId: "follow",
+      },
+    ],
+    edges: [],
+  };
+
+  assert.deepEqual(queryRelationshipGraph(graph, "Meeting").relationshipIds.sort(), [
+    "cal",
+    "source",
+    "updated",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "show me the meeting").relationshipIds.sort(), [
+    "cal",
+    "source",
+    "updated",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Meeting updated").relationshipIds, ["updated"]);
+});
+
+test("asking out of date finds a source whose status is Out of date", () => {
+  const parsed = parseRelationshipGraphQuery("Out of date");
+  assert.equal(parsed.filters.stale, true);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["out of date"]);
+
+  const withPeriod = parseRelationshipGraphQuery("Out of date.");
+  assert.equal(withPeriod.filters.stale, true);
+  assert.deepEqual(withPeriod.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:cadence", kind: "relationship", label: "Quay Cadence" },
+      {
+        id: "source:cadence",
+        kind: "source",
+        label: "Gmail",
+        status: "stale",
+        freshness: "current",
+        source: "gmail",
+        relationshipId: "cadence",
+      },
+      { id: "relationship:old", kind: "relationship", label: "Quay Dated" },
+      {
+        id: "evidence:old",
+        kind: "evidence",
+        label: "The quay note",
+        status: "Note saved",
+        freshness: "stale",
+        source: "desktop_note",
+        relationshipId: "old",
+      },
+      { id: "relationship:live", kind: "relationship", label: "Quay Live" },
+      {
+        id: "source:live",
+        kind: "source",
+        label: "Slack",
+        status: "live",
+        freshness: "current",
+        source: "slack",
+        relationshipId: "live",
+      },
+    ],
+    edges: [],
+  };
+
+  assert.deepEqual(queryRelationshipGraph(graph, "Out of date").relationshipIds.sort(), [
+    "cadence",
+    "old",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Out of date.").relationshipIds.sort(), [
+    "cadence",
+    "old",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "up to date").relationshipIds.sort(), [
+    "cadence",
+    "live",
+  ]);
+});
+
+test("asking for a mail thread sentence finds the row that prints it", () => {
+  const outside = parseRelationshipGraphQuery("1 message with someone outside the company");
+  assert.deepEqual(outside.filters.rowTitles, ["1 message with someone outside the company"]);
+  assert.deepEqual(outside.filters.nodeKinds, []);
+  assert.deepEqual(outside.filters.freeText, []);
+
+  const outsidePeriod = parseRelationshipGraphQuery("1 message with someone outside the company.");
+  assert.deepEqual(outsidePeriod.filters.rowTitles, ["1 message with someone outside the company"]);
+  assert.deepEqual(outsidePeriod.filters.freeText, []);
+
+  const review = parseRelationshipGraphQuery("4 messages with Q3 review");
+  assert.deepEqual(review.filters.rowTitles, ["4 messages with q3 review"]);
+  assert.equal(review.filters.promiseReview, false);
+  assert.deepEqual(review.filters.freeText, []);
+
+  const domain = parseRelationshipGraphQuery("4 messages with acme.com");
+  assert.deepEqual(domain.filters.rowTitles, ["4 messages with acme.com"]);
+  assert.deepEqual(domain.filters.freeText, []);
+
+  assert.deepEqual(parseRelationshipGraphQuery("1 messages with acme.com").filters.rowTitles, []);
+  assert.deepEqual(parseRelationshipGraphQuery("2 message with acme.com").filters.rowTitles, []);
+  assert.deepEqual(parseRelationshipGraphQuery("01 messages with acme.com").filters.rowTitles, []);
+  assert.deepEqual(parseRelationshipGraphQuery("messages").filters.rowTitles, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:out", kind: "relationship", label: "Quay Out" },
+      {
+        id: "evidence:out",
+        kind: "evidence",
+        label: "1 message with someone outside the company",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "out",
+      },
+      { id: "relationship:named", kind: "relationship", label: "Someone Outside Company" },
+      { id: "relationship:review", kind: "relationship", label: "Quay Review" },
+      {
+        id: "evidence:review",
+        kind: "evidence",
+        label: "4 messages with Q3 review",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "review",
+      },
+      { id: "relationship:promise", kind: "relationship", label: "Quay Promise" },
+      {
+        id: "commitment:promise",
+        kind: "commitment",
+        label: "Send the notes",
+        status: "review",
+        relationshipId: "promise",
+      },
+      { id: "relationship:domain", kind: "relationship", label: "Quay Domain" },
+      {
+        id: "evidence:domain",
+        kind: "evidence",
+        label: "4 messages with acme.com",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "domain",
+      },
+      { id: "relationship:one", kind: "relationship", label: "Quay One" },
+      {
+        id: "evidence:one",
+        kind: "evidence",
+        label: "1 message with acme.com",
+        status: "Mail",
+        source: "gmail",
+        relationshipId: "one",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of [
+    "1 message with someone outside the company",
+    "1 message with someone outside the company.",
+    "show me 1 message with someone outside the company",
+  ]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["out"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "4 messages with Q3 review").relationshipIds, [
+    "review",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "4 messages with acme.com").relationshipIds, [
+    "domain",
+  ]);
+  assert.deepEqual(queryRelationshipGraph(graph, "1 message with acme.com").relationshipIds, ["one"]);
+});
+
+test("a trailing period still finds the badge it follows", () => {
+  const declining = parseRelationshipGraphQuery("Declining.");
+  assert.deepEqual(declining.filters.engagement, ["declining"]);
+  assert.deepEqual(declining.filters.freeText, []);
+
+  const active = parseRelationshipGraphQuery("Active.");
+  assert.equal(active.filters.sourceActive, true);
+  assert.deepEqual(active.filters.freeText, []);
+
+  const open = parseRelationshipGraphQuery("Open.");
+  assert.equal(open.filters.open, true);
+  assert.deepEqual(open.filters.freeText, []);
+
+  const healthy = parseRelationshipGraphQuery("Healthy.");
+  assert.deepEqual(healthy.filters.health, ["healthy"]);
+  assert.deepEqual(healthy.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:slide",
+        kind: "relationship",
+        label: "Quay Slide",
+        engagement: "declining",
+        health: "unknown",
+      },
+      {
+        id: "relationship:well",
+        kind: "relationship",
+        label: "Quay Well",
+        health: "healthy",
+        engagement: "steady",
+      },
+      { id: "relationship:live", kind: "relationship", label: "Quay Live" },
+      {
+        id: "source:live",
+        kind: "source",
+        label: "Gmail",
+        status: "live",
+        freshness: "current",
+        source: "gmail",
+        relationshipId: "live",
+      },
+      { id: "relationship:open", kind: "relationship", label: "Quay Open" },
+      {
+        id: "commitment:open",
+        kind: "commitment",
+        label: "Send the proposal",
+        status: "open",
+        relationshipId: "open",
+      },
+      {
+        id: "relationship:plain",
+        kind: "relationship",
+        label: "Quay Plain",
+        engagement: "unknown",
+        health: "unknown",
+      },
+    ],
+    edges: [],
+  };
+
+  assert.deepEqual(queryRelationshipGraph(graph, "Declining.").relationshipIds, ["slide"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Healthy.").relationshipIds, ["well"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Active.").relationshipIds, ["live"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Open.").relationshipIds, ["open"]);
+});
+
+test("a trailing period still finds a badge stored without one", () => {
+  const closed = parseRelationshipGraphQuery("Closed.");
+  assert.deepEqual(closed.filters.freeText, ["closed"]);
+  const sponsor = parseRelationshipGraphQuery("Executive sponsor.");
+  assert.deepEqual(sponsor.filters.freeText, ["executive", "sponsor"]);
+  const reconnect = parseRelationshipGraphQuery("Reconnect required.");
+  assert.deepEqual(reconnect.filters.freeText, ["reconnect", "required"]);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:closed",
+        kind: "relationship",
+        label: "Quay Closed",
+        status: "closed",
+        engagement: "steady",
+      },
+      {
+        id: "relationship:archived",
+        kind: "relationship",
+        label: "Quay Archived",
+        status: "archived",
+      },
+      {
+        id: "relationship:open",
+        kind: "relationship",
+        label: "Quay Open",
+        status: "active",
+        engagement: "increasing",
+      },
+      { id: "relationship:down", kind: "relationship", label: "Quay Down" },
+      {
+        id: "source:down",
+        kind: "source",
+        label: "Gmail",
+        status: "disconnected",
+        source: "gmail",
+        relationshipId: "down",
+      },
+      { id: "relationship:live", kind: "relationship", label: "Quay Live" },
+      {
+        id: "source:live",
+        kind: "source",
+        label: "Slack",
+        status: "live",
+        source: "slack",
+        relationshipId: "live",
+      },
+      { id: "relationship:again", kind: "relationship", label: "Quay Again" },
+      {
+        id: "source:again",
+        kind: "source",
+        label: "HubSpot",
+        status: "reconnect_required",
+        source: "hubspot",
+        relationshipId: "again",
+      },
+      { id: "relationship:later", kind: "relationship", label: "Quay Later" },
+      {
+        id: "action:later",
+        kind: "action",
+        label: "Follow up",
+        status: "snoozed",
+        relationshipId: "later",
+      },
+      { id: "relationship:ada", kind: "relationship", label: "Quay Ada" },
+      {
+        id: "person:ada",
+        kind: "person",
+        label: "Ada Mesa",
+        role: "executive_sponsor",
+        relationshipId: "ada",
+      },
+      {
+        id: "person:primary",
+        kind: "person",
+        label: "Ren Park",
+        role: "primary_contact",
+        relationshipId: "ada",
+      },
+    ],
+    edges: [],
+  };
+
+  assert.deepEqual(queryRelationshipGraph(graph, "Closed.").relationshipIds, ["closed"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Archived.").relationshipIds, ["archived"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Disconnected.").relationshipIds, ["down"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Reconnect required.").relationshipIds, ["again"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Snoozed.").relationshipIds, ["later"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Executive sponsor.").relationshipIds, ["ada"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Primary contact.").relationshipIds, ["ada"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Active.").relationshipIds, ["live"]);
+});
+
+test("asking dormant finds a company whose status is Dormant", () => {
+  const parsed = parseRelationshipGraphQuery("Dormant");
+  assert.deepEqual(parsed.filters.engagement, ["dormant"]);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parseRelationshipGraphQuery("Dormant.").filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:account",
+        kind: "relationship",
+        label: "Quay Account",
+        status: "dormant",
+        engagement: "steady",
+        health: "healthy",
+      },
+      {
+        id: "relationship:quiet",
+        kind: "relationship",
+        label: "Quay Quiet",
+        status: "active",
+        engagement: "dormant",
+        health: "healthy",
+      },
+      {
+        id: "relationship:busy",
+        kind: "relationship",
+        label: "Quay Busy",
+        status: "active",
+        engagement: "increasing",
+        health: "healthy",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of ["Dormant", "Dormant.", "show me dormant"]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds.sort(), [
+      "account",
+      "quiet",
+    ]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Steady").relationshipIds, ["account"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Increasing").relationshipIds, ["busy"]);
+});
+
+test("asking for a risk or milestone line finds that row", () => {
+  const review = parseRelationshipGraphQuery("Security review has no owner.");
+  assert.equal(review.filters.promiseReview, true);
+  assert.deepEqual(review.filters.freeText, ["security", "has", "no", "owner"]);
+  const slip = parseRelationshipGraphQuery("renewal slip");
+  assert.deepEqual(slip.filters.lifecycle, ["renewal"]);
+  assert.deepEqual(slip.filters.freeText, ["slip"]);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:security",
+        kind: "relationship",
+        label: "Quay Security",
+        lifecycle: "active_customer",
+        health: "critical",
+      },
+      {
+        id: "risk:security",
+        kind: "risk",
+        label: "Security review has no owner.",
+        relationshipId: "security",
+        status: "critical",
+      },
+      {
+        id: "relationship:promise",
+        kind: "relationship",
+        label: "Quay Promise",
+        lifecycle: "prospect",
+        health: "healthy",
+      },
+      {
+        id: "commitment:promise",
+        kind: "commitment",
+        label: "Confirm the date",
+        relationshipId: "promise",
+        status: "review",
+      },
+      {
+        id: "relationship:gate",
+        kind: "relationship",
+        label: "Quay Gate",
+        lifecycle: "prospect",
+        health: "needs_attention",
+      },
+      {
+        id: "risk:gate",
+        kind: "risk",
+        label: "Security review blocked",
+        relationshipId: "gate",
+        status: "needs_attention",
+      },
+      {
+        id: "relationship:held",
+        kind: "relationship",
+        label: "Quay Held",
+        lifecycle: "prospect",
+      },
+      {
+        id: "action:held",
+        kind: "action",
+        label: "Warm follow-up",
+        relationshipId: "held",
+        status: "open",
+        policyStatus: "blocked",
+      },
+      {
+        id: "relationship:slip",
+        kind: "relationship",
+        label: "Quay Slip",
+        lifecycle: "active_customer",
+        health: "critical",
+      },
+      {
+        id: "risk:slip",
+        kind: "risk",
+        label: "renewal slip",
+        relationshipId: "slip",
+        status: "critical",
+      },
+      {
+        id: "relationship:renew",
+        kind: "relationship",
+        label: "Quay Renew",
+        lifecycle: "renewal",
+        health: "healthy",
+      },
+      {
+        id: "relationship:stone",
+        kind: "relationship",
+        label: "Quay Stone",
+        lifecycle: "onboarding",
+      },
+      {
+        id: "milestone:stone",
+        kind: "milestone",
+        label: "Proposal shared.",
+        relationshipId: "stone",
+      },
+      {
+        id: "relationship:late",
+        kind: "relationship",
+        label: "Quay Late",
+        health: "critical",
+      },
+      {
+        id: "commitment:late",
+        kind: "commitment",
+        label: "Send the renewal packet",
+        relationshipId: "late",
+        status: "at_risk",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of [
+    "Security review has no owner.",
+    "Security review has no owner",
+    "show me security review has no owner",
+  ]) {
+    const found = queryRelationshipGraph(graph, query);
+    assert.deepEqual(found.relationshipIds, ["security"]);
+    assert.deepEqual(found.parsed.applied, ["security review has no owner"]);
+  }
+  const blocked = queryRelationshipGraph(graph, "Security review blocked");
+  assert.deepEqual(blocked.relationshipIds, ["gate"]);
+  assert.equal(blocked.visibleNodeIds.includes("relationship:held"), false);
+  for (const query of ["renewal slip", "Renewal slip."]) {
+    assert.deepEqual(queryRelationshipGraph(graph, query).relationshipIds, ["slip"]);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "Renewal").relationshipIds, ["renew"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Proposal shared.").relationshipIds, ["stone"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "Review").relationshipIds, ["promise"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "At risk").relationshipIds, ["late"]);
+  // "A delivery risk" still means the risk row. Stripping the leading "A"
+  // must not replace the badge answer when that row already survived.
+  const delivery = queryRelationshipGraph(
+    {
+      nodes: [
+        {
+          id: "relationship:delivery",
+          kind: "relationship",
+          label: "Quay Delivery",
+          lifecycle: "active_customer",
+        },
+        {
+          id: "risk:delivery",
+          kind: "risk",
+          label: "A delivery risk",
+          relationshipId: "delivery",
+        },
+      ],
+      edges: [],
+    },
+    "A delivery risk",
+  );
+  assert.deepEqual(delivery.relationshipIds, ["delivery"]);
+  assert.deepEqual(delivery.parsed.applied, ["nodes: risk", "text: delivery"]);
+});
+
+test("asking for a meeting note finds the row titled A meeting note", () => {
+  const parsed = parseRelationshipGraphQuery("A meeting note");
+  assert.deepEqual(parsed.filters.nodeKinds, ["note"]);
+  assert.deepEqual(parsed.filters.sources, ["meeting"]);
+  assert.deepEqual(parsed.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:row",
+        kind: "relationship",
+        label: "Quay Notes",
+        lifecycle: "active_customer",
+        health: "healthy",
+      },
+      {
+        id: "evidence:row",
+        kind: "evidence",
+        label: "A meeting note",
+        relationshipId: "row",
+        source: "desktop_note",
+        status: "Note saved",
+      },
+      {
+        id: "relationship:note",
+        kind: "relationship",
+        label: "Quay Folder",
+        lifecycle: "prospect",
+      },
+      {
+        id: "note:note",
+        kind: "note",
+        label: "Kickoff notes",
+        relationshipId: "note",
+      },
+      {
+        id: "relationship:meet",
+        kind: "relationship",
+        label: "Quay Meet",
+        lifecycle: "prospect",
+      },
+      {
+        id: "source:meet",
+        kind: "source",
+        label: "A meeting",
+        relationshipId: "meet",
+        source: "meeting",
+        status: "live",
+      },
+    ],
+    edges: [],
+  };
+
+  for (const query of ["A meeting note", "A meeting note.", "show me a meeting note"]) {
+    const found = queryRelationshipGraph(graph, query);
+    assert.deepEqual(found.relationshipIds, ["row"]);
+    assert.deepEqual(found.parsed.applied, ["meeting note"]);
+    assert.equal(found.visibleNodeIds.includes("relationship:note"), false);
+    assert.equal(found.visibleNodeIds.includes("relationship:meet"), false);
+  }
+  assert.deepEqual(queryRelationshipGraph(graph, "A note").relationshipIds, []);
+  assert.deepEqual(queryRelationshipGraph(graph, "Meeting").relationshipIds, ["meet"]);
 });
 
 test("speaker parsing stays bounded for adversarial whitespace", () => {
