@@ -15006,6 +15006,12 @@ func TestRelationshipSearchFindsRankingFactors(t *testing.T) {
 	assertCompanyQuery("Due date: +8 · This promise is past due.", "Rank Old")
 	assertCompanyQuery("Source coverage: +4 · How complete the sources are changes where this sits.", "Rank Revised")
 	assertCompanyQuery("which companies show due date: +12 · this promise is past due.", "Rank Due")
+	assertCompanyQuery("Source coverage: -2 · How complete the sources are changes where this sits.", "Rank Cover")
+	assertCompanyQuery("Source coverage: -2 · How complete the sources are changes where this sits", "Rank Cover")
+	assertCompanyQuery("which companies show source coverage: -2 · how complete the sources are changes where this sits.", "Rank Cover")
+	assertCompanyQuery("Source coverage: -4 · How complete the sources are changes where this sits.")
+	assertCompanyQuery("Due date: -12 · This promise is past due.")
+	assertCompanyQuery("Source coverage: +2 · How complete the sources are changes where this sits.")
 }
 
 func TestRelationshipSearchFindsReceiptOverflow(t *testing.T) {

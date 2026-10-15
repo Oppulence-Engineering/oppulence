@@ -10298,7 +10298,7 @@ func rankingFactorLine(needle string) (rankingLine, bool) {
 	var found rankingLine
 	matched := false
 	for _, label := range rankingFactorLabels {
-		marker := label.label + ": +"
+		marker := label.label + ": "
 		search := needle
 		for {
 			index := strings.Index(search, marker)
@@ -10306,6 +10306,23 @@ func rankingFactorLine(needle string) (rankingLine, bool) {
 				break
 			}
 			rest := search[index+len(marker):]
+			// A positive contribution keeps its plus. The search box turns the
+			// printed minus into a space, so "-2" arrives as "2".
+			sign := 0
+			switch {
+			case strings.HasPrefix(rest, "+"):
+				sign = 1
+				rest = rest[1:]
+			case strings.HasPrefix(rest, "-"):
+				sign = -1
+				rest = rest[1:]
+			case len(rest) > 0 && rest[0] >= '0' && rest[0] <= '9':
+				sign = -1
+			}
+			if sign == 0 {
+				search = search[index+len(marker):]
+				continue
+			}
 			end := 0
 			for end < len(rest) && rest[end] >= '0' && rest[end] <= '9' {
 				end++
@@ -10315,10 +10332,11 @@ func rankingFactorLine(needle string) (rankingLine, bool) {
 				continue
 			}
 			contribution, err := strconv.Atoi(rest[:end])
-			if err != nil {
+			if err != nil || (sign < 0 && contribution == 0) {
 				search = search[index+len(marker):]
 				continue
 			}
+			contribution *= sign
 			after := rest[end:]
 			var reasons []string
 			for _, item := range rankingPrintedReasons {
