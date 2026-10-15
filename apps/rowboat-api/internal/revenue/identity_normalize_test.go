@@ -12537,6 +12537,76 @@ func TestRelationshipSearchFindsTheDeltaLine(t *testing.T) {
 	assertCompanyQuery("Needs attention", "Delta Stored")
 }
 
+func TestRelationshipSearchFindsTheChangeList(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveSnap := func(rel *ent.Relationship, changed []string) {
+		t.Helper()
+		if _, err := f.client.RelationshipStateSnapshot.Create().
+			SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+			SetVersion(1).SetStateJSON(`{}`).
+			SetStateHash(rel.DisplayName).
+			SetEvaluatedAt(time.Now().UTC()).
+			SetChangedDimensions(changed).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pair := makeCompany("Change Pair")
+	saveSnap(pair, []string{"health", "lifecycle"})
+	swap := makeCompany("Change Swap")
+	saveSnap(swap, []string{"lifecycle", "health"})
+	one := makeCompany("Change One")
+	saveSnap(one, []string{"health"})
+	evidence := makeCompany("Change Evidence")
+	saveSnap(evidence, []string{"evidence", "risks"})
+	three := makeCompany("Change Three")
+	saveSnap(three, []string{"health", "lifecycle", "summary"})
+	next := makeCompany("Change Next")
+	saveSnap(next, []string{"next_action", "summary"})
+	marks := makeCompany("Change Marks")
+	saveSnap(marks, []string{"milestones", "sentiment"})
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Health, Lifecycle", "Change Pair")
+	assertCompanyQuery("Health, Lifecycle.", "Change Pair")
+	assertCompanyQuery("Lifecycle, Health", "Change Swap")
+	assertCompanyQuery("Health, Summary")
+	assertCompanyQuery("Supporting evidence, Risks", "Change Evidence")
+	assertCompanyQuery("Risks, Supporting evidence")
+	assertCompanyQuery("Health, Lifecycle, Summary", "Change Three")
+	assertCompanyQuery("Next action, Summary", "Change Next")
+	assertCompanyQuery("Milestones, Sentiment", "Change Marks")
+	assertCompanyQuery("Health")
+}
+
 func TestRelationshipSearchFindsContradictionReasons(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

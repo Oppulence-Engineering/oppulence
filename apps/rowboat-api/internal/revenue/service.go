@@ -863,6 +863,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if delta := relationshipSheetDeltaLineMatch(needle); delta != nil {
 			parts = append(parts, delta)
 		}
+		// The history row joins every field that moved: "Health, Lifecycle".
+		if changed := relationshipSheetChangeListMatch(needle); changed != nil {
+			parts = append(parts, changed)
+		}
 		if badges := relationshipSheetRecordBadgeMatch(needle, s.now()); badges != nil {
 			parts = append(parts, badges)
 		}
@@ -8402,6 +8406,114 @@ func postgresJSONPath(path string) string {
 	path = strings.ReplaceAll(path, "[", ",")
 	path = strings.ReplaceAll(path, "]", "")
 	return "'{" + path + "}'"
+}
+
+// relationshipSheetChangeListMatch matches the history row that names every
+// field that moved. The sheet joins those names in stored order, as
+// "Health, Lifecycle". One field stays on the searches that already name it.
+func relationshipSheetChangeListMatch(needle string) predicate.Relationship {
+	dims, ok := changeDimensionList(needle)
+	if !ok {
+		return nil
+	}
+	return relationshipHasChangedDimensionList(dims)
+}
+
+func changeDimensionList(needle string) ([]string, bool) {
+	if !strings.Contains(needle, ", ") {
+		return nil, false
+	}
+	parts := strings.Split(needle, ", ")
+	if len(parts) < 2 {
+		return nil, false
+	}
+	dims := make([]string, len(parts))
+	for i, part := range parts {
+		dim, ok := changeDimensionValue(part)
+		if !ok {
+			return nil, false
+		}
+		dims[i] = dim
+	}
+	return dims, true
+}
+
+func changeDimensionValue(part string) (string, bool) {
+	switch part {
+	case "supporting evidence":
+		return "evidence", true
+	case "risks":
+		return "risks", true
+	case "milestones":
+		return "milestones", true
+	case "lifecycle":
+		return "lifecycle", true
+	case "engagement":
+		return "engagement", true
+	case "sentiment":
+		return "sentiment", true
+	case "health":
+		return "health", true
+	case "summary":
+		return "summary", true
+	case "next action":
+		return "next_action", true
+	default:
+		return "", false
+	}
+}
+
+func relationshipHasChangedDimensionList(dims []string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			table := relationshipstatesnapshot.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(table)
+			b.WriteString(" AS snap WHERE snap.")
+			b.WriteString(relationshipstatesnapshot.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			writeChangedDimensionCount(b, s, "snap")
+			b.WriteString(" = ")
+			b.Arg(len(dims))
+			for i, dim := range dims {
+				b.WriteString(" AND ")
+				writeChangedDimensionAt(b, s, "snap", i)
+				b.WriteString(" = ")
+				b.Arg(dim)
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeChangedDimensionCount(b *sql.Builder, s *sql.Selector, alias string) {
+	column := alias + "." + relationshipstatesnapshot.FieldChangedDimensions
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("COALESCE(jsonb_array_length(")
+		b.WriteString(column)
+		b.WriteString("::jsonb), 0)")
+		return
+	}
+	b.WriteString("COALESCE(json_array_length(")
+	b.WriteString(column)
+	b.WriteString("), 0)")
+}
+
+func writeChangedDimensionAt(b *sql.Builder, s *sql.Selector, alias string, index int) {
+	column := alias + "." + relationshipstatesnapshot.FieldChangedDimensions
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->>")
+		b.WriteString(strconv.Itoa(index))
+		return
+	}
+	b.WriteString("json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$[")
+	b.WriteString(strconv.Itoa(index))
+	b.WriteString("]')")
 }
 
 func writeReadingKept(b *sql.Builder, s *sql.Selector, reading string) {
