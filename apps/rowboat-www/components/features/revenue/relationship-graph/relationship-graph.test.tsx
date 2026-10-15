@@ -15,6 +15,7 @@ import {
   graphDetailLabel,
   graphStageReading,
   graphExecutionLabel,
+  graphNodeBadgeLabels,
   graphNodeFieldLabel,
   graphSourceStatusLabel,
   graphPromiseDirection,
@@ -198,6 +199,64 @@ describe("RelationshipGraphWorkspace", () => {
         metadata: { completeness: "stale" },
       }),
     ).toBe("Sync incomplete");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "source",
+        status: "degraded",
+        source: "google",
+        freshness: "current",
+        metadata: { completeness: "stale" },
+      }),
+    ).toBe("Sync incomplete");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "source",
+        status: "disconnected",
+        source: "google",
+        freshness: "stale",
+      }),
+    ).toBe("Disconnected");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "source",
+        status: "stale",
+        source: "google",
+        freshness: "current",
+        metadata: { completeness: "complete" },
+      }),
+    ).toBe("Out of date");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "source",
+        status: "historical_unknown",
+        source: "google",
+        freshness: "unknown",
+      }),
+    ).toBe("Not recorded for this date");
+    expect(
+      graphSourceStatusLabel({
+        status: "historical_unknown",
+        source: "google",
+      }),
+    ).toBe("Not recorded for this date");
+    expect(
+      graphNodeBadgeLabels({
+        kind: "source",
+        status: "disconnected",
+        source: "slack",
+        freshness: "stale",
+      })[0],
+    ).toBe("Disconnected");
+    expect(
+      graphNodeBadgeLabels({
+        kind: "source",
+        status: "live",
+        source: "google",
+        freshness: "current",
+        metadata: { completeness: "complete" },
+      }),
+    ).toEqual(["Up to date"]);
+    expect(source).toContain("graphNodeBadgeLabels(node)");
     expect(source).toContain("graphSourceStatusLabel(node)");
     expect(graphNodeSummaryLabel({ kind: "source", status: "stale" })).toBe("Out of date");
     expect(graphNodeFieldLabel("commitment", "status", "open")).toBe("Open");

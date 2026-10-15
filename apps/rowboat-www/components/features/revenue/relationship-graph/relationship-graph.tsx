@@ -239,17 +239,7 @@ type FlowEdge = Edge<{ graphEdge: RelationshipGraphEdge }, "typedEdge">;
 
 function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
   const node = data.graphNode;
-  const badges = [
-    node.role ? participantRoleLabel(node.role) : "",
-    node.kind === "relationship" && node.health
-      ? graphNodeFieldLabel(node.kind, "health", node.health)
-      : node.health && node.health !== "unknown"
-        ? graphNodeFieldLabel(node.kind, "health", node.health)
-        : "",
-    node.approvalStatus ? graphNodeFieldLabel(node.kind, "approval", node.approvalStatus) : "",
-    node.freshness ? graphNodeFieldLabel(node.kind, "freshness", node.freshness) : "",
-    node.confidence === undefined ? "" : personResearchConfidenceLabel(node.confidence),
-  ].filter(Boolean);
+  const badges = graphNodeBadgeLabels(node);
 
   return (
     <div
@@ -1394,6 +1384,9 @@ export function graphSourceStatusLabel(node: {
   source?: string;
   metadata?: { completeness?: unknown; backfillPhase?: unknown };
 }): string {
+  if ((node.status ?? "") === "historical_unknown") {
+    return graphDetailLabel("historical_unknown");
+  }
   const completeness =
     typeof node.metadata?.completeness === "string" ? node.metadata.completeness : undefined;
   const backfillPhase =
@@ -1407,6 +1400,40 @@ export function graphSourceStatusLabel(node: {
     });
   }
   return graphNodeFieldLabel("source", "status", node.status ?? "");
+}
+
+/**
+ * The diagram badge and the table State cell. A healthy source keeps its
+ * freshness word. A connection problem uses the company badge, so a
+ * disconnected source does not read as merely out of date.
+ */
+export function graphNodeBadgeLabels(node: {
+  kind: string;
+  role?: string;
+  health?: string;
+  status?: string;
+  source?: string;
+  approvalStatus?: string;
+  freshness?: string;
+  confidence?: number;
+  metadata?: { completeness?: unknown; backfillPhase?: unknown };
+}): string[] {
+  const sourceState = node.kind === "source" && node.status ? graphSourceStatusLabel(node) : "";
+  const freshness = node.freshness
+    ? graphNodeFieldLabel(node.kind, "freshness", node.freshness)
+    : "";
+  return [
+    node.role ? participantRoleLabel(node.role) : "",
+    node.kind === "relationship" && node.health
+      ? graphNodeFieldLabel(node.kind, "health", node.health)
+      : node.health && node.health !== "unknown"
+        ? graphNodeFieldLabel(node.kind, "health", node.health)
+        : "",
+    node.approvalStatus ? graphNodeFieldLabel(node.kind, "approval", node.approvalStatus) : "",
+    sourceState && sourceState !== "Active" ? sourceState : "",
+    freshness && freshness !== sourceState ? freshness : "",
+    node.confidence === undefined ? "" : personResearchConfidenceLabel(node.confidence),
+  ].filter(Boolean);
 }
 
 export function graphNodeSummaryLabel(node: {
@@ -1423,13 +1450,12 @@ export function graphNodeSummaryLabel(node: {
   if (node.health && node.health !== "unknown") {
     return graphNodeFieldLabel(node.kind, "health", node.health);
   }
-  // The diagram badge shows approval, then freshness. The table's one State
-  // cell has to use that same word, and only then the stored status.
+  // The diagram badge shows approval, then the connection word, then freshness.
+  // The table's one State cell has to use that same first word.
   if (node.approvalStatus) return graphNodeFieldLabel(node.kind, "approval", node.approvalStatus);
-  // The sources page says Not connected before it mentions freshness. A fresh
-  // observation must not hide that the source is not connected.
-  if (node.kind === "source" && node.status === "not_connected") {
-    return graphSourceStatusLabel(node);
+  if (node.kind === "source" && node.status) {
+    const connection = graphSourceStatusLabel(node);
+    if (connection && connection !== "Active") return connection;
   }
   if (node.freshness && node.freshness !== "unknown") {
     return graphNodeFieldLabel(node.kind, "freshness", node.freshness);
