@@ -8377,7 +8377,32 @@ func writeDeltaArrayShown(b *sql.Builder, s *sql.Selector, jsonExpr, key string)
 	b.WriteString(length)
 	b.WriteString(" = 1 THEN ")
 	writeDeltaScalarShown(b, s, stateJSONText(s, jsonExpr, key+"[0]"))
-	b.WriteString(" ELSE '' END)")
+	b.WriteString(" ELSE coalesce((")
+	writeDeltaArrayJoin(b, s, jsonExpr, key)
+	b.WriteString("), 'none') END)")
+}
+
+// writeDeltaArrayJoin prints every kept value in array order, as
+// "renewal slip, late invoice". A blank value is "Unknown" on the sheet and
+// drops out of the join. An array of blanks is "None".
+func writeDeltaArrayJoin(b *sql.Builder, s *sql.Selector, jsonExpr, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("SELECT string_agg(shown, ', ' ORDER BY ord) FROM (SELECT shown, ord FROM (SELECT ")
+		writeDeltaScalarShown(b, s, "btrim(coalesce(item.value, ''))")
+		b.WriteString(" AS shown, item.ord FROM jsonb_array_elements_text((")
+		b.WriteString(jsonExpr)
+		b.WriteString(")::jsonb->'")
+		b.WriteString(key)
+		b.WriteString("') WITH ORDINALITY AS item(value, ord)) AS mapped WHERE shown <> 'unknown') AS kept")
+		return
+	}
+	b.WriteString("SELECT group_concat(shown, ', ') FROM (SELECT shown, ord FROM (SELECT ")
+	writeDeltaScalarShown(b, s, "trim(coalesce(item.value, ''))")
+	b.WriteString(" AS shown, CAST(item.key AS INTEGER) AS ord FROM json_each(")
+	b.WriteString(jsonExpr)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("') AS item) AS mapped WHERE shown <> 'unknown' ORDER BY ord) AS ordered")
 }
 
 func stateJSONText(s *sql.Selector, jsonExpr, path string) string {
