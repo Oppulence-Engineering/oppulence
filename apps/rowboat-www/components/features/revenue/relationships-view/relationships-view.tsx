@@ -207,6 +207,7 @@ import {
   attentionWithoutTasks,
   companyName,
   personCompanyTitle,
+  promiseDueDay,
   workspaceTaskIds,
 } from "@/lib/revenue/revenue-records";
 
@@ -2800,15 +2801,22 @@ export function mutualPlanHeading(status: string, version: number): string {
 
 /**
  * A plan step names its owner when that owner is a person. A redacted token
- * and a bare id are not a name.
+ * and a bare id are not a name. A saved due day is the UTC day the rest of
+ * this company uses, written "Due Sep 14, 2026".
  */
-export function mutualPlanItemLine(title: string, owner?: string | null): string {
+export function mutualPlanItemLine(
+  title: string,
+  owner?: string | null,
+  dueAt?: string | null,
+): string {
   const name = title.trim() || "Untitled step";
   const who = (owner ?? "").trim();
-  if (!who || who === "plan-participant") return name;
-  if (/^[0-9a-f-]{36}$/i.test(who)) return name;
-  if (/^[a-z0-9_:-]+$/.test(who)) return name;
-  return `${name} · ${who}`;
+  const named =
+    !who || who === "plan-participant" || /^[0-9a-f-]{36}$/i.test(who) || /^[a-z0-9_:-]+$/.test(who)
+      ? ""
+      : who;
+  const day = promiseDueDay(dueAt);
+  return [name, named, day ? `Due ${day}` : ""].filter(Boolean).join(" · ");
 }
 
 export function mutualPlanApproveLabel(): string {
@@ -5209,7 +5217,7 @@ export function RelationshipSheet({
                           <ul className="mt-1 list-disc pl-4 text-primary/60">
                             {plan.currentRevision.items.map((item) => (
                               <li key={item.itemId}>
-                                {mutualPlanItemLine(item.title, item.ownerParticipantRef)}
+                                {mutualPlanItemLine(item.title, item.ownerParticipantRef, item.dueAt)}
                               </li>
                             ))}
                           </ul>

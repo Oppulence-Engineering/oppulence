@@ -1131,6 +1131,12 @@ describe("RelationshipsView", () => {
     expect(mutualPlanItemLine("Send the harbor note", "Jordan Buyer")).toBe(
       "Send the harbor note · Jordan Buyer",
     );
+    expect(
+      mutualPlanItemLine("Send the harbor note", "Jordan Buyer", "2026-09-14T16:00:00Z"),
+    ).toBe("Send the harbor note · Jordan Buyer · Due Sep 14, 2026");
+    expect(mutualPlanItemLine("Send the harbor note", "plan-participant", "2026-09-14T16:00:00Z")).toBe(
+      "Send the harbor note · Due Sep 14, 2026",
+    );
     expect(mutualPlanItemLine("Send the harbor note", "plan-participant")).toBe(
       "Send the harbor note",
     );
@@ -1164,7 +1170,9 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("{dependency.kind}");
     expect(source).not.toContain("Unknown commitment");
     expect(source).toContain("mutualPlanHeading(plan.status, plan.currentRevision.version)");
-    expect(source).toContain("mutualPlanItemLine(item.title, item.ownerParticipantRef)");
+    expect(source).toContain(
+      "mutualPlanItemLine(item.title, item.ownerParticipantRef, item.dueAt)",
+    );
     expect(source).toContain("mutualPlanApproveLabel()");
     expect(source).toContain("mutualPlanShareLabel()");
     expect(source).not.toContain("Queue exact revision for sharing");

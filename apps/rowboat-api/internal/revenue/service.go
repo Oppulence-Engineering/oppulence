@@ -10660,7 +10660,8 @@ func relationshipSheetPlanEmptyMatch(needle string) predicate.Relationship {
 // "Draft · Version 1" or "Approved in this workspace · Version 2". A draft or
 // revised plan says "Approve this plan". An approved plan says "Draft an email
 // to share this plan". Each step is the title, or "Send the packet · Ada Quill"
-// when the owner is a person.
+// when the owner is a person. A saved due day is appended as
+// "Due Sep 14, 2026", the UTC day the company record prints.
 func relationshipSheetPlanCardMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	if status, version, ok := planHeadingQuery(needle); ok {
@@ -10839,11 +10840,12 @@ func writePlanStepMatch(b *sql.Builder, s *sql.Selector, line string) {
 		b.WriteString("::jsonb)->'currentRevision'->'items') = 'array' THEN (")
 		b.WriteString(column)
 		b.WriteString("::jsonb)->'currentRevision'->'items' ELSE '[]'::jsonb END) AS item WHERE ")
-		b.WriteString(planItemPrintedSQL(
+		writePlanItemLine(b, s,
 			"item->>'title'",
 			"item->>'ownerParticipantRef'",
 			tokenOwnerSQL("item->>'ownerParticipantRef'"),
-		))
+			"item->>'dueAt'",
+		)
 		b.WriteString(" = ")
 		b.Arg(line)
 		b.WriteString(")")
@@ -10852,14 +10854,28 @@ func writePlanStepMatch(b *sql.Builder, s *sql.Selector, line string) {
 	b.WriteString("EXISTS (SELECT 1 FROM json_each(coalesce(json_extract(")
 	b.WriteString(column)
 	b.WriteString(", '$.currentRevision.items'), '[]')) WHERE ")
-	b.WriteString(planItemPrintedSQL(
+	writePlanItemLine(b, s,
 		"json_extract(value, '$.title')",
 		"json_extract(value, '$.ownerParticipantRef')",
 		tokenOwnerSQL("json_extract(value, '$.ownerParticipantRef')"),
-	))
+		"json_extract(value, '$.dueAt')",
+	)
 	b.WriteString(" = ")
 	b.Arg(line)
 	b.WriteString(")")
+}
+
+func writePlanItemLine(b *sql.Builder, s *sql.Selector, title, owner, token, due string) {
+	base := planItemPrintedSQL(title, owner, token)
+	b.WriteString("CASE WHEN ")
+	writeMeetingDay(b, s, due)
+	b.WriteString(" = '' THEN (")
+	b.WriteString(base)
+	b.WriteString(") ELSE (")
+	b.WriteString(base)
+	b.WriteString(") || ' · due ' || ")
+	writeMeetingDay(b, s, due)
+	b.WriteString(" END")
 }
 
 func planItemPrintedSQL(title, owner, token string) string {

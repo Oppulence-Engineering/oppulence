@@ -14694,7 +14694,7 @@ func TestRelationshipSearchFindsThePlanHeading(t *testing.T) {
 	savePlan(draft, "plan:draft", 1, `{
 		"status": "draft",
 		"currentRevision": {"version": 1, "items": [
-			{"itemId": "item-1", "title": "Send the security packet", "ownerParticipantRef": "Ada Quill"},
+			{"itemId": "item-1", "title": "Send the security packet", "ownerParticipantRef": "Ada Quill", "dueAt": "2026-09-14T16:00:00Z"},
 			{"itemId": "item-2", "title": "  ", "ownerParticipantRef": "owner_token"}
 		]}
 	}`)
@@ -14737,7 +14737,8 @@ func TestRelationshipSearchFindsThePlanHeading(t *testing.T) {
 
 	assertCompanyQuery("Draft · Version 1", "Plan Draft")
 	assertCompanyQuery("Approve this plan", "Plan Draft", "Plan Revised")
-	assertCompanyQuery("Send the security packet · Ada Quill", "Plan Draft")
+	assertCompanyQuery("Send the security packet · Ada Quill · Due Sep 14, 2026", "Plan Draft")
+	assertCompanyQuery("Send the security packet · Ada Quill")
 	assertCompanyQuery("Untitled step", "Plan Draft")
 	assertCompanyQuery("Approved in this workspace · Version 2", "Plan Approved")
 	assertCompanyQuery("Draft an email to share this plan", "Plan Approved")
