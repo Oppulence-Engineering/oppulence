@@ -790,10 +790,12 @@ func TestPersonSearchFindsThePrintedLabels(t *testing.T) {
 		row.SetLinkedinURL("https://www.linkedin.com/in/link-rivera")
 	})
 	create("Morgan Lee", func(row *ent.PersonCreate) { row.SetTitle("Account Executive") })
+	create("Riley Chen", func(row *ent.PersonCreate) {
+		row.SetTitle("Finance lead").SetSeniority("ic")
+	})
 	expect := map[string]string{
-		"Not filled in":          "Casey Quinn",
-		"Individual contributor": "Indira Cole",
-		"View profile":           "Link Rivera",
+		"Not filled in": "Casey Quinn",
+		"View profile":  "Link Rivera",
 	}
 	for query, name := range expect {
 		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
@@ -806,6 +808,17 @@ func TestPersonSearchFindsThePrintedLabels(t *testing.T) {
 			}
 			t.Fatalf("query %q = %v err=%v", query, got, err)
 		}
+	}
+	band, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Individual contributor"})
+	if err != nil || band == nil || len(band.Persons) != 2 {
+		t.Fatalf("individual contributor = %+v err=%v", band, err)
+	}
+	gotBand := map[string]bool{}
+	for _, person := range band.Persons {
+		gotBand[person.DisplayName] = true
+	}
+	if !gotBand["Indira Cole"] || !gotBand["Riley Chen"] {
+		t.Fatalf("individual contributor = %+v", band.Persons)
 	}
 	for _, query := range []string{"profile", "contributor", "filled"} {
 		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
@@ -1202,6 +1215,8 @@ func TestPersonSearchFindsTheRoleLine(t *testing.T) {
 	link(company("Harbor Five"), band, "blocker")
 	other := personRow("Owen Blake", "VP Engineering", "")
 	link(company("Harbor Six"), other, "champion")
+	titledBand := personRow("Ada Quill", "Finance lead", "ic")
+	link(company("Harbor Seven"), titledBand, "contact")
 
 	assertPeople := func(query string, want ...string) {
 		t.Helper()
@@ -1234,8 +1249,12 @@ func TestPersonSearchFindsTheRoleLine(t *testing.T) {
 	assertPeople("Decision maker · Champion", "Mina Holt")
 	assertPeople("Decision maker · Decision maker, Champion")
 	assertPeople("Individual contributor · Blocker", "Jules Pike")
+	assertPeople("Individual contributor", "Jules Pike", "Ada Quill")
+	assertPeople("Individual contributor.", "Jules Pike", "Ada Quill")
+	assertPeople("which people are an individual contributor", "Jules Pike", "Ada Quill")
 	assertPeople("Decision maker", "Casey Quinn", "Indira Cole", "Mina Holt")
 	assertPeople("VP Engineering", "Casey Quinn", "Owen Blake")
+	assertPeople("Finance lead", "Ada Quill")
 }
 
 func TestPersonSearchFindsTheUnknownRole(t *testing.T) {

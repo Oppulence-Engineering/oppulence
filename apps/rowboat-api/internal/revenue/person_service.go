@@ -159,16 +159,19 @@ func personNormalizedContains(term string) predicate.Person {
 }
 
 // personVisibleLabelMatch matches words the directory prints from a code, not
-// from the stored text. A blank title with seniority "ic" reads "Individual
-// contributor". An empty profile reads "Not filled in". A saved LinkedIn page
-// reads "View profile".
+// from the stored text. Seniority "ic" reads "Individual contributor" on the
+// person sheet, including next to a saved title. An empty profile reads
+// "Not filled in". A saved LinkedIn page reads "View profile".
 func personVisibleLabelMatch(term string) predicate.Person {
 	needle := normalizePersonSearch(term)
 	if needle == "" {
 		return nil
 	}
 	var preds []predicate.Person
-	if labelPhraseMatches("individual contributor", needle) {
+	// The Seniority row says "Individual contributor" when the band is ic,
+	// including when the Role cell prints a title instead. "Individual
+	// contributor · Blocker" is that Role cell, not every person in the band.
+	if !personDirectoryRoleLineOwns(needle) && labelPhraseMatches("individual contributor", needle) {
 		preds = append(preds, personPrintsIndividualContributor())
 	}
 	// "filled" and "filled in" sit inside both "Not filled in" and "1 detail
@@ -842,20 +845,18 @@ func personUnfilled() predicate.Person {
 	)
 }
 
-// personPrintsIndividualContributor is a blank title with seniority "ic".
-// The Role cell then says "Individual contributor".
+// personPrintsIndividualContributor is seniority "ic". The person sheet says
+// "Individual contributor" next to a saved title. A blank title prints that
+// same band in the Role cell.
 func personPrintsIndividualContributor() predicate.Person {
-	return person.And(
-		personTextMissing(person.FieldTitle),
-		predicate.Person(func(s *sql.Selector) {
-			s.Where(sql.P(func(b *sql.Builder) {
-				b.WriteString(fmt.Sprintf(
-					"lower(trim(coalesce(%s, ''))) = 'ic'",
-					s.C(person.FieldSeniority),
-				))
-			}))
-		}),
-	)
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("lower(")
+			b.WriteString(personTrimExpr(s, person.FieldSeniority))
+			b.WriteString(") = ")
+			b.Arg("ic")
+		}))
+	})
 }
 
 // personPrintsViewProfile is the LinkedIn cell "View profile". A web address
@@ -966,9 +967,13 @@ func personAliasContains(term string) predicate.Person {
 // are joined with a middle dot. Several roles are joined with a comma, in
 // stored-token order, and a role whose label is the title is left off.
 // "Decision maker" on its own stays the role word.
+func personDirectoryRoleLineOwns(needle string) bool {
+	return strings.Contains(needle, " · ") || strings.Contains(needle, ", ")
+}
+
 func personDirectoryRoleLineMatch(term string) predicate.Person {
 	needle := normalizePersonSearch(term)
-	if !strings.Contains(needle, " · ") && !strings.Contains(needle, ", ") {
+	if !personDirectoryRoleLineOwns(needle) {
 		return nil
 	}
 	return predicate.Person(func(s *sql.Selector) {
