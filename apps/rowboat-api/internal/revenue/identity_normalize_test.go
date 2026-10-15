@@ -11403,7 +11403,7 @@ func TestRelationshipSearchFindsTheSheetTime(t *testing.T) {
 			SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID(id).
 			SetInteractionType("email").SetDirection("inbound").SetSubject(id).
 			SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
-			SetContentHash("sha256:"+id).SetMetadataJSON(`{}`).SetDeleted(deleted).
+			SetContentHash("sha256:" + id).SetMetadataJSON(`{}`).SetDeleted(deleted).
 			Save(internal); err != nil {
 			t.Fatal(err)
 		}
@@ -11448,7 +11448,7 @@ func TestRelationshipSearchFindsTheSheetTime(t *testing.T) {
 	assertCompanyQuery("2 hours ago", "Hour Touch", "Hour Thread")
 	assertCompanyQuery("v1 · "+label, "Change Day")
 	assertCompanyQuery("v1 · "+label+".", "Change Day")
-	assertCompanyQuery("v2 · "+label)
+	assertCompanyQuery("v2 · " + label)
 	assertCompanyQuery("v1")
 	assertCompanyQuery("v1 · 2 hours ago", "Hour Touch")
 }
@@ -13402,6 +13402,24 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Last deletion: Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
+	assertCompanyQuery("Captured by hand · Transcribed on this device, then saved here", "Quill Atelier")
+	assertCompanyQuery("Captured by hand · Transcribed on this device, then saved here.", "Quill Atelier")
+	assertCompanyQuery("Captured by hand · Stays on this device")
+	assertCompanyQuery("Uploaded on purpose · Stays on this device", "Cedar Mill")
+	assertCompanyQuery("Imported from the meeting service · Imported from Gmail, then saved here", "Harbor Ledger")
+	assertCompanyQuery("Started from the calendar or by hand · Stays on this device", "Harbor Ledger")
+	assertCompanyQuery("On this device · Kept until it is transcribed · People were not told · Nothing to delete", "Quill Atelier")
+	assertCompanyQuery("On this device · Kept until it is transcribed · People were not told · The meeting service deleted the original.", "Harbor Ledger")
+	assertCompanyQuery("On this device · Kept · People were not told · Nothing to delete")
+	assertCompanyQuery("Kept by the meeting service · Kept · The meeting service says people were told · Kept because of your settings", "Cedar Mill")
+	assertCompanyQuery("Kept by the meeting service · The meeting service keeps the original. The evidence saved here stays. · The meeting service says people were told · Deleted", "Harbor Ledger")
+	assertCompanyQuery("Legal hold off · No audio was kept", "Quill Atelier", "Harbor Ledger")
+	assertCompanyQuery("Legal hold off · No audio was kept.", "Quill Atelier", "Harbor Ledger")
+	assertCompanyQuery("Legal hold on · The audio that was kept is encrypted", "Cedar Mill")
+	assertCompanyQuery("Legal hold off · The audio that was kept is encrypted", "Harbor Ledger")
+	assertCompanyQuery("Legal hold on · No audio was kept")
+	assertCompanyQuery("Legal hold on · Stays on this device")
+	assertCompanyQuery("Transcribed on this device, then saved here · Captured by hand")
 }
 
 func TestRelationshipSearchFindsNoneRecorded(t *testing.T) {
@@ -15056,7 +15074,7 @@ func TestRelationshipSearchFindsTheDetailProvenanceLine(t *testing.T) {
 	assertCompanyQuery("Gmail", "Dated Gmail", "Hour Gmail")
 	assertCompanyQuery("Gmail · Mail updated", "Dated Gmail", "Hour Gmail")
 	assertCompanyQuery("Google")
-	assertCompanyQuery(label+" · Google")
+	assertCompanyQuery(label + " · Google")
 }
 
 func TestRelationshipSearchFindsTheMailTimelineLine(t *testing.T) {
@@ -15086,7 +15104,7 @@ func TestRelationshipSearchFindsTheMailTimelineLine(t *testing.T) {
 			SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID(rel.DisplayName).
 			SetInteractionType("email").SetDirection("inbound").SetSubject(rel.DisplayName).
 			SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
-			SetContentHash("sha256:"+rel.DisplayName).SetMetadataJSON(`{}`).SetDeleted(deleted).
+			SetContentHash("sha256:" + rel.DisplayName).SetMetadataJSON(`{}`).SetDeleted(deleted).
 			Save(internal); err != nil {
 			t.Fatal(err)
 		}
@@ -15118,7 +15136,7 @@ func TestRelationshipSearchFindsTheMailTimelineLine(t *testing.T) {
 	assertCompanyQuery(label+" · Your mailbox", "Dated Mail")
 	assertCompanyQuery(label+" · Your mailbox.", "Dated Mail")
 	assertCompanyQuery("2 hours ago · Your mailbox", "Hour Mail")
-	assertCompanyQuery(label+" · Kept private")
+	assertCompanyQuery(label + " · Kept private")
 }
 
 func TestRelationshipSearchFindsMailAccess(t *testing.T) {

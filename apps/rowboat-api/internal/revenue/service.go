@@ -12926,6 +12926,11 @@ func writePolicyBoolIsFalse(b *sql.Builder, s *sql.Selector, field string) {
 // deletion line. The receipt is stored on the conversation observation.
 func relationshipSheetGovernanceMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
+	// The card prints three lines. A phrase from one line does not contain
+	// the whole line, so the joined sentence has to be matched on its own.
+	if line := relationshipSheetGovernanceLineMatch(needle); line != nil {
+		preds = append(preds, line)
+	}
 	for _, item := range governanceReceiptPhrases() {
 		if !sheetPhraseMatches(item.phrase, needle) {
 			continue
@@ -12970,6 +12975,235 @@ func relationshipSheetGovernanceMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipSheetGovernanceLineMatch matches one printed receipt line.
+// The first line is the capture and the route. The second is place, how long
+// it is kept, whether people were told, and what happened to the recording.
+// The third is the legal hold and the audio note. Every part has to be on
+// the same receipt.
+func relationshipSheetGovernanceLineMatch(needle string) predicate.Relationship {
+	if !strings.Contains(needle, " · ") {
+		return nil
+	}
+	parts := strings.Split(needle, " · ")
+	for _, part := range parts {
+		if part == "" {
+			return nil
+		}
+	}
+	switch len(parts) {
+	case 2:
+		if on, ok := governanceLegalHoldPart(parts[0]); ok {
+			clip, ok := governanceExcerptValue(parts[1])
+			if !ok {
+				return nil
+			}
+			hold := on
+			return relationshipHasGovernanceLine(&hold, []governanceFieldMatch{{
+				field:  "evidenceClip",
+				equals: []string{clip},
+			}})
+		}
+		capture, ok := governanceCaptureValue(parts[0])
+		if !ok {
+			return nil
+		}
+		route, ok := governanceRouteMatch(parts[1])
+		if !ok {
+			return nil
+		}
+		return relationshipHasGovernanceLine(nil, []governanceFieldMatch{
+			{field: "capturePolicy", equals: []string{capture}},
+			route,
+		})
+	case 4:
+		place, ok := governancePlaceValue(parts[0])
+		if !ok {
+			return nil
+		}
+		retention, ok := governanceRetentionMatch(parts[1])
+		if !ok {
+			return nil
+		}
+		disclosure, ok := governanceDisclosureValue(parts[2])
+		if !ok {
+			return nil
+		}
+		deletion, ok := governanceDeletionMatch(parts[3])
+		if !ok {
+			return nil
+		}
+		return relationshipHasGovernanceLine(nil, []governanceFieldMatch{
+			{field: "region", equals: []string{place}},
+			retention,
+			{field: "participantDisclosure", equals: []string{disclosure}},
+			deletion,
+		})
+	default:
+		return nil
+	}
+}
+
+type governanceFieldMatch struct {
+	field  string
+	equals []string
+	prefix string
+}
+
+func governanceCaptureValue(part string) (string, bool) {
+	switch part {
+	case "captured by hand":
+		return "manual_capture", true
+	case "uploaded on purpose":
+		return "explicit_upload", true
+	case "imported from the meeting service":
+		return "provider_import", true
+	case "started from the calendar or by hand":
+		return "calendar_prompt_or_manual", true
+	case "do not capture":
+		return "deny", true
+	case "ask before capturing":
+		return "require_consent", true
+	case "capture is allowed":
+		return "allow", true
+	default:
+		return "", false
+	}
+}
+
+func governanceRouteMatch(part string) (governanceFieldMatch, bool) {
+	switch part {
+	case "transcribed on this device, then saved here":
+		return governanceFieldMatch{field: "routing", equals: []string{"local_transcription_to_oppulence"}}, true
+	case "stays on this device":
+		return governanceFieldMatch{field: "routing", equals: []string{"local_only"}}, true
+	default:
+		stored, ok := importedGovernanceRoute(part)
+		if !ok {
+			return governanceFieldMatch{}, false
+		}
+		return governanceFieldMatch{field: "routing", equals: []string{stored}}, true
+	}
+}
+
+func governancePlaceValue(part string) (string, bool) {
+	switch part {
+	case "on this device":
+		return "local_device", true
+	case "kept by the meeting service":
+		return "provider_managed", true
+	default:
+		return "", false
+	}
+}
+
+func governanceRetentionMatch(part string) (governanceFieldMatch, bool) {
+	switch part {
+	case "kept until it is transcribed":
+		return governanceFieldMatch{field: "retention", equals: []string{"until_transcribed", "untilTranscribed"}}, true
+	case "kept":
+		return governanceFieldMatch{field: "retention", equals: []string{"always"}}, true
+	case "the meeting service keeps the original the evidence saved here stays":
+		return governanceFieldMatch{field: "retention", equals: []string{"provider_policy_plus_oppulence_evidence"}}, true
+	default:
+		return governanceFieldMatch{}, false
+	}
+}
+
+func governanceDisclosureValue(part string) (string, bool) {
+	switch part {
+	case "people were not told":
+		return "not_recorded", true
+	case "the meeting service says people were told":
+		return "provider_reported", true
+	default:
+		return "", false
+	}
+}
+
+func governanceDeletionMatch(part string) (governanceFieldMatch, bool) {
+	switch part {
+	case "deleted":
+		return governanceFieldMatch{field: "deletionOutcome", prefix: "deleted:"}, true
+	case "the meeting service deleted the original":
+		return governanceFieldMatch{field: "deletionOutcome", prefix: "provider_deleted:"}, true
+	case "scheduled to be deleted after transcription":
+		return governanceFieldMatch{field: "deletionOutcome", equals: []string{"scheduled_after_transcription"}}, true
+	case "kept because of your settings":
+		return governanceFieldMatch{field: "deletionOutcome", equals: []string{"retained_by_user_policy"}}, true
+	case "nothing to delete":
+		return governanceFieldMatch{field: "deletionOutcome", equals: []string{"not_applicable"}}, true
+	case "kept":
+		return governanceFieldMatch{field: "deletionOutcome", equals: []string{"retained"}}, true
+	default:
+		return governanceFieldMatch{}, false
+	}
+}
+
+func governanceExcerptValue(part string) (string, bool) {
+	switch part {
+	case "no audio was kept":
+		return "not_retained", true
+	case "the audio that was kept is encrypted":
+		return "encrypted", true
+	default:
+		return "", false
+	}
+}
+
+func governanceLegalHoldPart(part string) (bool, bool) {
+	switch part {
+	case "legal hold on":
+		return true, true
+	case "legal hold off":
+		return false, true
+	default:
+		return false, false
+	}
+}
+
+func relationshipHasGovernanceLine(hold *bool, fields []governanceFieldMatch) predicate.Relationship {
+	return relationshipHasGovernanceReceipt(func(b *sql.Builder, s *sql.Selector) {
+		wrote := false
+		if hold != nil {
+			writeGovernanceBool(b, s, "legalHold", *hold)
+			wrote = true
+		}
+		for _, field := range fields {
+			if wrote {
+				b.WriteString(" AND ")
+			}
+			writeGovernanceFieldMatch(b, s, field)
+			wrote = true
+		}
+	})
+}
+
+func writeGovernanceFieldMatch(b *sql.Builder, s *sql.Selector, match governanceFieldMatch) {
+	if match.prefix != "" {
+		writeGovernanceText(b, s, match.field)
+		b.WriteString(" LIKE ")
+		b.Arg(escapePersonSearchLike(match.prefix) + "%")
+		b.WriteString(" ESCAPE '!'")
+		return
+	}
+	if len(match.equals) == 1 {
+		writeGovernanceText(b, s, match.field)
+		b.WriteString(" = ")
+		b.Arg(match.equals[0])
+		return
+	}
+	b.WriteByte('(')
+	for i, value := range match.equals {
+		if i > 0 {
+			b.WriteString(" OR ")
+		}
+		writeGovernanceText(b, s, match.field)
+		b.WriteString(" = ")
+		b.Arg(value)
+	}
+	b.WriteByte(')')
 }
 
 type governanceReceiptPhrase struct {
