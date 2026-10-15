@@ -867,6 +867,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if changed := relationshipSheetChangeListMatch(needle); changed != nil {
 			parts = append(parts, changed)
 		}
+		// The categories cell joins every tag in stored order: "ledger, atelier".
+		if categories := relationshipSheetCategoryLineMatch(needle); categories != nil {
+			parts = append(parts, categories)
+		}
 		if badges := relationshipSheetRecordBadgeMatch(needle, s.now()); badges != nil {
 			parts = append(parts, badges)
 		}
@@ -1696,6 +1700,43 @@ var relationshipSearchColumns = []string{
 	relationship.FieldNextAction,
 	relationship.FieldSummary,
 	relationship.FieldCompanyDescription,
+}
+
+// relationshipSheetCategoryLineMatch matches the categories cell. The sheet
+// joins every saved tag in stored order, as "ledger, atelier". One tag stays
+// on the search that already reads the list.
+func relationshipSheetCategoryLineMatch(needle string) predicate.Relationship {
+	if !strings.Contains(needle, ", ") {
+		return nil
+	}
+	return relationshipHasCategoryLine(needle)
+}
+
+func relationshipHasCategoryLine(needle string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeCategoryLine(b, s)
+			b.WriteString(" = ")
+			b.Arg(needle)
+		}))
+	})
+}
+
+func writeCategoryLine(b *sql.Builder, s *sql.Selector) {
+	column := s.C(relationship.FieldCompanyCategories)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("coalesce((SELECT string_agg(norm, ', ' ORDER BY ord) FROM (SELECT ")
+		writeNormalizedSQLText(b, s, "btrim(item.value)")
+		b.WriteString(" AS norm, item.ord FROM jsonb_array_elements_text(coalesce(")
+		b.WriteString(column)
+		b.WriteString(", '[]'::jsonb)) WITH ORDINALITY AS item(value, ord) WHERE btrim(item.value) <> '') AS mapped), '')")
+		return
+	}
+	b.WriteString("coalesce((SELECT group_concat(norm, ', ') FROM (SELECT norm, ord FROM (SELECT ")
+	writeNormalizedSQLText(b, s, "trim(item.value)")
+	b.WriteString(" AS norm, CAST(item.key AS INTEGER) AS ord FROM json_each(coalesce(")
+	b.WriteString(column)
+	b.WriteString(", '[]')) AS item WHERE trim(item.value) <> '') AS mapped ORDER BY ord) AS ordered), '')")
 }
 
 // relationshipCategoryContains matches the category badge on the directory.

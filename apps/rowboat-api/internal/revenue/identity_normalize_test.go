@@ -11535,6 +11535,54 @@ func TestRelationshipSearchFindsNotFilledIn(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsTheCategoryLine(t *testing.T) {
+	f := newFixture(t)
+	saveCategories := func(name string, categories []string) {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.Relationship.UpdateOneID(row.ID).
+			SetCompanyCategories(categories).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveCategories("Category Pair", []string{"ledger", "atelier"})
+	saveCategories("Category Swap", []string{"atelier", "ledger"})
+	saveCategories("Category One", []string{"ledger"})
+	saveCategories("Category Three", []string{"ledger", "atelier", "harbor"})
+	saveCategories("Category Spaced", []string{"  ledger  ", "Atelier"})
+	saveCategories("Category Hyphen", []string{"enterprise-sales", "harbor"})
+	saveCategories("Category Quiet", nil)
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("ledger, atelier", "Category Pair", "Category Spaced")
+	assertCompanyQuery("Ledger, Atelier.", "Category Pair", "Category Spaced")
+	assertCompanyQuery("atelier, ledger", "Category Swap")
+	assertCompanyQuery("ledger, harbor")
+	assertCompanyQuery("ledger, atelier, harbor", "Category Three")
+	assertCompanyQuery("enterprise-sales, harbor", "Category Hyphen")
+	assertCompanyQuery("ledger", "Category Pair", "Category Swap", "Category One", "Category Three", "Category Spaced")
+}
+
 func TestRelationshipSearchFindsEngagementAndSentiment(t *testing.T) {
 	f := newFixture(t)
 	declining, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
