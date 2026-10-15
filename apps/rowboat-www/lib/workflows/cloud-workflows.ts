@@ -1154,11 +1154,15 @@ export function cronClockLabel(cron: string): string {
 }
 
 function formatClock(date: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+  // The schedule row already says "8:00 AM UTC" in English. A browser locale
+  // turned the moment beside it into "1. Okt., 8:00", so searching that row
+  // for "Oct 1, 8:00 AM" missed the workflow.
+  return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    hour12: true,
     timeZone,
   }).format(date);
 }

@@ -107,6 +107,7 @@ describe("CloudWorkflowsView", () => {
     const clock = scheduleMomentLabel(maintained.lastRunAt);
     const maintainedText = workflowLibrarySearchText(maintained);
     expect(maintainedText).toContain(`${clock} · Failed`);
+    expect(maintainedText).toContain("Oct 1, 8:00 AM");
     expect(maintainedText).toContain("Oppulence");
     const own = {
       slug: "custom-follow-up",
@@ -790,6 +791,13 @@ describe("CloudWorkflowsView", () => {
     expect(scheduleMomentLabel("2026-10-01T08:00:00Z", "America/New_York")).toBe(
       "Oct 1, 4:00 AM (Oct 1, 8:00 AM UTC)",
     );
+    const workflowSource = fs.readFileSync(
+      path.join(process.cwd(), "lib/workflows/cloud-workflows.ts"),
+      "utf8",
+    );
+    expect(workflowSource).toContain('new Intl.DateTimeFormat("en-US"');
+    expect(workflowSource).toContain("hour12: true");
+    expect(workflowSource).not.toContain("DateTimeFormat(undefined");
     expect(scheduleMomentLabel(null, "America/New_York")).toBe("—");
     expect(scheduleNextRunLabel(null, true)).toBe("Could not load the next run.");
     expect(scheduleNextRunLabel("2026-10-01T08:00:00Z", false)).toBe(
