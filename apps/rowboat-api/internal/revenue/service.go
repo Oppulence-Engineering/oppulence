@@ -1058,7 +1058,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if state := relationshipSheetStateAnswerMatch(needle, searchedAt); state != nil {
 			parts = append(parts, state)
 		}
-		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil {
+		// "2 open promises" and "Lifecycle: Prospect · Open promise: …" are the
+		// sentence on What is true now. The shorter promise words stay on the
+		// highlight that already uses them.
+		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil && !stateAnswerOwns(needle, searchedAt) {
 			parts = append(parts, truth)
 		}
 		if badges := relationshipSheetPromiseBadgeMatch(needle, searchedAt); badges != nil {
@@ -1304,7 +1307,10 @@ func (s *Service) ListRelationshipsFiltered(
 			}
 		}
 		parts = append(parts, relationship.HasCommitmentsWith(commitment.TextContainsFold(value)))
-		if text := promiseLineText(needle); text != "" {
+		// The exact promise sentence already names that one promise. A second
+		// promise on the same company prints a count, so the text alone is a
+		// different line. The drafted follow-up keeps the text search.
+		if text := promiseLineText(needle); text != "" && !stateAnswerOwns(needle, searchedAt) {
 			parts = append(parts, relationship.HasCommitmentsWith(commitment.And(
 				visibleTruthCommitment(),
 				commitment.TextContainsFold(text),
@@ -17095,6 +17101,14 @@ func relationshipSheetStateAnswerMatch(needle string, now time.Time) predicate.R
 		}
 		return relationship.And(line...)
 	}
+	// "2 open promises." is the whole answer when no stage is supported.
+	// A supported stage is printed in front of that sentence.
+	if shape, ok := parsePromiseAnswer(needle); ok {
+		return relationship.And(
+			relationshipHasPromiseAnswer(shape, now),
+			relationship.Not(relationshipHasSupportedStateAnswer(now)),
+		)
+	}
 	var preds []predicate.Relationship
 	for _, dim := range stateAnswerDimensions() {
 		for _, value := range dim.values {
@@ -17125,40 +17139,62 @@ type stateAnswerDimension struct {
 	eq        func(string) predicate.Relationship
 }
 
+func stateAnswerOwns(needle string, now time.Time) bool {
+	if _, joined := stateAnswerLine(needle, now); joined {
+		return true
+	}
+	_, ok := parsePromiseAnswer(needle)
+	return ok
+}
+
 func stateAnswerLine(needle string, now time.Time) ([]predicate.Relationship, bool) {
 	if !strings.Contains(needle, " · ") {
 		return nil, false
 	}
 	raw := strings.Split(needle, " · ")
 	dims := stateAnswerDimensions()
-	preds := make([]predicate.Relationship, 0, len(raw))
+	preds := make([]predicate.Relationship, 0, len(raw)+1)
 	chosen := make([]bool, len(dims))
 	last := -1
-	for _, part := range raw {
+	promiseAt := -1
+	var promisePred predicate.Relationship
+	for i, part := range raw {
 		found := -1
 		var pred predicate.Relationship
-		for i, dim := range dims {
+		for index, dim := range dims {
 			for _, value := range dim.values {
 				phrase := normalizePersonSearch(dim.title + ": " + companyRecordSearchLabel(value))
 				if phrase != part {
 					continue
 				}
-				found = i
+				found = index
 				pred = relationship.And(
 					relationshipHasSupportedDimension(dim.dimension, now),
 					dim.eq(value),
 				)
 			}
 		}
-		if found < 0 {
+		if found >= 0 {
+			if found <= last {
+				return nil, true
+			}
+			last = found
+			chosen[found] = true
+			preds = append(preds, pred)
+			continue
+		}
+		shape, ok := parsePromiseAnswer(part)
+		if !ok {
 			return nil, false
 		}
-		if found <= last {
+		if promiseAt >= 0 {
 			return nil, true
 		}
-		last = found
-		chosen[found] = true
-		preds = append(preds, pred)
+		promiseAt = i
+		promisePred = relationshipHasPromiseAnswer(shape, now)
+	}
+	if promiseAt >= 0 && promiseAt != len(raw)-1 {
+		return nil, true
 	}
 	for i, dim := range dims {
 		if chosen[i] {
@@ -17166,7 +17202,187 @@ func stateAnswerLine(needle string, now time.Time) ([]predicate.Relationship, bo
 		}
 		preds = append(preds, relationship.Not(relationshipHasSupportedDimension(dim.dimension, now)))
 	}
+	if promisePred != nil {
+		preds = append(preds, promisePred)
+	}
 	return preds, true
+}
+
+// promiseAnswerShape is the promise sentence missionControlPromiseAnswer prints.
+// A single confirmed promise names its text. Two or more print a count.
+type promiseAnswerShape struct {
+	open  int
+	risk  int
+	text  string
+	colon bool
+}
+
+func parsePromiseAnswer(part string) (promiseAnswerShape, bool) {
+	part = normalizePersonSearch(part)
+	if part == "" || strings.HasSuffix(part, normalizePersonSearch("no follow-up is drafted")) {
+		return promiseAnswerShape{}, false
+	}
+	if text, ok := promiseColonText(part, "open promise:"); ok {
+		return promiseAnswerShape{open: 1, text: text, colon: true}, true
+	}
+	if text, ok := promiseColonText(part, "at risk promise:"); ok {
+		return promiseAnswerShape{risk: 1, text: text, colon: true}, true
+	}
+	if n, ok := exactCountPhrase(part, " open promises"); ok && n >= 2 {
+		return promiseAnswerShape{open: n}, true
+	}
+	if n, ok := exactCountPhrase(part, " promises are at risk"); ok && n >= 2 {
+		return promiseAnswerShape{risk: n}, true
+	}
+	openLabel, riskLabel, ok := strings.Cut(part, " and ")
+	if !ok || strings.Contains(riskLabel, " and ") {
+		return promiseAnswerShape{}, false
+	}
+	open, openOK := openPromiseCountLabel(openLabel)
+	risk, riskOK := riskPromiseCountLabel(riskLabel)
+	if !openOK || !riskOK {
+		return promiseAnswerShape{}, false
+	}
+	return promiseAnswerShape{open: open, risk: risk}, true
+}
+
+func promiseColonText(part, prefix string) (string, bool) {
+	if !strings.HasPrefix(part, prefix) {
+		return "", false
+	}
+	text := strings.TrimSpace(strings.TrimPrefix(part, prefix))
+	if text == "" || strings.Contains(text, " · ") {
+		return "", false
+	}
+	return text, true
+}
+
+func exactCountPhrase(part, suffix string) (int, bool) {
+	if !strings.HasSuffix(part, suffix) {
+		return 0, false
+	}
+	number := strings.TrimSuffix(part, suffix)
+	if number == "" || strings.Contains(number, " ") {
+		return 0, false
+	}
+	n, err := strconv.Atoi(number)
+	if err != nil || n < 1 || strconv.Itoa(n) != number {
+		return 0, false
+	}
+	return n, true
+}
+
+func openPromiseCountLabel(part string) (int, bool) {
+	if part == "1 open promise" {
+		return 1, true
+	}
+	n, ok := exactCountPhrase(part, " open promises")
+	return n, ok && n >= 2
+}
+
+func riskPromiseCountLabel(part string) (int, bool) {
+	if part == "1 promise at risk" {
+		return 1, true
+	}
+	n, ok := exactCountPhrase(part, " promises at risk")
+	return n, ok && n >= 2
+}
+
+func relationshipHasPromiseAnswer(shape promiseAnswerShape, now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writePromiseAnswerCount(b, s, now, false)
+			b.WriteString(" = ")
+			b.Arg(shape.open)
+			b.WriteString(" AND ")
+			writePromiseAnswerCount(b, s, now, true)
+			b.WriteString(" = ")
+			b.Arg(shape.risk)
+			if shape.colon {
+				b.WriteString(" AND ")
+				writePromiseAnswerText(b, s, now, shape.risk == 1, shape.text)
+			}
+		}))
+	})
+}
+
+func writePromiseAnswerCount(b *sql.Builder, s *sql.Selector, now time.Time, atRisk bool) {
+	b.WriteString("(SELECT COUNT(*) FROM ")
+	b.WriteString(commitment.Table)
+	b.WriteString(" AS promise WHERE promise.")
+	b.WriteString(commitment.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(" AND ")
+	writeVisiblePromiseFilters(b)
+	b.WriteString(" AND ")
+	writePromiseRiskClock(b, now, atRisk)
+	b.WriteString(")")
+}
+
+func writePromiseAnswerText(b *sql.Builder, s *sql.Selector, now time.Time, atRisk bool, text string) {
+	b.WriteString("EXISTS (SELECT 1 FROM ")
+	b.WriteString(commitment.Table)
+	b.WriteString(" AS promise WHERE promise.")
+	b.WriteString(commitment.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(" AND ")
+	writeVisiblePromiseFilters(b)
+	b.WriteString(" AND ")
+	writePromiseRiskClock(b, now, atRisk)
+	b.WriteString(" AND ")
+	writeNormalizedSQLText(b, s, "promise."+commitment.FieldText)
+	b.WriteString(" = ")
+	b.Arg(text)
+	b.WriteString(")")
+}
+
+func writeVisiblePromiseFilters(b *sql.Builder) {
+	b.WriteString("promise.")
+	b.WriteString(commitment.FieldStatus)
+	b.WriteString(" IN (")
+	b.Arg("open")
+	b.WriteString(", ")
+	b.Arg("at_risk")
+	b.WriteString(") AND promise.")
+	b.WriteString(commitment.FieldAcceptance)
+	b.WriteString(" NOT IN (")
+	b.Arg("candidate")
+	b.WriteString(", ")
+	b.Arg("disputed")
+	b.WriteString(") AND trim(promise.")
+	b.WriteString(commitment.FieldText)
+	b.WriteString(") <> ''")
+}
+
+func writePromiseRiskClock(b *sql.Builder, now time.Time, atRisk bool) {
+	soon := now.UTC().Add(72 * time.Hour)
+	if atRisk {
+		b.WriteString("(promise.")
+		b.WriteString(commitment.FieldStatus)
+		b.WriteString(" = ")
+		b.Arg("at_risk")
+		b.WriteString(" OR (promise.")
+		b.WriteString(commitment.FieldDueAt)
+		b.WriteString(" IS NOT NULL AND promise.")
+		b.WriteString(commitment.FieldDueAt)
+		b.WriteString(" < ")
+		b.Arg(soon)
+		b.WriteString("))")
+		return
+	}
+	b.WriteString("promise.")
+	b.WriteString(commitment.FieldStatus)
+	b.WriteString(" <> ")
+	b.Arg("at_risk")
+	b.WriteString(" AND (promise.")
+	b.WriteString(commitment.FieldDueAt)
+	b.WriteString(" IS NULL OR promise.")
+	b.WriteString(commitment.FieldDueAt)
+	b.WriteString(" >= ")
+	b.Arg(soon)
+	b.WriteString(")")
 }
 
 func stateAnswerDimensions() []stateAnswerDimension {

@@ -11790,6 +11790,123 @@ func TestRelationshipSearchFindsTheStateAnswerLine(t *testing.T) {
 	assertCompanyQuery("Lifecycle: Prospect", "State Both", "State Extra")
 }
 
+func TestRelationshipSearchFindsThePromiseAnswer(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	correct := func(rel *ent.Relationship, dimension, value string) {
+		t.Helper()
+		if _, err := f.svc.CorrectRelationship(f.ctx, f.user, rel.ID, RelationshipCorrectionInput{
+			Dimension: dimension, Value: value, Reason: "The buyer confirmed " + dimension + ".",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	soon := time.Now().Add(24 * time.Hour)
+	later := time.Now().Add(30 * 24 * time.Hour)
+	one := makeCompany("Promise One")
+	seedCommitment(t, f, one, "promised_by_them", "Send the packet", "", nil)
+	spaced := makeCompany("Promise Spaced")
+	seedCommitment(t, f, spaced, "promised_by_them", "Send the packet", "", nil)
+	blank := seedCommitment(t, f, spaced, "promised_by_them", "blank", "", nil)
+	if _, err := f.client.Commitment.UpdateOneID(blank.ID).SetText("  ").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	two := makeCompany("Promise Two")
+	seedCommitment(t, f, two, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, two, "promised_by_them", "Mail the ledger", "", &later)
+	three := makeCompany("Promise Three")
+	seedCommitment(t, f, three, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, three, "promised_by_them", "Mail the ledger", "", nil)
+	seedCommitment(t, f, three, "promised_by_them", "File the note", "", nil)
+	risk := makeCompany("Promise Risk")
+	seedCommitment(t, f, risk, "promised_by_them", "Send the quay risk", "", &soon)
+	seedCommitment(t, f, risk, "promised_by_them", "Mail the quay risk", "", &soon)
+	mixed := makeCompany("Promise Mixed")
+	seedCommitment(t, f, mixed, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, mixed, "promised_by_them", "Mail the ledger", "", &soon)
+	blend := makeCompany("Promise Blend")
+	seedCommitment(t, f, blend, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, blend, "promised_by_them", "Mail the ledger", "", nil)
+	seedCommitment(t, f, blend, "promised_by_them", "File the note", "", &soon)
+	held := makeCompany("Promise Held")
+	seedCommitment(t, f, held, "promised_by_them", "Hold the quay", "", &soon)
+	life := makeCompany("Promise Life")
+	correct(life, "lifecycle", "prospect")
+	seedCommitment(t, f, life, "promised_by_them", "Send the packet", "", nil)
+	extra := makeCompany("Promise Extra")
+	correct(extra, "lifecycle", "prospect")
+	correct(extra, "health", "needs_attention")
+	seedCommitment(t, f, extra, "promised_by_them", "Send the packet", "", nil)
+	stage := makeCompany("Promise Stage")
+	correct(stage, "lifecycle", "prospect")
+	seedCommitment(t, f, stage, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, stage, "promised_by_them", "Mail the ledger", "", nil)
+	guess := makeCompany("Promise Guess")
+	seedCommitment(t, f, guess, "promised_by_them", "Send the packet", "", nil)
+	if _, err := f.client.Commitment.Update().
+		Where(commitment.HasRelationshipWith(relationship.IDEQ(guess.ID))).
+		SetAcceptance("candidate").
+		SetUserConfirmed(false).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	done := makeCompany("Promise Done")
+	finished := seedCommitment(t, f, done, "promised_by_them", "Send the old packet", "", nil)
+	if _, err := f.client.Commitment.UpdateOneID(finished.ID).SetStatus("fulfilled").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	seedCommitment(t, f, done, "promised_by_them", "Mail the ledger", "", nil)
+	makeCompany("Promise Quiet")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("2 open promises", "Promise Two")
+	assertCompanyQuery("2 open promises.", "Promise Two")
+	assertCompanyQuery("3 open promises", "Promise Three")
+	assertCompanyQuery("Open promise: Send the packet", "Promise One", "Promise Spaced")
+	assertCompanyQuery("Open promise: Send the packet.", "Promise One", "Promise Spaced")
+	assertCompanyQuery("Open promise: Mail the ledger", "Promise Done")
+	assertCompanyQuery("Lifecycle: Prospect · Open promise: Send the packet", "Promise Life")
+	assertCompanyQuery("Lifecycle: Prospect · Open promise: Send the packet.", "Promise Life")
+	assertCompanyQuery("Lifecycle: Prospect · Health: Needs attention · Open promise: Send the packet", "Promise Extra")
+	assertCompanyQuery("Lifecycle: Prospect · 2 open promises", "Promise Stage")
+	assertCompanyQuery("Lifecycle: Prospect · Open promise: Send the packet · Health: Needs attention")
+	assertCompanyQuery("Open promise: Send the packet · Lifecycle: Prospect")
+	assertCompanyQuery("1 open promise and 1 promise at risk", "Promise Mixed")
+	assertCompanyQuery("1 open promise and 1 promise at risk.", "Promise Mixed")
+	assertCompanyQuery("2 open promises and 1 promise at risk", "Promise Blend")
+	assertCompanyQuery("1 promise at risk and 1 open promise")
+	assertCompanyQuery("2 promises are at risk", "Promise Risk")
+	assertCompanyQuery("2 promises are at risk.", "Promise Risk")
+	assertCompanyQuery("3 promises are at risk")
+	assertCompanyQuery("At risk promise: Hold the quay", "Promise Held")
+	assertCompanyQuery("At risk promise: Hold the quay.", "Promise Held")
+	assertCompanyQuery("Lifecycle: Prospect", "Promise Life", "Promise Extra", "Promise Stage")
+}
+
 func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
 	f := newFixture(t)
 	austin, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
