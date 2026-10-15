@@ -932,6 +932,64 @@ func TestPersonSearchFindsTheAlias(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsTheAliasLine(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	create := func(name, email string, aliases []string) {
+		t.Helper()
+		row := f.client.Person.Create().SetDisplayName(name).SetWorkspace(ws).SetUser(f.user)
+		if email != "" {
+			row.SetPrimaryEmail(email)
+		}
+		if aliases != nil {
+			row.SetAliases(aliases)
+		}
+		if _, err := row.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	create("Indira Cole", "ada@acme.example", []string{"Dee Cole"})
+	create("Mina Holt", "", []string{"Dee Cole", "Indy"})
+	create("Owen Blake", "owen@acme.example", []string{"Dee Cole"})
+	create("Casey Quinn", "", nil)
+
+	assertPeople := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, 0, len(found.Persons))
+		for _, row := range found.Persons {
+			got = append(got, row.DisplayName)
+		}
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			seen := false
+			for _, gotName := range got {
+				if gotName == name {
+					seen = true
+				}
+			}
+			if !seen {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertPeople("ada@acme.example · Also known as Dee Cole", "Indira Cole")
+	assertPeople("ada@acme.example · Also known as Dee Cole.", "Indira Cole")
+	assertPeople("No email · Also known as Dee Cole, Indy", "Mina Holt")
+	assertPeople("Dee Cole, Indy", "Mina Holt")
+	assertPeople("Also known as", "Indira Cole", "Mina Holt", "Owen Blake")
+	assertPeople("No email", "Mina Holt", "Casey Quinn")
+	assertPeople("Dee Cole", "Indira Cole", "Mina Holt", "Owen Blake")
+}
+
 func TestPersonSearchIgnoresBlankPrintedFacts(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

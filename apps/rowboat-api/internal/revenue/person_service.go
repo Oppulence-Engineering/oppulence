@@ -192,11 +192,21 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	}
 	// The address sits under the name. A missing one is the words "No email".
 	// Spaces are the same as no address. The word "email" is not that sentence.
-	if labelPhraseMatches("no email", needle) {
+	// The full subtitle "ada@acme.com · Also known as Dee Cole" names one
+	// person. The phrase inside it is not every missing address or every alias.
+	_, _, aliasLine := personAliasLine(needle)
+	if aliasLine {
+		preds = append(preds, personPrintsAliasLine(needle))
+	}
+	if !aliasLine && labelPhraseMatches("no email", needle) {
 		preds = append(preds, personTextMissing(person.FieldPrimaryEmail))
 	}
 	// Another name is printed as "Also known as". The stored list is JSON.
-	if labelPhraseMatches("also known as", needle) {
+	// "Dee Cole, Indy" is the sheet value. The label alone stays every alias.
+	if names, listed := exactPersonAliasList(needle); listed {
+		preds = append(preds, personPrintsAliasNames(names))
+	}
+	if !aliasLine && labelPhraseMatches("also known as", needle) {
 		preds = append(preds, personHasAlias())
 	}
 	// A departed person is badged "Left the company". The stored token is departed.
@@ -1026,6 +1036,93 @@ func personDirectoryRolesExpr(s *sql.Selector, title string) string {
 	return "coalesce((SELECT group_concat(label, ', ') FROM (SELECT label FROM (SELECT role, label FROM (SELECT " +
 		roleCol + " AS role, " + label + " AS label FROM " + from +
 		" GROUP BY " + roleCol + ") AS unique_roles WHERE label <> (" + title + ")) AS shown ORDER BY role) AS ordered), '')"
+}
+
+// personAliasLine is the subtitle under a person. The address, or "No email",
+// comes first. Other names follow "Also known as". One middle dot joins them.
+func personAliasLine(needle string) (email string, names string, ok bool) {
+	left, right, ok := mailTimelineParts(needle)
+	if !ok {
+		return "", "", false
+	}
+	const prefix = "also known as "
+	if !strings.HasPrefix(right, prefix) {
+		return "", "", false
+	}
+	names = strings.TrimPrefix(right, prefix)
+	if _, listed := exactPersonAliasList(names); !listed && strings.Contains(names, ", ") {
+		return "", "", false
+	}
+	if names == "" {
+		return "", "", false
+	}
+	return left, names, true
+}
+
+// exactPersonAliasList is the sheet value "Dee Cole, Indy". A single name
+// stays on the alias text search.
+func exactPersonAliasList(needle string) (string, bool) {
+	if !strings.Contains(needle, ", ") || strings.Contains(needle, " · ") {
+		return "", false
+	}
+	if strings.HasPrefix(needle, ", ") || strings.HasSuffix(needle, ", ") {
+		return "", false
+	}
+	for _, part := range strings.Split(needle, ", ") {
+		if strings.TrimSpace(part) == "" {
+			return "", false
+		}
+	}
+	return needle, true
+}
+
+func personPrintsAliasLine(needle string) predicate.Person {
+	email, names, ok := personAliasLine(needle)
+	if !ok {
+		return nil
+	}
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			emailCol := personTrimExpr(s, person.FieldPrimaryEmail)
+			b.WriteString("(")
+			b.WriteString(emailCol)
+			b.WriteString(" = '' OR ")
+			writeNormalizedSQLText(b, s, emailCol)
+			b.WriteString(" = ")
+			b.Arg(email)
+			b.WriteString(") AND ")
+			writePersonAliasNames(b, s)
+			b.WriteString(" = ")
+			b.Arg(names)
+		}))
+	})
+}
+
+func personPrintsAliasNames(names string) predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writePersonAliasNames(b, s)
+			b.WriteString(" = ")
+			b.Arg(names)
+		}))
+	})
+}
+
+func writePersonAliasNames(b *sql.Builder, s *sql.Selector) {
+	column := s.C(person.FieldAliases)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("coalesce((SELECT string_agg(norm, ', ' ORDER BY ord) FROM (SELECT ")
+		writeNormalizedSQLText(b, s, "btrim(item.value)")
+		b.WriteString(" AS norm, item.ord FROM jsonb_array_elements_text(coalesce(")
+		b.WriteString(column)
+		b.WriteString(", '[]'::jsonb)) WITH ORDINALITY AS item(value, ord) WHERE btrim(item.value) <> '') AS mapped), '')")
+		return
+	}
+	b.WriteString("coalesce((SELECT group_concat(norm, ', ') FROM (SELECT norm, ord FROM (SELECT ")
+	writeNormalizedSQLText(b, s, "trim(item.value)")
+	b.WriteString(" AS norm, CAST(item.key AS INTEGER) AS ord FROM json_each(coalesce(")
+	b.WriteString(column)
+	b.WriteString(", '[]')) AS item WHERE trim(item.value) <> '') AS mapped ORDER BY ord) AS ordered), '')")
 }
 
 // personHasAlias is a person whose row says "Also known as". A list of blank
