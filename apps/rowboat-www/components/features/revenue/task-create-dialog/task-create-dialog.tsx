@@ -3,6 +3,7 @@
 import "client-only";
 
 import * as React from "react";
+import { format } from "date-fns";
 import {
   ChipDatePicker,
   ChipDropdown,
@@ -59,11 +60,12 @@ const todayValue = () => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
-const formatShortDate = (value: string) =>
-  new Date(`${value}T12:00:00`).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
+/** Noon on the picked day, so the chip stays on that day in every locale. */
+export function formatShortDate(value: string): string {
+  const parsed = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return format(parsed, "MMM d");
+}
 
 /**
  * Attio-style task composer for the workspace Tasks view. Uses Sim ChipModal

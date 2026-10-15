@@ -1420,8 +1420,10 @@ describe("task due order", () => {
     expect(source).toContain("taskIsDueToday(task.dueAt, today)");
     expect(source).toContain("companyName(relationship)");
     expect(source).toContain("taskIsOverdue(task.dueAt, now)");
+    expect(source).toContain('localDayLabel(task.dueAt) || "No due date"');
     expect(source).not.toContain("new Date(task.dueAt).getTime() < now");
     expect(source).not.toContain("task.dueAt?.slice(0, 10) === today");
+    expect(source).not.toContain("toLocaleDateString");
     expect(source).toContain("Show all tasks");
     expect(source).toContain("Show the next tasks");
     expect(noteCountLabel(1, true)).toBe("1+");
