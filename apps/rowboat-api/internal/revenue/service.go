@@ -1090,6 +1090,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) && !contradictionSentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
 		}
+		// One detail joins every source that supports it: "Google · Sep 6, 2026; HubSpot · Aug 16, 2026".
+		if trail := relationshipSheetEvidenceTrailMatch(needle); trail != nil {
+			parts = append(parts, trail)
+		}
 		if row := relationshipSheetActivityRowMatch(needle); row != nil {
 			parts = append(parts, row)
 		}
@@ -9461,6 +9465,240 @@ func observationReviewReasonShown(object, normalized string, hidden ...string) p
 			b.WriteString(")")
 		}))
 	})
+}
+
+// relationshipSheetEvidenceTrailMatch matches the source line under one
+// detail. The sheet joins every supporting observation, in stored order, as
+// "Google · Sep 6, 2026; HubSpot · Aug 16, 2026". A missing id is left off
+// that line. The linked observation is added when it is not already listed.
+// One source stays on the search that already names it.
+func relationshipSheetEvidenceTrailMatch(needle string) predicate.Relationship {
+	if !strings.Contains(needle, "; ") {
+		return nil
+	}
+	raw := strings.Split(needle, "; ")
+	if len(raw) < 2 {
+		return nil
+	}
+	parts := make([]evidenceTrailPart, 0, len(raw))
+	for _, part := range raw {
+		label, when, ok := mailTimelineParts(part)
+		if !ok {
+			return nil
+		}
+		sources := evidenceTrailSources(label)
+		if len(sources) == 0 {
+			return nil
+		}
+		window, timed := visibleActivityWindow(when, time.Now().UTC())
+		if !timed {
+			return nil
+		}
+		parts = append(parts, evidenceTrailPart{sources: sources, window: window})
+	}
+	return relationshipHasEvidenceTrail(parts)
+}
+
+type evidenceTrailPart struct {
+	sources []string
+	window  relativeWindow
+}
+
+// evidenceTrailSources lists the stored sources that print as this label.
+// The detail line uses the canonical source, so Gmail and Calendar both read
+// "Google", and the CRM reads "HubSpot".
+func evidenceTrailSources(label string) []string {
+	switch normalizePersonSearch(label) {
+	case "google":
+		return []string{"google", "gmail", "calendar"}
+	case "hubspot":
+		return []string{"hubspot", "crm"}
+	case "slack":
+		return []string{"slack"}
+	case "a meeting":
+		return []string{"meeting"}
+	case "a note":
+		return []string{"desktop_note"}
+	case "a voice note":
+		return []string{"voice_note"}
+	case "the browser":
+		return []string{"browser"}
+	case "added by you":
+		return []string{"user"}
+	case "the web":
+		return []string{"web"}
+	case "a connected app":
+		return []string{"composio"}
+	default:
+		return nil
+	}
+}
+
+func relationshipHasEvidenceTrail(parts []evidenceTrailPart) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" AS claim WHERE claim.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			writeEvidenceTrailLength(b, s)
+			b.WriteString(" = ")
+			b.Arg(len(parts))
+			for i, part := range parts {
+				b.WriteString(" AND ")
+				writeEvidenceTrailSourceIn(b, s, i, part.sources)
+				b.WriteString(" AND ")
+				writeEvidenceTrailDuring(b, s, i, part.window)
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeEvidenceTrailLength(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(")
+	writeEvidenceSupportingCount(b, s)
+	b.WriteString(" + ")
+	writeEvidenceEdgeExtra(b, s)
+	b.WriteString(")")
+}
+
+func writeEvidenceSupportingCount(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(SELECT COUNT(*) FROM ")
+	writeEvidenceRefSource(b, s, "ref", "obs")
+	b.WriteString(")")
+}
+
+func writeEvidenceEdgeExtra(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(CASE WHEN claim.")
+	b.WriteString(relationshipassertion.ObservationColumn)
+	b.WriteString(" IS NOT NULL AND EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS edge WHERE ")
+	writeObservationIDEquals(b, s, "edge."+relationshipobservation.FieldID, "claim."+relationshipassertion.ObservationColumn)
+	b.WriteString(") AND NOT EXISTS (SELECT 1 FROM ")
+	writeEvidenceRefFrom(b, s, "listed")
+	b.WriteString(" WHERE ")
+	writeObservationIDEquals(b, s, "listed.value", "claim."+relationshipassertion.ObservationColumn)
+	b.WriteString(") THEN 1 ELSE 0 END)")
+}
+
+func writeEvidenceTrailSourceIn(b *sql.Builder, s *sql.Selector, index int, sources []string) {
+	writeEvidenceTrailColumn(b, s, index, relationshipobservation.FieldSource)
+	b.WriteString(" IN (")
+	for i, source := range sources {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(source)
+	}
+	b.WriteString(")")
+}
+
+func writeEvidenceTrailDuring(b *sql.Builder, s *sql.Selector, index int, window relativeWindow) {
+	writeEvidenceTrailColumn(b, s, index, relationshipobservation.FieldOccurredAt)
+	b.WriteString(" > ")
+	b.Arg(window.after)
+	b.WriteString(" AND ")
+	writeEvidenceTrailColumn(b, s, index, relationshipobservation.FieldOccurredAt)
+	b.WriteString(" <= ")
+	b.Arg(window.until)
+}
+
+func writeEvidenceTrailColumn(b *sql.Builder, s *sql.Selector, index int, column string) {
+	b.WriteString("(CASE WHEN ")
+	b.Arg(index)
+	b.WriteString(" < ")
+	writeEvidenceSupportingCount(b, s)
+	b.WriteString(" THEN (SELECT shown.")
+	b.WriteString(column)
+	b.WriteString(" FROM ")
+	writeEvidenceRefSource(b, s, "ref", "shown")
+	b.WriteString(" WHERE (SELECT COUNT(*) FROM ")
+	writeEvidenceRefSource(b, s, "earlier", "earlier_obs")
+	b.WriteString(" WHERE ")
+	writeEvidenceRefOrder(b, s, "earlier")
+	b.WriteString(" < ")
+	writeEvidenceRefOrder(b, s, "ref")
+	b.WriteString(") = ")
+	b.Arg(index)
+	b.WriteString(") ELSE (SELECT edge.")
+	b.WriteString(column)
+	b.WriteString(" FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS edge WHERE ")
+	writeObservationIDEquals(b, s, "edge."+relationshipobservation.FieldID, "claim."+relationshipassertion.ObservationColumn)
+	b.WriteString(") END)")
+}
+
+func writeEvidenceRefSource(b *sql.Builder, s *sql.Selector, refAlias, obsAlias string) {
+	writeEvidenceRefFrom(b, s, refAlias)
+	b.WriteString(" JOIN ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS ")
+	b.WriteString(obsAlias)
+	b.WriteString(" ON ")
+	writeObservationIDEquals(b, s, obsAlias+"."+relationshipobservation.FieldID, refAlias+".value")
+	b.WriteString(" AND ")
+	b.WriteString(obsAlias)
+	b.WriteString(".")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = claim.")
+	b.WriteString(relationshipassertion.RelationshipColumn)
+}
+
+func writeEvidenceRefFrom(b *sql.Builder, s *sql.Selector, refAlias string) {
+	column := "claim." + relationshipassertion.FieldSupportingObservationIds
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements_text(coalesce(")
+		b.WriteString(column)
+		b.WriteString(", '[]'::jsonb)) WITH ORDINALITY AS ")
+		b.WriteString(refAlias)
+		b.WriteString("(value, ord)")
+		return
+	}
+	b.WriteString("json_each(coalesce(")
+	b.WriteString(column)
+	b.WriteString(", '[]')) AS ")
+	b.WriteString(refAlias)
+}
+
+func writeEvidenceRefOrder(b *sql.Builder, s *sql.Selector, refAlias string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(refAlias)
+		b.WriteString(".ord")
+		return
+	}
+	b.WriteString("CAST(")
+	b.WriteString(refAlias)
+	b.WriteString(".key AS INTEGER)")
+}
+
+func writeObservationIDEquals(b *sql.Builder, s *sql.Selector, idExpr, valueExpr string) {
+	if s.Dialect() == dialect.Postgres && strings.HasSuffix(idExpr, relationshipobservation.FieldID) {
+		b.WriteString(idExpr)
+		b.WriteString("::text = ")
+		if strings.HasSuffix(valueExpr, relationshipassertion.ObservationColumn) {
+			b.WriteString(valueExpr)
+			b.WriteString("::text")
+			return
+		}
+		b.WriteString(valueExpr)
+		return
+	}
+	if s.Dialect() == dialect.Postgres && strings.HasSuffix(valueExpr, relationshipassertion.ObservationColumn) {
+		b.WriteString(idExpr)
+		b.WriteString(" = ")
+		b.WriteString(valueExpr)
+		b.WriteString("::text")
+		return
+	}
+	b.WriteString(idExpr)
+	b.WriteString(" = ")
+	b.WriteString(valueExpr)
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {

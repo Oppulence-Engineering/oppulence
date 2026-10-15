@@ -15357,6 +15357,121 @@ func TestRelationshipSearchFindsTheDetailProvenanceLine(t *testing.T) {
 	assertCompanyQuery(label + " · Google")
 }
 
+func TestRelationshipSearchFindsTheEvidenceTrail(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstAt := time.Now().UTC().Add(-45 * 24 * time.Hour)
+	secondAt := time.Now().UTC().Add(-60 * 24 * time.Hour)
+	thirdAt := time.Now().UTC().Add(-75 * 24 * time.Hour)
+	first := firstAt.Format("Jan 2, 2006")
+	second := secondAt.Format("Jan 2, 2006")
+	third := thirdAt.Format("Jan 2, 2006")
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	writeObservation := func(rel *ent.Relationship, source string, at time.Time) *ent.RelationshipObservation {
+		t.Helper()
+		id := rel.DisplayName + "-" + source + "-" + at.Format("20060102")
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(id).SetSourceVersion("1").
+			SetEventType("note").SetOccurredAt(at).SetReceivedAt(at).
+			SetSummary("Noted the harbor").SetContentHash(id).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveClaim := func(rel *ent.Relationship, ids []string, edge *ent.RelationshipObservation) {
+		t.Helper()
+		rank, ok := relationshipAssertionAuthorityRank("source_fact")
+		if !ok {
+			t.Fatal("source_fact rank")
+		}
+		create := f.client.RelationshipAssertion.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetDimension("health").SetValue("healthy").
+			SetSourceType("source_fact").SetAuthorityRank(rank).
+			SetStatus("accepted").
+			SetValidFrom(firstAt).
+			SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+			SetProjectorCompatVersion(relationshipProjectorVersion).
+			SetSupportingObservationIds(ids)
+		if edge != nil {
+			create.SetObservation(edge)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pair := makeCompany("Trail Pair")
+	pairGmail := writeObservation(pair, "gmail", firstAt)
+	pairHub := writeObservation(pair, "hubspot", secondAt)
+	saveClaim(pair, []string{pairGmail.ID.String(), pairHub.ID.String()}, pairGmail)
+	swap := makeCompany("Trail Swap")
+	swapHub := writeObservation(swap, "hubspot", firstAt)
+	swapGmail := writeObservation(swap, "gmail", secondAt)
+	saveClaim(swap, []string{swapHub.ID.String(), swapGmail.ID.String()}, swapHub)
+	loose := makeCompany("Trail Loose")
+	looseGmail := writeObservation(loose, "gmail", firstAt)
+	looseHub := writeObservation(loose, "hubspot", secondAt)
+	saveClaim(loose, []string{looseGmail.ID.String()}, looseGmail)
+	saveClaim(loose, []string{looseHub.ID.String()}, looseHub)
+	edge := makeCompany("Trail Edge")
+	edgeGmail := writeObservation(edge, "gmail", firstAt)
+	edgeHub := writeObservation(edge, "hubspot", secondAt)
+	saveClaim(edge, []string{edgeGmail.ID.String()}, edgeHub)
+	crm := makeCompany("Trail CRM")
+	crmGmail := writeObservation(crm, "gmail", firstAt)
+	crmRow := writeObservation(crm, "crm", secondAt)
+	saveClaim(crm, []string{crmGmail.ID.String(), crmRow.ID.String()}, crmGmail)
+	three := makeCompany("Trail Three")
+	threeGmail := writeObservation(three, "gmail", firstAt)
+	threeHub := writeObservation(three, "hubspot", secondAt)
+	threeSlack := writeObservation(three, "slack", thirdAt)
+	saveClaim(three, []string{threeGmail.ID.String(), threeHub.ID.String(), threeSlack.ID.String()}, threeGmail)
+	missing := makeCompany("Trail Missing")
+	missingGmail := writeObservation(missing, "gmail", firstAt)
+	missingHub := writeObservation(missing, "hubspot", secondAt)
+	saveClaim(missing, []string{"00000000-0000-0000-0000-000000000000", missingGmail.ID.String(), missingHub.ID.String()}, missingGmail)
+	makeCompany("Trail Quiet")
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	forward := "Google · " + first + "; HubSpot · " + second
+	assertCompanyQuery(forward, "Trail Pair", "Trail Edge", "Trail CRM", "Trail Missing")
+	assertCompanyQuery(forward+".", "Trail Pair", "Trail Edge", "Trail CRM", "Trail Missing")
+	assertCompanyQuery("HubSpot · "+first+"; Google · "+second, "Trail Swap")
+	assertCompanyQuery("Google · " + second + "; HubSpot · " + first)
+	assertCompanyQuery("Gmail · " + first + "; HubSpot · " + second)
+	assertCompanyQuery("Google · "+first+"; HubSpot · "+second+"; Slack · "+third, "Trail Three")
+	assertCompanyQuery("Google · "+first, "Trail Pair", "Trail Loose", "Trail Edge", "Trail CRM", "Trail Three", "Trail Missing")
+}
+
 func TestRelationshipSearchFindsTheMailTimelineLine(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
