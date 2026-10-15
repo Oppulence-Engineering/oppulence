@@ -13684,6 +13684,30 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 	addAttribute(addPerson(retracted, "Jules Pike"), "external_research", "retracted", "research-retracted", "Engineer")
 	fact := makeCompany("Quay Fact")
 	addAttribute(addPerson(fact, "Casey Quinn"), "source_fact", "active", "research-fact", "Buyer")
+	phone := makeCompany("Quay Phone")
+	if _, err := f.client.PersonAttribute.Create().
+		SetWorkspace(ws).SetUser(f.user).SetPerson(addPerson(phone, "Lane Moss")).
+		SetDimension("phone").SetValue("555-0100").
+		SetSourceType("external_research").SetSource("web").SetExtractor("parallel").
+		SetStatus("active").SetConfidence(0.8).
+		SetObservedAt(now).SetValidFrom(now).
+		SetCitationsJSON(`[{"title":"Bio","url":"https://example.com/bio","excerpts":["555-0100"]}]`).
+		SetDedupeKey("research-phone").SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	band := makeCompany("Quay Band")
+	if _, err := f.client.PersonAttribute.Create().
+		SetWorkspace(ws).SetUser(f.user).SetPerson(addPerson(band, "Ada Band")).
+		SetDimension("seniority").SetValue("ic").
+		SetSourceType("external_research").SetSource("web").SetExtractor("parallel").
+		SetStatus("active").SetConfidence(0.8).
+		SetObservedAt(now).SetValidFrom(now).
+		SetCitationsJSON(`[{"title":"Bio","url":"https://example.com/bio","excerpts":["ic"]}]`).
+		SetDedupeKey("research-band").SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 	makeCompany("Quay None")
 
 	assertCompanyQuery := func(query string, want ...string) {
@@ -13702,17 +13726,17 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Public research · 1 detail", "Quay One")
+	assertCompanyQuery("Public research · 1 detail", "Quay One", "Quay Phone", "Quay Band")
 	assertCompanyQuery("Public research · 2 details", "Quay Two")
 	assertCompanyQuery("which companies have public research · 2 details", "Quay Two")
 	assertCompanyQuery("Public research · 1 details")
 	assertCompanyQuery("Public research · 2 detail")
-	assertCompanyQuery("80% confidence", "Quay One", "Quay Two")
-	assertCompanyQuery("the title is 80% confidence", "Quay One", "Quay Two")
+	assertCompanyQuery("80% confidence", "Quay One", "Quay Two", "Quay Phone", "Quay Band")
+	assertCompanyQuery("the title is 80% confidence", "Quay One", "Quay Two", "Quay Phone", "Quay Band")
 	assertCompanyQuery("confidence")
 	assertCompanyQuery("80%")
-	assertCompanyQuery("Verify source", "Quay One", "Quay Two")
-	assertCompanyQuery("Verify source 1", "Quay One", "Quay Two")
+	assertCompanyQuery("Verify source", "Quay One", "Quay Two", "Quay Phone", "Quay Band")
+	assertCompanyQuery("Verify source 1", "Quay One", "Quay Two", "Quay Phone", "Quay Band")
 	assertCompanyQuery("Verify source 2", "Quay Two")
 	assertCompanyQuery("Verify source 3")
 	assertCompanyQuery("source")
@@ -13720,6 +13744,14 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 	assertCompanyQuery("Engineer", "Quay One", "Quay Two")
 	assertCompanyQuery("Director", "Quay Two")
 	assertCompanyQuery("Buyer")
+	assertCompanyQuery("Title: Engineer · 80% confidence", "Quay One", "Quay Two")
+	assertCompanyQuery("Title: Engineer · 80% confidence.", "Quay One", "Quay Two")
+	assertCompanyQuery("Title: Director · 80% confidence", "Quay Two")
+	assertCompanyQuery("Title: Buyer · 80% confidence")
+	assertCompanyQuery("Title: Engineer · 60% confidence")
+	assertCompanyQuery("Phone: 555-0100 · 80% confidence", "Quay Phone")
+	assertCompanyQuery("Seniority: Individual contributor · 80% confidence", "Quay Band")
+	assertCompanyQuery("Seniority: ic · 80% confidence")
 }
 
 func TestRelationshipSearchFindsTheDuplicateLines(t *testing.T) {

@@ -2776,32 +2776,32 @@ func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	if research, ok := publicResearchDetailCount(needle); ok {
 		preds = append(preds, relationshipHasPublicResearchDetailCount(research))
 	}
-	// Each public-research fact on the people card ends with "N% confidence".
-	if percent, ok := printedConfidencePercent(needle); ok {
-		preds = append(preds, relationship.HasParticipantsWith(
-			relationshipparticipant.HasPersonWith(personPrintsResearchConfidence(percent)),
-		))
+	// The fact line is "Title: Engineer · 80% confidence". The percent alone
+	// still finds every fact at that percent. The whole line stays on the
+	// fact that prints it.
+	if label, value, percent, ok := researchFactLine(needle); ok {
+		preds = append(preds, relationshipHasResearchFactLine(label, value, percent))
+	} else {
+		if percent, ok := printedConfidencePercent(needle); ok {
+			preds = append(preds, relationship.HasParticipantsWith(
+				relationshipparticipant.HasPersonWith(personPrintsResearchConfidence(percent)),
+			))
+		}
+		if seniority := relationshipSheetPersonSeniorityMatch(needle); seniority != nil {
+			preds = append(preds, seniority)
+		}
+		if badge := relationshipSheetResearchBadgeMatch(needle); badge != nil {
+			preds = append(preds, badge)
+		}
+		if value := relationshipSheetResearchValueMatch(needle); value != nil {
+			preds = append(preds, value)
+		}
 	}
 	// The same card links each saved page as "Verify source N".
 	if count, ok := verifySourceMinimum(needle); ok {
 		preds = append(preds, relationship.HasParticipantsWith(
 			relationshipparticipant.HasPersonWith(personPrintsResearchVerifySource(count)),
 		))
-	}
-	// The profile line says the seniority band in words. Stored "ic" reads
-	// "Individual contributor" even when a title is already on that line.
-	if seniority := relationshipSheetPersonSeniorityMatch(needle); seniority != nil {
-		preds = append(preds, seniority)
-	}
-	// A public-research fact is badged with the dimension's name. "alias"
-	// reads "Also known as". A retracted fact leaves the card.
-	if badge := relationshipSheetResearchBadgeMatch(needle); badge != nil {
-		preds = append(preds, badge)
-	}
-	// The same card prints the fact after the badge. Seniority and employment
-	// use the words on the card. A retracted fact leaves the card.
-	if value := relationshipSheetResearchValueMatch(needle); value != nil {
-		preds = append(preds, value)
 	}
 	// The profile line prints a title, a company, and a place. The title falls
 	// back to the membership title when the person has none.
@@ -3187,6 +3187,90 @@ func relationshipSheetResearchBadgeMatch(needle string) predicate.Relationship {
 			),
 		),
 	)
+}
+
+// researchFactLine is "Title: Engineer · 80% confidence" on a public-research
+// fact. The badge, the value, and the rounded percent belong to that fact.
+func researchFactLine(needle string) (label, value string, percent int, ok bool) {
+	const marker = "% confidence"
+	if !strings.HasSuffix(needle, marker) {
+		return "", "", 0, false
+	}
+	split := strings.LastIndex(needle, " · ")
+	if split <= 0 {
+		return "", "", 0, false
+	}
+	percentText := needle[split+len(" · "):]
+	if !strings.HasSuffix(percentText, marker) {
+		return "", "", 0, false
+	}
+	raw := strings.TrimSuffix(percentText, marker)
+	parsed, err := strconv.Atoi(raw)
+	if err != nil || parsed < 0 || parsed > 100 || strconv.Itoa(parsed) != raw {
+		return "", "", 0, false
+	}
+	body := needle[:split]
+	colon := strings.Index(body, ": ")
+	if colon <= 0 || colon+2 >= len(body) {
+		return "", "", 0, false
+	}
+	return body[:colon], body[colon+2:], parsed, true
+}
+
+func relationshipHasResearchFactLine(label, value string, percent int) predicate.Relationship {
+	return relationship.HasParticipantsWith(
+		relationshipparticipant.HasPersonWith(
+			person.HasAttributesWith(
+				personattribute.SourceTypeEQ("external_research"),
+				personattribute.StatusNEQ("retracted"),
+				personAttributeConfidencePercent(percent),
+				predicate.PersonAttribute(func(s *sql.Selector) {
+					s.Where(sql.P(func(b *sql.Builder) {
+						b.WriteString("(")
+						writeResearchFactBadge(b, s)
+						b.WriteString(" = ")
+						b.Arg(label)
+						b.WriteString(" AND ")
+						writeResearchFactShown(b, s)
+						b.WriteString(" = ")
+						b.Arg(value)
+						b.WriteString(")")
+					}))
+				}),
+			),
+		),
+	)
+}
+
+func writeResearchFactBadge(b *sql.Builder, s *sql.Selector) {
+	dim := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(personattribute.FieldDimension))
+	if s.Dialect() == dialect.Postgres {
+		dim = fmt.Sprintf("btrim(coalesce(%s, ''))", s.C(personattribute.FieldDimension))
+	}
+	b.WriteString("CASE")
+	for stored, label := range researchFactBadgeLabels() {
+		b.WriteString(" WHEN ")
+		b.WriteString(dim)
+		b.WriteString(" = ")
+		b.Arg(stored)
+		b.WriteString(" THEN ")
+		b.Arg(label)
+	}
+	b.WriteString(" ELSE ")
+	writeNormalizedSQLText(b, s, dim)
+	b.WriteString(" END")
+}
+
+func researchFactBadgeLabels() map[string]string {
+	labels := map[string]string{
+		"display_name": "name",
+		"org_name":     "company",
+		"location":     "location",
+	}
+	for dimension, label := range researchBadgeLabels {
+		labels[dimension] = normalizePersonSearch(label)
+	}
+	return labels
 }
 
 // publicResearchDetailCount reads "Public research · 1 detail" and
