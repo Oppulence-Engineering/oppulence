@@ -3,6 +3,7 @@
 import "client-only";
 
 import * as React from "react";
+import { format } from "date-fns";
 import {
   ArrowClockwise,
   CheckCircle,
@@ -221,17 +222,28 @@ export function reviewSupportingQuotes(action: {
   return quotes;
 }
 
-function governedSourceLine(action: RevenueAction) {
+/** English month and day, matching the marketing line "Mar 14". */
+export function reviewThreadDay(occurredAt: string | null | undefined): string {
+  const raw = occurredAt?.trim() ?? "";
+  if (!raw) return "";
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return format(parsed, "MMM d");
+}
+
+export function governedSourceLine(action: {
+  evidence: readonly { occurredAt?: string | null }[];
+  recipientEmail?: string | null;
+  reason?: string | null;
+}): string | undefined {
   const evidence = action.evidence[0];
   if (!evidence) {
     const reason = actionReasonCopy(action.reason);
     return reason ? `Source: ${reason}` : undefined;
   }
-  const date = new Date(evidence.occurredAt).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
+  const date = reviewThreadDay(evidence.occurredAt);
   const account = action.recipientEmail ? ` · ${action.recipientEmail}` : "";
+  if (!date) return account ? `Source: thread${account}` : undefined;
   return `Source: thread from ${date}${account}`;
 }
 

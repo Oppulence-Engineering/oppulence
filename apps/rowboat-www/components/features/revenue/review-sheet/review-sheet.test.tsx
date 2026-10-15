@@ -6,9 +6,11 @@ import { describe, expect, it } from "vitest";
 import {
   actionHasOriginalEmail,
   executionFailureCopy,
+  governedSourceLine,
   reconciliationErrorCopy,
   reconciliationStatusLabel,
   reviewSupportingQuotes,
+  reviewThreadDay,
   uncertainSendTitle,
 } from "@/components/features/revenue/review-sheet/review-sheet";
 
@@ -105,6 +107,22 @@ describe("ReviewSheet", () => {
     ).toEqual(["I will send the quay rank."]);
     expect(source).toContain("actionHasOriginalEmail(action)");
     expect(source).toContain("reviewSupportingQuotes(action)");
+    const threadDay = reviewThreadDay("2026-03-14T12:00:00Z");
+    expect(threadDay).toMatch(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}$/);
+    expect(reviewThreadDay("not-a-date")).toBe("");
+    expect(
+      governedSourceLine({
+        evidence: [{ occurredAt: "2026-03-14T12:00:00Z" }],
+        recipientEmail: "buyer@acme.com",
+      }),
+    ).toBe(`Source: thread from ${threadDay} · buyer@acme.com`);
+    expect(governedSourceLine({ evidence: [], reason: "Added by you" })).toBe(
+      "Source: Added by you",
+    );
+    expect(governedSourceLine({ evidence: [{ occurredAt: "nope" }] })).toBeUndefined();
+    expect(source).toContain("governedSourceLine(action)");
+    expect(source).toContain('format(parsed, "MMM d")');
+    expect(source).not.toContain("toLocaleDateString");
     expect(source).toContain("Supporting words");
     expect(source).toContain("The original email is not available.");
     expect(source).not.toContain("(The original email body is not available.)");
