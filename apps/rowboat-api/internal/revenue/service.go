@@ -1279,8 +1279,12 @@ func (s *Service) ListRelationshipsFiltered(
 			parts = append(parts, badges)
 		}
 
+		// "Added by you vs HubSpot" is the disagreement badge. The same words
+		// are also an activity heading and a recommendation badge.
 		if detector := relationshipSheetDetectorMatch(needle); detector != nil {
-			parts = append(parts, detector)
+			if _, line := contradictionSourceLine(needle); !line {
+				parts = append(parts, detector)
+			}
 		}
 		parts = append(parts, relationship.HasCommitmentsWith(commitment.TextContainsFold(value)))
 		if text := promiseLineText(needle); text != "" {
@@ -11329,6 +11333,9 @@ func contradictionChosenSourceLabel(source string) string {
 // contradictionSentenceOwnsActivity is true when the query is a closed-case
 // sentence that also contains an activity heading, such as Calendar or A meeting.
 func contradictionSentenceOwnsActivity(needle string) bool {
+	if _, ok := contradictionSourceLine(needle); ok {
+		return true
+	}
 	for _, slug := range contradictionChosenSources() {
 		if labelPhraseMatches("You chose the value from "+contradictionChosenSourceLabel(slug)+".", needle) {
 			return true
@@ -11342,6 +11349,10 @@ func contradictionSentenceOwnsActivity(needle string) bool {
 // so the open suggestion stays off that company. A closed case prints who chose
 // the current value. An open case that still stores that reason does not.
 func relationshipSheetContradictionMatch(needle string) predicate.Relationship {
+	// The badge lists every side in order: "(Added by you vs HubSpot)".
+	if sources, ok := contradictionSourceLine(needle); ok {
+		return relationshipHasContradictionSourceLine(sources)
+	}
 	phrases := contradictionSearchPhrases()
 	chosen := make([]contradictionSearchPhrase, 0)
 	for _, item := range phrases {
@@ -11474,6 +11485,140 @@ func writeContradictionSideCount(b *sql.Builder, s *sql.Selector) {
 	b.WriteString("COALESCE(json_array_length(json_extract(")
 	b.WriteString(column)
 	b.WriteString(", '$.sides')), 0)")
+}
+
+// contradictionSourceLine reads the disagreement badge. The sheet joins every
+// side with " vs " and wraps that list in parentheses. The sources have to
+// stay in that order on one case.
+func contradictionSourceLine(needle string) ([]string, bool) {
+	text := needle
+	if strings.HasPrefix(text, "(") && strings.HasSuffix(text, ")") && len(text) > 2 {
+		text = text[1 : len(text)-1]
+	}
+	if !strings.Contains(text, " vs ") {
+		return nil, false
+	}
+	parts := strings.Split(text, " vs ")
+	if len(parts) < 2 {
+		return nil, false
+	}
+	sources := make([]string, len(parts))
+	for i, part := range parts {
+		source, ok := contradictionSourceValue(part)
+		if !ok {
+			return nil, false
+		}
+		sources[i] = source
+	}
+	return sources, true
+}
+
+func contradictionSourceValue(part string) (string, bool) {
+	switch part {
+	case "your correction":
+		return "user_correction", true
+	case "a connected source":
+		return "source_fact", true
+	case "a rule":
+		return "deterministic", true
+	case "a suggestion":
+		return "ai_inference", true
+	case "gmail":
+		return "gmail", true
+	case "google":
+		return "google", true
+	case "calendar":
+		return "calendar", true
+	case "slack":
+		return "slack", true
+	case "hubspot":
+		return "hubspot", true
+	case "a meeting":
+		return "meeting", true
+	case "a note":
+		return "desktop_note", true
+	case "a voice note":
+		return "voice_note", true
+	case "the browser":
+		return "browser", true
+	case "the crm":
+		return "crm", true
+	case "added by you":
+		return "user", true
+	case "the web":
+		return "web", true
+	case "a connected app":
+		return "composio", true
+	default:
+		return "", false
+	}
+}
+
+func relationshipHasContradictionSourceLine(sources []string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			art := conversationintelligenceartifact.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS eval WHERE eval.")
+			b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND eval.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = 'contradiction_case' AND eval.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(" = (SELECT MAX(newer.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(") FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS newer WHERE newer.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+			b.WriteString(") AND ")
+			writeContradictionSideCount(b, s)
+			b.WriteString(" = ")
+			b.Arg(len(sources))
+			for i, source := range sources {
+				b.WriteString(" AND lower(")
+				if s.Dialect() == dialect.Postgres {
+					b.WriteString("btrim")
+				} else {
+					b.WriteString("trim")
+				}
+				b.WriteString("(coalesce(")
+				writeContradictionSideSource(b, s, i)
+				b.WriteString(", ''))) = ")
+				b.Arg(source)
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeContradictionSideSource(b *sql.Builder, s *sql.Selector, index int) {
+	column := "eval." + conversationintelligenceartifact.FieldPayloadJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->'sides'->")
+		b.WriteString(strconv.Itoa(index))
+		b.WriteString("->>'source'")
+		return
+	}
+	b.WriteString("json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.sides[")
+	b.WriteString(strconv.Itoa(index))
+	b.WriteString("].source')")
 }
 
 // relationshipSheetUncertainClaimMatch matches the sentence under What changed.

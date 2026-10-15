@@ -12365,6 +12365,70 @@ func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
 		"A stronger source already chose the current value.",
 		"contradiction:cedar", 1,
 	)
+	loose := makeCompany("Badge Loose")
+	at := time.Now().UTC()
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(loose).
+		SetSource("user").SetExternalID("badge-loose").SetEventType("note").
+		SetOccurredAt(at).SetReceivedAt(at).SetContentHash("badge-loose").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RevenueAction.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(loose).
+		SetActionType("follow_up_task").SetChannel("task").
+		SetDetector("manual").SetDedupeKey("badge-loose").
+		SetRevisionHash("badge-loose").SetReason("Send the harbor note").
+		SetPriorityScore(40).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	swap := makeCompany("Badge Swap")
+	swapPayload, err := json.Marshal(ConversationContradictionCase{
+		CaseID: "contradiction:swap", RelationshipID: swap.ID.String(), SubjectRef: swap.ID.String(),
+		Dimension: "health", Status: "open", Reason: "Two sources disagree.",
+		Sides: []ConversationContradictionEvidenceSide{
+			{AssertionID: "left", Source: "hubspot"},
+			{AssertionID: "right", Source: "user"},
+		},
+		OpenedAt: time.Now().UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	swapSum := sha256.Sum256(swapPayload)
+	if _, err := f.client.ConversationIntelligenceArtifact.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(swap).
+		SetKind("contradiction_case").SetStableID("contradiction:swap").SetVersion(1).
+		SetStatus("open").SetSubjectRef(swap.ID.String()).
+		SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+		SetPayloadJSON(string(swapPayload)).SetPayloadHash(hex.EncodeToString(swapSum[:])).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	authority := makeCompany("Badge Authority")
+	authorityPayload, err := json.Marshal(ConversationContradictionCase{
+		CaseID: "contradiction:authority", RelationshipID: authority.ID.String(), SubjectRef: authority.ID.String(),
+		Dimension: "health", Status: "open", Reason: "Two sources disagree.",
+		Sides: []ConversationContradictionEvidenceSide{
+			{AssertionID: "left", Source: "user_correction"},
+			{AssertionID: "right", Source: "source_fact"},
+		},
+		OpenedAt: time.Now().UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	authoritySum := sha256.Sum256(authorityPayload)
+	if _, err := f.client.ConversationIntelligenceArtifact.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(authority).
+		SetKind("contradiction_case").SetStableID("contradiction:authority").SetVersion(1).
+		SetStatus("open").SetSubjectRef(authority.ID.String()).
+		SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+		SetPayloadJSON(string(authorityPayload)).SetPayloadHash(hex.EncodeToString(authoritySum[:])).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
 		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
@@ -12381,12 +12445,21 @@ func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Two details disagree", "Quill Atelier")
+	assertCompanyQuery("Two details disagree", "Quill Atelier", "Badge Swap", "Badge Authority")
 	assertCompanyQuery("Which Lifecycle should be the current one?", "Quill Atelier")
-	assertCompanyQuery("Choose the current value from 2 sources.", "Quill Atelier")
-	assertCompanyQuery("Which Health should be the current one?")
+	assertCompanyQuery("Choose the current value from 2 sources.", "Quill Atelier", "Badge Swap", "Badge Authority")
+	assertCompanyQuery("Which Health should be the current one?", "Badge Swap", "Badge Authority")
 	assertCompanyQuery("A stronger source already chose the current value.", "Cedar Mill")
 	assertCompanyQuery("Two sources disagree. Choose which value is current.")
+	assertCompanyQuery("Added by you vs HubSpot", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("(Added by you vs HubSpot)", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("Added by you vs HubSpot.", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("HubSpot vs Added by you", "Badge Swap")
+	assertCompanyQuery("(HubSpot vs Added by you)", "Badge Swap")
+	assertCompanyQuery("Your correction vs A connected source", "Badge Authority")
+	assertCompanyQuery("Your correction vs HubSpot")
+	assertCompanyQuery("Added by you vs HubSpot vs Gmail")
+	assertCompanyQuery("Added by you", "Badge Loose")
 }
 
 func TestRelationshipSearchFindsContradictionReasons(t *testing.T) {
