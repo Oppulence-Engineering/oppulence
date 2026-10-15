@@ -115,12 +115,12 @@ func TestOpenPromisesReportShowsBothDirectionsWithSources(t *testing.T) {
 		"# Open promises",
 		"Promises from the last 90 days with no evidence they were kept.",
 		"| Company | Open promises |",
-		"promises we made",
-		"promises made to us",
+		"We promised",
+		"They promised us",
 		"Ship the migration",
 		"Send the sandbox credentials",
-		"They owe",
-		"We owe",
+		"they owe us",
+		"we owe them",
 		"https://mail.google.com/",
 	} {
 		if !strings.Contains(doc, want) {
@@ -250,7 +250,7 @@ func TestOpenPromisesReportDisclosesTruncation(t *testing.T) {
 	if len(report.Items) != 200 || !report.Truncated {
 		t.Fatalf("report did not disclose truncation: items=%d truncated=%v", len(report.Items), report.Truncated)
 	}
-	if !strings.Contains(report.Markdown(), "first 200") {
+	if !strings.Contains(report.Markdown(), "This report shows the first 200 open promises. Open promises to see the rest.") {
 		t.Fatal("Markdown did not disclose truncation")
 	}
 }
@@ -268,10 +268,10 @@ func TestOpenPromisesReportIsHonestWhenEmpty(t *testing.T) {
 		t.Fatal(err)
 	}
 	doc := report.Markdown()
-	if !strings.Contains(doc, "No open promises were found") {
+	if !strings.Contains(doc, "No open promises found") {
 		t.Fatalf("empty report was not explicit:\n%s", doc)
 	}
-	if !strings.Contains(doc, "sources are not connected") {
+	if !strings.Contains(doc, "We read") || !strings.Contains(doc, "found nothing outstanding") || !strings.Contains(doc, "more sources need connecting") {
 		t.Fatalf("empty report did not name the likely cause:\n%s", doc)
 	}
 }
@@ -333,10 +333,10 @@ func TestOpenPromisesReportNamesAMutualPromise(t *testing.T) {
 		t.Fatalf("a mutual promise was counted as one side's: out=%d in=%d items=%d", report.OutboundCount, report.InboundCount, len(report.Items))
 	}
 	doc := report.Markdown()
-	if !strings.Contains(doc, "We both owe ·") || !strings.Contains(doc, "promises we share") {
+	if !strings.Contains(doc, "we both owe ·") || !strings.Contains(doc, "We both promised") {
 		t.Fatalf("mutual promise was labeled as one side's:\n%s", doc)
 	}
-	if strings.Contains(doc, "We owe ·") {
+	if strings.Contains(doc, "we owe them") {
 		t.Fatalf("mutual promise was also called something we owe:\n%s", doc)
 	}
 }

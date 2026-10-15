@@ -28481,9 +28481,9 @@ export interface operations {
            *
            *     Promises from the last 180 days with no evidence they were kept.
            *
-           *     - **1** promises we made
-           *     - **0** promises made to us
-           *     - **412** conversations read
+           *     - **1** We promised
+           *     - **0** They promised us
+           *     - **412** Conversations read
            *
            *     | Company | Open promises |
            *     |---|---|
@@ -28493,7 +28493,7 @@ export interface operations {
            *
            *     ### Acme — Migration live by the 14th
            *
-           *     We owe · state **At risk** · due Sep 14, 2026 · owner alex@example.com
+           *     we owe them · state **At risk** · due Sep 14, 2026 · owner alex@example.com
            *
            *     > We will have the migration live by the 14th.
            *

@@ -214,19 +214,20 @@ func (r *OpenPromisesReport) Markdown() string {
 	b.WriteString("# Open promises\n\n")
 	fmt.Fprintf(&b, "Promises from the last %d days with no evidence they were kept.\n\n",
 		r.LookbackDays)
-	fmt.Fprintf(&b, "- **%d** promises we made\n", r.OutboundCount)
-	fmt.Fprintf(&b, "- **%d** promises made to us\n", r.InboundCount)
+	fmt.Fprintf(&b, "- **%d** We promised\n", r.OutboundCount)
+	fmt.Fprintf(&b, "- **%d** They promised us\n", r.InboundCount)
 	if shared := sharedPromiseCount(r.Items); shared > 0 {
-		fmt.Fprintf(&b, "- **%d** promises we share\n", shared)
+		fmt.Fprintf(&b, "- **%d** We both promised\n", shared)
 	}
-	fmt.Fprintf(&b, "- **%d** conversations read\n\n", r.ThreadsSeen)
+	fmt.Fprintf(&b, "- **%d** Conversations read\n\n", r.ThreadsSeen)
 	if r.Truncated {
-		b.WriteString("This report shows the first 200 open promises. Open the register for the complete ledger.\n\n")
+		b.WriteString("This report shows the first 200 open promises. Open promises to see the rest.\n\n")
 	}
 
 	if len(r.Items) == 0 {
-		b.WriteString("No open promises were found in this window. ")
-		b.WriteString("That is either good news or a sign the sources are not connected yet.\n")
+		b.WriteString("No open promises found\n\n")
+		fmt.Fprintf(&b, "We read %d conversations and found nothing outstanding. ", r.ThreadsSeen)
+		b.WriteString("That is either good news, or a sign that more sources need connecting.\n")
 		return b.String()
 	}
 
@@ -285,14 +286,17 @@ func reportSourceObservedLine(at time.Time) string {
 	return "Source observed " + at.UTC().Format("Jan 2, 2006 at 3:04 PM")
 }
 
+// promiseOwesLabel is the direction the report page prints beside the company.
+// promised_by_them is "they owe us", a mutual promise is "we both owe", and
+// every other direction is "we owe them".
 func promiseOwesLabel(direction string) string {
 	switch direction {
 	case "promised_by_them":
-		return "They owe"
+		return "they owe us"
 	case "mutual":
-		return "We both owe"
+		return "we both owe"
 	default:
-		return "We owe"
+		return "we owe them"
 	}
 }
 
