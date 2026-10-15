@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -1061,8 +1062,11 @@ func (s *Service) ListRelationshipsFiltered(
 		// "2 open promises" and "Lifecycle: Prospect · Open promise: …" are the
 		// sentence on What is true now. The shorter promise words stay on the
 		// highlight that already uses them.
-		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil && !stateAnswerOwns(needle, searchedAt) {
+		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil && !stateAnswerOwns(needle, searchedAt) && !draftedPromiseOwns(needle) {
 			parts = append(parts, truth)
+		}
+		if drafted := relationshipSheetDraftedPromiseMatch(needle, searchedAt); drafted != nil {
+			parts = append(parts, drafted)
 		}
 		if badges := relationshipSheetPromiseBadgeMatch(needle, searchedAt); badges != nil {
 			parts = append(parts, badges)
@@ -1292,8 +1296,15 @@ func (s *Service) ListRelationshipsFiltered(
 		if mailDirection := relationshipSheetActivityMailDirectionMatch(needle); mailDirection != nil {
 			parts = append(parts, mailDirection)
 		}
+		// "Meeting follow-up. Send the harbor note" is one open action. The
+		// action name alone stays on every open action of that type.
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
-			parts = append(parts, actionLabel)
+			if _, _, line := actionAnswerLine(needle); !line {
+				parts = append(parts, actionLabel)
+			}
+		}
+		if answered := relationshipSheetActionAnswerMatch(needle); answered != nil {
+			parts = append(parts, answered)
 		}
 		if badges := relationshipSheetRecommendationBadgeMatch(needle); badges != nil {
 			parts = append(parts, badges)
@@ -1310,7 +1321,7 @@ func (s *Service) ListRelationshipsFiltered(
 		// The exact promise sentence already names that one promise. A second
 		// promise on the same company prints a count, so the text alone is a
 		// different line. The drafted follow-up keeps the text search.
-		if text := promiseLineText(needle); text != "" && !stateAnswerOwns(needle, searchedAt) {
+		if text := promiseLineText(needle); text != "" && !stateAnswerOwns(needle, searchedAt) && !draftedPromiseOwns(needle) {
 			parts = append(parts, relationship.HasCommitmentsWith(commitment.And(
 				visibleTruthCommitment(),
 				commitment.TextContainsFold(text),
@@ -1482,7 +1493,9 @@ func (s *Service) ListRelationshipsFiltered(
 			))
 		}
 		if confirmed := relationshipSheetConfirmedMeetingMatch(needle); confirmed != nil {
-			parts = append(parts, confirmed)
+			if _, _, line := actionAnswerLine(needle); !line {
+				parts = append(parts, confirmed)
+			}
 		}
 		if printed := relationshipSheetPrintedReasonMatch(needle); printed != nil {
 			parts = append(parts, printed)
@@ -14472,6 +14485,134 @@ var actionTypeSearchLabels = []struct {
 	{"promise follow-up", "commitment_rescue"},
 }
 
+func actionAnswerLine(needle string) (string, string, bool) {
+	labels := append([]struct {
+		phrase     string
+		actionType string
+	}{}, actionTypeSearchLabels...)
+	sort.Slice(labels, func(i, j int) bool {
+		return len(normalizePersonSearch(labels[i].phrase)) > len(normalizePersonSearch(labels[j].phrase))
+	})
+	for _, item := range labels {
+		phrase := normalizePersonSearch(item.phrase)
+		if phrase == "" || needle == phrase || strings.HasPrefix(needle, phrase+":") {
+			continue
+		}
+		prefix := phrase + " "
+		if !strings.HasPrefix(needle, prefix) {
+			continue
+		}
+		rest := strings.TrimSpace(needle[len(prefix):])
+		if rest == "" {
+			continue
+		}
+		return item.actionType, rest, true
+	}
+	return "", "", false
+}
+
+func relationshipSheetActionAnswerMatch(needle string) predicate.Relationship {
+	actionType, rest, ok := actionAnswerLine(needle)
+	if !ok {
+		return nil
+	}
+	return relationship.HasActionsWith(
+		revenueaction.ActionTypeEQ(actionType),
+		revenueaction.QueueStatusEQ(QueueOpen),
+		actionAnswerReason(rest),
+	)
+}
+
+func actionAnswerReason(rest string) predicate.RevenueAction {
+	preds := []predicate.RevenueAction{revenueActionReasonNormalized(rest)}
+	if rewritten := rewrittenActionReason(rest); rewritten != nil {
+		preds = append(preds, rewritten)
+	}
+	if len(preds) == 1 {
+		return preds[0]
+	}
+	return revenueaction.Or(preds...)
+}
+
+func rewrittenActionReason(rest string) predicate.RevenueAction {
+	if rest == normalizePersonSearch("You confirmed this follow-up from the meeting.") {
+		return confirmedMeetingReason()
+	}
+	if rest == "confirm this promise from the message" {
+		return revenueActionReasonEquals("An explicit promise in this message needs confirmation.")
+	}
+	for _, item := range printedActionReasons {
+		if rest == normalizePersonSearch(item.display) {
+			return revenueActionReasonEquals(item.stored)
+		}
+	}
+	if days, ok := printedReasonCount(printedProposalReason, rest); ok {
+		return revenueActionReasonEquals(fmt.Sprintf(
+			"You sent a proposal-stage message %d days ago and there has been no reply.", days,
+		))
+	}
+	if who, days, ok := printedWaitingReasonParts(rest); ok {
+		return revenueActionReasonEquals(fmt.Sprintf(
+			"%s asked you something %d days ago and is still waiting on a reply.", who, days,
+		))
+	}
+	if days, ok := printedReasonCount(printedIntroReason, rest); ok {
+		return revenueActionReasonEquals(fmt.Sprintf(
+			"An introduction in this thread has had no contact for %d days.", days,
+		))
+	}
+	if messages, days, ok := printedQuietReasonParts(rest); ok {
+		return revenueActionReasonEquals(fmt.Sprintf(
+			"A warm two-way conversation (%d messages) has been dormant for %d days.", messages, days,
+		))
+	}
+	if days, when, ok := printedFollowReasonParts(rest); ok {
+		return revenueActionReasonEquals(fmt.Sprintf(
+			"A follow-up was promised in this thread and nothing has happened for %d days (last touch %s).",
+			days, when,
+		))
+	}
+	return nil
+}
+
+func revenueActionReasonNormalized(want string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeNormalizedSQLText(b, s, s.C(revenueaction.FieldReason))
+			b.WriteString(" = ")
+			b.Arg(want)
+		}))
+	})
+}
+
+func draftedPromiseOwns(needle string) bool {
+	_, ok := draftedPromiseAnswer(needle)
+	return ok
+}
+
+func draftedPromiseAnswer(needle string) (promiseAnswerShape, bool) {
+	suffix := normalizePersonSearch("no follow-up is drafted")
+	if suffix == "" || needle == suffix || !strings.HasSuffix(needle, suffix) {
+		return promiseAnswerShape{}, false
+	}
+	rest := strings.TrimSpace(strings.TrimSuffix(needle, suffix))
+	if rest == "" {
+		return promiseAnswerShape{}, false
+	}
+	return parsePromiseAnswer(rest)
+}
+
+func relationshipSheetDraftedPromiseMatch(needle string, now time.Time) predicate.Relationship {
+	shape, ok := draftedPromiseAnswer(needle)
+	if !ok {
+		return nil
+	}
+	return relationship.And(
+		relationshipHasPromiseAnswer(shape, now),
+		relationship.Not(relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen))),
+	)
+}
+
 func relationshipSheetActionLabelMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	for _, item := range actionTypeSearchLabels {
@@ -14654,7 +14795,11 @@ func relationshipSheetConfirmedMeetingMatch(needle string) predicate.Relationshi
 	if !labelPhraseMatches("you confirmed this follow-up from the meeting.", needle) {
 		return nil
 	}
-	return relationship.HasActionsWith(predicate.RevenueAction(func(s *sql.Selector) {
+	return relationship.HasActionsWith(confirmedMeetingReason())
+}
+
+func confirmedMeetingReason() predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			column := s.C(revenueaction.FieldReason)
 			b.WriteString("(lower(trim(")
@@ -14667,7 +14812,7 @@ func relationshipSheetConfirmedMeetingMatch(needle string) predicate.Relationshi
 			}
 			b.WriteString(")) GLOB 'you confirmed this follow-up from source evidence meeting/?*.')")
 		}))
-	}))
+	})
 }
 
 // printedActionReasons are conversation follow-ups the queue rewrites. The

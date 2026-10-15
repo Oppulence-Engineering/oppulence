@@ -4251,6 +4251,98 @@ func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	assertCompanyQuery("No action is currently recommended", "Quill Atelier")
 }
 
+func TestRelationshipSearchFindsTheNextStepSentence(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	act := func(rel *ent.Relationship, actionType, reason string) {
+		t.Helper()
+		if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: rel.ID,
+			ActionType:     actionType,
+			Channel:        "email",
+			Reason:         reason,
+			PriorityScore:  50,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	meet := makeCompany("Step Meet")
+	act(meet, "meeting_follow_up", "You confirmed this follow-up from the meeting.")
+	other := makeCompany("Step Other")
+	act(other, "meeting_follow_up", "Send the harbor note")
+	warm := makeCompany("Step Warm")
+	act(warm, "warm_follow_up", "Send the harbor note")
+	same := makeCompany("Step Same")
+	act(same, "warm_follow_up", "You confirmed this follow-up from the meeting.")
+	recap := makeCompany("Step Recap")
+	act(recap, "meeting_recap", "Send a recap grounded in the material statements from this conversation.")
+	proposal := makeCompany("Step Proposal")
+	act(proposal, "proposal_nudge", "You sent a proposal-stage message 4 days ago and there has been no reply.")
+	decoy := makeCompany("Step Decoy")
+	act(decoy, "proposal_nudge", "Send the harbor note")
+	one := makeCompany("Step One")
+	seedCommitment(t, f, one, "promised_by_them", "Send the packet", "", nil)
+	two := makeCompany("Step Two")
+	seedCommitment(t, f, two, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, two, "promised_by_them", "Mail the ledger", "", nil)
+	soon := time.Now().Add(24 * time.Hour)
+	risk := makeCompany("Step Risk")
+	seedCommitment(t, f, risk, "promised_by_them", "Hold the quay", "", &soon)
+	seedCommitment(t, f, risk, "promised_by_them", "Mail the quay", "", &soon)
+	mixed := makeCompany("Step Mixed")
+	seedCommitment(t, f, mixed, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, mixed, "promised_by_them", "Mail the ledger", "", &soon)
+	busy := makeCompany("Step Busy")
+	seedCommitment(t, f, busy, "promised_by_them", "Send the packet", "", nil)
+	seedCommitment(t, f, busy, "promised_by_them", "Mail the ledger", "", nil)
+	act(busy, "warm_follow_up", "Send the harbor note")
+	makeCompany("Step Quiet")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Meeting follow-up. You confirmed this follow-up from the meeting.", "Step Meet")
+	assertCompanyQuery("Meeting follow-up. You confirmed this follow-up from the meeting", "Step Meet")
+	assertCompanyQuery("Meeting follow-up. Send the harbor note", "Step Other")
+	assertCompanyQuery("Warm follow-up. Send the harbor note", "Step Warm", "Step Busy")
+	assertCompanyQuery("Warm follow-up. You confirmed this follow-up from the meeting.", "Step Same")
+	assertCompanyQuery("Meeting recap. Send a recap of what was said.", "Step Recap")
+	assertCompanyQuery("Proposal nudge. You sent a proposal 4 days ago, and there has been no reply.", "Step Proposal")
+	assertCompanyQuery("Meeting follow-up", "Step Meet", "Step Other")
+	assertCompanyQuery("Send the harbor note", "Step Other", "Step Warm", "Step Decoy", "Step Busy")
+	assertCompanyQuery("You confirmed this follow-up from the meeting.", "Step Meet", "Step Same")
+	assertCompanyQuery("Open promise: Send the packet. No follow-up is drafted.", "Step One")
+	assertCompanyQuery("2 open promises. No follow-up is drafted.", "Step Two")
+	assertCompanyQuery("2 open promises. No follow-up is drafted", "Step Two")
+	assertCompanyQuery("2 promises are at risk. No follow-up is drafted.", "Step Risk")
+	assertCompanyQuery("1 open promise and 1 promise at risk. No follow-up is drafted.", "Step Mixed")
+	assertCompanyQuery("At risk promise: Hold the quay. No follow-up is drafted.")
+	assertCompanyQuery("No follow-up is drafted", "Step One", "Step Two", "Step Risk", "Step Mixed")
+	assertCompanyQuery("No action is currently recommended", "Step Quiet")
+}
+
 func TestRelationshipSearchFindsTheConfirmedMeetingReason(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
