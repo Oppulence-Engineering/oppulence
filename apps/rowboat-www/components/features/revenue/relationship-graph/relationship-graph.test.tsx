@@ -16,6 +16,7 @@ import {
   graphStageReading,
   graphExecutionLabel,
   graphNodeFieldLabel,
+  graphSourceStatusLabel,
   graphPromiseDirection,
   graphNodeSummaryLabel,
   graphStateFromSearch,
@@ -167,6 +168,37 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphNodeFieldLabel("source", "status", "backfilling")).toBe("Syncing");
     expect(graphNodeFieldLabel("source", "status", "rebuilding")).toBe("Syncing");
     expect(graphNodeFieldLabel("source", "status", "authorizing")).toBe("Waiting to connect");
+    expect(graphNodeFieldLabel("source", "status", "degraded")).toBe("Sync incomplete");
+    expect(
+      graphSourceStatusLabel({
+        status: "degraded",
+        source: "google",
+        metadata: { completeness: "stale" },
+      }),
+    ).toBe("Sync incomplete");
+    expect(
+      graphSourceStatusLabel({
+        status: "degraded",
+        source: "google",
+        metadata: { completeness: "complete" },
+      }),
+    ).toBe("Degraded");
+    expect(
+      graphSourceStatusLabel({
+        status: "degraded",
+        source: "meeting",
+        metadata: { completeness: "stale" },
+      }),
+    ).toBe("Degraded");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "source",
+        status: "degraded",
+        source: "google",
+        metadata: { completeness: "stale" },
+      }),
+    ).toBe("Sync incomplete");
+    expect(source).toContain("graphSourceStatusLabel(node)");
     expect(graphNodeSummaryLabel({ kind: "source", status: "stale" })).toBe("Out of date");
     expect(graphNodeFieldLabel("commitment", "status", "open")).toBe("Open");
     expect(graphNodeFieldLabel("commitment", "status", "at_risk")).toBe("At risk");

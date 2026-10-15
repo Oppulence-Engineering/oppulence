@@ -7212,6 +7212,8 @@ func sourceBadgeWriter(label string) func(*sql.Builder) {
 		return func(b *sql.Builder) { writeSourceStatusEQ(b, "authorizing") }
 	case "sync incomplete":
 		return writeSourceBadgeIncomplete
+	case "degraded":
+		return writeSourceBadgeDegraded
 	case "out of date":
 		return writeSourceBadgeStale
 	case "active":
@@ -7273,6 +7275,19 @@ func writeSourceBadgeIncomplete(b *sql.Builder) {
 	b.WriteString(" <> 'stale' AND src.")
 	b.WriteString(relationshipsourcestatus.FieldCompleteness)
 	b.WriteString(" <> 'complete'")
+}
+
+// A finished history with status degraded still prints "Degraded". A resync
+// source whose history is unfinished prints "Sync incomplete" instead.
+func writeSourceBadgeDegraded(b *sql.Builder) {
+	writeSourceStatusEQ(b, "degraded")
+	b.WriteString(" AND NOT ")
+	writeSourceSyncingFlag(b)
+	b.WriteString(" AND NOT (lower(src.")
+	b.WriteString(relationshipsourcestatus.FieldSource)
+	b.WriteString(") IN ('google', 'slack', 'hubspot') AND src.")
+	b.WriteString(relationshipsourcestatus.FieldCompleteness)
+	b.WriteString(" <> 'complete')")
 }
 
 func writeSourceBadgeActive(b *sql.Builder) {

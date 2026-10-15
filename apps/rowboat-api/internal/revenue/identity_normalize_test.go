@@ -7625,6 +7625,63 @@ func TestRelationshipSearchFindsWaitingToConnect(t *testing.T) {
 	assertCompanyQuery("Updating")
 }
 
+func TestRelationshipSearchFindsDegradedWhenTheBadgeSaysIt(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, ref string) {
+		t.Helper()
+		if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, ResourceRefs: []string{ref},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("Quill Whole", "google:company:whole")
+	save("Birch Fail", "slack:channel:fail")
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, status := range []struct{ source, completeness string }{
+		{"google", "complete"},
+		{"slack", "stale"},
+	} {
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource(status.source).SetSourceAccountID("default").
+			SetStatus("degraded").SetBackfillPhase("failed").
+			SetCompleteness(status.completeness).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Degraded", "Quill Whole")
+	assertCompanyQuery("Google · Degraded", "Quill Whole")
+	assertCompanyQuery("Sync incomplete", "Birch Fail")
+	assertCompanyQuery("Slack · Sync incomplete", "Birch Fail")
+	assertCompanyQuery("Slack · Degraded")
+}
+
 func TestRelationshipSearchFindsTheOtherSourceBadges(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

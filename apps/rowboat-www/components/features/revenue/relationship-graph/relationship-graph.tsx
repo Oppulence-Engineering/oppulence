@@ -31,6 +31,7 @@ import {
   activitySourceLabel,
   enumLabel,
   participantRoleLabel,
+  sourceConnectionLabel,
 } from "@/lib/revenue/source-product-copy";
 import { useRelationshipGraph } from "@/hooks/queries/use-relationships";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
@@ -795,9 +796,11 @@ function Inspector({
                 {label}
               </dt>
               <dd className="mt-0.5 text-primary/70">
-                {field === "other" || field === "execution"
-                  ? value
-                  : graphNodeFieldLabel(node.kind, field, String(value))}
+                {node.kind === "source" && field === "status"
+                  ? graphSourceStatusLabel(node)
+                  : field === "other" || field === "execution"
+                    ? value
+                    : graphNodeFieldLabel(node.kind, field, String(value))}
               </dd>
             </div>
           ))}
@@ -1308,6 +1311,10 @@ export function graphNodeFieldLabel(kind: string, field: GraphField, value: stri
         return "Syncing";
       case "authorizing":
         return "Waiting to connect";
+      case "degraded":
+        // A failed resync is "Sync incomplete" on the company badge. The
+        // token-only path uses that word; the inspector passes completeness.
+        return "Sync incomplete";
       default:
         break;
     }
@@ -1381,13 +1388,36 @@ export function graphExecutionLabel(
   }
 }
 
+/** The company badge and the graph Status cell share sourceConnectionLabel. */
+export function graphSourceStatusLabel(node: {
+  status?: string;
+  source?: string;
+  metadata?: { completeness?: unknown; backfillPhase?: unknown };
+}): string {
+  const completeness =
+    typeof node.metadata?.completeness === "string" ? node.metadata.completeness : undefined;
+  const backfillPhase =
+    typeof node.metadata?.backfillPhase === "string" ? node.metadata.backfillPhase : undefined;
+  if (node.source) {
+    return sourceConnectionLabel({
+      source: node.source,
+      status: node.status ?? "",
+      completeness,
+      backfillPhase,
+    });
+  }
+  return graphNodeFieldLabel("source", "status", node.status ?? "");
+}
+
 export function graphNodeSummaryLabel(node: {
   kind: string;
   role?: string;
   health?: string;
   status?: string;
+  source?: string;
   approvalStatus?: string;
   freshness?: string;
+  metadata?: { completeness?: unknown; backfillPhase?: unknown };
 }): string {
   if (node.kind === "person" && node.role) return participantRoleLabel(node.role);
   if (node.health && node.health !== "unknown") {
@@ -1399,7 +1429,7 @@ export function graphNodeSummaryLabel(node: {
   // The sources page says Not connected before it mentions freshness. A fresh
   // observation must not hide that the source is not connected.
   if (node.kind === "source" && node.status === "not_connected") {
-    return graphNodeFieldLabel(node.kind, "status", node.status);
+    return graphSourceStatusLabel(node);
   }
   if (node.freshness && node.freshness !== "unknown") {
     return graphNodeFieldLabel(node.kind, "freshness", node.freshness);
@@ -1413,6 +1443,7 @@ export function graphNodeSummaryLabel(node: {
   ) {
     return "Not known";
   }
+  if (node.kind === "source" && node.status) return graphSourceStatusLabel(node);
   if (node.status) return graphNodeFieldLabel(node.kind, "status", node.status);
   if (node.health === "unknown" || node.freshness === "unknown") return "Not known";
   return "—";
