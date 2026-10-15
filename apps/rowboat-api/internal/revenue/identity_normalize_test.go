@@ -7867,6 +7867,7 @@ func TestRelationshipSearchFindsTheSourceHistory(t *testing.T) {
 		SetSource("hubspot").SetSourceAccountID("default").
 		SetStatus("disconnected").SetCompleteness("partial").
 		SetBackfillCompleted(1).SetBackfillTotal(3).
+		SetLagSeconds(2 * 24 * 60 * 60).
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -7901,6 +7902,14 @@ func TestRelationshipSearchFindsTheSourceHistory(t *testing.T) {
 	assertCompanyQuery("100% of history synced")
 	assertCompanyQuery("0% of history synced")
 	assertCompanyQuery("50 percent of history synced")
+	assertCompanyQuery("Some details are still missing · 50% of history synced", "Harbor Half")
+	assertCompanyQuery("Some details are still missing · 50% of history synced.", "Harbor Half")
+	assertCompanyQuery("Some details are still missing · 33% of history synced · 2 days behind", "Birch Third")
+	assertCompanyQuery("Some details are still missing · 33% of history synced")
+	assertCompanyQuery("Some details are still missing · 13% of history synced")
+	assertCompanyQuery("Details are current · 50% of history synced")
+	assertCompanyQuery("Details need a refresh · 33% of history synced · 2 days behind")
+	assertCompanyQuery("Some details are still missing · 50% of history synced · 12 minutes behind")
 }
 
 func TestRelationshipSearchFindsTheSourceReconnectCopy(t *testing.T) {

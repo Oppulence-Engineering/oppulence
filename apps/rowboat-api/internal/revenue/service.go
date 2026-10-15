@@ -1161,6 +1161,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if history := relationshipSheetSourceHistoryMatch(needle); history != nil {
 			parts = append(parts, history)
 		}
+		if line := relationshipSheetSourceStatusLineMatch(needle, searchedAt); line != nil {
+			parts = append(parts, line)
+		}
 		if reconnect := relationshipSheetSourceReconnectCopyMatch(needle); reconnect != nil {
 			parts = append(parts, reconnect)
 		}
@@ -7550,6 +7553,87 @@ func sourceHistoryPhrase(needle string) (int, bool) {
 		return 0, false
 	}
 	return percent, true
+}
+
+// relationshipSheetSourceStatusLineMatch is the sentence under a source card.
+// The card joins the completeness label, the sync percent, and the lag when
+// those are showing. Each piece on its own stays on its own matcher.
+func relationshipSheetSourceStatusLineMatch(needle string, now time.Time) predicate.Relationship {
+	completeness, percent, hasPercent, lagCount, lagUnit, hasLag, ok := sourceCardStatusLine(needle)
+	if !ok {
+		return nil
+	}
+	var lo, hi int64
+	if hasLag {
+		var boundsOK bool
+		lo, hi, boundsOK = sourceLagBounds(lagCount, lagUnit)
+		if !boundsOK {
+			return nil
+		}
+	}
+	return relationshipDependsOnSource(func(b *sql.Builder, s *sql.Selector) {
+		writeSourceLagShown(b, s)
+		b.WriteString(" AND src.")
+		b.WriteString(relationshipsourcestatus.FieldCompleteness)
+		b.WriteString(" = ")
+		b.Arg(completeness)
+		if hasPercent {
+			b.WriteString(" AND src.")
+			b.WriteString(relationshipsourcestatus.FieldBackfillTotal)
+			b.WriteString(" > 0 AND ")
+			writeSourceHistoryPercent(b, s)
+			b.WriteString(" = ")
+			b.Arg(percent)
+		} else {
+			b.WriteString(" AND coalesce(src.")
+			b.WriteString(relationshipsourcestatus.FieldBackfillTotal)
+			b.WriteString(", 0) <= 0")
+		}
+		if hasLag {
+			b.WriteString(" AND ")
+			writeSourceDisplayedLag(b, now, lo, hi)
+			return
+		}
+		b.WriteString(" AND coalesce(src.")
+		b.WriteString(relationshipsourcestatus.FieldLagSeconds)
+		b.WriteString(", 0) <= 0")
+	})
+}
+
+func sourceCardStatusLine(needle string) (completeness string, percent int, hasPercent bool, lagCount int, lagUnit time.Duration, hasLag, ok bool) {
+	parts := strings.Split(needle, " · ")
+	if len(parts) < 2 || len(parts) > 3 {
+		return "", 0, false, 0, 0, false, false
+	}
+	completeness, ok = sourceCardCompleteness[parts[0]]
+	if !ok {
+		return "", 0, false, 0, 0, false, false
+	}
+	switch len(parts) {
+	case 3:
+		percent, hasPercent = sourceHistoryPhrase(parts[1])
+		lagCount, lagUnit, hasLag = sourceLagPhrase(parts[2])
+		if !hasPercent || !hasLag {
+			return "", 0, false, 0, 0, false, false
+		}
+		return completeness, percent, true, lagCount, lagUnit, true, true
+	default:
+		if parsed, history := sourceHistoryPhrase(parts[1]); history {
+			return completeness, parsed, true, 0, 0, false, true
+		}
+		if count, unit, lag := sourceLagPhrase(parts[1]); lag {
+			return completeness, 0, false, count, unit, true, true
+		}
+		return "", 0, false, 0, 0, false, false
+	}
+}
+
+var sourceCardCompleteness = map[string]string{
+	"details are current":              "complete",
+	"some details are still missing":   "partial",
+	"details need a refresh":           "stale",
+	"updating from connected sources":  "rebuilding",
+	"a source needs to be reconnected": "disconnected",
 }
 
 func writeSourceHistoryPercent(b *sql.Builder, s *sql.Selector) {
