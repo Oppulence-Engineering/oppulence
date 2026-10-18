@@ -7,6 +7,8 @@ on:
       - "apps/rowboat-api/**"
       - "packages/oauth-resource-server-go/**"
       - ".do/rowboat-api-production.json"
+      - "charts/rowboat-api/values-production.yaml"
+      - "scripts/rowboat-database-pool.sh"
       - ".github/workflows/rowboat-api-app-platform.yml"
   workflow_dispatch:
 
@@ -29,8 +31,17 @@ jobs:
       - run: go vet ./...
         working-directory: apps/rowboat-api
 
+  database-pool:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: digitalocean/action-doctl@3cb3953159719656269e044e0e24ca16dd2a690f # v2.5.2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_PRODUCTION_TOKEN }}
+      - run: scripts/rowboat-database-pool.sh charts/rowboat-api/values-production.yaml
+
   deploy:
-    needs: quality
+    needs: [quality, database-pool]
     uses: Oppulence-Engineering/shared-workflows/.github/workflows/digitalocean-app-platform.yml@39e73ce91a0280405ae5bfd35ef7834b2f96c58f # v1.2.0
     with:
       app_id: ${{ vars.ROWBOAT_API_APP_ID }}
