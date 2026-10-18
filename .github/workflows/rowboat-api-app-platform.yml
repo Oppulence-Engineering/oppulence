@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: digitalocean/action-doctl@3cb3953159719656269e044e0e24ca16dd2a690f # v2.5.2
         with:
-          token: ${{ secrets.DIGITALOCEAN_PRODUCTION_TOKEN }}
+          token: ${{ secrets.DIGITALOCEAN_DATABASE_TOKEN }}
       - run: scripts/rowboat-database-pool.sh charts/rowboat-api/values-production.yaml
 
   deploy:
