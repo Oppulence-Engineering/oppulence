@@ -596,7 +596,7 @@ jobs:
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
-          token: ${{ secrets.DIGITALOCEAN_PRODUCTION_TOKEN }}
+          token: ${{ secrets.DIGITALOCEAN_DATABASE_TOKEN }}
 
       - name: Enforce the database pool size
         run: scripts/rowboat-database-pool.sh "${VALUES_FILE}"
