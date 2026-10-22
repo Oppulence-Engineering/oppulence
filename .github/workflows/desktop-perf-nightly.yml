@@ -50,7 +50,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Resolve performance tier
         id: tier
@@ -99,23 +99,23 @@ jobs:
           fi
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: apps/x/pnpm-lock.yaml
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: tools/desktop-perf/go.mod
           cache-dependency-path: tools/desktop-perf/go.sum
 
       - name: Cache Electron binaries
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cache/electron
@@ -161,7 +161,7 @@ jobs:
           sleep 2
 
       - name: Restore rolling perf baseline
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           # Rolling cache: a unique key per run saves the refreshed baseline at
           # job end; restore-keys pulls the most recent prior baseline to compare
@@ -193,7 +193,7 @@ jobs:
 
       - name: Upload desktop perf artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: desktop-perf-${{ steps.tier.outputs.tier }}-${{ github.run_id }}
           path: |
