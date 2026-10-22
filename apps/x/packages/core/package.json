@@ -33,7 +33,7 @@
     "@agentclientprotocol/codex-acp": "^0.0.44",
     "@agentclientprotocol/sdk": "^0.22.1",
     "@ai-sdk/anthropic": "^2.0.63",
-    "@ai-sdk/google": "^2.0.53",
+    "@ai-sdk/google": "^4.0.99",
     "@ai-sdk/openai": "^2.0.91",
     "@ai-sdk/openai-compatible": "^1.0.33",
     "@ai-sdk/provider": "^2.0.1",
