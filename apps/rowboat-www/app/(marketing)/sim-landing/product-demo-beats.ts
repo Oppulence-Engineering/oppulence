@@ -1,9 +1,9 @@
 export type ProductDemoBeatId = "read" | "confirm" | "watch";
 
 export const PRODUCT_DEMO_BEATS: Readonly<Record<ProductDemoBeatId, string>> = {
-  read: "Read the closed deal.",
-  confirm: "Confirm the rows.",
-  watch: "Watch what goes stale.",
+  read: "Find the relationship.",
+  confirm: "Review the source.",
+  watch: "Keep the next step visible.",
 };
 
 export const PRODUCT_DEMO_FRAMES: Readonly<

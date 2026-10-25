@@ -79,7 +79,9 @@ describe("agent schemas", () => {
   it("describes a maintained agent without its runtime prompt", () => {
     const runtime =
       "You are a helpful, careful cloud assistant running as a durable Rowboat agent. Use run_history.";
-    expect(agentInstructionsCopy({ slug: "assistant", source: "builtin", instructions: runtime })).toBe(
+    expect(
+      agentInstructionsCopy({ slug: "assistant", source: "builtin", instructions: runtime }),
+    ).toBe(
       "Answers questions about this workspace. It can look up companies, promises, and workflows, and it can draft the next step. Anything that writes waits for your approval.",
     );
     expect(
@@ -101,16 +103,21 @@ describe("agent schemas", () => {
       source: "builtin",
       instructions: runtime,
     });
-    expect(duplicateAgentInstructions({ slug: "assistant", source: "builtin", instructions: runtime }, shown)).toBe(
-      runtime,
-    );
+    expect(
+      duplicateAgentInstructions(
+        { slug: "assistant", source: "builtin", instructions: runtime },
+        shown,
+      ),
+    ).toBe(runtime);
     expect(
       duplicateAgentInstructions(
         { slug: "assistant", source: "builtin", instructions: runtime },
         "Answer in one sentence.",
       ),
     ).toBe("Answer in one sentence.");
-    expect(duplicateAgentInstructions(undefined, "  Draft a follow-up.  ")).toBe("Draft a follow-up.");
+    expect(duplicateAgentInstructions(undefined, "  Draft a follow-up.  ")).toBe(
+      "Draft a follow-up.",
+    );
   });
 
   it("names an agent source the way the product talks", () => {

@@ -25,7 +25,12 @@ export function MarketingLayoutClient({ children }: { children: ReactNode }) {
       )}
     >
       <MarketingEffects />
-      <SimLandingShell variant={isHome ? "home" : "subpage"}>{children}</SimLandingShell>
+      <SimLandingShell
+        showClosingCta={!["/web", "/desktop", "/voice-app"].includes(pathname)}
+        variant={isHome ? "home" : "subpage"}
+      >
+        {children}
+      </SimLandingShell>
     </div>
   );
 }

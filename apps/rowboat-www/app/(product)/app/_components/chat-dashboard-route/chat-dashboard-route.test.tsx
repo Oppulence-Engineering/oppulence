@@ -54,7 +54,10 @@ describe("ChatDashboardRoute", () => {
   });
 
   it("names a tool call with the product label", () => {
-    const source = fs.readFileSync(path.join(import.meta.dirname, "chat-dashboard-route.tsx"), "utf8");
+    const source = fs.readFileSync(
+      path.join(import.meta.dirname, "chat-dashboard-route.tsx"),
+      "utf8",
+    );
     expect(source).toContain('label: "overdue"');
     expect(source).toContain("recoveryOpenCount(impact.open, impact.openTasks)");
     expect(source).toContain("impact.atRiskRelationships");
@@ -74,7 +77,9 @@ describe("ChatDashboardRoute", () => {
     expect(source).not.toContain("Approval required: {item.name}");
     expect(source).toContain("approvalDecisionCopy(item.status)");
     expect(source).not.toContain('className="col-start-2 mt-3 text-xs capitalize text-primary/60"');
-    expect(source).not.toContain('item.status === "resolving" ? "Submitting decision…" : item.status');
+    expect(source).not.toContain(
+      'item.status === "resolving" ? "Submitting decision…" : item.status',
+    );
     expect(source).toContain("toolFailureCopy(item.result)");
     expect(source).toContain("toolResultCopy(item.result)");
     expect(source).toContain("toolArgumentsVisible(item.input)");

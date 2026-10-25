@@ -332,7 +332,8 @@ function GoogleConnectionSettings() {
           </Badge>
         </Label>
         <CardDescription className="mt-1 text-xs">
-          Read recent mail and meetings to find promises. Sending and calendar changes wait for approval.
+          Read recent mail and meetings to find promises. Sending and calendar changes wait for
+          approval.
         </CardDescription>
         {health.tone === "bad" && status?.connected ? (
           <p className="mt-1 text-xs text-destructive">
@@ -342,8 +343,8 @@ function GoogleConnectionSettings() {
         ) : null}
         {sourceStatus === "stale" && status?.connected ? (
           <p className="mt-1 text-xs text-muted-foreground">
-            Google is still connected. Mail and calendar are behind. Connecting again will not
-            catch them up.
+            Google is still connected. Mail and calendar are behind. Connecting again will not catch
+            them up.
           </p>
         ) : null}
         {status?.accounts.map((account) => (
@@ -364,7 +365,9 @@ function GoogleConnectionSettings() {
       </div>
       {confirming ? (
         <div className="flex max-w-xs flex-col items-end gap-2">
-          <p className="text-right text-xs text-primary/70">{googleAccessConfirmCopy(health.tone)}</p>
+          <p className="text-right text-xs text-primary/70">
+            {googleAccessConfirmCopy(health.tone)}
+          </p>
           <div className="flex gap-2">
             <Button disabled={busy} onClick={() => void connect()} size="sm" type="button">
               {busy ? "Connecting…" : "Continue"}
@@ -632,10 +635,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
             scopes={connector.availableScopes ?? []}
           />
           {unsupportedReason && !connector.connectionReason ? (
-            <p
-              className="text-xs text-oppulence-orange"
-              id={`connector-support-${connector.name}`}
-            >
+            <p className="text-xs text-oppulence-orange" id={`connector-support-${connector.name}`}>
               {unsupportedReason}
             </p>
           ) : null}

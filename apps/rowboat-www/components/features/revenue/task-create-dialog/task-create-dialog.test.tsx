@@ -11,9 +11,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/revenue/revenue", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/revenue/revenue")>(
-    "@/lib/revenue/revenue",
-  );
+  const actual =
+    await vi.importActual<typeof import("@/lib/revenue/revenue")>("@/lib/revenue/revenue");
   return { ...actual, createAction: mocks.createAction };
 });
 

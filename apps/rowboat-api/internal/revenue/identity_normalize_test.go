@@ -848,8 +848,11 @@ func TestRelationshipSearchFindsNextFollowUps(t *testing.T) {
 	page, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{
 		QueueStatus: QueueOpen, Limit: recoveryQueuePage, Surface: "recovery",
 	})
-	if err != nil || page == nil || len(page.Actions) != recoveryQueuePage || !page.HasMore {
-		t.Fatalf("recovery page = %d hasMore=%v err=%v", len(page.Actions), page != nil && page.HasMore, err)
+	if err != nil || page == nil {
+		t.Fatalf("recovery page = %v err=%v", page, err)
+	}
+	if len(page.Actions) != recoveryQueuePage || !page.HasMore {
+		t.Fatalf("recovery page = %d hasMore=%v", len(page.Actions), page.HasMore)
 	}
 	for _, action := range page.Actions {
 		if action.Reason == "Zed Hidden" {
@@ -944,8 +947,11 @@ func TestRelationshipSearchFindsNextTasks(t *testing.T) {
 	page, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{
 		QueueStatus: QueueOpen, Limit: taskQueuePage, Surface: "task", DueOrder: "asc",
 	})
-	if err != nil || page == nil || len(page.Actions) != taskQueuePage || !page.HasMore {
-		t.Fatalf("task page = %d hasMore=%v err=%v", len(page.Actions), page != nil && page.HasMore, err)
+	if err != nil || page == nil {
+		t.Fatalf("task page = %v err=%v", page, err)
+	}
+	if len(page.Actions) != taskQueuePage || !page.HasMore {
+		t.Fatalf("task page = %d hasMore=%v", len(page.Actions), page.HasMore)
 	}
 	for _, action := range page.Actions {
 		if action.Reason == "Zed Hidden" {
@@ -1042,8 +1048,11 @@ func TestRelationshipSearchFindsNextPromises(t *testing.T) {
 		States:    []string{RegisterOpen, RegisterAtRisk},
 		Limit:     promiseRegisterPage,
 	})
-	if err != nil || page == nil || len(page.Commitments) != promiseRegisterPage || !page.HasMore {
-		t.Fatalf("promise page = %d hasMore=%v err=%v", len(page.Commitments), page != nil && page.HasMore, err)
+	if err != nil || page == nil {
+		t.Fatalf("promise page = %v err=%v", page, err)
+	}
+	if len(page.Commitments) != promiseRegisterPage || !page.HasMore {
+		t.Fatalf("promise page = %d hasMore=%v", len(page.Commitments), page.HasMore)
 	}
 	for _, row := range page.Commitments {
 		if row.Text == "Zed Hidden" {

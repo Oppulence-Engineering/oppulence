@@ -1,22 +1,17 @@
-import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 
 import { SimPlatformPage } from "../sim-landing/subpages/sim-platform-page";
 import { getPlatformPage } from "../marketing-data";
+import { marketingMetadata } from "../metadata";
 
 const page = getPlatformPage("desktop");
 
-export const metadata: Metadata = {
-  title: "Oppulence Desktop — Oppulence next to the work",
-  description: page?.lede,
-  alternates: { canonical: "https://oppulence.io/desktop" },
-  openGraph: {
-    title: "Oppulence Desktop",
-    description: page?.lede,
-    url: "https://oppulence.io/desktop",
-  },
-};
+export const metadata = marketingMetadata({
+  title: `${page?.name} — ${page?.title}`,
+  description: page?.summary ?? "Explore Oppulence desktop.",
+  path: "/desktop",
+});
 
 export default async function OppulenceDesktopPage() {
   "use cache";

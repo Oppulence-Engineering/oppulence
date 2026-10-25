@@ -246,12 +246,12 @@ describe("CommitmentQueue", () => {
       />,
     );
     expect(screen.getByText("Select one company to see every promise for it.")).toBeVisible();
-    expect(registerAccountScopeCopy([{ direction: "mutual", relationshipName: "Quay Mutual" }])).toBe(
-      "Quay Mutual has a shared promise. Choose it to see that promise.",
-    );
-    expect(registerSharedPromiseCopy([{ direction: "mutual", relationshipName: "Quay Mutual" }])).toBe(
-      "1 shared promise with Quay Mutual. Choose Quay Mutual in By company.",
-    );
+    expect(
+      registerAccountScopeCopy([{ direction: "mutual", relationshipName: "Quay Mutual" }]),
+    ).toBe("Quay Mutual has a shared promise. Choose it to see that promise.");
+    expect(
+      registerSharedPromiseCopy([{ direction: "mutual", relationshipName: "Quay Mutual" }]),
+    ).toBe("1 shared promise with Quay Mutual. Choose Quay Mutual in By company.");
     expect(screen.getByRole("combobox", { name: "Company, Choose a company" })).toBeVisible();
     expect(screen.queryByText(/one relationship/)).toBeNull();
     cleanup();
@@ -411,15 +411,21 @@ describe("CommitmentQueue", () => {
     expect(commitmentDetailStatus({ state: "at_risk", acceptance: "candidate" })).toBe("Review");
     expect(commitmentDetailStatus({ state: "open", acceptance: "accepted" })).toBe("Open");
     expect(commitmentDetailStatus({ state: "at_risk", acceptance: "accepted" })).toBe("At risk");
-    expect(registerRowStatus({ state: "open", acceptance: "internally_confirmed", urgency: "open" })).toEqual({
+    expect(
+      registerRowStatus({ state: "open", acceptance: "internally_confirmed", urgency: "open" }),
+    ).toEqual({
       label: "Open",
       variant: "amber",
     });
-    expect(registerRowStatus({ state: "at_risk", acceptance: "accepted", urgency: "due_soon" })).toEqual({
+    expect(
+      registerRowStatus({ state: "at_risk", acceptance: "accepted", urgency: "due_soon" }),
+    ).toEqual({
       label: "At risk",
       variant: "red",
     });
-    expect(registerRowStatus({ state: "at_risk", acceptance: "candidate", urgency: "due_soon" })).toEqual({
+    expect(
+      registerRowStatus({ state: "at_risk", acceptance: "candidate", urgency: "due_soon" }),
+    ).toEqual({
       label: "Review",
       variant: "amber",
     });
@@ -462,7 +468,9 @@ describe("CommitmentQueue", () => {
     expect(screen.getByText("Open")).toBeVisible();
     expect(screen.queryByText("Confirmed")).not.toBeInTheDocument();
     await userEvent.click(screen.getByText("Quay Status"));
-    expect(screen.getByText("Promise status").parentElement?.parentElement).toHaveTextContent("Open");
+    expect(screen.getByText("Promise status").parentElement?.parentElement).toHaveTextContent(
+      "Open",
+    );
     expect(screen.getByText("Confirmed in this workspace")).toBeVisible();
     const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
     expect(source).toContain("registerRowStatus(item)");
@@ -510,7 +518,9 @@ describe("CommitmentQueue", () => {
     expect(screen.getByText("Reconnect Google to watch for fulfillment or a reply.")).toBeVisible();
 
     const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
-    expect(source).toContain("sourceWatchCopy({ connected: googleConnected, needsReconnect: googleNeedsReconnect })");
+    expect(source).toContain(
+      "sourceWatchCopy({ connected: googleConnected, needsReconnect: googleNeedsReconnect })",
+    );
   });
 
   it("does not offer an audit for a synthetic Google account", () => {
@@ -575,7 +585,9 @@ describe("CommitmentQueue", () => {
         "Connect Gmail and Calendar to find who promised what, when it is due, and the message it came from.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /Connect Gmail & Calendar/ }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("button", { name: /Connect Gmail & Calendar/ }).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.queryByRole("button", { name: /Run 6-month Promise Leak Audit/ }),
     ).not.toBeInTheDocument();
@@ -981,7 +993,8 @@ it("points at the view that holds a promise this view does not", () => {
     registerElsewhereCopy("they_owe", [{ direction: "promised_by_me" }, { direction: "mutual" }]),
   ).toEqual({
     title: "No promises they made",
-    detail: "1 promise we made is in What we owe. 1 shared promise. Choose the company in By company.",
+    detail:
+      "1 promise we made is in What we owe. 1 shared promise. Choose the company in By company.",
   });
   expect(registerElsewhereCopy("changed", [{ direction: "promised_by_them" }])).toEqual({
     title: "No promises changed in the last 7 days",

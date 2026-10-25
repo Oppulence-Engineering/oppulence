@@ -37,10 +37,7 @@ import {
 } from "@/components/features/revenue/shared/shared";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
 import { refreshPausedModelCopy } from "@/lib/agents/agent-history";
-import {
-  activitySourceLabel,
-  sourceConnectionLabel,
-} from "@/lib/revenue/source-product-copy";
+import { activitySourceLabel, sourceConnectionLabel } from "@/lib/revenue/source-product-copy";
 import { cn } from "@/lib/utils";
 import type { RelationshipSourceStatus, RevenueWorkspace } from "@/lib/revenue/types";
 
@@ -82,8 +79,7 @@ export function localModeNotice(gmail: "connected" | "missing" | "unknown"): str
  * unless a mailbox is actually connected.
  */
 export function linkUnavailableCopy(gmail: "connected" | "missing" | "unknown"): string {
-  const base =
-    "Checked sending isn't configured on the server yet, so linking can't be completed.";
+  const base = "Checked sending isn't configured on the server yet, so linking can't be completed.";
   if (gmail === "connected") {
     return `${base} Drafts still land in your Gmail so you can send them yourself.`;
   }
@@ -220,9 +216,7 @@ export function WorkspaceView({
           </div>
         ) : !sources?.length ? (
           <div className="flex flex-col gap-3 px-4 py-6 text-sm text-[var(--text-secondary)]">
-            <p>
-              Nothing is connected yet. Connect Gmail and Calendar, or another tool below.
-            </p>
+            <p>Nothing is connected yet. Connect Gmail and Calendar, or another tool below.</p>
             <Button onClick={scrollToConnectors} size="sm" type="button">
               <Plugs /> Connect sources
             </Button>
@@ -284,11 +278,7 @@ export function WorkspaceView({
             <MetadataRow label="Organization" mono value={workspace.outboundOrganizationId} />
           ) : null}
           {workspace.outboundWorkspaceId ? (
-            <MetadataRow
-              label="Sending workspace"
-              mono
-              value={workspace.outboundWorkspaceId}
-            />
+            <MetadataRow label="Sending workspace" mono value={workspace.outboundWorkspaceId} />
           ) : null}
           {workspace.lastVerifiedAt ? (
             <MetadataRow label="Last verified" value={relativeTime(workspace.lastVerifiedAt)} />

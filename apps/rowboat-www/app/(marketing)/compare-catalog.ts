@@ -21,9 +21,9 @@ export const comparePages: ComparePage[] = [
     slug: "crm",
     path: "/compare/crm",
     eyebrow: "CRM",
-    title: "A CRM stores the deal. It does not store the promise that closed it.",
+    title: "Keep your CRM. Bring more context to the conversation.",
     description:
-      "HubSpot and tools like it are the system of record for what you sold. Oppulence is the system of record for what is owed.",
+      "Oppulence brings authorized correspondence, meetings, notes, and CRM context into relationship review and proposed follow-ups.",
     lede: "This is a category seam, not a feature matrix against every CRM logo. HubSpot is the CRM we connect today. Salesforce is not in the first-party set.",
     them: {
       title: "What the pipeline is for.",
@@ -31,7 +31,7 @@ export const comparePages: ComparePage[] = [
     },
     us: {
       title: "What the register is for.",
-      body: "Two-sided commitments with sources. Silence, a slipped date, a money-state change. A next move that waits for approval. HubSpot can sit next to that. It cannot be that.",
+      body: "Relationship history with sources, open requests, and proposed next steps. Connect HubSpot for relevant account context while keeping your pipeline there.",
     },
     rows: [
       { label: "Object", them: "Deal, company, activity", us: "Commitment with a source" },
@@ -77,9 +77,9 @@ export const comparePages: ComparePage[] = [
     slug: "meeting-notes",
     path: "/compare/meeting-notes",
     eyebrow: "Meeting notes",
-    title: "A transcript is not a commitment.",
+    title: "Make the meeting useful when the next email arrives.",
     description:
-      "Granola, Otter, and Fireflies write down what was said. Oppulence keeps the date that was agreed, and can ingest those notes into a local vault.",
+      "Use meeting notes as context for the next conversation. Desktop supports meeting imports; the complete Voice-to-relationship handoff is in development.",
     lede: "We are not asking you to fire the recorder you already like. Desktop can pull Granola and Fireflies into Markdown. The job after that is still the agreement, three weeks later.",
     them: {
       title: "What a recorder is for.",
@@ -117,7 +117,7 @@ export const comparePages: ComparePage[] = [
       },
     ],
     notes: [
-      "Oppulence Voice is a separate dictation and meeting app. It is not the ledger.",
+      "Oppulence Voice is the optional capture companion. Its planned connection brings reviewed artifacts to the same relationship memory.",
       "We will not advertise native capture as a Windows or Linux feature.",
     ],
     faqs: [
@@ -145,17 +145,17 @@ export const comparePages: ComparePage[] = [
     slug: "inbox",
     path: "/compare/inbox",
     eyebrow: "Inbox",
-    title: "The sent folder is the real ledger, and nobody reads it.",
+    title: "Give the next reply the context it needs.",
     description:
-      "Gmail already has the promise. Oppulence is how that sentence becomes a row you can still find after the thread goes quiet.",
+      "Keep using Gmail while Oppulence helps review the relationship history, prepare a response, and track unfinished work.",
     lede: "If you connect one thing, connect Gmail. Access starts read-only. The current window is 6 months. That is a product limit.",
     them: {
       title: "What the inbox is for.",
-      body: "Writing and finding threads. Search works if you remember the words. It does not answer 'what did we owe Acme after Thursday'.",
+      body: "Read and write messages in the email client you prefer. Your conversation stays in the mailbox you connected.",
     },
     us: {
       title: "What we take from the inbox.",
-      body: "Recent threads become commitments with sources. A follow-up can be drafted against the same mailbox. Sending still waits.",
+      body: "Use authorized threads alongside meetings and notes to understand a relationship. Prepare a follow-up with sources and review it before sending.",
     },
     rows: [
       {
@@ -197,10 +197,10 @@ export const comparePages: ComparePage[] = [
     slug: "ai-assistants",
     path: "/compare/ai-assistants",
     eyebrow: "AI assistants",
-    title: "Chat without tools is a drafting window.",
+    title: "An assistant built around the people you work with.",
     description:
-      "A generic desktop copilot can write a paragraph. Oppulence can see the vault, the ledger, and the mailbox — and it still will not send until you approve.",
-    lede: "We are not a ChatGPT skin. The assistant is useful because it has tools and a place to put the result. Autonomy without a gate is just spam with better copy.",
+      "Oppulence centers on relationship context from authorized emails, meetings, and notes, with review before external sends and writes.",
+    lede: "The goal is continuity: one assistant, one relationship memory, and one action history across Web, Desktop, and Voice. That shared experience is still being connected.",
     them: {
       title: "What a generic assistant is for.",
       body: "A prompt, a model, a reply. Maybe a browser. The memory is the chat thread. External sends, if they exist, are easy to turn on and hard to trust.",
@@ -236,7 +236,7 @@ export const comparePages: ComparePage[] = [
       {
         question: "Is this just ChatGPT next to Gmail?",
         answer:
-          "No. The useful part is the register, the approval gate, and the local vault. The model is a means.",
+          "Oppulence is organized around relationship context and follow-through. Source review, private notes, and approval are part of that experience; the model helps prepare the work.",
       },
       {
         question: "Can I bring my own model?",

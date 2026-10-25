@@ -59,9 +59,7 @@ export function attentionWithCompanyTitles<
   }[],
 ): T[] {
   const titles = new Map(
-    companies
-      .filter((row) => row.kind !== "person")
-      .map((row) => [row.id, companyName(row)]),
+    companies.filter((row) => row.kind !== "person").map((row) => [row.id, companyName(row)]),
   );
   return items.map((item) => {
     const title = titles.get(item.relationshipId);
@@ -185,10 +183,7 @@ function earlierNoteTime(left?: string, right?: string): string | undefined {
 }
 
 /** The day buckets follow the first write. A later save stays on the card. */
-export function workspaceNoteCreatedAt(note: {
-  createdAt?: string;
-  occurredAt: string;
-}): string {
+function workspaceNoteCreatedAt(note: { createdAt?: string; occurredAt: string }): string {
   return note.createdAt?.trim() || note.occurredAt;
 }
 
@@ -256,7 +251,7 @@ export function workspaceTaskIds(
 }
 
 /** A task recommendation is the task itself, not a company risk. */
-export function isTaskAttention(
+function isTaskAttention(
   item: { recommendationId?: string },
   taskIds: ReadonlySet<string>,
 ): boolean {
@@ -339,7 +334,9 @@ export function detectorsWithoutTasks<
 
 export function exposureReasons<T extends { reason: string; relationships: number }>(
   reasons: readonly T[] | undefined,
-  attention: readonly { relationshipId: string; reasonCode?: string; recommendationId?: string }[] | undefined,
+  attention:
+    | readonly { relationshipId: string; reasonCode?: string; recommendationId?: string }[]
+    | undefined,
   actions: readonly { id: string; actionType?: string; channel?: string }[] | undefined,
 ): T[] {
   const list = [...(reasons ?? [])];
@@ -446,7 +443,7 @@ export function promiseDueLabel(dueAt: string | null | undefined): string {
  * section. DST makes a local-day delta 23 or 25 hours, so the day count is
  * rounded.
  */
-export function workspaceNoteDay(occurredAt: string, now: Date): WorkspaceNoteDay {
+function workspaceNoteDay(occurredAt: string, now: Date): WorkspaceNoteDay {
   const occurred = new Date(occurredAt);
   if (Number.isNaN(occurred.getTime())) return "earlier";
   const diffDays = Math.round((localDayStart(now) - localDayStart(occurred)) / DAY_MS);
@@ -455,7 +452,7 @@ export function workspaceNoteDay(occurredAt: string, now: Date): WorkspaceNoteDa
   return "earlier";
 }
 
-export const WORKSPACE_NOTE_DAY_LABEL: Record<WorkspaceNoteDay, string> = {
+const WORKSPACE_NOTE_DAY_LABEL: Record<WorkspaceNoteDay, string> = {
   today: "Created today",
   yesterday: "Created yesterday",
   earlier: "Earlier",

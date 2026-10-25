@@ -16,3 +16,8 @@ here.
 Configuration moves must update `package.json`, repository-policy tests, contributor documentation,
 and any scripts that invoke the tool directly. Do not add a new root-level policy file when the tool
 supports an explicit configuration path.
+
+Knip treats the generated query and mutation hooks (`hooks/queries/use-*.ts`) and their living
+interface contracts as entry points. They are the supported operation API for product components;
+the generator policy tests validate their files even while callers use the shared transport directly.
+Their dependencies remain part of dead-code analysis.

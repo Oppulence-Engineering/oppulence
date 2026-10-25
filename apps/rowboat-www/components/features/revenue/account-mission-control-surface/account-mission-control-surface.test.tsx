@@ -8,7 +8,10 @@ import path from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-const source = fs.readFileSync(path.join(import.meta.dirname, "account-mission-control-surface.tsx"), "utf8");
+const source = fs.readFileSync(
+  path.join(import.meta.dirname, "account-mission-control-surface.tsx"),
+  "utf8",
+);
 
 import {
   AccountMissionControlSurface,
@@ -57,12 +60,9 @@ describe("AccountMissionControlSurface", () => {
   });
 
   it("marks a past-due open promise at risk, and leaves a later one open", () => {
-    expect(
-      commitmentTimelineStatus(
-        promise({ dueAt: "2026-09-29T12:00:00Z" }),
-        now,
-      ).label,
-    ).toBe("At risk");
+    expect(commitmentTimelineStatus(promise({ dueAt: "2026-09-29T12:00:00Z" }), now).label).toBe(
+      "At risk",
+    );
     expect(
       commitmentTimelineStatus(
         promise({ dueAt: "2026-11-01T12:00:00Z", direction: "promised_by_me" }),

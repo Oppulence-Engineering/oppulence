@@ -19,6 +19,7 @@ const fontMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
+  preload: false,
 });
 
 const fontInter = Inter({
@@ -37,6 +38,7 @@ const marketingMono = DM_Mono({
   weight: ["400", "500"],
   subsets: ["latin"],
   display: "swap",
+  preload: false,
 });
 
 const fontDisplay = localFont({
@@ -49,6 +51,7 @@ const fontDisplay = localFont({
   ],
   variable: "--font-f37-stout",
   display: "swap",
+  preload: false,
 });
 
 export const fontVariables = cn(

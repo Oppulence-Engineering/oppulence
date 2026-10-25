@@ -687,7 +687,10 @@ export function VisualWorkflowBuilder({
                   value={value.trigger.kind}
                 >
                   <SelectTrigger
-                    aria-label={workflowChoiceName("Start when", triggerFor(value.trigger.kind).label)}
+                    aria-label={workflowChoiceName(
+                      "Start when",
+                      triggerFor(value.trigger.kind).label,
+                    )}
                     className="rounded-none text-[12px]"
                     id={`${fieldID}-trigger`}
                   >

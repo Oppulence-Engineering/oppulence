@@ -54,7 +54,6 @@ var (
 	errReauthRequired    = errors.New("account: reauth required")
 	errMFARequired       = errors.New("account: mfa required")
 	errStepUpExpired     = errors.New("account: step-up expired")
-	errStepUpNotFound    = errors.New("account: step-up not found")
 	errInvalidCode       = errors.New("account: invalid deletion code")
 	errTooManyAttempts   = errors.New("account: too many deletion code attempts")
 	errStepUpUnavailable = errors.New("account: step-up unavailable")

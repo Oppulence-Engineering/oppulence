@@ -416,11 +416,11 @@ func verifySourceMinimum(needle string) (int, bool) {
 	return n, true
 }
 
-func personAttributeWebCitationCountAtLeast(min int) predicate.PersonAttribute {
+func personAttributeWebCitationCountAtLeast(minimum int) predicate.PersonAttribute {
 	return predicate.PersonAttribute(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			column := s.C(personattribute.FieldCitationsJSON)
-			text := column
+			var text string
 			if s.Dialect() == dialect.Postgres {
 				text = fmt.Sprintf("lower(%s::text)", column)
 			} else {
@@ -432,7 +432,7 @@ func personAttributeWebCitationCountAtLeast(min int) predicate.PersonAttribute {
 			b.WriteString(" + ")
 			b.WriteString(fmt.Sprintf("(length(%s) - length(replace(%s, 'http://', ''))) / 7", text, text))
 			b.WriteString(") >= ")
-			b.Arg(min)
+			b.Arg(minimum)
 			b.WriteString(")")
 		}))
 	})
@@ -440,20 +440,20 @@ func personAttributeWebCitationCountAtLeast(min int) predicate.PersonAttribute {
 
 // personPrintsVerifySource matches a citation the person sheet can open.
 // The name and aliases are not that list, and a retracted fact is gone.
-func personPrintsVerifySource(min int) predicate.Person {
+func personPrintsVerifySource(minimum int) predicate.Person {
 	return person.HasAttributesWith(append(
 		visiblePersonEvidence(),
-		personAttributeWebCitationCountAtLeast(min),
+		personAttributeWebCitationCountAtLeast(minimum),
 	)...)
 }
 
 // personPrintsResearchVerifySource matches the citation on a company people card.
 // That card lists public research that has not been retracted.
-func personPrintsResearchVerifySource(min int) predicate.Person {
+func personPrintsResearchVerifySource(minimum int) predicate.Person {
 	return person.HasAttributesWith(
 		personattribute.SourceTypeEQ("external_research"),
 		personattribute.StatusNEQ("retracted"),
-		personAttributeWebCitationCountAtLeast(min),
+		personAttributeWebCitationCountAtLeast(minimum),
 	)
 }
 
@@ -528,7 +528,7 @@ func relativeLabelWindow(needle string, now time.Time) (relativeWindow, bool) {
 	if base == "min" && unit != "min" && unit != "mins" {
 		return relativeWindow{}, false
 	}
-	step, cap, ok := relativeStep(base)
+	step, maximum, ok := relativeStep(base)
 	if !ok || n < 1 {
 		return relativeWindow{}, false
 	}
@@ -547,10 +547,10 @@ func relativeLabelWindow(needle string, now time.Time) (relativeWindow, bool) {
 			minAbs = 0
 		}
 	}
-	if maxAbs > cap {
-		maxAbs = cap
+	if maxAbs > maximum {
+		maxAbs = maximum
 	}
-	if minAbs >= cap {
+	if minAbs >= maximum {
 		return relativeWindow{}, false
 	}
 	if future {
@@ -566,7 +566,7 @@ func relativeLabelWindow(needle string, now time.Time) (relativeWindow, bool) {
 	return relativeWindow{after: now.Add(-maxAbs), until: now.Add(-minAbs)}, true
 }
 
-func relativeStep(base string) (step, cap time.Duration, ok bool) {
+func relativeStep(base string) (step, maximum time.Duration, ok bool) {
 	switch base {
 	case "min":
 		return time.Minute, time.Hour, true

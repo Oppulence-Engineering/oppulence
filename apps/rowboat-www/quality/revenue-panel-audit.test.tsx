@@ -209,7 +209,9 @@ describe("revenue panel after an audit", () => {
 
     const buttons = await screen.findAllByRole("button", { name: /Connect Gmail & Calendar/ });
     expect(buttons.length).toBeGreaterThan(0);
-    expect(screen.queryByRole("button", { name: /Run Promise Leak Audit/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Run Promise Leak Audit/ }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/Connect Gmail and Calendar before an audit/)).toBeInTheDocument();
     await userEvent.click(buttons[0]);
 

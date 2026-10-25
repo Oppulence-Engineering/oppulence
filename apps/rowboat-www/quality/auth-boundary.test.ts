@@ -37,9 +37,7 @@ describe("authentication and BFF boundaries", () => {
   });
 
   it("preserves safe relative paths including query and fragment", () => {
-    expect(safeReturnTo("/app/agents?view=active#agent-1")).toBe(
-      "/app/agents?view=active#agent-1",
-    );
+    expect(safeReturnTo("/app/agents?view=active#agent-1")).toBe("/app/agents?view=active#agent-1");
   });
 
   it("expires stale PKCE state server-side", () => {

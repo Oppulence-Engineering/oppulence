@@ -12,7 +12,7 @@ const faqs = [
   {
     question: "Is Oppulence local-only?",
     answer:
-      "It can be. Bring your own model keys and keep the vault on disk. Signing in syncs relationship state to the API so web and desktop match. Those are different setups.",
+      "Local notes and local transcription can stay on the device. Cloud transcription, hosted models, and connected services process the content needed for their requests. Using your own provider key does not make a cloud request local.",
   },
   {
     question: "Where are OAuth tokens?",
@@ -67,7 +67,7 @@ const trustLinks = [
   {
     title: "What stays on device",
     href: "/guides/what-stays-on-device",
-    body: "A walkthrough of the three pipes.",
+    body: "Local storage, shared context, and provider processing.",
   },
 ] as const;
 
@@ -99,8 +99,9 @@ export function SimSecurityPage() {
           </div>
           <div className="flex w-[min(28rem,40%)] flex-col items-start max-xl:w-full">
             <p className={cn("max-w-[40ch] text-pretty text-[var(--text-body)]", HOME_TYPE.lead)}>
-              This page is the adoption objection, written as the implementation actually behaves.
-              The legal language lives on <Link href="/privacy">Privacy</Link> and{" "}
+              Understand which tools can access your work, where processing happens, and how
+              external actions are reviewed. Read the full policies on{" "}
+              <Link href="/privacy">Privacy</Link> and{" "}
               <Link href="/responsible-disclosure">responsible disclosure</Link>.
             </p>
             <SimCtaLink className="mt-5" href="/guides/approval-before-send" variant="outline">
@@ -159,7 +160,7 @@ export function SimSecurityPage() {
             {
               label: "Approval before send",
               href: "/guides/approval-before-send",
-              description: "The write gate.",
+              description: "How proposed actions are reviewed.",
             },
             {
               label: "Responsible disclosure",

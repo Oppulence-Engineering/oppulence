@@ -18,7 +18,7 @@ const faqs = [
   {
     question: "Where do the files come from?",
     answer:
-      "GitHub Releases for Oppulence-Engineering/Desktop-Assistant (desktop) and PlaybookMediaLLC/openwhispr (voice). The /api/download route picks the asset for the platform you asked for.",
+      "The installers come from the official Desktop and Voice GitHub releases. Choose your application, operating system, and processor from the installer list.",
   },
   {
     question: "What if the page guesses my computer wrong?",
@@ -26,9 +26,9 @@ const faqs = [
       "Open the installer list and pick the file yourself. Detection is a convenience, not a gate.",
   },
   {
-    question: "Does Voice include the ledger?",
+    question: "Do I need both Desktop and Voice?",
     answer:
-      "No. Voice is a standalone dictation and meeting app. Desktop is the ledger next to the work. They are different downloads.",
+      "No. Web works without either app. Desktop is the full native workspace; Voice is the optional capture companion and can work on its own. They have separate installers today, and the complete shared assistant connection is in development.",
   },
   {
     question: "Do I need a paid plan to install?",
@@ -63,14 +63,14 @@ const SURFACES = [
     icon: Layout,
     title: "Oppulence Desktop",
     description:
-      "The native ledger client: local vault, live notes, meeting capture, copilot, and the same relationship state as the web app when you sign in.",
+      "Your full workspace with email, local files, Markdown notes, an embedded browser, and native tools.",
     learnHref: "/desktop",
     learnLabel: "What the desktop app is",
     preview: "desktop" as const,
     chooser: {
       app: "desktop" as const,
       name: "Oppulence Desktop",
-      blurb: "Sign in once and continue with the same relationship state as the web app.",
+      blurb: "Add local context and native tools to your workspace.",
     },
   },
   {
@@ -79,14 +79,15 @@ const SURFACES = [
     icon: Mic,
     title: "Oppulence Voice",
     description:
-      "Standalone dictation and meeting notes. Transcription can run entirely on the machine. It is not the ledger.",
+      "An optional companion for dictation, private thoughts, selected-text editing, and meeting recording. Choose local or cloud transcription.",
     learnHref: "/voice-app",
     learnLabel: "What Voice is",
     preview: "voice" as const,
     chooser: {
       app: "voice" as const,
       name: "Oppulence Voice",
-      blurb: "A separate app. Use it to talk into any window, or to write a meeting down.",
+      blurb:
+        "Use Voice on its own for capture. Ask Oppulence and the full relationship handoff are planned improvements.",
     },
   },
   {
@@ -95,7 +96,7 @@ const SURFACES = [
     icon: Globe,
     title: "Oppulence Web",
     description:
-      "Nothing to install. Start in the browser if you want the register without a binary — same rows when you sign in.",
+      "Start in your browser to review relationships, sources, assistant work, and approvals. No native app required.",
     learnHref: "/web",
     learnLabel: "What the web app is",
     preview: "web" as const,
@@ -108,7 +109,7 @@ export function SimDownloadPage() {
   return (
     <>
       <JsonLd data={faqJsonLd([...faqs])} />
-      <main className="bg-[var(--bg)] pb-16 max-sm:pb-12" id="main-content">
+      <div className="bg-[var(--bg)] pb-16 max-sm:pb-12">
         <section
           aria-labelledby="download-heading"
           className={cn(
@@ -126,11 +127,11 @@ export function SimDownloadPage() {
               className="max-w-[14ch] text-balance text-[48px] text-[var(--text-primary)] leading-[1.05] tracking-[-0.025em] max-sm:text-[32px] max-xl:text-[40px]"
               id="download-heading"
             >
-              Install the app that sits next to the work.
+              Add the tools you need.
             </h1>
             <p className="max-w-[46ch] text-pretty text-[var(--text-body)] text-lg leading-[1.5] max-sm:text-base">
-              Signed installers for macOS, Windows, and Linux. The page can recommend a file from
-              your browser. You can still pick another.
+              Start on the web, add Desktop for local work, or choose Voice for capture. Desktop and
+              Voice have separate installers; you do not need both to begin.
             </p>
             <div className="flex flex-wrap gap-2">
               {["Signed builds", "Auto-update", "SBOM on release"].map((chip) => (
@@ -221,11 +222,8 @@ export function SimDownloadPage() {
               What we ship
             </h2>
             <p className="mt-2 max-w-[52ch] text-[15px] text-[var(--text-secondary)] leading-[1.55]">
-              Installers resolve through{" "}
-              <code className="rounded bg-[var(--surface-3)] px-1.5 py-0.5 font-mono text-[13px]">
-                /api/download
-              </code>
-              . The list below is what those files cover.
+              Check the installer list for the operating systems and processors supported by each
+              release.
             </p>
             <dl className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {specs.map((row) => (
@@ -246,7 +244,7 @@ export function SimDownloadPage() {
           <SimSubpageFaqSection
             faqs={[...faqs]}
             heading="Before you click download"
-            lede="If the wrong binary lands, pick another. The list is the source of truth."
+            lede="Choose the application and installer that match your needs."
           />
         </div>
 
@@ -272,7 +270,7 @@ export function SimDownloadPage() {
             ]}
           />
         </div>
-      </main>
+      </div>
     </>
   );
 }

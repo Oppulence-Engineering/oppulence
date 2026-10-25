@@ -1,5 +1,5 @@
 import type { CapabilityPage } from "../../../catalog";
-import type { MarketingPage, PlatformPage } from "../../../marketing-data";
+import type { MarketingPage } from "../../../marketing-data";
 import { PlatformExplorer } from "./platform-explorer";
 import { ProductHeroPreview } from "./product-hero-preview";
 import { ProductModulePreview } from "./product-module-preview";
@@ -59,12 +59,6 @@ const CAPABILITY_GRID: Partial<Record<string, [ProductPreviewKey, ProductPreview
   slack: ["govern", "web"],
   hubspot: ["account", "register"],
   mcp: ["desktop", "govern"],
-};
-
-const PLATFORM_HERO: Record<string, ProductPreviewKey> = {
-  web: "web",
-  desktop: "desktop",
-  "voice-app": "voice",
 };
 
 function modulePreview(
@@ -155,129 +149,19 @@ export function capabilityToSolutionsConfig(page: CapabilityPage): SolutionsProd
               ? { label: page.integrations[0].label, href: page.integrations[0].href }
               : undefined,
           )
-        : featureBlock("example", "Example", page.problem.title, page.problem.body, "web"),
+        : featureBlock("example", "Considerations", "What to consider.", page.problem.body, "web"),
     ],
   };
 }
 
-/** Map `/web`, `/desktop`, and `/voice-app` to Sim product module pages. */
-export function platformToSolutionsConfig(page: PlatformPage): SolutionsProductPageConfig {
-  const heroProduct = PLATFORM_HERO[page.slug] ?? "web";
-  const [first, second, third] = page.sections;
-
-  const featureProducts: Record<string, [ProductPreviewKey, ProductPreviewKey]> = {
-    web: ["web", "account"],
-    desktop: ["desktop", "account"],
-    "voice-app": ["voice", "desktop"],
-  };
-  const [gridA, gridB] = featureProducts[page.slug] ?? ["web", "govern"];
-
-  return {
-    module: page.name.replace(/^Oppulence /, ""),
-    path: `/${page.slug}`,
-    seoDescription: page.summary,
-    hero: {
-      eyebrow: page.eyebrow,
-      heading: page.title,
-      description: page.lede,
-      summary: `${page.summary} ${page.lede}`.trim(),
-      visual: <ProductHeroPreview product={heroProduct} />,
-    },
-    features: [
-      first
-        ? {
-            id: slugify(first.title),
-            label: first.title,
-            title: first.title,
-            description: first.body,
-            visual: modulePreview(heroProduct, "stage"),
-          }
-        : featureBlock("overview", page.summary, page.title, page.lede, heroProduct),
-      second
-        ? featureBlock(slugify(second.title), second.title, second.title, second.body, gridA)
-        : featureBlock(
-            "detail",
-            page.specs[0]?.term ?? page.name,
-            page.specs[0]?.term ?? page.name,
-            page.specs[0]?.detail ?? page.summary,
-            gridA,
-          ),
-      third
-        ? featureBlock(
-            slugify(third.title),
-            third.title,
-            third.title,
-            third.body,
-            gridB,
-            page.download
-              ? { label: "Download", href: "/download" }
-              : { label: "Open dashboard", href: "/app" },
-          )
-        : featureBlock(
-            "also",
-            "Also available",
-            page.specs[1]?.term ?? "Runs on",
-            page.specs[1]?.detail ?? page.summary,
-            gridB,
-            { label: "All products", href: "/products" },
-          ),
-    ],
-  };
-}
-
-/** Map `/products` suite hub to sim.ai platform module rhythm with live previews. */
-export function productsSuiteToSolutionsConfig(): SolutionsProductPageConfig {
-  return {
-    module: "Products",
-    path: "/products",
-    seoDescription:
-      "The Oppulence product suite: commitment register, web app, desktop app, and voice capture on the same rows.",
-    hero: {
-      eyebrow: "Products",
-      heading: "Web, desktop, and voice over the same rows.",
-      description:
-        "Use the browser for kickoff and the weeks after. Use the desktop app in the meeting. Voice is how you capture what was said.",
-      summary:
-        "Oppulence ships a commitment register, web app, desktop app, and voice capture that share one register of business promises.",
-      visual: <ProductHeroPreview product="overview" />,
-    },
-    features: [
-      {
-        id: "explore",
-        label: "Product suite",
-        title: "One register. Every surface.",
-        description:
-          "Switch between register, web, desktop, and voice previews — the same rows, different ways to work them.",
-        visual: <PlatformExplorer />,
-      },
-      featureBlock(
-        "web",
-        "Web app",
-        "Oppulence Web",
-        "The browser surface for kickoff prep, register review, and approval before anything sends.",
-        "web",
-        { label: "Open web app", href: "/web" },
-      ),
-      featureBlock(
-        "desktop",
-        "Desktop app",
-        "Oppulence Desktop",
-        "Capture meetings, run live notes, and keep the register open beside the tools you already use.",
-        "desktop",
-        { label: "Open desktop app", href: "/desktop" },
-      ),
-    ],
-  };
-}
-
-/** Map `/product` to sim.ai `/platform` overview structure. */
+/** Map the assistant overview to the existing product layout. */
 export function productToSolutionsConfig(page: MarketingPage): SolutionsProductPageConfig {
   return {
-    module: "Product",
+    module: "The assistant",
     path: "/product",
     seoDescription: page.description,
     hero: {
-      eyebrow: "Product",
+      eyebrow: "One assistant",
       heading: page.title,
       description: page.description,
       summary: [page.description, ...page.bullets].join(" "),
@@ -286,27 +170,43 @@ export function productToSolutionsConfig(page: MarketingPage): SolutionsProductP
     features: [
       {
         id: "explore",
-        label: "Explore the workspace",
-        title: "Find, confirm, and keep.",
+        label: "The experience we are building",
+        title: "From the meeting to the next reply.",
         description:
-          "Explore the register, web app, desktop app, and voice capture in one connected Oppulence workspace.",
+          "Prepare from earlier conversations. Capture with consent. Review the transcript and relationship matches. Bring that context into a reply, approve the action, and keep the follow-up visible until there is evidence it is done. The full Voice-to-memory handoff is in development.",
         visual: <PlatformExplorer />,
       },
       featureBlock(
-        "register",
-        "Shared context",
-        "The rows your team actually works from.",
-        "A two-sided register of promises with evidence on every row. Not a second CRM — the missing record between inbox and pipeline.",
-        "register",
-        { label: "Explore commitment register", href: "/features/commitment-register" },
+        "context",
+        "Relationship memory",
+        "The person behind the thread.",
+        "Bring earlier emails, meetings, open questions, and relevant notes into view. Inspect the source passage, correct a match, and decide what should influence a reply.",
+        "account",
+        { label: "Explore relationship context", href: "/features/account-mission-control" },
       ),
       featureBlock(
+        "review",
+        "Approval and outcomes",
+        "Know what the assistant proposes.",
+        "See what happened, the evidence behind it, and the proposed next step. External actions wait for approval. An execution attempt and a verified result must remain distinct.",
         "govern",
-        "Approval before send",
-        "Nothing customer-facing leaves without you.",
-        "Drafts sit next to the evidence. Gmail, Slack, and HubSpot writes wait behind an approval gate.",
-        "govern",
-        { label: "Explore governed actions", href: "/features/governed-actions" },
+        { label: "Review and approve", href: "/features/governed-actions" },
+      ),
+      featureBlock(
+        "memory",
+        "Private notes and evidence",
+        "Keep facts and interpretations distinct.",
+        "A transcript records what someone said. A private note records your perspective. An assistant inference is a proposed interpretation. The connected experience must preserve those differences in replies and shared summaries.",
+        "desktop",
+        { label: "Understand local data", href: "/guides/what-stays-on-device" },
+      ),
+      featureBlock(
+        "follow-up",
+        "Follow-through",
+        "Keep unfinished work in view.",
+        "Track what you promised and what you are waiting for. The existing commitment register supports this work; the planned Today and Activity views will bring it into the everyday assistant experience.",
+        "web",
+        { label: "Explore follow-ups", href: "/features/commitment-register" },
       ),
     ],
   };

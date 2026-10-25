@@ -10,9 +10,9 @@ import { SimCtaLink } from "../primitives";
 import { HOME_INSET, LANDING_CONTENT_WIDTH, LANDING_GUTTER } from "../tokens";
 
 const PRINCIPLES = [
-  "Category seams, not logo grids",
-  "Named tools where we connect",
-  "No invented scorecards",
+  "What each kind of tool helps you do",
+  "Where Oppulence fits into your workflow",
+  "What you still need from your existing tools",
 ] as const;
 
 /**
@@ -29,10 +29,7 @@ export function SimCompareHub({
   pages: ComparePage[];
 }) {
   return (
-    <main
-      className={cn(LANDING_CONTENT_WIDTH, LANDING_GUTTER, "pb-16 max-sm:pb-12")}
-      id="main-content"
-    >
+    <div className={cn(LANDING_CONTENT_WIDTH, LANDING_GUTTER, "pb-16 max-sm:pb-12")}>
       <div
         className={cn(
           HOME_INSET,
@@ -72,7 +69,7 @@ export function SimCompareHub({
           className="mb-4 text-[12px] text-[var(--text-muted)] uppercase tracking-[0.08em]"
           id="compare-seams-heading"
         >
-          Category seams
+          Find the right fit
         </h2>
         <div className="overflow-hidden rounded-lg border border-[var(--border)]">
           {pages.map((page, index) => (
@@ -113,9 +110,9 @@ export function SimCompareHub({
           </ChipLink>
         ))}
         <SimCtaLink href="/product" variant="outline" withArrow>
-          See the register
+          Explore the assistant
         </SimCtaLink>
       </div>
-    </main>
+    </div>
   );
 }

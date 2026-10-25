@@ -32,8 +32,8 @@ const controls: Control[] = [
     Mark: ApprovalMark,
   },
   {
-    title: "Source on every row",
-    description: "Each commitment links back to the email, meeting, or CRM record that created it.",
+    title: "Inspect the source",
+    description: "Open the email, meeting, or document behind a claim before relying on it.",
     Mark: SourceMark,
   },
   {
@@ -42,8 +42,9 @@ const controls: Control[] = [
     Mark: LocalMark,
   },
   {
-    title: "Signed-in sync",
-    description: "Relationship state syncs between web and desktop when you sign in.",
+    title: "Sharing by choice",
+    description:
+      "The shared experience must preserve explicit sharing: signing in is not consent to upload private notes.",
     Mark: SyncMark,
   },
   {
@@ -63,7 +64,7 @@ const controls: Control[] = [
 export function SimWorkspaceControls() {
   return (
     <section
-      aria-label="Governance on the ledger"
+      aria-label="Control over context and actions"
       className={cn("flex w-full flex-col", LANDING_CONTENT_WIDTH, LANDING_GUTTER)}
       id="controls"
     >

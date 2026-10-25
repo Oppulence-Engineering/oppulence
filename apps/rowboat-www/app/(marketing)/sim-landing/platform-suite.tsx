@@ -23,7 +23,6 @@ const MARK_SIZE = 112;
 const MARK_PLACEMENT = "pointer-events-none -ml-2";
 const GROW_HOVERED = "md:grow-[1.25]";
 const GROW_IDLE = "md:grow-[0.75]";
-const CONTENT_IDLE = "opacity-40";
 const WINDOW_PLACEMENT = "top-0 left-8 w-[135cqw] max-sm:left-5 md:w-[67.5cqw]";
 
 interface PlatformSuiteCard {
@@ -38,11 +37,11 @@ interface PlatformSuiteCard {
 
 const cards: PlatformSuiteCard[] = [
   {
-    href: "/features/commitment-register",
+    href: "/features/account-mission-control",
     headingId: "platform-find",
-    name: "Find the rows",
+    name: "Bring the history into view",
     description:
-      "Read mail and meetings. List sentences that look like promises, each with a source link.",
+      "Find the relevant conversation, meeting, and open question before you prepare a reply.",
     tone: "dark",
     src: "/marketing/relationship-web-list.png",
     Mark: IsoIntegrateIllustration,
@@ -50,8 +49,9 @@ const cards: PlatformSuiteCard[] = [
   {
     href: "/features/governed-actions",
     headingId: "platform-gate",
-    name: "Hold the gate",
-    description: "Draft the follow-up. Nothing sends until a person approves it.",
+    name: "Review the next step",
+    description:
+      "Read the proposed reply beside its sources. Correct it, approve it, or leave it for later.",
     tone: "mid",
     src: "/marketing/desktop-email.png",
     Mark: IsoMonitorIllustration,
@@ -74,11 +74,11 @@ export function SimPlatformSuite() {
             className={cn("text-balance text-[var(--text-primary)]", HOME_TYPE.h2Display)}
             id="platform-heading"
           >
-            One ledger for every promise on the account.
+            The context behind a better reply.
           </h2>
           <p className={cn("max-w-[48rem] text-balance text-[var(--text-body)]", HOME_TYPE.body)}>
-            Detect sentences that look like commitments, keep the ones that count, and hold every
-            external action until a person says go.
+            A useful assistant connects what was said to what happens next. Source review and
+            approval are the foundation of the email-first experience we are building.
           </p>
         </div>
 
@@ -97,16 +97,11 @@ export function SimPlatformSuite() {
                 data-iso-hover=""
                 data-platform-card={index}
                 key={card.name}
-                onBlur={() => setHoveredCard(null)}
-                onFocus={() => setHoveredCard(index)}
-                onMouseEnter={() => setHoveredCard(index)}
-                onMouseLeave={() => setHoveredCard(null)}
               >
                 <SimPlacementFrame className="absolute inset-0" tone={card.tone} />
                 <div
                   className={cn(
                     "relative flex flex-1 flex-col transition-opacity duration-[280ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-                    idle && CONTENT_IDLE,
                   )}
                   data-platform-card-content=""
                 >
@@ -128,6 +123,10 @@ export function SimPlatformSuite() {
                       <Link
                         className="outline-none after:absolute after:inset-0 after:z-10 after:rounded-[12px] after:content-[''] focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-[var(--text-secondary)] focus-visible:after:outline-offset-[-2px]"
                         href={card.href}
+                        onBlur={() => setHoveredCard(null)}
+                        onFocus={() => setHoveredCard(index)}
+                        onMouseEnter={() => setHoveredCard(index)}
+                        onMouseLeave={() => setHoveredCard(null)}
                       >
                         {card.name}
                       </Link>

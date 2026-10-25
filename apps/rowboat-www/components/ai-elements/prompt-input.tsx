@@ -1134,9 +1134,7 @@ export const PromptInputSpeechButton = ({
       disabled={!recognition}
       onClick={toggleListening}
       {...props}
-      title={
-        recognition ? props.title : "Dictation is not available in this browser."
-      }
+      title={recognition ? props.title : "Dictation is not available in this browser."}
     >
       <Microphone className="size-4" />
     </PromptInputButton>

@@ -4027,15 +4027,6 @@ func assertWorkflowEnsure(t *testing.T, spec obj) {
 	}
 }
 
-func exampleTaskSlug(example any) string {
-	tasks, _ := asObj(example)["tasks"].([]any)
-	if len(tasks) == 0 {
-		return ""
-	}
-	slug, _ := asObj(tasks[0])["slug"].(string)
-	return slug
-}
-
 func TestOpenedRunSamplesTheRunThePageOpens(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)

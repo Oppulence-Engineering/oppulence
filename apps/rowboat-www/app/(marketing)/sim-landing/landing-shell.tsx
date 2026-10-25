@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/sim/cn";
@@ -32,15 +31,16 @@ export function SimLandingShell({
   const isHome = variant === "home";
 
   return (
-    <div className="sim-landing-scroll-port sim-landing-root relative h-full min-h-0 flex-1 overflow-y-auto overscroll-y-none bg-[var(--bg)] text-[var(--text-primary)] [--text-muted:var(--text-secondary)]">
+    <div className="sim-landing-scroll-port sim-landing-root relative h-full min-h-0 flex-1 overflow-y-auto overscroll-y-none bg-[var(--bg)] text-[var(--text-primary)]">
       <div aria-hidden="true" className="sim-landing-scroll-sentinel -mb-px h-px" />
-      <Link className="linear-skip-link" href="#main-content">
+      <a className="linear-skip-link" href="#main-content">
         Skip to content →
-      </Link>
+      </a>
       <SimTopBar />
       <main
         className={cn("flex flex-col", isHome ? HOME_SECTION_RHYTHM : "sim-marketing-page-main")}
         id="main-content"
+        tabIndex={-1}
       >
         {isHome ? children : <div className="linear-shell linear-guides">{children}</div>}
       </main>

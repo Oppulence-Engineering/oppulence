@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 
+import { POST as logout } from "@/app/api/auth/logout/route";
 import { isSameOriginBrowserRequest, isSameOriginNavigation } from "@/lib/bff/same-origin-request";
 
 const ORIGIN = "https://oppulence.io";
@@ -48,5 +49,16 @@ describe("same-origin request guards", () => {
     });
 
     expect(isSameOriginNavigation(request, ORIGIN)).toBe(true);
+  });
+
+  it("redirects logout POST to a GET page and clears the session", () => {
+    const response = logout(
+      new NextRequest(`${ORIGIN}/api/auth/logout?return_to=/sign-in`, { method: "POST" }),
+    );
+
+    expect(response.status).toBe(303);
+    expect(new URL(response.headers.get("location") ?? "").pathname).toBe("/sign-in");
+    expect(response.cookies.get("rowboat_www_session")?.value).toBe("");
+    expect(response.cookies.get("rowboat_www_session")?.maxAge).toBe(0);
   });
 });

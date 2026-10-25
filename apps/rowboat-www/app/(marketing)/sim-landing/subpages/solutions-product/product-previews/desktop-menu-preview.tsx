@@ -1,5 +1,5 @@
 import { Chip } from "@sim/emcn";
-import { BookOpen, Calendar, MessageSquareText, Mic, Search, Sparkles } from "@sim/emcn/icons";
+import { BookOpen, Calendar, MessageSquareText, Search, Sparkles } from "@sim/emcn/icons";
 
 import { cn } from "@/lib/sim/cn";
 
@@ -10,21 +10,22 @@ interface DesktopMenuPreviewProps {
 }
 
 const SIDEBAR = [
-  { label: "Ask", icon: MessageSquareText, active: true },
-  { label: "Meetings", icon: Calendar },
-  { label: "Notes", icon: BookOpen },
-  { label: "Search", icon: Search },
+  { label: "Today", icon: Calendar },
+  { label: "Inbox", icon: MessageSquareText, active: true },
+  { label: "People", icon: Search },
+  { label: "Library", icon: BookOpen },
+  { label: "Activity", icon: Calendar },
 ] as const;
 
 const MESSAGES = [
-  { role: "You", text: "What did we last promise Acme about the security review?" },
+  { role: "You", text: "What did we agree with Acme in the last meeting?" },
   {
     role: "Oppulence",
-    text: "Mar 14 email: your team committed to a review by Friday. Source attached on the row.",
+    text: "The meeting notes propose a Friday security review. Check the transcript before using that date in a reply.",
   },
   {
     role: "You",
-    text: "Draft a follow-up that references the register row.",
+    text: "Prepare a reply with the meeting and earlier email as sources.",
   },
 ] as const;
 
@@ -37,7 +38,7 @@ export function DesktopMenuPreview({ layout = "menu" }: DesktopMenuPreviewProps)
           <div className="flex h-11 items-center gap-2 border-[var(--border)] border-b px-4">
             <Sparkles className="size-[14px] text-[var(--text-icon)]" />
             <span className="font-medium text-[var(--text-primary)]">Oppulence</span>
-            <Chip className="ml-auto">Desktop</Chip>
+            <Chip className="ml-auto">Concept</Chip>
           </div>
           <nav className="flex flex-col gap-0.5 p-2">
             {SIDEBAR.map(({ label, icon: Icon, ...rest }) => (
@@ -78,7 +79,7 @@ export function DesktopMenuPreview({ layout = "menu" }: DesktopMenuPreviewProps)
             ))}
           </div>
           <div className="border-[var(--border)] border-t px-4 py-3 text-[var(--text-muted)]">
-            Reply with context from your register…
+            Review the draft and its sources…
           </div>
         </div>
       </div>

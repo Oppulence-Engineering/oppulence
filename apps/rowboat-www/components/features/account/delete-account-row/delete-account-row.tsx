@@ -108,10 +108,7 @@ export type WorkspaceShareFact = "loading" | "unknown" | number;
  * A free plan with no trial and no past-due balance has nothing for Stripe
  * to cancel. A named paid plan, a trial, or a past-due balance does.
  */
-export function deletionChargesASubscription(
-  plan?: string | null,
-  status?: string | null,
-): boolean {
+function deletionChargesASubscription(plan?: string | null, status?: string | null): boolean {
   const normalizedStatus = status?.trim().toLowerCase() ?? "";
   if (normalizedStatus === "trialing" || normalizedStatus === "past_due") return true;
   const normalizedPlan = plan?.trim().toLowerCase() ?? "";

@@ -28,7 +28,7 @@ test("settings Connect completes the authenticated hosted claim and shows active
   await expect(page.getByRole("button", { name: "Connect Disabled Connector" })).toBeDisabled();
   await google.getByRole("button", { name: "Connect Google" }).click();
 
-  await expect(page.getByText("Connected.")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Connected.");
   await expect(google.getByText("Active")).toBeVisible();
   await expect(google.getByText("Healthy")).toBeVisible();
   await expect(google.getByText("Permissions: Read email evidence")).toBeVisible();
@@ -53,7 +53,9 @@ test("Open Promises returns from Google, syncs evidence, and starts one audit", 
 
   await page.getByRole("button", { name: "Connect Gmail & Calendar" }).click();
 
-  await expect(page).toHaveURL(/\/app\/report\?scan=/);
+  await expect(page).toHaveURL(
+    (url) => url.pathname === "/app/report" && Boolean(url.searchParams.get("scan")),
+  );
   await expect(page.locator("body")).toContainText("Send the revised proposal");
   await expect(page.getByText(/Reading Google|Google is up to date/)).toBeVisible();
   await expect(page).not.toHaveURL(/settings/);
@@ -69,7 +71,7 @@ test("callback replay and restart outcomes fail safely without retaining the tic
     .getByTestId("connector-google")
     .getByRole("button", { name: "Connect Google" })
     .click();
-  await expect(page.getByText("Connected.")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Connected.");
 
   await page.goto(
     "/api/connectors/oauth/callback?connector=google&status=success&session=ticket-1",

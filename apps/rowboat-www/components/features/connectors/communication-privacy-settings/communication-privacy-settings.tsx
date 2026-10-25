@@ -53,10 +53,7 @@ export function privacyRulesEmptyCopy(): string {
  * connections card says "Not connected" when that grant is missing, so this
  * sentence must not claim a mailbox is already connected.
  */
-export function mailboxPrivacyCopy(input: {
-  connected: boolean | null;
-  failed: boolean;
-}): string {
+export function mailboxPrivacyCopy(input: { connected: boolean | null; failed: boolean }): string {
   if (input.connected === true) {
     return "Configure privacy defaults for one connected Google mailbox.";
   }
@@ -104,7 +101,7 @@ export function privacyLoadNotice(input: {
   return null;
 }
 
-export async function retryPrivacyLoad(
+async function retryPrivacyLoad(
   policy: { isError: boolean; refetch: () => Promise<unknown> },
   rules: { isError: boolean; refetch: () => Promise<unknown> },
 ): Promise<void> {
@@ -277,8 +274,8 @@ export function CommunicationPrivacySettings() {
         <div className="settings-row-copy">
           <p className="settings-row-label">Protected or blocked addresses</p>
           <p className="settings-row-description">
-            Protected recipients stay visible only to you. Blocked addresses are left out of
-            this workspace.
+            Protected recipients stay visible only to you. Blocked addresses are left out of this
+            workspace.
           </p>
         </div>
         <div className="settings-inline-controls">

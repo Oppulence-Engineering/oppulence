@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { SettingsDashboardRoute } from "@/app/(product)/app/settings/_components/settings-dashboard-route/settings-dashboard-route";
 import { prefetchSettings } from "@/app/(product)/app/settings/prefetch";
 import { settingsSearchParamsCache } from "@/app/(product)/app/settings/search-params";
-import { PrefetchHydration } from "@/lib/query/prefetch-hydration";
+import { PrefetchHydration } from "@/components/providers/prefetch-hydration";
 
 import SettingsLoading from "./loading";
 

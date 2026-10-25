@@ -2737,7 +2737,7 @@ export function taskFilterName(filter: "all" | "today" | "overdue"): string {
   return comboboxFilterName("Tasks", TASK_FILTER_LABEL[filter]);
 }
 
-export function taskRemainderLabel(): string {
+function taskRemainderLabel(): string {
   return "Show the next tasks";
 }
 

@@ -124,10 +124,7 @@ export function agentInstructionsCopy(input: {
   if (source === "tenant") return stored || "No additional instructions.";
   const maintained = MAINTAINED_AGENT_INSTRUCTIONS[slug];
   if (maintained && source !== "unknown") return maintained;
-  if (
-    (source === "builtin" || source === "gitops") &&
-    (!stored || isRuntimePrompt(stored))
-  ) {
+  if ((source === "builtin" || source === "gitops") && (!stored || isRuntimePrompt(stored))) {
     return "Oppulence maintains this agent. Its instructions stay with the product.";
   }
   return stored || "No additional instructions.";
@@ -212,7 +209,10 @@ export function agentConnectionLabel(name?: string | null): string {
   if (!trimmed) return "";
   const known = AGENT_CONNECTION_LABELS[trimmed.toLowerCase()];
   if (known) return known;
-  const words = trimmed.replace(/[:._-]+/g, " ").replace(/\s+/g, " ").trim();
+  const words = trimmed
+    .replace(/[:._-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   const fallback = words ? words.charAt(0).toUpperCase() + words.slice(1) : trimmed;
   return scopeProductLabel(trimmed.toLowerCase(), fallback);
 }

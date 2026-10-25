@@ -395,9 +395,7 @@ describe("explainedRevenueError", () => {
         new Error("Composio request failed (503)"),
         "Additional products are temporarily unavailable.",
       ),
-    ).toBe(
-      "Oppulence is temporarily unavailable. Try again in a moment.",
-    );
+    ).toBe("Oppulence is temporarily unavailable. Try again in a moment.");
   });
 });
 

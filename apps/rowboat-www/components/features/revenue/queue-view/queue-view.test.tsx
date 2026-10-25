@@ -95,7 +95,9 @@ describe("QueueView", () => {
       ),
     ).toBe("Send the quay recovery");
     expect(
-      recoveryPromisedStep("Review the evidence before taking action on: Send the security packet."),
+      recoveryPromisedStep(
+        "Review the evidence before taking action on: Send the security packet.",
+      ),
     ).toBe("Send the security packet");
     expect(recoveryPromisedStep("Hello there.")).toBe("");
     expect(
@@ -113,22 +115,16 @@ describe("QueueView", () => {
 
   it("points an empty workspace at Companies and names the action", () => {
     expect(source).toContain("{newActionIntro(relationships.length > 0 || hasMoreCompanies)}");
-    expect(newActionIntro(true)).toBe(
-      "Add a follow-up for a company already in this workspace.",
-    );
+    expect(newActionIntro(true)).toBe("Add a follow-up for a company already in this workspace.");
     expect(newActionIntro(false)).toBe("Add a company before a follow-up can be created.");
     expect(source).not.toContain("manual follow-up");
     expect(recoveryNoCompaniesCopy({ hasMoreCompanies: false })).toBe(
       "No companies yet. Add one in Companies, or run an audit to find them.",
     );
-    expect(
-      recoveryNoCompaniesCopy({ hasMoreCompanies: false, needsConnect: true }),
-    ).toBe(
+    expect(recoveryNoCompaniesCopy({ hasMoreCompanies: false, needsConnect: true })).toBe(
       "No companies yet. Add one in Companies. Connect Gmail and Calendar before an audit can find them.",
     );
-    expect(
-      recoveryNoCompaniesCopy({ hasMoreCompanies: false, needsReconnect: true }),
-    ).toBe(
+    expect(recoveryNoCompaniesCopy({ hasMoreCompanies: false, needsReconnect: true })).toBe(
       "No companies yet. Add one in Companies. Reconnect Google before an audit can find them.",
     );
     expect(
@@ -140,9 +136,9 @@ describe("QueueView", () => {
     ).toBe(
       "No companies yet. Add one in Companies. Reconnect Google before an audit can find them.",
     );
-    expect(
-      recoveryNoCompaniesCopy({ hasMoreCompanies: true, needsConnect: true }),
-    ).toBe("More companies are still in this list.");
+    expect(recoveryNoCompaniesCopy({ hasMoreCompanies: true, needsConnect: true })).toBe(
+      "More companies are still in this list.",
+    );
     expect(source).toContain("needsConnect={needsConnect}");
     expect(source).toContain("needsReconnect={needsReconnect}");
     expect(source).not.toContain("recoveryNoCompaniesCopy(false)");

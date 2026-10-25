@@ -52,12 +52,12 @@ export function attentionCompanyCount(items: readonly { relationshipId: string }
 }
 
 /** The queue counts companies. One row is one company, not a user account. */
-export function companyCountLabel(count: number): string {
+function companyCountLabel(count: number): string {
   return count === 1 ? "1 company" : `${count} companies`;
 }
 
 /** The first screen of the queue. The rest stay one click away. */
-export const ATTENTION_QUEUE_PAGE = 10;
+const ATTENTION_QUEUE_PAGE = 10;
 
 /**
  * The header names every company in the band. When the table is still on its
@@ -182,9 +182,7 @@ export function AttentionQueueSurface({
       onChanged();
       setDismissing(false);
     } catch (error) {
-      onActionError(
-        shownRequestError(error, "Could not update the attention item."),
-      );
+      onActionError(shownRequestError(error, "Could not update the attention item."));
     } finally {
       setBusy(null);
     }

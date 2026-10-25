@@ -1,4 +1,4 @@
-import { DashboardRouteFallback } from "@/lib/query/prefetch-hydration";
+import { DashboardRouteFallback } from "@/components/providers/prefetch-hydration";
 
 export default function WorkflowsLoading() {
   return <DashboardRouteFallback label="Loading workflows…" />;

@@ -43,9 +43,8 @@ vi.mock("@/hooks/queries/utils/fetch-communication", () => ({
 }));
 
 vi.mock("@/lib/revenue/revenue", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/revenue/revenue")>(
-    "@/lib/revenue/revenue",
-  );
+  const actual =
+    await vi.importActual<typeof import("@/lib/revenue/revenue")>("@/lib/revenue/revenue");
   return {
     ...actual,
     getCommunicationPolicy: vi.fn(),

@@ -117,7 +117,12 @@ describe("settings billing upgrade", () => {
       usedCredits: 4,
       availableCredits: 9996,
       monthly: { sanctionedCredits: 10000, usedCredits: 3, availableCredits: 9997 },
-      daily: { sanctionedCredits: 10000, usedCredits: 1, availableCredits: 9999, usageDay: "2026-10-05" },
+      daily: {
+        sanctionedCredits: 10000,
+        usedCredits: 1,
+        availableCredits: 9999,
+        usageDay: "2026-10-05",
+      },
     });
     expect(rows.map(([key]) => key)).toEqual([
       "sanctionedCredits",
@@ -153,7 +158,9 @@ describe("settings billing upgrade", () => {
         }}
       />,
     );
-    expect(screen.getByText("The credit balance, plus credits used this month and today.")).toBeVisible();
+    expect(
+      screen.getByText("The credit balance, plus credits used this month and today."),
+    ).toBeVisible();
     expect(screen.getByText("Included credits")).toBeVisible();
     expect(screen.getByText("Credits used this month")).toBeVisible();
     expect(screen.getByText("Credits used today")).toBeVisible();

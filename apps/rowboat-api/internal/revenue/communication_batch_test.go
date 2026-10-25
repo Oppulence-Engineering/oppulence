@@ -234,14 +234,31 @@ func TestCommunicationTimelineDeniesRowsWhoseMetadataAccessWasRevoked(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	seedCommunicationInteraction(t, f, rel.ID)
+	interaction, _ := seedCommunicationInteraction(t, f, rel.ID)
+	interaction, err = f.client.CommunicationInteraction.Query().
+		Where(communicationinteraction.IDEQ(interaction.ID)).
+		WithWorkspace().WithOwner().WithParticipants().Only(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err := f.svc.SetWorkspaceCommunicationDefaults(f.ctx, f.user, CommunicationPolicyInput{
 		MetadataVisibility: "private", RetentionDays: 30,
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.svc.RelationshipCommunicationTimeline(teammateCtx, teammate, rel.ID, nil, nil, 10); !errors.Is(err, ErrForbidden) {
-		t.Fatalf("private interaction metadata was returned: %v", err)
+	page, err := f.svc.RelationshipCommunicationTimeline(teammateCtx, teammate, rel.ID, nil, nil, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Items) != 0 || page.HasMore || page.NextBefore != nil || page.NextBeforeID != nil {
+		t.Fatalf("private interaction metadata or cursor was returned: %#v", page)
+	}
+	if _, err := f.svc.communicationTimelineItem(teammateCtx, teammate, interaction); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("an interaction loaded before revocation was not denied: %v", err)
+	}
+	ownerPage, err := f.svc.RelationshipCommunicationTimeline(f.ctx, f.user, rel.ID, nil, nil, 10)
+	if err != nil || len(ownerPage.Items) != 1 || ownerPage.Items[0].ID != interaction.ID {
+		t.Fatalf("owner timeline: %#v err=%v", ownerPage, err)
 	}
 }
 

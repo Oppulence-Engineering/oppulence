@@ -18,7 +18,7 @@ describe("ScansView", () => {
     expect(source).toContain(">Companies</TableHead>");
     expect(source).not.toContain(">Relationships</TableHead>");
     expect(source).toContain(">Conversations</TableHead>");
-    expect(source).toContain(">Follow-up signals</TableHead>");
+    expect(source).toMatch(/>\s*Follow-up signals\s*<\/TableHead>/);
     expect(source).toContain("examinedConversationCount(scan)");
     expect(source).not.toContain(">Threads</TableHead>");
     expect(source).not.toContain(">Candidates</TableHead>");
@@ -65,7 +65,9 @@ describe("ScansView", () => {
         knownPromiseCount: 2,
         knownPromiseHasMore: true,
       }),
-    ).toBe("2+ promises are already in Promises. Reconnect Google before an audit can read your mail.");
+    ).toBe(
+      "2+ promises are already in Promises. Reconnect Google before an audit can read your mail.",
+    );
     expect(source).toContain("knownPromiseCount");
     expect(source).toContain("knownPromisesPending");
     expect(source).toContain("loadFailed && rows.length === 0");

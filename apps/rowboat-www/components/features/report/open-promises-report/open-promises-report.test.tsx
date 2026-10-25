@@ -32,9 +32,7 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "open-promises-rep
 describe("OpenPromisesReportClient", () => {
   it("keeps a source sentence when the stored excerpt is blank", () => {
     expect(reportSourceQuote("   ")).toBe("");
-    expect(reportSourceQuote("  I'll send the harbor note.  ")).toBe(
-      "I'll send the harbor note.",
-    );
+    expect(reportSourceQuote("  I'll send the harbor note.  ")).toBe("I'll send the harbor note.");
     expect(source).toContain("reportSourceQuote(item.sourceQuote)");
     expect(source).not.toContain("{item.sourceQuote}");
     expect(reportRiskLabel()).toBe("At risk");
@@ -63,8 +61,10 @@ describe("OpenPromisesReportClient", () => {
   });
 
   it("waits for a settled source list before painting the connect step", () => {
-    expect(source).toContain("sourcesQuery.isPending || (!scanId && scansQuery.isPending)");
-    expect(source).not.toContain("sourcesQuery.isLoading || (!scanId && scansQuery.isLoading)");
+    expect(source).toMatch(/sourcesQuery\.isPending\s*\|\|\s*\(!scanId && scansQuery\.isPending\)/);
+    expect(source).not.toMatch(
+      /sourcesQuery\.isLoading\s*\|\|\s*\(!scanId && scansQuery\.isLoading\)/,
+    );
     expect(source).toContain(
       'title={reconnect ? "Reconnect Google" : "Connect Gmail and Calendar"}',
     );
@@ -85,9 +85,7 @@ describe("OpenPromisesReportClient", () => {
     expect(source).toContain(
       'shownRequestError(error, "Google authorization could not be started.")',
     );
-    expect(source).toContain(
-      'shownRequestError(error, "The report could not be downloaded.")',
-    );
+    expect(source).toContain('shownRequestError(error, "The report could not be downloaded.")');
     expect(source).toContain(
       'shownRequestError(reportQuery.error, "The report could not load. Try again.")',
     );
@@ -155,7 +153,9 @@ describe("OpenPromisesReportClient", () => {
       "/app/revenue",
     );
     expect(
-      screen.getByText("This report shows the first 200 open promises. Open promises to see the rest."),
+      screen.getByText(
+        "This report shows the first 200 open promises. Open promises to see the rest.",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText("Send the signed security packet")).toBeInTheDocument();
     expect(screen.queryByText(/commitment/i)).not.toBeInTheDocument();

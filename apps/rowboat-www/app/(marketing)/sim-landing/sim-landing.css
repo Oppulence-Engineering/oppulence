@@ -38,7 +38,7 @@
     --text-primary: #1a1a1a;
     --text-secondary: #525252;
     --text-tertiary: #5c5c5c;
-    --text-muted: #7a7a7a;
+    --text-muted: #626262;
     --text-subtle: #8c8c8c;
     --text-body: #434343;
     --text-icon: #5a5a5a;
@@ -73,7 +73,7 @@
     --text-primary: #e6e6e6;
     --text-secondary: #cccccc;
     --text-tertiary: #b3b3b3;
-    --text-muted: #6e6e6e;
+    --text-muted: #a3a3a3;
     --text-subtle: #7d7d7d;
     --text-body: #c1c1c1;
     --text-icon: #969696;
@@ -117,6 +117,11 @@
     width: 100%;
     max-width: none;
     padding-inline: 0;
+  }
+
+  .sm-site .sim-marketing-page-main:has([data-product-page]),
+  .sm-site .sim-marketing-page-main:has([data-products-page]) {
+    padding-top: 0;
   }
 
   .sm-site:has(.sim-landing-root) .sim-landing-header {
@@ -169,6 +174,8 @@
    */
   html:has(.sim-marketing-site),
   body:has(.sim-marketing-site) {
+    --app-zoom: 1;
+    --app-vh: 100dvh;
     background: #fefefe;
     color-scheme: light;
     height: var(--app-vh);
@@ -270,6 +277,53 @@
 
   .sim-landing-scroll-port {
     scrollbar-gutter: stable;
+  }
+
+  /* Keep the disclosure usable until the full navigation appears at xl. */
+  @media (max-width: 1279px) {
+    .sim-landing-header .linear-mobile-summary {
+      height: 44px;
+      color: var(--text-primary);
+    }
+
+    .sim-landing-header .sm-mobile-panel {
+      position: fixed;
+      inset: 76px 0 0;
+      width: 100%;
+      height: auto;
+      max-height: calc(100dvh - 76px);
+      gap: 4px;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      border-color: var(--border);
+      background: var(--bg);
+      padding: 20px 28px 32px;
+      backdrop-filter: none;
+    }
+
+    .sim-landing-header .sm-mobile-panel a {
+      display: flex;
+      min-height: 44px;
+      align-items: center;
+      padding-block: 10px;
+      color: var(--text-primary);
+      font-size: 16px;
+    }
+
+    .sim-landing-header .sm-mobile-kicker {
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .sim-landing-header .sm-mobile-panel .sm-button-light {
+      background: var(--surface-2);
+    }
+
+    .sim-landing-header .sm-mobile-panel .sm-button-blue {
+      border-color: var(--text-primary);
+      background: var(--text-primary);
+      color: var(--text-inverse);
+    }
   }
 
   /*
