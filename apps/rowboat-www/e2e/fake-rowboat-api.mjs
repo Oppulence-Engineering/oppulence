@@ -74,7 +74,7 @@ function relationshipSourcesResponse() {
   const accounts = state.relationshipConnected
     ? [
         {
-          connectionId: "connection-web-e2e",
+          connectionId: "00000000-0000-4000-8000-000000000003",
           source: "google",
           sourceAccountId: "connector-e2e@example.com",
           status: state.googleBackfillPollsRemaining > 0 ? "backfilling" : "live",
@@ -372,7 +372,7 @@ const server = http.createServer(async (request, response) => {
     return json(response, 200, {
       audience: "google-product-api",
       connected: true,
-      connectionId: "connection-web-e2e",
+      connectionId: "00000000-0000-4000-8000-000000000003",
       connector: "google",
       scopes: ["google:email.read"],
     });
@@ -459,7 +459,7 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (url.pathname === "/v1/revenue-leak-scans" && request.method === "GET") {
-    return json(response, 200, { scans: [completedScan] });
+    return json(response, 200, { scans: [completedScan], hasMore: false });
   }
   if (url.pathname === "/v1/revenue-leak-scans" && request.method === "POST") {
     const body = await readJSON(request);
@@ -492,7 +492,56 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (url.pathname === "/v1/revenue-actions" && request.method === "GET") {
-    return json(response, 200, { actions: [] });
+    return json(response, 200, { actions: [], hasMore: false });
+  }
+  if (url.pathname === "/v1/agents") {
+    return json(response, 200, { agents: [] });
+  }
+  if (url.pathname === "/v1/background-tasks") {
+    return json(response, 200, { tasks: [] });
+  }
+
+  if (url.pathname === "/v1/agent-sessions") {
+    return json(response, 200, { sessions: [], hasMore: false });
+  }
+  if (url.pathname === "/v1/relationships") {
+    return json(response, 200, { relationships: [], hasMore: false });
+  }
+  if (url.pathname === "/v1/commitments") {
+    return json(response, 200, { commitments: [], hasMore: false });
+  }
+  if (url.pathname === "/v1/persons") {
+    return json(response, 200, { persons: [], hasMore: false });
+  }
+  if (url.pathname === "/v1/workspace-notes") {
+    return json(response, 200, { notes: [], hasMore: false });
+  }
+  if (url.pathname === "/v1/revenue-workspaces/current") {
+    return json(response, 200, {
+      id: "00000000-0000-4000-8000-000000000002",
+      mode: "local",
+      preflightAvailable: false,
+      status: "active",
+    });
+  }
+  if (url.pathname === "/v1/revenue-impact") {
+    return json(response, 200, {
+      approved: 0,
+      atRiskRelationships: 0,
+      criticalRelationships: 0,
+      executed: 0,
+      handled: 0,
+      longestOverdueDays: 0,
+      open: 0,
+      openTasks: 0,
+      overdueByThem: 0,
+      overdueByUs: 0,
+      overdueCommitments: 0,
+      portfolioRiskScore: 0,
+      relationships: 0,
+      riskReasons: [],
+      surfaced: 0,
+    });
   }
   if (url.pathname === "/v1/revenue-search" && request.method === "GET") {
     return json(response, 200, {

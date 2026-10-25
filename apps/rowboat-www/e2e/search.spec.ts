@@ -6,8 +6,8 @@ test("command palette searches semantic mail evidence explicitly", async ({ page
 
   await page.getByRole("button", { name: "Ask Oppulence" }).click();
   await page.getByRole("button", { name: /search mail/i }).click();
-  await page.getByPlaceholder("Describe the mail evidence to find…").fill("launch promise");
+  await page.getByPlaceholder("Describe the mail to find…").fill("launch promise");
 
   await expect(page.getByText("Revised launch plan", { exact: true })).toBeVisible();
-  await expect(page.getByText(/Ada · commitment · 91%/)).toBeVisible();
+  await expect(page.getByText(/Ada · Promise · 91%/)).toBeVisible();
 });

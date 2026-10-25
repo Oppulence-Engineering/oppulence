@@ -11,6 +11,7 @@
     "components/**/*.stories.{ts,tsx}",
     "app/**/*.stories.{ts,tsx}",
     "quality/**/*.{ts,tsx}",
+    "hooks/queries/use-*.ts",
     "*.config.{ts,mjs}",
     "config/**/*.{ts,mts}",
     "instrumentation.ts"

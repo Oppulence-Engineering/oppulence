@@ -14,10 +14,7 @@ describe("sidebar shortcut titles", () => {
 
   it("uses that key on the edge, the header, and the command palette", () => {
     const edge = readFileSync(
-      new URL(
-        "../../components/features/dashboard/app-shell/app-shell.tsx",
-        import.meta.url,
-      ),
+      new URL("../../components/features/dashboard/app-shell/app-shell.tsx", import.meta.url),
       "utf8",
     );
     const header = readFileSync(

@@ -141,7 +141,11 @@ type ChatPromptInputProps = {
 };
 
 /** Stop stays available. Send stays off until there is text or a file. */
-export function chatSubmitDisabled(status: AgentRunStatus, text: string, fileCount: number): boolean {
+export function chatSubmitDisabled(
+  status: AgentRunStatus,
+  text: string,
+  fileCount: number,
+): boolean {
   if (status === "submitted") return true;
   if (status === "streaming") return false;
   return !text.trim() && fileCount === 0;
@@ -287,8 +291,13 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
   const workspace = useWorkspaceLabel(workspaceUser);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
-  const { agentOptions, agents = [], refreshAgents, selectedAgent, setSelectedAgent } =
-    useAgentCatalog();
+  const {
+    agentOptions,
+    agents = [],
+    refreshAgents,
+    selectedAgent,
+    setSelectedAgent,
+  } = useAgentCatalog();
   const run = useAgentRun(selectedAgent);
 
   const selectPrompt = useCallback(

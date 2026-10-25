@@ -5,9 +5,7 @@ import { bffErrorHint } from "@/lib/dev/bff-error-toast";
 describe("bffErrorHint", () => {
   it("does not blame a down API when a provider is unconfigured", () => {
     const hint = bffErrorHint(503, "provider_unconfigured");
-    expect(hint).toBe(
-      "That provider is not configured on the server. rowboat-api is running.",
-    );
+    expect(hint).toBe("That provider is not configured on the server. rowboat-api is running.");
     expect(hint).not.toContain("Check rowboat-api is running");
   });
 

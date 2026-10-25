@@ -270,7 +270,7 @@ export function newActionIntro(hasCompany: boolean): string {
     : "Add a company before a follow-up can be created.";
 }
 
-export function recoveryNextCompaniesLabel(): string {
+function recoveryNextCompaniesLabel(): string {
   return "Show the next companies";
 }
 

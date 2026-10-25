@@ -30,7 +30,9 @@ describe("ReviewSheet", () => {
     expect(source).toContain("{uncertainSendTitle()}");
     expect(source).not.toContain("Provider result uncertain");
     expect(
-      reconciliationErrorCopy("provider marker was not found after bounded reconciliation attempts"),
+      reconciliationErrorCopy(
+        "provider marker was not found after bounded reconciliation attempts",
+      ),
     ).toBe("");
     expect(reconciliationErrorCopy("execution idempotency key is missing")).toBe(
       "This send has no receipt to check.",
@@ -82,7 +84,11 @@ describe("ReviewSheet", () => {
     expect(actionHasOriginalEmail({ evidence: [] })).toBe(false);
     expect(
       reviewSupportingQuotes({
-        evidence: [{ excerpt: " I will send the quay rank. " }, { excerpt: "I will send the quay rank." }, { excerpt: "  " }],
+        evidence: [
+          { excerpt: " I will send the quay rank. " },
+          { excerpt: "I will send the quay rank." },
+          { excerpt: "  " },
+        ],
       }),
     ).toEqual(["I will send the quay rank."]);
     expect(source).toContain("actionHasOriginalEmail(action)");

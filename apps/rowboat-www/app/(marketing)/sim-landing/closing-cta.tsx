@@ -47,7 +47,6 @@ export function SimClosingCta() {
       >
         <FooterArtworkPlate
           className="sim-closing-artwork__plate object-cover object-center"
-          preload
           sizes={FOOTER_ARTWORK_SIZES}
         />
       </div>

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { keptRegisterPage, promisesUnavailableCopy, registerLoadNotice } from "@/hooks/queries/use-commitments";
+import {
+  keptRegisterPage,
+  promisesUnavailableCopy,
+  registerLoadNotice,
+} from "@/hooks/queries/use-commitments";
 import { RevenueAPIError } from "@/lib/revenue/revenue";
 
 describe("keptRegisterPage", () => {

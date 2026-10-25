@@ -319,9 +319,7 @@ describe("API reference document", () => {
           VoiceTextToSpeechRequest: {
             properties: { text: { example: "Hello from Solomon AI." } },
           },
-          PreConsentRequest: {
-            properties: { hydra_client_id: { example: "rowboat-desktop" } },
-          },
+          PreConsentRequest: spec.components.schemas.PreConsentRequest,
         },
       },
     }).components.schemas;

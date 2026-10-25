@@ -303,9 +303,7 @@ function titledModelRest(rest: string): string {
     .replace(/\b(\d) (\d)\b/g, "$1.$2")
     .split(" ")
     .filter(Boolean)
-    .map((word) =>
-      /^\d/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1),
-    )
+    .map((word) => (/^\d/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)))
     .join(" ");
 }
 

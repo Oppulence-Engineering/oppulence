@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { ReportDashboardRoute } from "@/app/(product)/app/report/_components/report-dashboard-route/report-dashboard-route";
 import { prefetchReport } from "@/app/(product)/app/report/prefetch";
 import { reportSearchParamsCache } from "@/app/(product)/app/report/search-params";
-import { PrefetchHydration } from "@/lib/query/prefetch-hydration";
+import { PrefetchHydration } from "@/components/providers/prefetch-hydration";
 
 import ReportLoading from "./loading";
 

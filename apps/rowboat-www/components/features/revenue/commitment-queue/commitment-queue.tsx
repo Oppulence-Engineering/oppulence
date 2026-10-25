@@ -71,8 +71,6 @@ import type {
 } from "@/lib/revenue/types";
 
 export type { RegisterView } from "@/lib/revenue/commitment-register-filter";
-export { registerFilterFor } from "@/lib/revenue/commitment-register-filter";
-
 const THREE_DAYS = 72 * 60 * 60 * 1000;
 const ACTIVE_SOURCE_STATES = new Set(["connected", "backfilling", "live", "stale"]);
 
@@ -270,9 +268,7 @@ export function registerAccountScopeCopy(promises: readonly LocatedPromise[] | u
 }
 
 /** Where an open promise lives when this slice does not list it. */
-export function registerPromiseLocationCopy(
-  promises: readonly LocatedPromise[] | undefined,
-): string {
+function registerPromiseLocationCopy(promises: readonly LocatedPromise[] | undefined): string {
   const rows = promises ?? [];
   const theirs = rows.filter((row) => row.direction === "promised_by_them").length;
   const ours = rows.filter((row) => row.direction === "promised_by_me").length;
@@ -301,9 +297,7 @@ export function registerElsewhereCopy(
     if (!located) return null;
     return {
       title:
-        view === "overdue"
-          ? "No promises are past due"
-          : "No promises changed in the last 7 days",
+        view === "overdue" ? "No promises are past due" : "No promises changed in the last 7 days",
       detail: located,
     };
   }
@@ -672,7 +666,7 @@ const COMMITMENT_FILTER_LABEL: Record<string, string> = {
 };
 
 /** The visible word is the current commitment filter, not the menu's name. */
-export function commitmentFilterName(value: string): string {
+function commitmentFilterName(value: string): string {
   return comboboxFilterName("Promises", COMMITMENT_FILTER_LABEL[value] ?? "Active");
 }
 
@@ -680,7 +674,7 @@ export function commitmentFilterName(value: string): string {
  * The By company menu's accessible name replaced its value, so a selected
  * company was still announced as "Choose a company".
  */
-export function registerAccountName(label: string | null | undefined): string {
+function registerAccountName(label: string | null | undefined): string {
   const choice = label?.trim() || "Choose a company";
   return comboboxFilterName("Company", choice);
 }
@@ -702,11 +696,10 @@ export function registerConfidenceLabel(score: number): string {
  * The row Status is the same word as the open record. "Confirmed" is the
  * acceptance step, so an open promise must not wear it in this column.
  */
-export function registerRowStatus(item: {
-  state: string;
-  acceptance: string;
-  urgency?: string;
-}): { label: string; variant: "green" | "amber" | "red" } {
+export function registerRowStatus(item: { state: string; acceptance: string; urgency?: string }): {
+  label: string;
+  variant: "green" | "amber" | "red";
+} {
   const label = commitmentDetailStatus(item);
   if (item.acceptance === "candidate" || label === "Review") {
     return { label, variant: "amber" };
@@ -729,9 +722,12 @@ export function commitmentSearchText(item: CommitmentQueueItem): string {
   const gap = evidenceGapFact(item.missingEvidence);
   const evidence =
     item.missingEvidence.length > 0
-      ? [gap.label, missing, `${item.missingEvidence.length} items missing`, `Missing ${missing}`].join(
-          " ",
-        )
+      ? [
+          gap.label,
+          missing,
+          `${item.missingEvidence.length} items missing`,
+          `Missing ${missing}`,
+        ].join(" ")
       : `${gap.label} ${gap.value}`;
   return [
     item.relationshipName,
@@ -1604,10 +1600,7 @@ export function CommitmentQueue({
               <dl className="space-y-4 text-[13px]">
                 <Fact label="Promised by" value={selected.owner} />
                 <Fact label="To" value={selected.counterparty} />
-                <Fact
-                  label="Due date"
-                  value={promiseDueDay(selected.dueAt) ?? "Missing"}
-                />
+                <Fact label="Due date" value={promiseDueDay(selected.dueAt) ?? "Missing"} />
                 <div>
                   <dt className="text-[12px] text-primary/45">Status</dt>
                   <dd className="mt-1">
@@ -1657,9 +1650,7 @@ export function CommitmentQueue({
                   <DetailCard label="Recipient" value={selected.counterparty} />
                   <DetailCard
                     label="Due"
-                    value={
-                      promiseDueDay(selected.dueAt) ?? "Not confirmed"
-                    }
+                    value={promiseDueDay(selected.dueAt) ?? "Not confirmed"}
                   />
                 </div>
                 <section className="mt-8">

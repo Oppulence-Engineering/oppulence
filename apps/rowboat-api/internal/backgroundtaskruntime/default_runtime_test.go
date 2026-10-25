@@ -525,10 +525,11 @@ func TestLoopApprovalTierToolDeniedDoesNotInvoke(t *testing.T) {
 		toolCallTurn("c1", "connector.write.slack_reply", `{"text":"hello"}`),
 		assistantTurn("reply was not posted"),
 	)
+	approvalID := toolApprovalID("run-1", 1, tool.Name(), json.RawMessage(`{"text":"hello"}`))
 	in := baseInput(llm, &fakeArtifactStore{}, sink, tool)
 	in.Controls = &fakeControlSource{states: []ControlState{{
 		ToolApprovals: map[string]ToolApprovalDecision{
-			"run-1/tool/1": {Approved: false, ResolvedBy: "tester", Reason: "too risky"},
+			approvalID: {Approved: false, ResolvedBy: "tester", Reason: "too risky"},
 		},
 	}}}
 

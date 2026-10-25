@@ -1,4 +1,4 @@
-import { DashboardRouteFallback } from "@/lib/query/prefetch-hydration";
+import { DashboardRouteFallback } from "@/components/providers/prefetch-hydration";
 
 /**
  * Companies, people, notes, and tasks all suspend on this route. "Revenue" is

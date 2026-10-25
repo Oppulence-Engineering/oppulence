@@ -88,12 +88,19 @@ describe("AttentionQueueSurface", () => {
         onOpenRelationship={vi.fn()}
       />,
     );
-    expect(screen.getAllByText("A confirmed promise is overdue by 2 days.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("A confirmed promise is overdue by 2 days.").length).toBeGreaterThan(
+      0,
+    );
     expect(screen.queryByText(/confirmed commitment/)).toBeNull();
   });
 
   it("counts one company when it has two reasons", () => {
-    const shared = item("attn-overdue", "Quay Overdue", "high", "A confirmed promise is overdue by 3 days.");
+    const shared = item(
+      "attn-overdue",
+      "Quay Overdue",
+      "high",
+      "A confirmed promise is overdue by 3 days.",
+    );
     render(
       <AttentionQueueSurface
         items={[
@@ -258,7 +265,9 @@ describe("AttentionQueueSurface", () => {
     await user.click(screen.getByRole("button", { name: "Show the other 1 company" }));
     expect(screen.getByRole("button", { name: "Queue Co 11" })).toBeInTheDocument();
     expect(screen.getByText("11 companies")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Show the other 1 company" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Show the other 1 company" }),
+    ).not.toBeInTheDocument();
   });
 
   it("asks for a dismiss reason on the queue", async () => {

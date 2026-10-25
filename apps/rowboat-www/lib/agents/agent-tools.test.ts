@@ -19,7 +19,9 @@ describe("agent tool labels", () => {
     expect(agentToolLabel("tool_result.read")).toBe("Earlier results");
     expect(agentToolLabel("relationship.create")).toBe("Add a company");
     expect(agentToolLabel("connector.read.composio_tool_search")).toBe("Find another tool");
-    expect(agentToolLabel("connector.read.composio_tool_describe")).toBe("See what another tool does");
+    expect(agentToolLabel("connector.read.composio_tool_describe")).toBe(
+      "See what another tool does",
+    );
     expect(agentToolLabel("connector.write.composio_tool_execute")).toBe(
       "Run another tool after you approve it",
     );
@@ -57,7 +59,9 @@ describe("agent tool labels", () => {
     expect(toolDescription("connector.read.calendar")).toBe(
       "Read calendar events after a calendar is connected.",
     );
-    expect(toolDescription("connector.read.drive")).toBe("Read Drive files after Drive is connected.");
+    expect(toolDescription("connector.read.drive")).toBe(
+      "Read Drive files after Drive is connected.",
+    );
     expect(toolDescription("connector.write.drive_update")).toBe(
       "Update Drive files after Drive is connected.",
     );

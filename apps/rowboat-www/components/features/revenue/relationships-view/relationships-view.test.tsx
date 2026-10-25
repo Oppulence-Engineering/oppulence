@@ -120,7 +120,6 @@ import {
   detailSourceLabel,
   enrichmentAvailabilityCopy,
   researchPanelTitle,
-
   researchStatusPendingCopy,
   enrichConfirmCopy,
   identityAnchorKindLabel,
@@ -168,9 +167,9 @@ describe("RelationshipsView", () => {
     expect(companyCategoriesLabel(["  ", ""])).toBe("Not filled in");
     expect(source).toContain("companyCategoriesLabel(relationship.categories)");
     expect(source).toContain("companyCategoriesLabel(data.relationship.categories)");
-    expect(source).toContain('>Categories</dt>');
+    expect(source).toContain(">Categories</dt>");
     expect(source).toContain(">Categories</TableHead>");
-    expect(source).not.toContain('>Category</dt>');
+    expect(source).not.toContain(">Category</dt>");
     expect(source).not.toContain('data.relationship.categories?.join(", ")');
     expect(source).not.toContain("relationship.categories?.[0]");
     expect(personSheetProfile({ title: "  ", fallbackTitle: "CFO", location: "  " })).toEqual([
@@ -193,9 +192,9 @@ describe("RelationshipsView", () => {
         person: { displayName: "Ada Harbor", primaryEmail: "ada@harbor-person.example" },
       }),
     ).toBe("Ada Harbor");
-    expect(
-      personParticipantLabel({ displayName: "   ", email: "bea@harbor-person.example" }),
-    ).toBe("bea@harbor-person.example");
+    expect(personParticipantLabel({ displayName: "   ", email: "bea@harbor-person.example" })).toBe(
+      "bea@harbor-person.example",
+    );
     expect(personParticipantLabel({ displayName: "Bea Cole" })).toBe("Bea Cole");
     expect(personParticipantLabel({ displayName: "   " })).toBe("Unknown person");
     expect(source).toContain("personParticipantLabel(participant)");
@@ -214,10 +213,15 @@ describe("RelationshipsView", () => {
       label: "Filtered",
       filtered: true,
     });
-    expect(companyDirectoryTitle({ query: " ", health: "at_risk", lifecycle: "all" }).filtered,
+    expect(
+      companyDirectoryTitle({ query: " ", health: "at_risk", lifecycle: "all" }).filtered,
     ).toBe(true);
     expect(
-      companyListEmptyCopy({ filtered: true, hasConnectedSource: false, lookbackLabel: "6 months" }),
+      companyListEmptyCopy({
+        filtered: true,
+        hasConnectedSource: false,
+        lookbackLabel: "6 months",
+      }),
     ).toBe("No companies match these filters.");
     expect(
       companyListEmptyCopy({
@@ -241,10 +245,12 @@ describe("RelationshipsView", () => {
     for (const status of ["not_connected", "authorizing", "reconnect_required", "disconnected"]) {
       expect(companySourceCountsAsConnected(status)).toBe(false);
     }
-    expect(companyDirectoryHasConnectedSource([], [{ accounts: [{ status: "stale" }] }])).toBe(true);
-    expect(companyDirectoryHasConnectedSource([], [{ accounts: [{ status: "not_connected" }] }])).toBe(
-      false,
+    expect(companyDirectoryHasConnectedSource([], [{ accounts: [{ status: "stale" }] }])).toBe(
+      true,
     );
+    expect(
+      companyDirectoryHasConnectedSource([], [{ accounts: [{ status: "not_connected" }] }]),
+    ).toBe(false);
     expect(companyDirectoryHasConnectedSource([], [])).toBe(false);
     expect(companyDirectoryHasConnectedSource([{ status: "live" }], [])).toBe(true);
     expect(source).toContain("companyDirectoryHasConnectedSource(sources, sourceInventory)");
@@ -252,9 +258,7 @@ describe("RelationshipsView", () => {
     expect(sourcesAttentionLabel(2)).toBe("2 need attention");
     expect(source).toContain("sourcesAttentionLabel(needsRepair)");
     expect(source).toContain("companyListEmptyCopy({");
-    expect(companyRecordedEmptyCopy("People")).toBe(
-      "No people recorded for this company yet.",
-    );
+    expect(companyRecordedEmptyCopy("People")).toBe("No people recorded for this company yet.");
     expect(companyRecordedEmptyCopy("Risks")).toBe("No risks recorded for this company yet.");
     expect(companyRecordedEmptyCopy("Milestones")).toBe(
       "No milestones recorded for this company yet.",
@@ -324,7 +328,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain('errMessage(error, "Could not load this company.")');
     expect(source).toContain('errMessage(error, "Could not update this company.")');
     expect(source).toContain("setActionError(message)");
-    expect(source).toContain("reportSheetFailure(error, \"Could not open the original detail.\")");
+    expect(source).toContain('reportSheetFailure(error, "Could not open the original detail.")');
     expect(source).toContain('errMessage(error, "Could not load companies.")');
     expect(source).toContain('errMessage(error, "Could not fill in companies and people.")');
     expect(source).not.toContain("Relationship added.");
@@ -334,9 +338,9 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("Could not load relationship intelligence.");
     expect(source).not.toContain("Could not update this relationship.");
     expect(source).not.toContain("Could not enrich relationship profiles.");
-    expect(companyName({ displayName: "northwind.example", accountDomain: "northwind.example" })).toBe(
-      "Northwind",
-    );
+    expect(
+      companyName({ displayName: "northwind.example", accountDomain: "northwind.example" }),
+    ).toBe("Northwind");
     expect(
       companyName({ displayName: "hello@northwind.example", accountDomain: "northwind.example" }),
     ).toBe("Northwind");
@@ -398,13 +402,17 @@ describe("RelationshipsView", () => {
     expect(activitySummaryLabel("1-message thread with an external contact")).toBe(
       "1 message with someone outside the company",
     );
-    expect(activitySummaryLabel("Gmail thread observed: Kickoff notes")).toBe("Mail: Kickoff notes");
+    expect(activitySummaryLabel("Gmail thread observed: Kickoff notes")).toBe(
+      "Mail: Kickoff notes",
+    );
     expect(activitySummaryLabel("Gmail thread observed: local-user")).toBe("Mail");
     expect(activitySummaryLabel("Calendar meeting observed with ada@acme.example")).toBe(
       "Meeting with ada@acme.example",
     );
     expect(activitySummaryLabel("Calendar meeting observed with local-user")).toBe("Meeting");
-    expect(activitySummaryLabel("HubSpot company snapshot: Acme")).toBe("Company from HubSpot: Acme");
+    expect(activitySummaryLabel("HubSpot company snapshot: Acme")).toBe(
+      "Company from HubSpot: Acme",
+    );
     expect(activitySummaryLabel("HubSpot company snapshot: HubSpot company 123")).toBe(
       "Company from HubSpot",
     );
@@ -473,9 +481,15 @@ describe("RelationshipsView", () => {
     expect(source).toContain("md:left-[var(--shell-sidebar-screen-offset)]");
     expect(source).toContain("md:w-[calc(100%-var(--shell-sidebar-screen-offset))]");
     expect(source).not.toContain("md:left-[285px]");
-    expect(source).toContain("supportedRecordValue(\n                      data.relationship.lifecycle,");
-    expect(source).toContain("supportedRecordValue(\n                      data.relationship.health,");
-    expect(source).toContain("supportedRecordValue(\n                      data.relationship.engagement,");
+    expect(source).toContain(
+      "supportedRecordValue(\n                      data.relationship.lifecycle,",
+    );
+    expect(source).toContain(
+      "supportedRecordValue(\n                      data.relationship.health,",
+    );
+    expect(source).toContain(
+      "supportedRecordValue(\n                      data.relationship.engagement,",
+    );
     expect(source).not.toContain("humanize(relationship.health)");
     expect(source).not.toContain("humanize(data.relationship.health)");
     expect(source).not.toContain('"text-[13px] font-normal capitalize"');
@@ -534,10 +548,10 @@ describe("RelationshipsView", () => {
     expect(source).toContain("Email threads (${data.emailThreads.length})");
     expect(source).not.toContain("`Emails ${data.emailThreads.length}`");
     expect(source).not.toContain("Email activity (");
-    expect(source).not.toContain('>Emails</TableHead>');
+    expect(source).not.toContain(">Emails</TableHead>");
     expect(source).toContain("id={`${id}:history`}");
     expect(source).toContain("id={`${id}:emails`}");
-    expect(source).toContain('onClick={() => openSection(section)}');
+    expect(source).toContain("onClick={() => openSection(section)}");
     expect(source).toContain('aria-current={activeSection === section ? "page" : undefined}');
     expect(source).not.toContain('onClick={() => openSection("activity")}');
     expect(source).not.toContain(
@@ -564,10 +578,7 @@ describe("RelationshipsView", () => {
       body: "Connect Gmail or HubSpot. Reading builds company history. Anything that writes waits for your approval.",
     });
     expect(
-      sourceConnectionSectionCopy([
-        { accounts: [{ status: "stale" }] },
-        { accounts: [] },
-      ]),
+      sourceConnectionSectionCopy([{ accounts: [{ status: "stale" }] }, { accounts: [] }]),
     ).toEqual({
       title: "Sources that need a look",
       body: "Refresh a source that is already connected, or connect one that is not. Reading builds company history. Anything that writes waits for your approval.",
@@ -575,9 +586,9 @@ describe("RelationshipsView", () => {
     expect(sourceConnectionSectionCopy([{ accounts: [{ status: "stale" }] }]).title).toBe(
       "Sources that need a look",
     );
-    expect(sourceConnectionSectionCopy([{ accounts: [{ status: "reconnect_required" }] }]).title).toBe(
-      "Sources to connect",
-    );
+    expect(
+      sourceConnectionSectionCopy([{ accounts: [{ status: "reconnect_required" }] }]).title,
+    ).toBe("Sources to connect");
     expect(source).toContain("sourceConnectionSectionCopy(needsAttention)");
 
     expect(
@@ -639,9 +650,7 @@ describe("RelationshipsView", () => {
   });
 
   it("says when public research could not be checked", () => {
-    expect(researchStatusPendingCopy(false)).toBe(
-      "Checking whether public research is available…",
-    );
+    expect(researchStatusPendingCopy(false)).toBe("Checking whether public research is available…");
     expect(researchStatusPendingCopy(true)).toBe("Public research could not be checked.");
     expect(source).toContain('researchStatusPendingCopy(statusPhase === "failed")');
     expect(source).not.toContain(">Checking whether public research is available…</p>");
@@ -654,9 +663,7 @@ describe("RelationshipsView", () => {
         reason: "plan_required",
         requiredPlan: "intelligence",
       }),
-    ).toBe(
-      "Public research is part of the Intelligence plan. This workspace does not include it.",
-    );
+    ).toBe("Public research is part of the Intelligence plan. This workspace does not include it.");
     expect(enrichmentAvailabilityCopy({ available: false, reason: "unconfigured" })).toBe(
       "Public research is not available in this workspace.",
     );
@@ -680,7 +687,8 @@ describe("RelationshipsView", () => {
     expect(
       companyReviewCopy({ previousReviewedStateVersion: 0, changedSinceReview: false }, true),
     ).toEqual({
-      change: "No account details have changed yet. Promises and meetings are in the sections below.",
+      change:
+        "No account details have changed yet. Promises and meetings are in the sections below.",
       footer: "Not reviewed yet.",
     });
     expect(
@@ -748,19 +756,15 @@ describe("RelationshipsView", () => {
       ]),
     ).toBe("");
     expect(
-      missionControlStateAnswer(
-        { lifecycle: { supported: false, value: "prospect" } },
-        [{ status: "open", acceptance: "internally_confirmed", text: "Send the packet" }],
-      ),
+      missionControlStateAnswer({ lifecycle: { supported: false, value: "prospect" } }, [
+        { status: "open", acceptance: "internally_confirmed", text: "Send the packet" },
+      ]),
     ).toBe("Open promise: Send the packet");
     expect(
-      missionControlStateAnswer(
-        { lifecycle: { supported: true, value: "prospect" } },
-        [
-          { status: "open", acceptance: "accepted", text: "Send the packet" },
-          { status: "open", acceptance: "internally_confirmed", text: "Book the review" },
-        ],
-      ),
+      missionControlStateAnswer({ lifecycle: { supported: true, value: "prospect" } }, [
+        { status: "open", acceptance: "accepted", text: "Send the packet" },
+        { status: "open", acceptance: "internally_confirmed", text: "Book the review" },
+      ]),
     ).toBe("Lifecycle: Prospect · 2 open promises.");
     const riskNow = Date.parse("2026-10-03T19:00:00Z");
     expect(
@@ -866,7 +870,7 @@ describe("RelationshipsView", () => {
         "State changed",
       ),
     ).toBe("Lifecycle, Supporting evidence");
-    expect(source).toContain("missionControlChangeAnswer(model.changes, \"State changed\")");
+    expect(source).toContain('missionControlChangeAnswer(model.changes, "State changed")');
     expect(source).toContain("missionControlStateAnswer(model.evidence, commitments)");
     expect(missionControlActionAnswer(null)).toBe("No action is currently recommended.");
     expect(
@@ -930,7 +934,7 @@ describe("RelationshipsView", () => {
     expect(actionReasonCopy("You confirmed this follow-up from the meeting.")).toBe(
       "You confirmed this follow-up from the meeting.",
     );
-    expect(source).not.toContain("String(model.evidence.lifecycle?.value ?? \"unknown\")");
+    expect(source).not.toContain('String(model.evidence.lifecycle?.value ?? "unknown")');
     expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Not known");
     expect(source).toContain('<dt className="text-primary/40">Sentiment</dt>');
     expect(source).toContain(
@@ -948,9 +952,9 @@ describe("RelationshipsView", () => {
     expect(source).toContain('comboboxFilterName("Value", companyRecordLabel(value))');
     expect(source).not.toContain("Reviewed {new Date(model.asOf)");
     expect(source).toContain('disabled={busy === "recovery" || data.commitments.length === 0}');
-    expect(completenessExplanationCopy("No source connection has completed its first useful sync.")).toBe(
-      "Connect a source before these details can fill in.",
-    );
+    expect(
+      completenessExplanationCopy("No source connection has completed its first useful sync."),
+    ).toBe("Connect a source before these details can fill in.");
     expect(
       missionControlGapCopy("No source connection has completed its first useful sync.", 0, 8),
     ).toBe("Connect a source before these details can fill in.");
@@ -971,10 +975,12 @@ describe("RelationshipsView", () => {
         8,
       ),
     ).toBe("Account details have no source you can open.");
-    expect(
-      missionControlGapCopy("A required source is stale or disconnected.", 3, 8),
-    ).toBe("A source needs reconnecting.");
-    expect(source).toContain("missionControlGapCopy(model.completeness.explanation, supported, total)");
+    expect(missionControlGapCopy("A required source is stale or disconnected.", 3, 8)).toBe(
+      "A source needs reconnecting.",
+    );
+    expect(source).toContain(
+      "missionControlGapCopy(model.completeness.explanation, supported, total)",
+    );
     expect(
       completenessExplanationCopy(
         "One or more material values have no accessible supporting evidence.",
@@ -1049,7 +1055,9 @@ describe("RelationshipsView", () => {
       "Confirm who this person is.",
     );
     expect(reviewItemLabelCopy("Review proposed promise")).toBe("A suggested promise is waiting.");
-    expect(reviewItemLabelCopy("Review proposed commitment")).toBe("A suggested promise is waiting.");
+    expect(reviewItemLabelCopy("Review proposed commitment")).toBe(
+      "A suggested promise is waiting.",
+    );
     expect(reviewItemLabelCopy("Review proposed next_action")).toBe(
       "A suggested next step is waiting.",
     );
@@ -1077,10 +1085,7 @@ describe("RelationshipsView", () => {
         "Attendance is derived from the calendar invite, not from the recording: an invitee may not have joined.",
         "deterministic fallback candidate requires review",
       ]),
-    ).toEqual([
-      "Who spoke is not confirmed.",
-      "This came from a rule. Check it before saving.",
-    ]);
+    ).toEqual(["Who spoke is not confirmed.", "This came from a rule. Check it before saving."]);
     expect(reviewCaveatLines(undefined)).toEqual([]);
     expect(source).toContain("reviewItemLabelCopy(item.label)");
     expect(source).toContain("focusedReviewIntro()");
@@ -1142,9 +1147,9 @@ describe("RelationshipsView", () => {
     expect(contradictionSourceLabel("desktop_note")).toBe("A note");
     expect(contradictionSourceLabel("gmail")).toBe("Gmail");
     expect(contradictionSourceLabel("ai_inference")).toBe("A suggestion");
-    expect(contradictionReasonCopy("deterministic assertion authority selected the current value")).toBe(
-      "A stronger source already chose the current value.",
-    );
+    expect(
+      contradictionReasonCopy("deterministic assertion authority selected the current value"),
+    ).toBe("A stronger source already chose the current value.");
     expect(contradictionReasonCopy("Selected desktop_note as current evidence.")).toBe(
       "You chose the value from A note.",
     );
@@ -1162,9 +1167,7 @@ describe("RelationshipsView", () => {
       "This promise is past due.",
     );
     expect(
-      rankingFactorReason(
-        "Bounded prior decisions and outcomes adjust ordering, never authority.",
-      ),
+      rankingFactorReason("Bounded prior decisions and outcomes adjust ordering, never authority."),
     ).toBe("Earlier results change the order. They do not approve the action.");
     expect(
       rankingFactorReason("Fresh source coverage changes confidence in the queue position."),
@@ -1176,7 +1179,9 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("{factor.reason}");
     expect(source).toContain("reviewEvidenceKindLabel(item.kind)");
     expect(source).toContain("mutualPlanHeading(plan.status, plan.currentRevision.version)");
-    expect(source).toContain("deletionReceiptStatusLabel(data.intelligence.deletionReceipts[0].status)");
+    expect(source).toContain(
+      "deletionReceiptStatusLabel(data.intelligence.deletionReceipts[0].status)",
+    );
     expect(source).not.toContain("{item.kind}");
     expect(source).not.toContain("humanize(plan.status)");
     expect(source).not.toContain("humanize(data.intelligence.deletionReceipts[0].status)");
@@ -1284,9 +1289,9 @@ describe("RelationshipsView", () => {
       }),
     ).toBe("This detail has no source you can open.");
     expect(detailEvidenceCopy({ supported: false })).toBe("Nothing connected has filled this in.");
-    expect(
-      detailEvidenceCopy({ supported: true, reason: "Confirmed in the last meeting." }),
-    ).toBe("Confirmed in the last meeting.");
+    expect(detailEvidenceCopy({ supported: true, reason: "Confirmed in the last meeting." })).toBe(
+      "Confirmed in the last meeting.",
+    );
     expect(
       detailEvidenceCopy({
         supported: true,
@@ -1375,9 +1380,11 @@ describe("RelationshipsView", () => {
     expect(liveCueVisible({ kind: "overdue_commitment" }, "prospect")).toBe(true);
     expect(uncertainClaimCopy(1)).toBe("1 conversation detail still needs a check.");
     expect(uncertainClaimCopy(2)).toBe("2 conversation details still need a check.");
-    expect(source).toContain("uncertainClaimCopy(data.intelligence.delta.uncertainClaimIds.length)");
+    expect(source).toContain(
+      "uncertainClaimCopy(data.intelligence.delta.uncertainClaimIds.length)",
+    );
     expect(source).not.toContain("queued for focused review");
-    expect(source).toContain("liveCueVisible(cue, data?.relationship.lifecycle ?? \"\")");
+    expect(source).toContain('liveCueVisible(cue, data?.relationship.lifecycle ?? "")');
     expect(source).toContain("Suggestions (");
     expect(source).not.toContain("Live cue cards");
     expect(source).not.toContain("before the meeting ends");
@@ -1417,7 +1424,9 @@ describe("RelationshipsView", () => {
     expect(source).toContain("companyLastActivityLabel(relationship.lastTouchAt)");
     expect(source).toContain("companyLastActivityLabel(data.relationship.lastTouchAt)");
     expect(source).toContain(">Last activity</TableHead>");
-    expect(source).toContain('"Last activity",\n                      companyLastActivityLabel(data.relationship.lastTouchAt)');
+    expect(source).toMatch(
+      /"Last activity",\s*companyLastActivityLabel\(data\.relationship\.lastTouchAt\)/,
+    );
     expect(source).toContain(">Domain</TableHead>");
     expect(source).not.toContain(">Last interaction</TableHead>");
     expect(source).not.toContain('"Last interaction"');
@@ -1595,7 +1604,9 @@ describe("RelationshipsView", () => {
     expect(enrichConfirmCopy(2, 1, 1.5)).toBe(
       "Fill in 2 companies and 1 person for about $1.50? Only names, company domains, and known employers are sent.",
     );
-    expect(enrichConfirmCopy(1, 2, 0.004)).toContain("1 company and 2 people for about less than a cent");
+    expect(enrichConfirmCopy(1, 2, 0.004)).toContain(
+      "1 company and 2 people for about less than a cent",
+    );
     expect(recommendationPolicyLabel("passed")).toBe("Cleared");
     expect(recommendationPolicyLabel("pending")).toBe("Not checked");
     expect(recommendationPolicyLabel("review_required")).toBe("Review required");
@@ -1633,9 +1644,13 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("JSON.stringify(evidence[observation.id]");
     expect(source).toContain("removePersonConfirmCopy(name)");
     expect(source).toContain("Confirm remove");
-    expect(source).not.toContain("window.confirm(\n                                        `Remove ${participant.displayName}");
+    expect(source).not.toContain(
+      "window.confirm(\n                                        `Remove ${participant.displayName}",
+    );
     expect(source).not.toContain("{observation.source} · {humanize(observation.eventType)}");
-    expect(source).not.toContain("{humanize(observation.source)} · {humanize(observation.eventType)}");
+    expect(source).not.toContain(
+      "{humanize(observation.source)} · {humanize(observation.eventType)}",
+    );
     expect(source).not.toContain("{humanize(item.access.reason)}");
     expect(source).not.toContain("Not enriched");
     expect(source).not.toContain("winning assertion");

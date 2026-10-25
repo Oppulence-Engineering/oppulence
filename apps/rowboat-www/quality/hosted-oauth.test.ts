@@ -100,7 +100,9 @@ describe("hosted connector OAuth outcomes", () => {
     expect(connectionHealthLabel({ connected: true, connectionHealth: "disconnected" })).toBe(
       "Disconnected",
     );
-    expect(connectionHealthLabel({ connected: false, connectionHealth: "disconnected" })).toBeNull();
+    expect(
+      connectionHealthLabel({ connected: false, connectionHealth: "disconnected" }),
+    ).toBeNull();
     expect(composioConnectionStatusLabel("FAILED")).toBe("Could not connect");
     expect(composioConnectionStatusLabel("INITIALIZING")).toBe("Starting");
     expect(composioConnectionStatusLabel("INACTIVE")).toBe("Turned off");

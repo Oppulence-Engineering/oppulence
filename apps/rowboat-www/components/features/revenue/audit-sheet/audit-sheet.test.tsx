@@ -63,11 +63,7 @@ describe("AuditSheet", () => {
         mailbox: "avery@acme.com",
         checkedAt: "2026-07-12T12:00:00Z",
       }),
-    ).toEqual([
-      "Status: Cleared",
-      "Mailbox: avery@acme.com",
-      "Checked At: 2026-07-12T12:00:00Z",
-    ]);
+    ).toEqual(["Status: Cleared", "Mailbox: avery@acme.com", "Checked At: 2026-07-12T12:00:00Z"]);
     expect(policySnapshotLines({ reason: "review_required", optedOut: false })).toEqual([
       "Reason: Review required",
       "Opted Out: No",

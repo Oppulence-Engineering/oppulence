@@ -1,6 +1,6 @@
 import { LegalLayoutClient } from "./legal-layout-client";
 
-import "@/app/(marketing)/marketing-sim-theme.css";
+import "@/app/(marketing)/marketing-styles.css";
 
 export const viewport = {
   width: "device-width",

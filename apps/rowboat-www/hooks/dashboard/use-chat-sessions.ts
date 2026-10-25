@@ -86,8 +86,7 @@ export function useChatSessions({
   // during render is safer than duplicating synchronized session-list state.
   const sessions = mergeSessionLists(listSessions(scope), remoteSessions, earlierSessions);
   const hasMoreSessions =
-    laterHasMore ??
-    (remoteSessions.length > 0 && chatSessionPageHasMore(remoteSessionsQuery.data));
+    laterHasMore ?? (remoteSessions.length > 0 && chatSessionPageHasMore(remoteSessionsQuery.data));
   const remoteKey = remoteSessions.map((session) => session.runId).join("\n");
 
   useEffect(() => {

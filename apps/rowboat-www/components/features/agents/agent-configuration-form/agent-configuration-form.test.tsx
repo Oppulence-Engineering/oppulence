@@ -43,9 +43,7 @@ describe("AgentConfigurationForm", () => {
     expect(source).not.toContain("connector.custom.action");
     expect(source).not.toContain("slack:messages.read");
     expect(source).not.toContain("Required connection scopes");
-    expect(agentIdentityHint(true)).toBe(
-      "Oppulence maintains this name and how the agent works.",
-    );
+    expect(agentIdentityHint(true)).toBe("Oppulence maintains this name and how the agent works.");
     expect(agentIdentityHint(false)).toBe("Give the agent a clear name and tell it how to work.");
     expect(agentModelHint(true)).toBe("Oppulence sets the provider and model for this agent.");
     expect(agentModelHint(false)).toBe("Leave these blank to use the workspace defaults.");
@@ -60,7 +58,9 @@ describe("AgentConfigurationForm", () => {
     expect(source).toContain("agentModelHint(readOnly)");
     expect(source).toContain("{calledModelLabel(model)}");
     expect(source).toContain("{calledModelLabel(document.spec.model)}");
-    expect(source).not.toContain("<SelectItem key={model} value={model}>\n                      {model}");
+    expect(source).not.toContain(
+      "<SelectItem key={model} value={model}>\n                      {model}",
+    );
     expect(source).toContain("agentToolsHint(readOnly)");
     expect(source).toContain("agentExtraToolsHint(readOnly, customTools.length)");
     expect(source).toContain(">Short name</Label>");

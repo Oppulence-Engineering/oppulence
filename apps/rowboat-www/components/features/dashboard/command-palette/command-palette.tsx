@@ -87,9 +87,13 @@ export function mailMatchKind(classification: string | undefined): string {
   }
 }
 
-export function mailMatchMeta(match: Pick<SemanticMatch, "counterparty" | "classification" | "score">): string {
+export function mailMatchMeta(
+  match: Pick<SemanticMatch, "counterparty" | "classification" | "score">,
+): string {
   const score = typeof match.score === "number" ? `${Math.round(match.score * 100)}%` : "";
-  return [match.counterparty, mailMatchKind(match.classification), score].filter(Boolean).join(" · ");
+  return [match.counterparty, mailMatchKind(match.classification), score]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 /** The overview section is already named Settings. Prefixing it reads "Settings · Settings". */
@@ -176,8 +180,7 @@ export function CommandPalette({
     ];
   }, [accountPage, extraCompanies]);
   const hasMoreCompanies =
-    laterCompanyHasMore ??
-    (accountPage.length > 0 && relationshipPageHasMore(accountsQuery.data));
+    laterCompanyHasMore ?? (accountPage.length > 0 && relationshipPageHasMore(accountsQuery.data));
   const mailMatches: SemanticMatch[] = mailQuery.data?.matches ?? [];
   React.useEffect(() => {
     setExtraCompanies([]);

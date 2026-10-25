@@ -74,3 +74,20 @@ df4c6020bbba9f8fb6b534af030a274e47818ecd:apps/rowboat-api/internal/gqlapi/genera
 df4c6020bbba9f8fb6b534af030a274e47818ecd:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-id:104280
 2b7793adfdaa50a0287dac3a4852be86a5c5e50e:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-secret:88804
 2b7793adfdaa50a0287dac3a4852be86a5c5e50e:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-id:88804
+
+# Verified OpenAPI examples and their generated/test copies: UUID record and
+# idempotency IDs, plus the deterministic 0123456789abcdef response-token fixture.
+cd984a2f19f909687eb5cba383157fd3340f3081:apps/rowboat-api/api/openapi.json:generic-api-key:30195
+30da3f5bb8e3799bcfc23171802c676512c45917:apps/rowboat-api/api/openapi.json:generic-api-key:22682
+30da3f5bb8e3799bcfc23171802c676512c45917:apps/rowboat-www/lib/api/api-reference-document.test.ts:generic-api-key:332
+30da3f5bb8e3799bcfc23171802c676512c45917:apps/rowboat-api/internal/openapidoc/enrich_merge.go:generic-api-key:12
+30da3f5bb8e3799bcfc23171802c676512c45917:packages/rowboat-api-client-ts/src/generated/schema.ts:generic-api-key:18351
+a1e1c9bb14aa7422f207dd9cc241d03e83658476:apps/rowboat-api/api/openapi.json:generic-api-key:25575
+a1e1c9bb14aa7422f207dd9cc241d03e83658476:packages/rowboat-api-client-ts/src/generated/schema.ts:generic-api-key:20100
+5b95405c85ace2e58f8974c303a4fb159544ba6e:apps/rowboat-api/internal/openapidoc/enrich_revenue.go:hubspot-api-key:1326
+15bfd92ff307f8699031ac47d218af8381cb4c4f:apps/rowboat-api/internal/openapidoc/enrich_revenue.go:generic-api-key:658
+15bfd92ff307f8699031ac47d218af8381cb4c4f:apps/rowboat-api/api/openapi.json:generic-api-key:25776
+15bfd92ff307f8699031ac47d218af8381cb4c4f:packages/rowboat-api-client-ts/src/generated/schema.ts:generic-api-key:20245
+02a186ec18663b3dd6ab347d9aeeb1794b3d8499:apps/rowboat-api/api/openapi.json:generic-api-key:22679
+02a186ec18663b3dd6ab347d9aeeb1794b3d8499:apps/rowboat-api/internal/openapidoc/enrich_revenue.go:generic-api-key:6
+02a186ec18663b3dd6ab347d9aeeb1794b3d8499:apps/rowboat-www/lib/api/api-reference-document.test.ts:generic-api-key:323

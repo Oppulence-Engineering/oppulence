@@ -31,7 +31,6 @@ export function SimHeroPlatformStage() {
             className="object-cover dark:brightness-[0.28]"
             data-preview-background=""
             fill
-            priority
             sizes={ARTWORK_SIZES}
             src="/marketing/relationship-system/observe.webp"
           />

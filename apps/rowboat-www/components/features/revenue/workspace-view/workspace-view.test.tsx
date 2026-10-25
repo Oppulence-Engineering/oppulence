@@ -166,9 +166,7 @@ describe("WorkspaceView", () => {
 
     expect(await screen.findByText("Out of date")).toBeInTheDocument();
     expect(screen.getByText("owner@example.com")).toHaveClass("normal-case");
-    expect(
-      screen.getByText(/no successful update arrived on schedule/i),
-    ).toBeVisible();
+    expect(screen.getByText(/no successful update arrived on schedule/i)).toBeVisible();
     expect(screen.getByRole("button", { name: "Refresh now" })).toBeEnabled();
     expect(screen.queryByText("Sync incomplete")).not.toBeInTheDocument();
   });
@@ -327,9 +325,7 @@ describe("WorkspaceView", () => {
       "Connect Gmail before a draft can land in your mailbox.",
     );
     expect(localModeNotice("missing")).not.toContain("Audits and drafts work here");
-    expect(localModeNotice("unknown")).toBe(
-      "Sending stays off until this workspace is linked.",
-    );
+    expect(localModeNotice("unknown")).toBe("Sending stays off until this workspace is linked.");
     expect(localModeNotice("unknown")).not.toContain("Gmail");
     expect(localModeNotice("unknown")).not.toContain("Audits and drafts work here");
     expect(sendingCheckLabel(true, "missing")).toBe("Available");

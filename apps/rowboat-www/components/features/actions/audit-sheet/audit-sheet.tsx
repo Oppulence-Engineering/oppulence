@@ -42,8 +42,7 @@ export function ActionAuditSheet({
       .then((c) => live && setChain(c))
       .catch(
         (e) =>
-          live &&
-          setError(friendlyRevenueError(errMessage(e, "Could not load the audit trail."))),
+          live && setError(friendlyRevenueError(errMessage(e, "Could not load the audit trail."))),
       );
     return () => {
       live = false;

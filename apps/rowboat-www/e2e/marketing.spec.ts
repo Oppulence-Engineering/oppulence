@@ -18,6 +18,9 @@ const routes = [
   "/features/governed-actions",
   "/guides/desktop-vs-web",
   "/integrations/gmail",
+  "/terms",
+  "/privacy",
+  "/responsible-disclosure",
 ];
 
 for (const colorScheme of ["light", "dark"] as const) {

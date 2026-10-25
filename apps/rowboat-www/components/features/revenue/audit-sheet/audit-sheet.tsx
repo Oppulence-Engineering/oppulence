@@ -63,7 +63,9 @@ function titledSlug(value: string): string {
     .replaceAll(/[._]+/g, " ")
     .split(" ")
     .filter(Boolean)
-    .map((word) => (word.toLowerCase() === "crm" ? "CRM" : word.charAt(0).toUpperCase() + word.slice(1)))
+    .map((word) =>
+      word.toLowerCase() === "crm" ? "CRM" : word.charAt(0).toUpperCase() + word.slice(1),
+    )
     .join(" ");
 }
 
@@ -254,7 +256,8 @@ export function AuditSheet({
                     <Card className="gap-0 py-2" key={r.revision}>
                       <CardContent className="flex items-center justify-between px-3 text-xs">
                         <Label className="font-normal text-primary/70">
-                          Rev {r.revision} · {revisionActionLabel(r.actionType)} · {revisionChannelLabel(r.channel)}
+                          Rev {r.revision} · {revisionActionLabel(r.actionType)} ·{" "}
+                          {revisionChannelLabel(r.channel)}
                         </Label>
                         <Badge
                           className="font-mono font-normal text-primary/40"

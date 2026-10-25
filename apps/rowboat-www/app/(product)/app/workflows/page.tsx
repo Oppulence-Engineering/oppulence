@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { WorkflowsDashboardRoute } from "@/app/(product)/app/workflows/_components/workflows-dashboard-route/workflows-dashboard-route";
 import { prefetchWorkflows } from "@/app/(product)/app/workflows/prefetch";
 import { workflowSearchParamsCache } from "@/app/(product)/app/workflows/search-params";
-import { PrefetchHydration } from "@/lib/query/prefetch-hydration";
+import { PrefetchHydration } from "@/components/providers/prefetch-hydration";
 
 import WorkflowsLoading from "./loading";
 
