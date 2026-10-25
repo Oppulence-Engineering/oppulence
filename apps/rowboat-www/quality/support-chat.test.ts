@@ -188,6 +188,17 @@ describe("support chat config route", () => {
     expect(body.customer?.emailHash).toBeUndefined();
   });
 
+  it("never signs the session email when viewer verification fails", async () => {
+    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY", "1");
+    mocks.readSessionCookie.mockReturnValue(session);
+    mocks.fetchViewerIdentity.mockRejectedValue(new Error("api down"));
+
+    const body = await callJSON();
+
+    expect(body.customer?.email).toBe("stale@example.com");
+    expect(body.customer?.emailHash).toBeUndefined();
+  });
+
   it("still links by externalId when no chat secret can sign an email", async () => {
     vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "");
     mocks.readSessionCookie.mockReturnValue(session);

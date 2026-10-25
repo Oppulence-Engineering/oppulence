@@ -20,7 +20,6 @@ export interface RevenueActionRevision {
   id: string;
   proposed_message?: string;
   proposed_subject?: string;
-  /** Why this action was proposed. */
   reason?: string;
   recipient_email?: string;
   revision: number;

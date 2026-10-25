@@ -3,6 +3,7 @@ import { IUploadsStorageService } from "@/src/application/services/uploads-stora
 import fs from "fs";
 import path from "path";
 import { NotFoundError } from "@/src/entities/errors/common";
+import { createLocalUploadUrl, localUploadIdFromPath } from "@/app/lib/local-upload-url";
 
 const UPLOADS_DIR = process.env.RAG_UPLOADS_DIR || '/uploads';
 
@@ -18,11 +19,11 @@ export class LocalUploadsStorageService implements IUploadsStorageService {
     }
 
     async getUploadUrl(key: string, contentType: string): Promise<string> {
-        return `/api/uploads/${key}`;
+        return createLocalUploadUrl(key, "PUT");
     }
 
     async getDownloadUrl(fileId: string): Promise<string> {
-        return `/api/uploads/${fileId}`;
+        return createLocalUploadUrl(fileId, "GET");
     }
 
     async getFileContents(fileId: string): Promise<Buffer> {
@@ -33,7 +34,10 @@ export class LocalUploadsStorageService implements IUploadsStorageService {
         if (file.data.type !== 'file_local') {
             throw new NotFoundError('File is not a local file');
         }
-        const filePath = file.data.path.split('/api/uploads/')[1];
-        return fs.readFileSync(path.join(UPLOADS_DIR, filePath));
+        const uploadId = localUploadIdFromPath(file.data.path);
+        if (!uploadId || uploadId !== fileId) {
+            throw new NotFoundError('File not found');
+        }
+        return fs.readFileSync(path.join(UPLOADS_DIR, uploadId));
     }
 }

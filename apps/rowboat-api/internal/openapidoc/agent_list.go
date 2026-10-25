@@ -93,15 +93,7 @@ const documentedAgentListJSON = `{
         "current_time",
         "slack.read_thread",
         "slack.post_message",
-        "connector.read.gmail",
-        "connector.read.calendar",
-        "connector.write.gmail_draft",
-        "web.search",
-        "conduit.read",
-        "eigen.simulate",
-        "connector.read.composio_tool_search",
-        "connector.read.composio_tool_describe",
-        "connector.write.composio_tool_execute"
+        "web.search"
       ]
     }
   ]

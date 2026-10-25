@@ -11,7 +11,7 @@ import { authorize, logUsage } from "@/app/lib/billing";
 import { getCustomerIdForProject } from "@/app/lib/billing";
 import { USE_BILLING } from "@/app/lib/feature_flags";
 
-const WEBHOOK_SECRET = process.env.INTEGRATION_TRIGGERS_WEBHOOK_SECRET || "test";
+const WEBHOOK_SECRET = process.env.INTEGRATION_TRIGGERS_WEBHOOK_SECRET;
 
 /*
  {
@@ -161,6 +161,9 @@ export class HandleIntegrationWebhookRequestUseCase implements IHandleIntegratio
     }
 
     private verifySignature(headers: Record<string, string>, payload: string): void {
+        if (!WEBHOOK_SECRET) {
+            throw new BadRequestError("Webhook verification is unavailable");
+        }
         const normalizedHeaders = Object.fromEntries(
             Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value])
         ) as Record<string, string>;

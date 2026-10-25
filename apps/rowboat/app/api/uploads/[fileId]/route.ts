@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import fsSync from 'fs';
 import { container } from '@/di/container';
 import { IDataSourceDocsRepository } from '@/src/application/repositories/data-source-docs.repository.interface';
+import { isValidLocalUploadUrl, localUploadIdFromPath } from '@/app/lib/local-upload-url';
 
 const UPLOADS_DIR = process.env.RAG_UPLOADS_DIR || '/uploads';
 
@@ -13,8 +14,8 @@ const dataSourceDocsRepository = container.resolve<IDataSourceDocsRepository>('d
 export async function PUT(request: NextRequest, props: { params: Promise<{ fileId: string }> }) {
     const params = await props.params;
     const fileId = params.fileId;
-    if (!fileId) {
-        return NextResponse.json({ error: 'Missing file ID' }, { status: 400 });
+    if (!isValidLocalUploadUrl(fileId, 'PUT', request.nextUrl.searchParams.get('expires'), request.nextUrl.searchParams.get('signature'))) {
+        return NextResponse.json({ error: 'Invalid or expired upload URL' }, { status: 401 });
     }
 
     const filePath = path.join(UPLOADS_DIR, fileId);
@@ -37,8 +38,8 @@ export async function PUT(request: NextRequest, props: { params: Promise<{ fileI
 export async function GET(request: NextRequest, props: { params: Promise<{ fileId: string }> }) {
     const params = await props.params;
     const fileId = params.fileId;
-    if (!fileId) {
-        return NextResponse.json({ error: 'Missing file ID' }, { status: 400 });
+    if (!isValidLocalUploadUrl(fileId, 'GET', request.nextUrl.searchParams.get('expires'), request.nextUrl.searchParams.get('signature'))) {
+        return NextResponse.json({ error: 'Invalid or expired download URL' }, { status: 401 });
     }
 
     // get mimetype from database
@@ -55,7 +56,11 @@ export async function GET(request: NextRequest, props: { params: Promise<{ fileI
 
     try {
         // strip uploads dir from path
-        const filePath = path.join(UPLOADS_DIR, doc.data.path.split('/api/uploads/')[1]);
+        const uploadId = localUploadIdFromPath(doc.data.path);
+        if (uploadId !== fileId) {
+            return NextResponse.json({ error: 'File not found' }, { status: 404 });
+        }
+        const filePath = path.join(UPLOADS_DIR, uploadId);
 
         // Check if file exists
         await fs.access(filePath);

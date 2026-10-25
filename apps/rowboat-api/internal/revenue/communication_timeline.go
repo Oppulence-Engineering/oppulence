@@ -121,6 +121,7 @@ func (s *Service) RelationshipCommunicationTimeline(
 		Where(
 			communicationinteraction.HasRelationshipWith(relationship.IDEQ(relationshipID)),
 			communicationinteraction.DeletedEQ(false),
+			communicationMetadataVisibleTo(actor.ID),
 		).
 		WithWorkspace().
 		WithOwner().
@@ -185,6 +186,9 @@ func (s *Service) communicationTimelineItem(
 	_, _, access, err := s.communicationAccessForInteraction(ctx, actor, interaction)
 	if err != nil {
 		return CommunicationTimelineItem{}, err
+	}
+	if !access.Metadata {
+		return CommunicationTimelineItem{}, ErrForbidden
 	}
 	owner, err := interaction.Edges.OwnerOrErr()
 	if err != nil {

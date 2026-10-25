@@ -16,3 +16,4 @@
 **/.next
 **/dist
 **/*.tsbuildinfo
+**/.env*

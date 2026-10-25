@@ -11469,6 +11469,14 @@ func TestRelationshipSearchFindsMailBodyBadges(t *testing.T) {
 		}
 		return false
 	}
+	hidden := func(rel *ent.Relationship) bool {
+		t.Helper()
+		page, err := f.svc.RelationshipCommunicationTimeline(f.ctx, f.user, rel.ID, nil, nil, communicationTimelinePage)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return len(page.Items) == 0
+	}
 	if !shared(quill) || locked(quill) {
 		t.Fatal("owner mail should be shared")
 	}
@@ -11478,8 +11486,8 @@ func TestRelationshipSearchFindsMailBodyBadges(t *testing.T) {
 	if !shared(aspen) || locked(aspen) {
 		t.Fatal("a shared body should be shared")
 	}
-	if !locked(birch) || shared(birch) {
-		t.Fatal("a protected recipient should be locked")
+	if !hidden(birch) {
+		t.Fatal("a protected recipient's metadata was exposed")
 	}
 	if locked(maple) || shared(maple) {
 		t.Fatal("deleted mail should not show a badge")

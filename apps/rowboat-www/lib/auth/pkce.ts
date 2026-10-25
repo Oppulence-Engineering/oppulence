@@ -41,6 +41,11 @@ export function safeReturnTo(raw: string | null | undefined): string {
   if (raw.startsWith("//")) return "/app";
   try {
     const parsed = new URL(raw, "https://rowboat.invalid");
+    if (
+      parsed.origin !== "https://rowboat.invalid" ||
+      parsed.pathname.startsWith("//")
+    )
+      return "/app";
     return parsed.pathname + parsed.search + parsed.hash;
   } catch {
     return "/app";

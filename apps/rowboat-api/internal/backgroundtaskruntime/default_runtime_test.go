@@ -428,18 +428,19 @@ func TestLoopApprovalTierToolWaitsForApproval(t *testing.T) {
 		toolCallTurn("c1", "connector.write.gmail_draft", `{"to":"a@example.com","body":"hello"}`),
 		assistantTurn("draft created"),
 	)
+	approvalID := toolApprovalID("run-1", 1, tool.Name(), json.RawMessage(`{"to":"a@example.com","body":"hello"}`))
 	in := baseInput(llm, &fakeArtifactStore{}, sink, tool)
 	in.Controls = &fakeControlSource{states: []ControlState{
 		{},
 		{ToolApprovals: map[string]ToolApprovalDecision{
-			"run-1/tool/1": {Approved: true, ResolvedBy: "tester"},
+			approvalID: {Approved: true, ResolvedBy: "tester"},
 		}},
 	}}
 
 	if _, err := NewDefault().Execute(context.Background(), in); err != nil {
 		t.Fatalf("execute: %v", err)
 	}
-	if len(tool.invokes) != 1 || len(tool.scopes) != 1 || tool.scopes[0].ApprovalID != "run-1/tool/1" {
+	if len(tool.invokes) != 1 || len(tool.scopes) != 1 || tool.scopes[0].ApprovalID != approvalID {
 		t.Fatalf("invokes/scopes = %d/%+v", len(tool.invokes), tool.scopes)
 	}
 	if !containsStr(sink.types(), eventToolApprovalRequested) || !containsStr(sink.types(), eventToolApprovalResolved) {
@@ -451,7 +452,7 @@ func TestLoopApprovalTierToolWaitsForApproval(t *testing.T) {
 	}
 	completed := lastEventPayload(sink.records, eventToolCallCompleted)
 	if completed["connector"] != "google" || completed["operation"] != "gmail.draft.create" ||
-		completed["trustTier"] != TierAct || completed["approvalId"] != "run-1/tool/1" {
+		completed["trustTier"] != TierAct || completed["approvalId"] != approvalID {
 		t.Fatalf("completed payload = %+v", completed)
 	}
 	if !hasScopeValue(completed["requiredScopes"], ScopeGmailCompose) {
@@ -477,23 +478,35 @@ func TestLoopMoneyMovingToolWaitsForApproval(t *testing.T) {
 		toolCallTurn("c1", "connector.mcp.call_tool", `{"connector":"stripe","tool":"refund.create","arguments":{"charge":"ch_1"}}`),
 		assistantTurn("refund queued"),
 	)
+	approvalID := toolApprovalID("run-1", 1, tool.Name(), json.RawMessage(`{"connector":"stripe","tool":"refund.create","arguments":{"charge":"ch_1"}}`))
 	in := baseInput(llm, &fakeArtifactStore{}, sink, tool)
 	in.Controls = &fakeControlSource{states: []ControlState{{
 		ToolApprovals: map[string]ToolApprovalDecision{
-			"run-1/tool/1": {Approved: true, ResolvedBy: "finance-owner"},
+			approvalID: {Approved: true, ResolvedBy: "finance-owner"},
 		},
 	}}}
 
 	if _, err := NewDefault().Execute(context.Background(), in); err != nil {
 		t.Fatalf("execute: %v", err)
 	}
-	if len(tool.invokes) != 1 || len(tool.scopes) != 1 || tool.scopes[0].ApprovalID != "run-1/tool/1" {
+	if len(tool.invokes) != 1 || len(tool.scopes) != 1 || tool.scopes[0].ApprovalID != approvalID {
 		t.Fatalf("invokes/scopes = %d/%+v", len(tool.invokes), tool.scopes)
 	}
 	completed := lastEventPayload(sink.records, eventToolCallCompleted)
 	if completed["connector"] != "stripe" || completed["operation"] != "mcp.tool.refund.create" ||
-		completed["trustTier"] != TierMoneyMoving || completed["approvalId"] != "run-1/tool/1" {
+		completed["trustTier"] != TierMoneyMoving || completed["approvalId"] != approvalID {
 		t.Fatalf("completed payload = %+v", completed)
+	}
+}
+
+func TestToolApprovalIDBindsToolAndArguments(t *testing.T) {
+	args := json.RawMessage(`{"channel":"C1","text":"approved"}`)
+	approved := toolApprovalID("run-1", 1, "connector.write.slack_reply", args)
+	if approved == toolApprovalID("run-1", 1, "connector.write.slack_reply", json.RawMessage(`{"channel":"C2","text":"approved"}`)) {
+		t.Fatal("approval ID was reused for a different channel")
+	}
+	if approved == toolApprovalID("run-1", 1, "connector.write.gmail_draft", args) {
+		t.Fatal("approval ID was reused for a different tool")
 	}
 }
 

@@ -5,18 +5,55 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
 )
 
-const strictContextBody = `{"version":1,"challenge":"hydra-consent-challenge","workos_user_id":"user_1","hydra_client_id":"broker","requested_audience":["mcp:canvas"],"requested_scopes":["canvas:invoices.read","canvas:customers.read"]}`
+func consentContextBody(state, challenge, subject string, scopes []string) string {
+	body, _ := json.Marshal(map[string]any{
+		"version": 1, "challenge": challenge, "state": state,
+		"workos_user_id": subject, "hydra_client_id": "broker",
+		"requested_audience": []string{"mcp:canvas"}, "requested_scopes": scopes,
+	})
+	return string(body)
+}
 
-func startConsentContext(t *testing.T) (*httptest.ResponseRecorder, string, *connectors.Handler) {
+func authorizationState(t *testing.T, response *httptest.ResponseRecorder) string {
+	t.Helper()
+	var body struct {
+		AuthorizationURL string `json:"authorization_url"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode authorization response: %v %s", err, response.Body.String())
+	}
+	authorizationURL, err := url.Parse(body.AuthorizationURL)
+	if err != nil {
+		t.Fatalf("parse authorization URL: %v", err)
+	}
+	state := authorizationURL.Query().Get("state")
+	if state == "" {
+		t.Fatal("authorization URL has no state")
+	}
+	return state
+}
+
+func bindConsentForTest(t *testing.T, h *connectors.Handler, state, challenge, subject string, scopes []string) *httptest.ResponseRecorder {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	h.PreConsent(rec, httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(consentContextBody(state, challenge, subject, scopes))).
+		WithContext(auth.WithInternal(context.Background())))
+	return rec
+}
+
+func startConsentContext(t *testing.T) (*httptest.ResponseRecorder, string, *connectors.Handler, string) {
 	t.Helper()
 	_, u, h := setup(t, connectors.DefaultRegistry())
 	start := httptest.NewRecorder()
@@ -25,9 +62,8 @@ func startConsentContext(t *testing.T) (*httptest.ResponseRecorder, string, *con
 	if start.Code != http.StatusOK {
 		t.Fatalf("start: %d %s", start.Code, start.Body.String())
 	}
-	contextRec := httptest.NewRecorder()
-	h.PreConsent(contextRec, httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(strictContextBody)).
-		WithContext(auth.WithInternal(context.Background())))
+	state := authorizationState(t, start)
+	contextRec := bindConsentForTest(t, h, state, "hydra-consent-challenge", "user_1", []string{"canvas:invoices.read", "canvas:customers.read"})
 	if contextRec.Code != http.StatusOK {
 		t.Fatalf("context: %d %s", contextRec.Code, contextRec.Body.String())
 	}
@@ -37,11 +73,11 @@ func startConsentContext(t *testing.T) (*httptest.ResponseRecorder, string, *con
 	if err := json.Unmarshal(contextRec.Body.Bytes(), &response); err != nil || response.RequestID == "" {
 		t.Fatalf("decode context: %v %s", err, contextRec.Body.String())
 	}
-	return contextRec, response.RequestID, h
+	return contextRec, response.RequestID, h, state
 }
 
 func TestPreConsentExactContractAndStrictRequest(t *testing.T) {
-	contextRec, requestID, h := startConsentContext(t)
+	contextRec, requestID, h, state := startConsentContext(t)
 
 	var top map[string]json.RawMessage
 	if err := json.Unmarshal(contextRec.Body.Bytes(), &top); err != nil {
@@ -98,16 +134,17 @@ func TestPreConsentExactContractAndStrictRequest(t *testing.T) {
 
 	// The same challenge is idempotent and returns the persisted request id.
 	replay := httptest.NewRecorder()
-	h.PreConsent(replay, httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(strictContextBody)).
+	h.PreConsent(replay, httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(consentContextBody(state, "hydra-consent-challenge", "user_1", []string{"canvas:invoices.read", "canvas:customers.read"}))).
 		WithContext(auth.WithInternal(context.Background())))
 	if replay.Code != http.StatusOK || !strings.Contains(replay.Body.String(), `"request_id":"`+requestID+`"`) {
 		t.Fatalf("context replay: %d %s", replay.Code, replay.Body.String())
 	}
 
+	validBody := consentContextBody(state, "hydra-consent-challenge", "user_1", []string{"canvas:invoices.read", "canvas:customers.read"})
 	for name, body := range map[string]string{
-		"unknown_field":   strings.TrimSuffix(strictContextBody, "}") + `,"subject":"legacy"}`,
-		"audience_scalar": strings.Replace(strictContextBody, `"requested_audience":["mcp:canvas"]`, `"requested_audience":"mcp:canvas"`, 1),
-		"duplicate_scope": strings.Replace(strictContextBody, `"canvas:customers.read"]`, `"canvas:customers.read","canvas:customers.read"]`, 1),
+		"unknown_field":   strings.TrimSuffix(validBody, "}") + `,"subject":"legacy"}`,
+		"audience_scalar": strings.Replace(validBody, `"requested_audience":["mcp:canvas"]`, `"requested_audience":"mcp:canvas"`, 1),
+		"duplicate_scope": strings.Replace(validBody, `"canvas:customers.read"]`, `"canvas:customers.read","canvas:customers.read"]`, 1),
 	} {
 		t.Run(name, func(t *testing.T) {
 			rec := httptest.NewRecorder()
@@ -125,9 +162,8 @@ func TestConsentAuditStrictEventsDurableDedupAndIdentityChecks(t *testing.T) {
 	start := httptest.NewRecorder()
 	h.Start(start, httptest.NewRequest(http.MethodPost, "/v1/connections/canvas/start", nil).
 		WithContext(withParam(auth.WithUser(context.Background(), u), "name", "canvas")))
-	contextRec := httptest.NewRecorder()
-	h.PreConsent(contextRec, httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(strictContextBody)).
-		WithContext(auth.WithInternal(context.Background())))
+	state := authorizationState(t, start)
+	contextRec := bindConsentForTest(t, h, state, "hydra-consent-challenge", "user_1", []string{"canvas:invoices.read", "canvas:customers.read"})
 	var contextResponse struct {
 		RequestID string `json:"request_id"`
 	}
@@ -200,5 +236,52 @@ func TestConsentAuditStrictEventsDurableDedupAndIdentityChecks(t *testing.T) {
 	}
 	if got := client.ConnectorAuditEvent.Query().CountX(auth.WithUser(context.Background(), u)); got != baseCount+3 {
 		t.Fatalf("failed audit requests wrote rows: %d", got)
+	}
+}
+
+func TestPreConsentRejectsStateSubjectMismatch(t *testing.T) {
+	client, userA, h := setup(t, connectors.DefaultRegistry())
+	start := func(user *ent.User, connector string) string {
+		rec := httptest.NewRecorder()
+		h.Start(rec, httptest.NewRequest(http.MethodPost, "/v1/connections/canvas/start", nil).
+			WithContext(withParam(auth.WithUser(context.Background(), user), "name", connector)))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("start for %s: %d %s", user.WorkosUserID, rec.Code, rec.Body.String())
+		}
+		return authorizationState(t, rec)
+	}
+	stateA := start(userA, "canvas")
+	userB := client.User.Create().SetEmail("b@x.co").SetWorkosUserID("user_2").SetWorkosOrgID("org_2").SaveX(auth.WithInternal(context.Background()))
+	client.Subscription.Create().SetUser(userB).SetSanctionedCredits(10000).SaveX(auth.WithUser(context.Background(), userB))
+	stateB := start(userB, "canvas")
+	scopes := []string{"canvas:invoices.read", "canvas:customers.read"}
+
+	if rec := bindConsentForTest(t, h, stateA, "challenge-for-b", userB.WorkosUserID, scopes); rec.Code != http.StatusConflict {
+		t.Fatalf("cross-subject consent binding = %d %s", rec.Code, rec.Body.String())
+	}
+	pendingA := client.OAuthPending.Query().Where(oauthpending.OwnerWorkosUserIDEQ(userA.WorkosUserID)).OnlyX(auth.WithInternal(context.Background()))
+	pendingB := client.OAuthPending.Query().Where(oauthpending.OwnerWorkosUserIDEQ(userB.WorkosUserID)).OnlyX(auth.WithInternal(context.Background()))
+	if pendingA.ConsentChallenge != "" || pendingB.ConsentChallenge != "" {
+		t.Fatalf("mismatched consent mutated pending rows: A=%q B=%q", pendingA.ConsentChallenge, pendingB.ConsentChallenge)
+	}
+	if rec := bindConsentForTest(t, h, stateB, "challenge-for-b", userB.WorkosUserID, scopes); rec.Code != http.StatusOK {
+		t.Fatalf("matching consent binding = %d %s", rec.Code, rec.Body.String())
+	}
+	if got := client.OAuthPending.GetX(auth.WithInternal(context.Background()), pendingB.ID).ConsentChallenge; got != "challenge-for-b" {
+		t.Fatalf("state owner consent challenge = %q", got)
+	}
+}
+
+func TestCallbackRejectsUnboundConsent(t *testing.T) {
+	_, user, h := setup(t, connectors.DefaultRegistry())
+	start := httptest.NewRecorder()
+	h.Start(start, httptest.NewRequest(http.MethodPost, "/v1/connections/canvas/start", nil).
+		WithContext(withParam(auth.WithUser(context.Background(), user), "name", "canvas")))
+	state := authorizationState(t, start)
+	callback := httptest.NewRecorder()
+	h.Callback(callback, httptest.NewRequest(http.MethodGet, "/v1/connections/canvas/callback?code=unused&state="+url.QueryEscape(state), nil).
+		WithContext(withParam(context.Background(), "name", "canvas")))
+	if callback.Code != http.StatusBadRequest {
+		t.Fatalf("callback without consent binding = %d %s", callback.Code, callback.Body.String())
 	}
 }

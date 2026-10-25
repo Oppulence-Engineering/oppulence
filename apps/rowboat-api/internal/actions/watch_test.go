@@ -9,9 +9,9 @@ import (
 )
 
 // executeProposal drives a proposal through approve+execute and returns it.
-func (f *fixture) executeProposal(t *testing.T, financial bool) *ent.ActionProposal {
+func (f *fixture) executeProposal(t *testing.T) *ent.ActionProposal {
 	t.Helper()
-	p := f.propose(financial)
+	p := f.propose()
 	res, err := f.broker.Approve(f.ctx, f.user, p.ID, true)
 	if err != nil {
 		t.Fatalf("approve: %v", err)
@@ -37,7 +37,7 @@ func (f *fixture) returnEvent(t *testing.T, correlationID string) *ent.CloudEven
 
 func TestCorrelateReturnClosesLoop(t *testing.T) {
 	f := newFixture(t)
-	p := f.executeProposal(t, false)
+	p := f.executeProposal(t)
 	f.now = f.now.Add(2 * time.Minute) // some time passes before the return event
 	ev := f.returnEvent(t, p.CorrelationID)
 
@@ -65,7 +65,7 @@ func TestCorrelateReturnClosesLoop(t *testing.T) {
 
 func TestCorrelateReturnIdempotent(t *testing.T) {
 	f := newFixture(t)
-	p := f.executeProposal(t, false)
+	p := f.executeProposal(t)
 	ev := f.returnEvent(t, p.CorrelationID)
 
 	if _, err := f.broker.CorrelateReturn(f.ctx, f.user, ev); err != nil {
@@ -93,7 +93,7 @@ func TestCorrelateReturnIdempotent(t *testing.T) {
 
 func TestCorrelateReturnNoMatch(t *testing.T) {
 	f := newFixture(t)
-	f.executeProposal(t, false)
+	f.executeProposal(t)
 	ev := f.returnEvent(t, "some-unrelated-correlation")
 	m, err := f.broker.CorrelateReturn(f.ctx, f.user, ev)
 	if err != nil {
@@ -118,7 +118,7 @@ func TestCorrelateReturnEmptyCorrelationIsNoop(t *testing.T) {
 // A return event for another tenant's proposal must not close this user's loop.
 func TestCorrelateReturnTenantScoped(t *testing.T) {
 	f := newFixture(t)
-	p := f.executeProposal(t, false)
+	p := f.executeProposal(t)
 
 	other := f.client.User.Create().SetEmail("c@example.com").SetWorkosUserID("op_3").
 		SaveX(internalCtx())

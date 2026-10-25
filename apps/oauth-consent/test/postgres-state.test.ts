@@ -99,6 +99,7 @@ class FakeOry {
       skip: false,
       subject: this.consentContext.subject,
       challenge,
+      request_url: `https://hydra.test/oauth2/auth?state=state_${encodeURIComponent(challenge)}`,
       requested_scope: ['offline_access', ...this.consentContext.scopes.map((scope) => scope.name)],
       requested_access_token_audience: [this.consentContext.connector.audience],
       client: { client_id: this.consentContext.client.id },
@@ -435,7 +436,7 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     });
     await a.transition(session.id, 'created', 'shown');
     const payload = { event: 'consent.granted', eventId: `${session.id}:final` };
-    const initialClaim = await a.prepareDecision(session.id, 'approve', payload, 1_000);
+    const initialClaim = await a.prepareDecision(session.id, 'approve', payload, 1_000, [], false);
 
     const restarted = new PostgresStateStore(poolB, 60_000);
     await poolA.query(
@@ -616,7 +617,6 @@ suite('PostgreSQL state store multi-instance behavior', () => {
       context,
     });
     await a.transition(session.id, 'created', 'shown');
-    await a.setSelectedScopes(session.id, []);
     await a.prepareDecision(
       session.id,
       'approve',
@@ -630,6 +630,8 @@ suite('PostgreSQL state store multi-instance behavior', () => {
         result: 'approved',
       },
       1_000,
+      [],
+      false,
     );
     ory.expireBeforeNextConsent = true;
     await poolA.query(
@@ -675,7 +677,6 @@ suite('PostgreSQL state store multi-instance behavior', () => {
       context,
     });
     await a.transition(session.id, 'created', 'shown');
-    await a.setSelectedScopes(session.id, []);
     await a.prepareDecision(
       session.id,
       'approve',
@@ -689,6 +690,8 @@ suite('PostgreSQL state store multi-instance behavior', () => {
         result: 'approved',
       },
       1_000,
+      [],
+      false,
     );
     ory.loseNextConsentResponse = true;
     await poolA.query(
@@ -739,7 +742,8 @@ suite('PostgreSQL state store multi-instance behavior', () => {
       context: moneyContext,
     });
     await a.transition(session.id, 'created', 'shown');
-    await a.setSelectedScopes(session.id, [moneyContext.scopes[0].name]);
+    const highScopes = [moneyContext.scopes[0].name];
+    await a.beginStepUp(session.id, highScopes);
     await a.prepareDecision(
       session.id,
       'approve',
@@ -753,6 +757,8 @@ suite('PostgreSQL state store multi-instance behavior', () => {
         result: 'approved',
       },
       1_000,
+      highScopes,
+      true,
     );
     await poolA.query(
       `UPDATE oauth_consent_sessions SET decision_lease_until=now() - interval '1 second' WHERE id=$1`,
@@ -816,6 +822,32 @@ suite('PostgreSQL state store multi-instance behavior', () => {
       expect.objectContaining({ id: `${session.id}:final`, delivered: true }),
       expect.objectContaining({ id: `${session.id}:invalidated`, delivered: true }),
     ]);
+  });
+
+  it('does not allow a direct approval to claim a consent already waiting for step-up', async () => {
+    const session = await a.createConsent({
+      challenge: 'challenge_step_up_scope_binding',
+      subject: moneyContext.subject,
+      hydraClientId: 'desktop',
+      context: moneyContext,
+    });
+    await a.transition(session.id, 'created', 'shown');
+    const highScopes = [moneyContext.scopes[0].name];
+    await a.beginStepUp(session.id, highScopes);
+
+    await expect(
+      a.prepareDecision(session.id, 'approve', { event: 'consent.granted' }, 1_000, [], false),
+    ).rejects.toThrow();
+
+    const claim = await a.prepareDecision(
+      session.id,
+      'approve',
+      { event: 'consent.granted' },
+      1_000,
+      highScopes,
+      true,
+    );
+    expect(claim.session.selectedScopes).toEqual(highScopes);
   });
 
   it.each(['exchange', 'jwks'] as const)(

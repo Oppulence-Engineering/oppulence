@@ -178,6 +178,70 @@ func TestListenRelaysAudioAndKeepsProviderKeyServerSide(t *testing.T) {
 	}
 }
 
+func TestListenClosesProviderWhenQuotaExpires(t *testing.T) {
+	upgrader := websocket.Upgrader{CheckOrigin: func(*http.Request) bool { return true }}
+	upstreamClosed := make(chan error, 1)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			upstreamClosed <- err
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		_, _, err = conn.ReadMessage()
+		upstreamClosed <- err
+	}))
+	t.Cleanup(upstream.Close)
+
+	database, err := db.Open(context.Background(), appconfig.Config{
+		DatabaseURL: "file:" + t.Name() + "?mode=memory&cache=shared&_pragma=foreign_keys(1)",
+		AutoMigrate: true,
+	}, zap.NewNop())
+	if err != nil {
+		t.Fatalf("db: %v", err)
+	}
+	t.Cleanup(func() { _ = database.Close() })
+	user := database.Client.User.Create().
+		SetEmail("transcription-quota@example.com").
+		SetWorkosUserID("user_transcription_quota").
+		SaveX(auth.WithInternal(context.Background()))
+	userCtx := auth.WithUser(context.Background(), user)
+	database.Client.Subscription.Create().
+		SetUser(user).
+		SetPlan("free").
+		SetStatus("active").
+		SaveX(userCtx)
+	gate := minutes.New(database.Client, zap.NewNop(), func(string) int { return 1 })
+	sec := secrets.NewFromConfig(appconfig.Config{DeepgramAPIKey: "dg-server-key"})
+	handler := New(gate, database.Client, appconfig.Config{}, sec, zap.NewNop())
+	handler.SetDeepgramURL("ws" + strings.TrimPrefix(upstream.URL, "http"))
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler.Listen(w, r.WithContext(auth.WithUser(r.Context(), user)))
+	}))
+	t.Cleanup(proxy.Close)
+
+	dialer := websocket.Dialer{HandshakeTimeout: 5 * time.Second}
+	conn, response, err := dialer.Dial("ws"+strings.TrimPrefix(proxy.URL, "http")+"/deepgram/v1/listen", nil)
+	if err != nil {
+		if response != nil && response.Body != nil {
+			body, _ := io.ReadAll(response.Body)
+			_ = response.Body.Close()
+			t.Fatalf("dial proxy: %v: %s", err, body)
+		}
+		t.Fatalf("dial proxy: %v", err)
+	}
+	defer func() { _ = conn.Close() }()
+
+	select {
+	case err := <-upstreamClosed:
+		if err == nil {
+			t.Fatal("provider connection closed without a WebSocket error")
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("provider connection stayed open after the one-second quota expired")
+	}
+}
+
 type testError struct{ message string }
 
 func (e *testError) Error() string { return e.message }

@@ -226,6 +226,9 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	if state == "" || pending.State == state || pending.StateHash == "" || pending.State != "sha256:"+pending.StateHash {
 		t.Fatalf("pending state was not hash-only: raw=%q stored=%q hash=%q", state, pending.State, pending.StateHash)
 	}
+	if rec := bindConsentForTest(t, h, state, "consent-oauth-flow", u.WorkosUserID, []string{"canvas:invoices.read", "canvas:customers.read"}); rec.Code != http.StatusOK {
+		t.Fatalf("pre-consent binding: %d %s", rec.Code, rec.Body.String())
+	}
 
 	// 2. Callback (browser redirect — no user in context). It parks the grant and
 	// deep-links back with the session; it must NOT persist the connection itself.
@@ -603,7 +606,7 @@ func TestPreConsentEntitlement(t *testing.T) {
 	reg, _ := connectors.LoadRegistry([]byte(`[{"name":"canvas","displayName":"Canvas","authType":"oauth","audience":"mcp:canvas","requiredPlan":"pro","scopes":[{"name":"canvas:invoices.read","displayName":"Read invoices","description":"View invoices.","grantTier":"required","risk":"low"}]}]`))
 	client, u, h := setup(t, reg)
 	client.OAuthPending.Create().
-		SetState("sha256:test-entitlement").
+		SetState("test-entitlement").
 		SetProvider("canvas").
 		SetPayloadEncrypted([]byte("sealed")).
 		SetExpiresAt(time.Now().Add(time.Minute)).
@@ -613,7 +616,7 @@ func TestPreConsentEntitlement(t *testing.T) {
 		SetRequestedScopes([]string{"canvas:invoices.read"}).
 		ExecX(context.Background())
 
-	body := `{"version":1,"challenge":"hydra-challenge","workos_user_id":"user_1","hydra_client_id":"broker","requested_audience":["mcp:canvas"],"requested_scopes":["canvas:invoices.read"]}`
+	body := `{"version":1,"challenge":"hydra-challenge","state":"test-entitlement","workos_user_id":"user_1","hydra_client_id":"broker","requested_audience":["mcp:canvas"],"requested_scopes":["canvas:invoices.read"]}`
 	req := httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(body)).
 		WithContext(auth.WithInternal(context.Background()))
 	rec := httptest.NewRecorder()
@@ -1059,6 +1062,9 @@ func TestExpiredCallbackLeaseForcesBoundedRestart(t *testing.T) {
 	_ = json.Unmarshal(start.Body.Bytes(), &body)
 	parsed, _ := url.Parse(body.AuthorizeURL)
 	state := parsed.Query().Get("state")
+	if rec := bindConsentForTest(t, h, state, "consent-expired-callback", u.WorkosUserID, []string{"canvas:invoices.read", "canvas:customers.read"}); rec.Code != http.StatusOK {
+		t.Fatalf("pre-consent binding: %d %s", rec.Code, rec.Body.String())
+	}
 	pending := client.OAuthPending.Query().OnlyX(auth.WithInternal(context.Background()))
 	pending.Update().SetLifecycleStatus("callback_processing").SetCallbackClaimID(uuid.New()).SetCallbackClaimedUntil(time.Now().Add(-time.Minute)).SaveX(auth.WithInternal(context.Background()))
 	rec := httptest.NewRecorder()

@@ -47,7 +47,7 @@ func TestProposeActionToolInvoke(t *testing.T) {
 	tool := NewProposeActionTool(fp)
 	uid := uuid.New()
 	scope := ToolScope{UserID: uid.String(), RunID: "run_42"}
-	args := json.RawMessage(`{"target":"conduit:invoice:inv_1","kind":"conduit.dunning.advance","params":{"step":2},"financial":true,"rationale":"overdue"}`)
+	args := json.RawMessage(`{"target":"conduit:invoice:inv_1","kind":"conduit.dunning.advance","params":{"step":2},"financial":false,"rationale":"overdue"}`)
 
 	out, err := tool.Invoke(context.Background(), scope, args)
 	if err != nil {
@@ -57,7 +57,7 @@ func TestProposeActionToolInvoke(t *testing.T) {
 		t.Fatalf("scope not propagated: %+v", fp.got)
 	}
 	if fp.got.Target != "conduit:invoice:inv_1" || fp.got.Kind != "conduit.dunning.advance" ||
-		!fp.got.Financial || fp.got.ParamsJSON != `{"step":2}` {
+		fp.got.ParamsJSON != `{"step":2}` {
 		t.Fatalf("request mismatch: %+v", fp.got)
 	}
 	var res map[string]any

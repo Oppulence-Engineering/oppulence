@@ -8,9 +8,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
 )
 
-// Composio runs in every channel, including shared Slack sessions: these
-// capabilities are deliberately not wrapped in the owner-scope channel guard
-// the other connector tools use.
+// Composio tools run with the Rowboat user's connected-account scope. Shared
+// Slack sessions have no requester-to-user mapping, so guard them like the
+// other owner-scoped connectors.
 
 // ComposioToolSearchCapability finds actions in the user's connected products.
 func ComposioToolSearchCapability() Capability {
@@ -24,7 +24,7 @@ func ComposioToolSearchCapability() Capability {
 			if d.Composio == nil || !d.Composio.Configured() {
 				return newUnavailableTool("connector.read.composio_tool_search", "the Composio tool search is not configured on this server")
 			}
-			return backgroundtaskruntime.NewComposioToolSearchTool(d.Composio)
+			return guardOwnerScopedToolInSlack(d, backgroundtaskruntime.NewComposioToolSearchTool(d.Composio))
 		},
 	}
 }
@@ -41,7 +41,7 @@ func ComposioToolDescribeCapability() Capability {
 			if d.Composio == nil || !d.Composio.Configured() {
 				return newUnavailableTool("connector.read.composio_tool_describe", "the Composio tool schema read is not configured on this server")
 			}
-			return backgroundtaskruntime.NewComposioToolDescribeTool(d.Composio)
+			return guardOwnerScopedToolInSlack(d, backgroundtaskruntime.NewComposioToolDescribeTool(d.Composio))
 		},
 	}
 }
@@ -61,7 +61,7 @@ func ComposioToolExecuteCapability() Capability {
 			if err != nil || d.Composio == nil || !d.Composio.Configured() {
 				return newUnavailableTool("connector.write.composio_tool_execute", "the Composio action tool is not configured on this server")
 			}
-			return backgroundtaskruntime.NewComposioToolExecuteTool(d.Composio, uid)
+			return guardOwnerScopedToolInSlack(d, backgroundtaskruntime.NewComposioToolExecuteTool(d.Composio, uid))
 		},
 	}
 }
