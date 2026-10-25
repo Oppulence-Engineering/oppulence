@@ -9,9 +9,9 @@ import { LANDING_STAGE_RADIUS, LANDING_WINDOW_SHADOW } from "./tokens";
 type CtaSize = "compact" | "default" | "display";
 
 const CTA_SIZE = {
-  compact: "h-[26px] px-3 text-[13px] [--cta-arrow-icon-size:10px]",
-  default: "h-9 px-4 text-[14px] [--cta-arrow-icon-size:12px]",
-  display: "h-10 px-4 text-[14px] [--cta-arrow-icon-size:14px]",
+  compact: "min-h-11 px-3 py-2 text-[13px] [--cta-arrow-icon-size:10px]",
+  default: "min-h-11 px-4 py-2 text-[14px] [--cta-arrow-icon-size:12px]",
+  display: "min-h-11 px-4 py-2 text-[14px] [--cta-arrow-icon-size:14px]",
 } as const;
 
 /** Sim `LandingCtaLink` geometry without ChipLink / PostHog dependencies. */
@@ -55,11 +55,11 @@ export function SimCtaLink({
 export function SimHeroCta({ size = "display" }: { size?: CtaSize }) {
   return (
     <div className="flex items-center gap-2 max-sm:w-full max-sm:flex-col max-sm:items-stretch">
-      <SimCtaLink href="/product" size={size}>
-        See how it works
+      <SimCtaLink href="/sign-up" size={size}>
+        Start on the web
       </SimCtaLink>
-      <SimCtaLink href="/sign-up" size={size} variant="outline">
-        Start for free
+      <SimCtaLink href="/product" size={size} variant="outline">
+        Explore the assistant
       </SimCtaLink>
     </div>
   );

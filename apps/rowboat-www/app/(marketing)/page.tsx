@@ -6,9 +6,9 @@ import { SimLandingPage } from "./sim-landing/landing-page";
 import { JsonLd } from "./marketing-primitives";
 import { faqJsonLd } from "./metadata";
 
-const TITLE = "The commitment ledger that survives kickoff";
+const TITLE = "One assistant, wherever you work";
 const DESCRIPTION =
-  "Oppulence is a two-sided register of business promises. It reads Gmail, Slack, calls, and HubSpot, lists the sentences that look like commitments, and waits for you to confirm them.";
+  "An email-first personal assistant that brings together relationships, meetings, and notes. Explore Oppulence Web, Desktop, and the optional Voice companion.";
 
 export const metadata: Metadata = {
   title: TITLE,

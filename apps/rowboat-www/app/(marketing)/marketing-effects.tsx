@@ -15,7 +15,7 @@ export function MarketingEffects() {
     const mobileMenu = document.querySelector<HTMLDetailsElement>("[data-marketing-mobile-menu]");
     const mobileMenuSummary = mobileMenu?.querySelector<HTMLElement>("summary");
     const mobileMenuLinks = mobileMenu?.querySelectorAll<HTMLAnchorElement>("a") ?? [];
-    const desktopMedia = window.matchMedia("(min-width: 1024px)");
+    const desktopMedia = window.matchMedia("(min-width: 1280px)");
     const previousBodyOverflow = document.body.style.overflow;
     const previousScrollPortOverflow = scrollPort?.style.overflowY ?? "";
 
@@ -41,6 +41,12 @@ export function MarketingEffects() {
 
     const handleDesktopMedia = (event: MediaQueryListEvent) => {
       if (event.matches) closeMobileMenu();
+    };
+
+    const handleMenuFocusOut = (event: FocusEvent) => {
+      if (event.relatedTarget instanceof Node && !mobileMenu?.contains(event.relatedTarget)) {
+        closeMobileMenu();
+      }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -113,6 +119,7 @@ export function MarketingEffects() {
     window.addEventListener("keydown", handleKeyDown);
     desktopMedia.addEventListener("change", handleDesktopMedia);
     mobileMenu?.addEventListener("toggle", syncMobileMenuState);
+    mobileMenu?.addEventListener("focusout", handleMenuFocusOut);
     mobileMenuLinks.forEach((link) => link.addEventListener("click", closeMobileMenu));
 
     return () => {
@@ -128,6 +135,7 @@ export function MarketingEffects() {
       window.removeEventListener("keydown", handleKeyDown);
       desktopMedia.removeEventListener("change", handleDesktopMedia);
       mobileMenu?.removeEventListener("toggle", syncMobileMenuState);
+      mobileMenu?.removeEventListener("focusout", handleMenuFocusOut);
       mobileMenuLinks.forEach((link) => link.removeEventListener("click", closeMobileMenu));
       root.removeAttribute("data-marketing-scrolled");
       root.removeAttribute("data-marketing-menu-open");

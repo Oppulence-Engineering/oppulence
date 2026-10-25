@@ -28,27 +28,27 @@ export const headerNav: NavGroup[] = [
   {
     label: "Product",
     href: "/products",
-    description: "The ledger and the three surfaces that use it.",
+    description: "One assistant across Web, Desktop, and Voice.",
     items: [
       {
-        label: "Commitment Ledger",
+        label: "The Oppulence assistant",
         href: "/product",
-        description: "What was promised, what is owed, and what changed.",
+        description: "Email, relationships, meetings, and follow-through.",
       },
       {
         label: "Oppulence Web",
         href: "/web",
-        description: "The book of business in a browser tab.",
+        description: "Your work, organized in a browser.",
       },
       {
         label: "Oppulence Desktop",
         href: "/desktop",
-        description: "The native app that sits next to the work.",
+        description: "Your full workspace, with local files and native tools.",
       },
       {
         label: "Oppulence Voice",
         href: "/voice-app",
-        description: "Dictate and capture meetings on the machine.",
+        description: "Optional dictation, thought capture, and meeting recording.",
       },
       {
         label: "Download",
@@ -60,25 +60,25 @@ export const headerNav: NavGroup[] = [
   {
     label: "Features",
     href: "/features",
-    description: "How the ledger actually works.",
+    description: "Context, preparation, and follow-through.",
     items: [
       {
-        label: "Commitment register",
+        label: "Follow-ups and commitments",
         href: "/features/commitment-register",
-        description: "A two-sided record of what you owe and what they owe.",
+        description: "Keep your promises and outstanding requests in view.",
       },
       {
-        label: "Account mission control",
+        label: "Relationship context",
         href: "/features/account-mission-control",
-        description: "One account, one timeline, the next move.",
+        description: "The emails, meetings, and notes behind a conversation.",
       },
       {
-        label: "Attention queue",
+        label: "Work that needs you",
         href: "/features/attention-queue",
-        description: "The few relationships that need a person this week.",
+        description: "Open questions and follow-ups worth your attention.",
       },
       {
-        label: "Governed actions",
+        label: "Review and approve",
         href: "/features/governed-actions",
         description: "Drafts wait for approval before anything is sent.",
       },
@@ -111,7 +111,7 @@ export const headerNav: NavGroup[] = [
       {
         label: "Founder-operator",
         href: "/use-cases/founder-operator",
-        description: "Recover the promises still sitting in your sent folder.",
+        description: "Prepare replies and keep unfinished work in view.",
       },
       {
         label: "Account management",
@@ -121,7 +121,7 @@ export const headerNav: NavGroup[] = [
       {
         label: "Meetings",
         href: "/use-cases/meetings",
-        description: "Walk in briefed. Walk out with the commitments written down.",
+        description: "Prepare for the conversation and review the follow-up.",
       },
       {
         label: "Research and verification",
@@ -142,7 +142,7 @@ export const footerGroups: { title: string; items: NavLink[] }[] = [
     title: "Product",
     items: [
       { label: "Products", href: "/products" },
-      { label: "Commitment Ledger", href: "/product" },
+      { label: "The Oppulence assistant", href: "/product" },
       { label: "Web", href: "/web" },
       { label: "Desktop", href: "/desktop" },
       { label: "Voice", href: "/voice-app" },
@@ -153,10 +153,10 @@ export const footerGroups: { title: string; items: NavLink[] }[] = [
   {
     title: "Features",
     items: [
-      { label: "Commitment register", href: "/features/commitment-register" },
-      { label: "Account mission control", href: "/features/account-mission-control" },
-      { label: "Attention queue", href: "/features/attention-queue" },
-      { label: "Governed actions", href: "/features/governed-actions" },
+      { label: "Follow-ups and commitments", href: "/features/commitment-register" },
+      { label: "Relationship context", href: "/features/account-mission-control" },
+      { label: "Work that needs you", href: "/features/attention-queue" },
+      { label: "Review and approve", href: "/features/governed-actions" },
       { label: "Meeting capture", href: "/features/meeting-capture" },
       { label: "Live notes", href: "/features/live-notes" },
       { label: "Local vault", href: "/features/local-vault" },

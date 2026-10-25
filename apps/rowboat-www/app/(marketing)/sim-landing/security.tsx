@@ -44,12 +44,12 @@ export function SimSecurity() {
             )}
             id="security-heading"
           >
-            Governance before anything leaves the building.
+            Your context. Your decision.
           </h2>
           <div className="flex w-[min(28rem,40%)] flex-col items-start max-xl:w-full">
             <p className={cn("max-w-[34ch] text-pretty text-[var(--text-body)]", HOME_TYPE.lead)}>
-              Oppulence is built for teams who want a register with sources, approval on external
-              writes, and clear docs about what stays local.
+              Inspect the sources, keep private notes distinct from shared evidence, and review
+              proposed actions. Understand what stays local and what a connected provider receives.
             </p>
             <SimCtaLink className="mt-5" href="/security" variant="outline">
               Security overview

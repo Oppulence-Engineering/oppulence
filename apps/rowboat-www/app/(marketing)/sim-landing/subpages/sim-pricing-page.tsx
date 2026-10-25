@@ -75,7 +75,7 @@ export function SimPricingPage() {
   return (
     <>
       <JsonLd data={faqJsonLd([...faqs])} />
-      <main id="main-content">
+      <div>
         <section
           aria-labelledby="pricing-heading"
           className={cn(
@@ -93,15 +93,15 @@ export function SimPricingPage() {
               className="max-w-[24ch] text-balance text-[30px] text-[var(--text-primary)] leading-[1.05] tracking-[-0.02em] max-sm:text-[26px] lg:text-[36px]"
               id="pricing-heading"
             >
-              Plans that match how the register enters your week
+              Choose a plan for your ongoing work
             </h1>
             <p className="sr-only">
               Oppulence pricing: Watch is free, Chase is ninety-nine dollars per month, Intelligence
               is two hundred forty-nine dollars per month. Flat monthly billing with no seat tax.
             </p>
             <p className="max-w-[52ch] text-pretty text-[var(--text-body)] text-base leading-[1.55]">
-              These are the published plans. We are not inventing a fourth tier, a seat tax, or an
-              unpublished annual discount to look more like enterprise software.
+              Compare the current plans for relationship review and follow-ups. Future Web, Desktop,
+              and Voice capabilities are not included until they are released under a plan.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
               {TRUST_CHIPS.map((chip) => (
@@ -184,7 +184,7 @@ export function SimPricingPage() {
             lede="If a number is not on this page, it is not a public price."
           />
         </section>
-      </main>
+      </div>
     </>
   );
 }

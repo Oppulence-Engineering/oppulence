@@ -99,7 +99,7 @@ export function SimSeoAlternativePage({
                 [what we are]
               </p>
               <h2 className="mb-3 text-[20px] text-[var(--text-primary)] leading-[100%] tracking-[-0.02em]">
-                Oppulence is a commitment ledger.
+                Oppulence is an email-first personal assistant.
               </h2>
               <p className="max-w-[52ch] text-[15px] text-[var(--text-body)] leading-[1.55]">
                 {alternative.whatWeAre}

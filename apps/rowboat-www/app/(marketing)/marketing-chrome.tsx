@@ -86,12 +86,12 @@ export function InlineLogo({
 
 export function MobileMenu() {
   return (
-    <details className="relative lg:hidden" data-marketing-mobile-menu>
+    <details className="relative xl:hidden" data-marketing-mobile-menu>
       <summary aria-label="Toggle navigation" className="linear-mobile-summary">
         <Badge className={marketingSpanClass} variant="ghost" />
         <Badge className={marketingSpanClass} variant="ghost" />
       </summary>
-      <nav className="linear-mobile-panel sm-mobile-panel">
+      <nav aria-label="Mobile navigation" className="linear-mobile-panel sm-mobile-panel">
         {mobileNavLinks.map((item) => (
           <Link href={item.href} key={`${item.label}-${item.href}`}>
             {item.label}

@@ -1,259 +1,228 @@
 # Oppulence
 
-**The commitment ledger**
+**One assistant, wherever you work.**
 
-Oppulence is the independent record of what your business promised and what was
-promised to you, proven by evidence.
+Oppulence is an email-first personal assistant built around the people you work
+with. It brings together conversations, meetings, and notes so you can understand
+what happened, prepare a useful reply, and follow through on unfinished work.
 
-Businesses run on promises that no system records: a delivery date agreed on a
-call, a scope change conceded in a thread, a vendor SLA nobody tracks. Your CRM
-records the deal. It does not record the obligation.
+A customer asks about a rollout. The answer is in last week's meeting, an older
+email, and a note you made afterward. Oppulence's purpose is to bring that
+context to the reply, with the sources available for review.
 
-Oppulence treats email, calendar, Slack, meetings, notes, documents, and CRM as
-evidence streams, extracts the commitments inside them, and tracks each one to
-an outcome across the web and desktop apps.
+[Open Oppulence Web](https://oppulence.io/app) ·
+[Explore the product](https://oppulence.io/product) ·
+[Download Desktop or Voice](https://oppulence.io/download)
 
-The product direction is captured in the
-[Oppulence one-pager](./docs/one-pager.md) and
-[RFC 036: Relationship State Engine](./apps/rfc/036-relationship-state-engine.md):
+## One assistant, three ways to work
 
-> Model the obligation directly. Treat every integration as an observer, link
-> every commitment to the evidence that created it, and recommend the next
-> action without hiding how the system reached its conclusion.
+| Application           | Role                          | When to use it                                                                                                        |
+| --------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Oppulence Web**     | Your work, organized          | Review connected relationships, prepared work, sources, and approvals in a browser. No desktop installation required. |
+| **Oppulence Desktop** | Your full working environment | Work with email, local files, Markdown notes, an embedded browser, and native tools.                                  |
+| **Oppulence Voice**   | Your assistant within reach   | Dictate, capture a thought, record a meeting, or edit selected text without opening the full workspace.               |
 
-Use Oppulence to:
+The direction is one account, one relationship memory, one assistant, and one
+history of actions. Each application has a distinct role. Voice is an optional
+companion; using Oppulence should not require installing two desktop apps.
 
-- Open the Commitment Register and see what you owe them and what they owe you.
-- Know who made each promise, by when, and whether it was met, missed,
-  renegotiated, or is now at risk.
-- Trace every commitment back to the exact email, meeting, Slack message, CRM
-  record, note, or desktop context that created it.
-- Catch obligations before a renewal, deal, onboarding, or delivery date
-  silently slips.
-- Export a commitment record that survives being forwarded to a customer, an
-  executive, or counsel.
-- Correct the model when the evidence is incomplete or wrong.
-- Review and approve external actions before Oppulence sends or writes
-  anything.
+Voice remains in the separate OpenWhispr-derived capture repository. It can be
+useful on its own. The planned **Ask Oppulence** entry point connects its compact
+panel to Oppulence's assistant and opens the full workspace for larger reviews.
 
-Download the latest builds for Mac, Windows, and Linux:
-[Oppulence releases](https://github.com/Oppulence-Engineering/rowboat/releases/latest).
+## What is available and what is next
 
-⭐ If you find Oppulence useful, please star the repo. It helps more people find it.
+The repository contains a working desktop assistant with email, local notes,
+meeting capture, live notes, background tasks, and an embedded browser. The web
+app and shared API provide relationship views, assistant work, connectors, and
+approval flows. Availability depends on the deployment, connected sources, and
+rollout stage.
 
----
+We are connecting these foundations into a more consistent experience. The
+following changes are **in development**:
 
-## Installation
+- A common Today, Inbox, People, Library, and Activity experience on Web and Desktop.
+- Relationship context brought directly into email review and reply preparation.
+- Voice's Ask Oppulence panel using the same assistant runtime and action history.
+- Accepted Voice artifacts becoming relationship history after identity review,
+  with deletion propagation and explicit sharing controls.
+- A coordinated onboarding and optional Voice installation experience.
 
-**Download latest for Mac/Windows/Linux:** [Oppulence releases](https://github.com/Oppulence-Engineering/rowboat/releases/latest)
+Capture ingestion already has a versioned handoff. Accepting a transcript is not
+proof that it has been linked to a person or used in a response. See the current
+implementation status in
+[RFC 055](./apps/rfc/055-capture-product-boundary-and-rowboat-integration.md).
 
-**All release files:** https://github.com/Oppulence-Engineering/rowboat/releases/latest
+## The workflow we are building around
 
-### Google setup
+**Meeting → relationship memory → contextual email reply → tracked follow-up**
 
-To connect Google services (Gmail, Calendar, and Drive), follow [Google setup](./google-setup.md).
+1. **Before the meeting:** prepare a short brief from authorized emails, prior
+   meetings, relevant notes, and open questions.
+2. **During the meeting:** use Voice for capture, with appropriate consent and a
+   visible recording indicator.
+3. **After the meeting:** review the transcript, correct speakers and suggested
+   relationship matches, and choose what to share with Oppulence.
+4. **When the next email arrives:** bring the relevant history beside the thread.
+   Prepare a reply with its sources and any uncertain claims visible.
+5. **After approval:** record the action and its verified result. Keep an open
+   request visible while waiting for a response or other evidence of completion.
 
-### Voice input
+This is the target end-to-end experience. It is also the standard for evaluating
+whether the separate applications work together usefully.
 
-To enable voice input and voice notes (optional), add a Deepgram API key in `~/.rowboat/config/deepgram.json`
+## A workspace organized around the next decision
 
-### Voice output
+The target navigation keeps everyday work easy to find:
 
-To enable voice output (optional), add an ElevenLabs API key in `~/.rowboat/config/elevenlabs.json`
+| Destination  | What belongs there                                                                    |
+| ------------ | ------------------------------------------------------------------------------------- |
+| **Today**    | Work needing your decision, prepared replies, waiting items, and upcoming meetings.   |
+| **Inbox**    | Email, triage, drafts, search, and relationship context beside a conversation.        |
+| **People**   | A person or company's history across correspondence, meetings, notes, and follow-ups. |
+| **Library**  | Notes, transcripts, files, and the source material behind an answer.                  |
+| **Activity** | Proposals, approvals, execution results, failures, and available undo actions.        |
 
-### Web search
+The assistant should be available through search, a command palette, and a
+contextual panel. Relationship graphs and agent configuration support deeper
+work without becoming the first thing every user has to learn.
 
-To use Exa research search (optional), add the Exa API key in `~/.rowboat/config/exa-search.json`
+## Memory you can inspect and correct
 
-### External tools
+The relationship model connects people, companies, conversations, and ongoing
+work. It retains the distinction between three kinds of information:
 
-To enable external tools (optional), add MCP servers or connect
-Oppulence-managed integrations from the app.
+| Information             | How it should be used                                                                  |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| **Source evidence**     | What someone actually said, linked to the original email or transcript passage.        |
+| **Private notes**       | What you wrote or think, attributed to you and private unless you explicitly share it. |
+| **Assistant inference** | A proposed interpretation, labeled as uncertain and open to correction.                |
 
-All API key files use the same format:
+A private note saying a customer may be worried about price is not evidence that
+the customer said so. It must not silently become a quoted fact or appear in an
+outgoing email. Ambiguous speakers and relationship matches need review.
 
+Marketing feedback, campaign responses, and customer objections can contribute
+to the same relationship history when authorized. They do not need a separate
+marketing dashboard or a second memory system.
+
+The existing commitment register, account views, attention queue, and knowledge
+graph remain useful tools inside this broader assistant experience. The
+[relationship-state architecture](./apps/rfc/036-relationship-state-engine.md)
+describes their underlying evidence model.
+
+## Actions you can review
+
+For each proposal, the experience should show what happened, which sources
+support it, what Oppulence proposes, and whether your approval is required.
+
+External sends and writes use the governed action path. A prepared draft, an
+approved action, an execution attempt, and a verified result are different
+states. A tool call alone is not proof of completion. Failed or uncertain work
+must remain visible for repair.
+
+Start with Gmail and add other sources when useful. The goal is to support work
+alongside your existing email client as well as inside Oppulence. Dictating into
+Outlook is separate from connecting Outlook as a relationship data source.
+
+## Local work and sharing
+
+Desktop maintains an Obsidian-compatible Markdown vault that you can inspect,
+edit, back up, and delete. Local files, live notes, and native tools extend the
+workspace. Cloud-backed work and local background tasks have different runtime
+requirements.
+
+Voice owns global dictation, meeting recording, and capture controls. Desktop
+owns full-workspace navigation. Each global command should have one owner.
+
+Local transcription can keep audio on the device. A cloud transcription or model
+provider receives the content needed for that request. Signing in is not consent
+to publish private notes or upload all local files. The planned shared experience
+must preserve explicit artifact transfer, visibility, and deletion controls.
+
+## Getting started
+
+### Web
+
+[Open Oppulence](https://oppulence.io/app), sign in, and connect only the sources
+you want the assistant to use. Web requires no native application.
+
+### Desktop and Voice
+
+Use the [download page](https://oppulence.io/download) to choose an application
+and a supported installer. Desktop and Voice currently have separate downloads.
+Install the capabilities you need; the complete Voice-to-memory journey is still
+being integrated.
+
+For desktop Google connections, follow [Google setup](./google-setup.md).
+Optional desktop provider configuration lives under `~/.rowboat/config/`:
+
+| Capability                  | Configuration file |
+| --------------------------- | ------------------ |
+| Model provider              | `models.json`      |
+| Voice input and voice notes | `deepgram.json`    |
+| Voice output                | `elevenlabs.json`  |
+| Exa web search              | `exa-search.json`  |
+| External MCP tools          | `mcp.json`         |
+
+The optional Deepgram, ElevenLabs, and Exa key files use this format:
+
+```json
+{ "apiKey": "<your-key>" }
 ```
-{
-  "apiKey": "<key>"
-}
+
+Model configuration and supported local or hosted providers are documented in
+[the desktop engineering guide](./apps/x/AGENTS.md). Review an MCP server's access
+before connecting it, especially when it can send messages or change data.
+
+## Develop locally
+
+The desktop is a nested pnpm workspace. From the repository root:
+
+```bash
+cd apps/x
+pnpm install
+npm run deps
+npm run dev
 ```
 
-## What it does
+For desktop compilation and lint checks:
 
-Oppulence turns fragmented activity into a durable relationship model and a
-small set of concrete workflows:
+```bash
+npm run deps
+npm run lint
+```
 
-- **Account Mission Control** — the current state, recent changes, supporting
-  evidence, participants, commitments, risks, and recommended next action.
-- **Portfolio Attention Queue** — the relationships that need review now,
-  ordered by explainable signals rather than an opaque score.
-- **Account and Portfolio Graphs** — typed, directional views of people,
-  commitments, risks, milestones, evidence, sources, and approval-gated actions,
-  with historical boundaries, natural-language investigation, and shareable
-  saved views.
-- **Relationship Timeline** — source-linked observations and state changes
-  across email, meetings, Slack, calendar, notes, and CRM.
-- **Commitment and Risk Tracking** — open promises, unresolved objections,
-  missing next steps, stalled onboarding, and renewal risk.
-- **Meeting Lifecycle** — pre-briefs, live or imported notes, action
-  extraction, follow-up drafts, and relationship-state updates.
-- **Approval-Gated Actions** — Oppulence proposes; a person approves before an
-  external send or write.
-- **Source Health** — visibility into which integrations are connected,
-  current, stale, or failing.
+For the public site and web application:
 
-The desktop app also maintains an **Obsidian-compatible Markdown vault** for
-local notes and working memory that users can inspect, edit, back up, and
-delete.
+```bash
+cd apps/rowboat-www
+npm ci
+npm run dev
+```
 
-## Integrations
-
-Oppulence builds relationship state from the work the team already does:
-email, calendar, Slack, meetings, notes, CRM, browser context, and connected
-tools. Managed integrations and MCP servers extend that evidence and action
-layer without changing the relationship model.
-
-## How it’s different
-
-Most AI tools search a collection of messages and generate a fresh summary.
-Oppulence maintains **long-lived relationship state** instead:
-
-- observations remain immutable and source-linked;
-- assertions record whether a fact came from a source, a rule, AI inference, or
-  a user correction;
-- deterministic projection owns canonical state;
-- user corrections outrank source facts and model inference;
-- ambiguous identities wait for review rather than auto-merging;
-- recommendations include their evidence and confidence;
-- approvals and outcomes become part of the same history.
-
-The result is a model that becomes more useful as evidence, corrections,
-decisions, and outcomes accumulate.
-
-## How the relationship model works
-
-**Observe → Assert → Project → Explain → Recommend → Approve → Act → Learn**
-
-1. **Observe** — integrations and native clients emit immutable observations.
-2. **Assert** — facts, rules, inferences, and corrections become
-   provenance-bearing claims.
-3. **Project** — deterministic code produces the current relationship state.
-4. **Explain** — every material state and change links to supporting evidence.
-5. **Recommend** — Oppulence proposes the safest valuable next action.
-6. **Approve** — external actions wait for a human decision.
-7. **Act** — approved email, Slack, calendar, and CRM actions execute
-   idempotently.
-8. **Learn** — replies, meetings, edits, decisions, and outcomes update the
-   relationship history.
-
-## Web and desktop parity
-
-Web and desktop are equal clients of the same relationship-intelligence
-backend.
-
-| Web                                                                                                                  | Desktop                                                                                                                               |
-| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Portfolio review, team coordination, Account Mission Control, evidence, corrections, recommendations, and approvals. | The same relationship state and workflows, plus local knowledge, meeting capture, voice notes, browser context, and native execution. |
-
-Platform-native affordances differ, but relationship state, evidence,
-corrections, recommendations, approvals, and graph investigations stay
-synchronized. Both clients validate the same versioned graph contract at
-runtime. Neither client ships a core relationship workflow alone.
-
-## Core workflows
-
-- **Account review** — understand the state of a relationship, what changed,
-  what evidence supports it, and what needs action now.
-- **Portfolio triage** — find quiet accounts, unresolved risks, overdue
-  commitments, and missing next steps across the book of business.
-- **Meeting prep and closeout** — walk in with prior context, leave with
-  commitments, and project the new evidence into relationship state.
-- **Follow-up recovery** — identify relationships going cold and draft the next
-  touch from the full history.
-- **Human approval** — review a proposed email, task, CRM update, calendar
-  action, or Slack message before it lands externally.
-
-## Background jobs
-
-Oppulence is designed around always-on observation and projection, not only
-one-off chat:
-
-| Job                         | What it does                                                                                      |
-| --------------------------- | ------------------------------------------------------------------------------------------------- |
-| Relationship Refresh        | Ingests new evidence and projects the latest account state.                                       |
-| Attention Monitor           | Finds quiet accounts, unresolved risks, overdue commitments, and missing next steps.              |
-| Meeting Pre-Brief           | Prepares the current state, prior evidence, participants, and open loops.                         |
-| Post-Meeting Processor      | Extracts observations and commitments, drafts a recap, and updates relationship state.            |
-| Recommendation Review       | Produces evidence-backed next actions and routes them for approval.                               |
-| Connector Health and Repair | Surfaces stale sources, failed syncs, and token problems before the team trusts incomplete state. |
-
-## Live notes
-
-Live notes are desktop artifacts that stay updated from the same relationship
-evidence:
-
-- Track a customer, prospect, company, person, deal, project, partner, vendor,
-  competitor, or market topic.
-- Refresh on a schedule, inside a time window, on an event, or manually.
-- Keep a running summary with a source trail, recent changes, open loops, and a
-  suggested next action.
-
-The local Markdown vault remains user-controlled, while shared relationship
-state stays synchronized with the web app.
-
-## Finance operating loop
-
-Finance workflows consume the same relationship state rather than defining the
-category:
-
-- **Conduitt / Conduit** gives evidence: invoice emails, replies, disputes, and follow-ups bound to the financial record they explain.
-- **Cadence** gives AP obligations: vendor bills, payment runs, due dates, approvals, and cash outflows.
-- **Eigen** gives foresight: runway, liquidity, covenant, and AR/AP stress simulation before an agent recommends an action.
-
-Together they let Oppulence detect revenue and cash-flow risk from the state of
-the underlying customer and vendor relationships.
-
-## Bring your own model
-
-Oppulence works with the model setup you prefer:
-
-- **Local models** via Ollama or LM Studio
-- **Hosted models** (bring your own API key/provider)
-- Swap models without resetting the underlying evidence or relationship
-  history
-
-## Extend Oppulence with tools (MCP)
-
-Oppulence can connect to external tools and services through the
-**Model Context Protocol (MCP)**. Add search, databases, CRMs, support tools,
-automations, or internal systems as additional evidence and action providers.
-
-Examples: Exa (web search), Twitter/X, ElevenLabs (voice), Slack, Linear/Jira, GitHub, and more.
-
-## Evidence, control, and ownership
-
-- Every material relationship claim links to source evidence.
-- User corrections are explicit, durable, and higher priority than inferred
-  state.
-- Raw evidence and canonical relationship state are tenant-isolated.
-- Desktop notes and working memory remain inspectable as plain Markdown.
-- External actions are approval-gated and audited.
-- Cloud jobs are scoped to observation, projection, recommendation, and
-  approved execution.
+See the [web README](./apps/rowboat-www/README.md) for the local API stack and
+[quality checks](./apps/rowboat-www/quality/README.md). Backend setup and deployment
+are covered in the [API README](./apps/rowboat-api/README.md) and
+[deployment guide](./docs/BACKEND_DEPLOYMENT.md).
 
 ---
 
 ## Architecture & Deployment
 
-The product is organized around three primary surfaces backed by one
-relationship model:
+Web and Desktop share the API in this monorepo. Voice remains a separate
+companion repository, connected through the versioned capture contract in
+[RFC 055](./apps/rfc/055-capture-product-boundary-and-rowboat-integration.md).
+The shared assistant experience is the product direction; it does not imply
+that every workflow or local artifact already syncs between applications.
 
-1. **Oppulence Web (`apps/rowboat-www`)** — portfolio review, team
-   coordination, Account Mission Control, evidence, corrections,
-   recommendations, and approvals.
-2. **Oppulence Desktop (`apps/x`)** — the same relationship workflows plus
-   ambient context, local knowledge, meeting capture, voice notes, and native
-   execution.
+The main components in this repository are:
+
+1. **Oppulence Web (`apps/rowboat-www`)** — the browser workspace for connected
+   relationships, source review, assistant conversations, and approvals.
+   Today, Inbox, People, Library, and Activity are the target experience.
+2. **Oppulence Desktop (`apps/x`)** — the full native workspace with email,
+   local files, notes, an embedded browser, and native tools.
 3. **Oppulence API (`apps/rowboat-api`)** — the relationship state engine,
    evidence and assertion history, connector broker, and always-on execution
    plane shared by both clients.
@@ -269,8 +238,8 @@ relationship state and workflows available on desktop. It also contains the
 public product site.
 
 **2. Oppulence Desktop (`apps/x`)** — the Electron client and local observation
-node. It adds native context and execution while retaining parity for core
-relationship work.
+client. It adds local context and native tools; common navigation and
+workflow parity with Web remain part of the product roadmap.
 
 ```
 apps/x/
@@ -286,7 +255,7 @@ apps/x/
 Build chain: `shared -> core -> preload -> renderer/main`. `npm run deps` builds
 the workspaces; esbuild bundles the main process to a single CommonJS file
 because Electron Forge's dependency walker cannot follow pnpm symlinks. See
-[`apps/x/LIVE_NOTE.md`](./apps/x/LIVE_NOTE.md) for the live-note runtime.
+[`apps/x/LIVE_NOTE.md`](./apps/x/docs/LIVE_NOTE.md) for the live-note runtime.
 
 **3. Oppulence API (`apps/rowboat-api`)** — the Go service for canonical
 relationship state, observations, assertions, projections, source health, and
@@ -304,9 +273,9 @@ apps/rowboat-api/
 └── internal/         # auth, billing, connectors, jobs, runtime, agents, telemetry
 ```
 
-This shared plane keeps web and desktop at parity and makes event-triggered
-relationship refreshes, attention monitoring, recommendation review, approved
-actions, and connector repair reliable while either client is closed. See
+This shared service owns relationship state and API-backed background work,
+including event processing, recommendations, approved actions, and connector
+repair. Desktop-only tasks still depend on the local application. See
 [apps/rowboat-api/README.md](./apps/rowboat-api/README.md),
 [apps/rfc/README.md](./apps/rfc/README.md), and
 [RFC 036](./apps/rfc/036-relationship-state-engine.md).
@@ -407,8 +376,7 @@ The primary surfaces ship through **separate pipelines**.
    Releases feed; they download updates in the background and apply them on
    the next launch.
 
-End-to-end: ~6 minutes from merging the release PR to installers on the
-Releases page. See [Distribution and operations](#distribution-and-operations)
+Build and publication time depends on the release workflow. See [Distribution and operations](#distribution-and-operations)
 below.
 
 **Oppulence API (`apps/rowboat-api`)** has its own quality and deploy workflows:
@@ -450,11 +418,9 @@ toggle behavior:
 
 ### Summary
 
-- Oppulence Web (`apps/rowboat-www`) is the **team and portfolio client** for
-  Account Mission Control, evidence, corrections, recommendations, and
-  approvals.
-- Oppulence Desktop (`apps/x`) is the **native relationship client and
-  observation node** — release-please + electron-forge + GitHub Releases +
+- Oppulence Web (`apps/rowboat-www`) is the **browser workspace** for
+  relationship context, assistant work, source review, and approvals.
+- Oppulence Desktop (`apps/x`) is the **full native workspace** — release-please + electron-forge + GitHub Releases +
   auto-update.
 - Oppulence API (`apps/rowboat-api`) is the **relationship-state and always-on
   execution plane** — observations, assertions, projections, source health,
@@ -491,12 +457,12 @@ Oppulence uses [PostHog](https://posthog.com/) for product analytics and
 exception capture. The main process registers `uncaughtException` and
 `unhandledRejection` handlers through `posthog-node`; the renderer uses
 `posthog-js` with exception capture enabled. See
-[ANALYTICS.md](./ANALYTICS.md) for the event taxonomy and opt-out
+[ANALYTICS.md](./apps/x/docs/ANALYTICS.md) for the event taxonomy and opt-out
 instructions.
 
 ### Release process
 
-Releases follow [Conventional Commits](https://www.conventionalcommits.org/). When a PR with a `feat:`, `fix:`, or `feat!:`/`fix!:` commit (squash-merged into `main`) touches `apps/x/`, [release-please](https://github.com/googleapis/release-please) automatically opens a release PR with the version bump and changelog entry. Merging that PR cuts a tag, triggers parallel macOS/Linux/Windows builds via electron-forge, attaches all 16 installer assets to the GitHub Release, and uploads SBOMs. Total wall-clock time is around 6 minutes.
+Releases follow [Conventional Commits](https://www.conventionalcommits.org/). When a PR with a `feat:`, `fix:`, or `feat!:`/`fix!:` commit (squash-merged into `main`) touches `apps/x/`, [release-please](https://github.com/googleapis/release-please) automatically opens a release PR with the version bump and changelog entry. Merging that PR cuts a tag, triggers parallel macOS/Linux/Windows builds via electron-forge, attaches all 16 installer assets to the GitHub Release, and uploads SBOMs.
 
 ### Security
 

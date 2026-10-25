@@ -7,7 +7,7 @@ import { marketingMetadata } from "../metadata";
 export const metadata = marketingMetadata({
   title: "Compare Oppulence",
   description:
-    "How the commitment ledger sits next to a CRM, an inbox, a meeting recorder, and a generic assistant. No invented competitor scorecards.",
+    "How Oppulence combines email, relationship context, meetings, and follow-through alongside the tools you already use.",
   path: "/compare",
 });
 

@@ -2,7 +2,7 @@ import Image from "next/image";
 
 import { cn } from "@/lib/sim/cn";
 
-import { HeroPlatformLoopMount } from "./hero-platform-loop-mount";
+import { PlatformExplorer } from "./subpages/solutions-product/platform-explorer";
 import { SimMobileHeroPreview } from "./mobile-hero-preview";
 import { LANDING_STAGE_RADIUS } from "./tokens";
 
@@ -38,7 +38,7 @@ export function SimHeroPlatformStage() {
         </picture>
 
         <div
-          aria-label="Interactive Oppulence product preview"
+          aria-label="Illustrative Web, Desktop, and Voice previews"
           className={cn(
             "sim-product-preview relative aspect-[1280/735] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-1)] shadow-xs max-xl:min-h-[480px]",
             "w-full xl:mx-auto xl:w-[83.333%]",
@@ -46,9 +46,12 @@ export function SimHeroPlatformStage() {
           data-product-preview=""
           role="region"
         >
-          <HeroPlatformLoopMount />
+          <PlatformExplorer />
         </div>
       </div>
+      <p className="mt-3 text-[13px] leading-5 text-[var(--text-secondary)]">
+        A preview of the connected experience in development.
+      </p>
     </>
   );
 }

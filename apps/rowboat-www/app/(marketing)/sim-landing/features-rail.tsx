@@ -25,7 +25,7 @@ export function SimFeaturesRail() {
             )}
             id="features-heading"
           >
-            What you actually get on the ledger.
+            The memory behind the assistant.
           </h2>
           <p className="mb-8 hidden text-[13px] text-[var(--text-secondary)] max-sm:block">
             Swipe to explore

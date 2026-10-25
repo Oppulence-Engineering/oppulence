@@ -618,7 +618,7 @@ function buildAlternative(competitor: string, category: string, slug: string): S
     competitor,
     category,
     title: `${competitor} alternatives, and the job they do not do.`,
-    description: `${competitor} is ${category} software. Oppulence is a commitment ledger. This page keeps the search URL and tells the truth about the seam.`,
+    description: `${competitor} is ${category} software. Oppulence is an email-first personal assistant. This page keeps the search URL and tells the truth about the seam.`,
     whatTheyAre: `${competitor} is ${category} software. People search this URL when they want a replacement in that category — a place to publish articles, host a help center, or run a docs site.`,
     whatWeAre:
       "Oppulence is not that replacement. The register stores what you promised and what they promised, with a source. It does not host /help, migrate Guide, or recapture screenshots.",
@@ -701,10 +701,14 @@ export const seoAlternativeList = Object.keys(ALTERNATIVE_META)
  */
 export function buildLlmsTxt(): string {
   const product = [
-    ["Commitment ledger", "/product", "The two-sided record of what you owe and what they owe."],
-    ["Oppulence Web", "/web", "The book of business in a browser tab."],
-    ["Oppulence Desktop", "/desktop", "The native app that sits next to the work."],
-    ["Oppulence Voice", "/voice-app", "Dictate and capture meetings on the machine."],
+    ["The Oppulence assistant", "/product", "Email, relationships, meetings, and follow-through."],
+    ["Oppulence Web", "/web", "Your work, organized in a browser."],
+    ["Oppulence Desktop", "/desktop", "Your full workspace, with local files and native tools."],
+    [
+      "Oppulence Voice",
+      "/voice-app",
+      "Optional dictation, thought capture, and meeting recording.",
+    ],
     ["Pricing", "/pricing", "Published plans. No invented enterprise tier."],
     ["Security", "/security", "What stays on the machine, what syncs, what waits."],
     ["Answer hub", "/answers", "Definitions for leftover search URLs, written honestly."],
@@ -713,9 +717,9 @@ export function buildLlmsTxt(): string {
   const lines = [
     "# Oppulence",
     "",
-    "> Oppulence is the independent record of business promises: what you owe, what they owe, what changed, and the proof behind it.",
+    "> Oppulence is an email-first personal assistant built around your relationships, meetings, and notes. We are connecting Web, Desktop, and Voice around one memory and one history of actions.",
     "",
-    "Oppulence is not help center software. Leftover search URLs on this site answer the category, then show the seam. We do not invent case studies, SOC 2, or HIPAA.",
+    "Start on the web; Desktop and Voice are optional. Shared navigation, the full web inbox, Ask Oppulence in Voice, and the complete Voice-to-relationship handoff are planned improvements.",
     "",
     "## Product",
     "",

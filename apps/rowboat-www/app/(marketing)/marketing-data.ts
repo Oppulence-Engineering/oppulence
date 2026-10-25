@@ -96,27 +96,27 @@ export const productLinks: LinkItem[] = [
   {
     label: "Products",
     href: "/products",
-    description: "The full Oppulence suite",
+    description: "One assistant across Web, Desktop, and Voice",
   },
   {
     label: "Oppulence Web",
     href: "/web",
-    description: "Your whole book of business in a browser, nothing to install",
+    description: "Your work, organized in a browser. Nothing to install.",
   },
   {
     label: "Oppulence Desktop",
     href: "/desktop",
-    description: "The native app that sits next to the work on Mac, Windows, and Linux",
+    description: "Your full workspace, with local files and native tools",
   },
   {
     label: "Oppulence Voice",
     href: "/voice-app",
-    description: "Dictate into any app and get your meetings written down",
+    description: "Optional dictation, thought capture, and meeting recording",
   },
   {
-    label: "Commitment Ledger",
+    label: "The Oppulence assistant",
     href: "/product",
-    description: "What was promised, what is owed, and what changed",
+    description: "Relationships, meetings, email, and follow-through",
   },
   {
     label: "Pricing",
@@ -129,9 +129,9 @@ export const productLinks: LinkItem[] = [
     description: "Prioritize, verify, govern, approve, execute, and learn in one queue",
   },
   {
-    label: "Dashboard",
+    label: "Open Oppulence",
     href: "/app",
-    description: "Open account mission control",
+    description: "Open your browser workspace",
   },
 ];
 
@@ -883,18 +883,20 @@ export const featureDetails: Record<string, FeatureDetail> = {
 export const primaryPages: MarketingPage[] = [
   {
     path: "product",
-    eyebrow: "Product",
-    title: "The commitment ledger that survives kickoff.",
+    eyebrow: "One assistant",
+    title: "Keep the context. Finish the work.",
     description:
-      "Oppulence is a two-sided register of business promises. It reads Gmail, Slack, calls, and HubSpot, lists the sentences that look like commitments, and waits for you to confirm them. After kickoff it keeps reading the same account. Nothing customer-facing leaves without you.",
+      "Oppulence is an email-first personal assistant built around your relationships. Bring the history behind a conversation into the next reply, meeting, and follow-up. We are connecting Web, Desktop, and Voice around one memory and one action history.",
     category: "product",
     bullets: [
-      "Build a living ledger of promises, objections, chases, and outcomes from the systems you already use.",
-      "Rank the relationships that need attention by timing, evidence, value, and risk.",
-      "Approve the next action and let replies, meetings, edits, and revenue outcomes improve the memory.",
+      "Start on the web. Add Desktop for local files and native tools, or Voice for capture.",
+      "Use emails, meetings, and notes as context, with the original sources available for review.",
+      "Keep source evidence, private notes, and assistant inferences distinct.",
+      "Review proposed replies and actions before they are sent or written.",
+      "Shared navigation and the complete Voice-to-relationship handoff are planned work.",
     ],
-    proof: baseProof,
-    ctaLabel: "Start building",
+    proof: ["Source-linked context", "Approval before send", "Optional native apps"],
+    ctaLabel: "Start on the web",
     ctaHref: "/sign-up",
   },
   {
@@ -1113,7 +1115,7 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "pricing",
     eyebrow: "Pricing",
-    title: "Simple pricing for the commitment ledger.",
+    title: "Choose how you work with Oppulence.",
     description:
       "Start with the free report. Upgrade when the register becomes part of your weekly workflow.",
     category: "product",
@@ -1362,7 +1364,7 @@ export const pricingPlans = [
  * The three ways people actually run Oppulence. Each gets its own page at
  * /web, /desktop, and /voice-app so the nav can point at a product rather than
  * a feature essay. Desktop and Voice both ship an installer, so their pages
- * carry the download chooser.
+ * link to their respective download options.
  */
 export type PlatformPage = {
   slug: string;
@@ -1374,9 +1376,15 @@ export type PlatformPage = {
   summary: string;
   screenshot: string;
   screenshotAlt: string;
-  /** Whether the page shows the desktop installer picker. */
+  /** Whether this product has a download rather than browser sign-up. */
   download: boolean;
+  cta: { label: string; href: string };
+  availability: { current: string; planned: string };
+  setup: { title: string; body: string }[];
+  faqs: { question: string; answer: string }[];
+  closing: { title: string; body: string };
   sections: {
+    status?: string;
     title: string;
     body: string;
     bullets: string[];
@@ -1390,172 +1398,318 @@ export const platformPages: PlatformPage[] = [
   {
     slug: "web",
     name: "Oppulence Web",
-    eyebrow: "Oppulence Web",
-    title: "The whole book of business, in a browser tab.",
-    lede: "Open it Monday morning and the accounts that moved over the weekend are already at the top, with the reason why and a draft reply waiting. Nothing to install, and it keeps working when your laptop is shut.",
+    eyebrow: "Your work, organized",
+    title: "Pick up the conversation. Know what comes next.",
+    lede: "The browser workspace for the people, promises, and conversations behind your work. Review the history, inspect the evidence, and decide what the assistant should do next.",
     summary:
-      "Runs in the cloud. Best for managers, shared queues, and anyone who lives in a browser.",
+      "Review relationships, source evidence, and proposed actions in your browser. No desktop installation required.",
     screenshot: "/marketing/relationship-web-list.png",
     screenshotAlt:
-      "Oppulence Web account mission control listing Beta Corp, Acme, and Northstar Labs with health and next actions",
+      "Oppulence Web relationship workspace showing accounts, open commitments, and next actions with example data",
     download: false,
+    cta: { label: "Start on the web", href: "/sign-up" },
+    availability: {
+      current:
+        "Start with the browser workspace: connected sources, relationship views, assistant work, and action approvals.",
+      planned:
+        "A new email-first workspace with Today, a full Inbox, People, Library, and Activity, plus the complete Voice-to-relationship handoff.",
+    },
     sections: [
       {
-        title: "The list you actually work from.",
-        body: "Every account you own, sorted by which ones need a person today. Each row says what changed, when it changed, and how much is riding on it.",
+        title: "The thread is only part of the story.",
+        body: "A customer asks about a deadline. The answer may be in an earlier email, a calendar event, or a promise someone made last week. Open the relationship to see the relevant history and the work still waiting on a decision.",
         bullets: [
-          "Ranked by what moved, not by last touch date",
-          "Filter to your patch, your team, or the whole book",
-          "Click any account for the full history behind it",
-        ],
-        screenshot: "/marketing/relationship-web-list.png",
-        alt: "Ranked account list in Oppulence Web",
-      },
-      {
-        title: "Open an account and see the receipts.",
-        body: "The promises, the objections, who has gone quiet, who just joined the thread. Every claim links back to the email or meeting it came from, so you can check before you act.",
-        bullets: [
-          "One timeline across email, calendar, Slack, and CRM",
-          "Commitments in both directions, with dates",
-          "Anything stale or missing is labelled, not hidden",
+          "Review people and companies in one workspace",
+          "See open commitments and proposed next steps",
+          "Correct relationship details when the context is wrong",
         ],
         screenshot: "/marketing/relationship-web-detail.png",
-        alt: "Account detail view with linked source evidence",
+        alt: "Relationship detail showing an open security review, people, and an evidence timeline",
       },
       {
-        title: "It keeps watching while you sleep.",
-        body: "Background runs in the cloud notice replies, meetings, and money changes as they land, so Monday's list is already right before you open it.",
+        title: "Check the reason before you approve the action.",
+        body: "A useful suggestion should explain itself. Inspect the source behind a recommendation, review the proposed action, and decide whether it should go ahead. A draft is a decision for you to make.",
         bullets: [
-          "Scheduled and event-driven runs",
-          "No machine to leave switched on",
-          "Same history the desktop app sees",
+          "Follow recommendations back to their evidence",
+          "Review proposed email, Slack, calendar, and CRM actions",
+          "Check the outcome after an action runs",
         ],
-        screenshot: "/marketing/desktop-background-tasks.png",
-        alt: "Background task runs keeping account state current",
+        screenshot: "/marketing/relationship-web-detail.png",
+        alt: "Proposed follow-up with Approve and Reject controls above its source evidence",
+      },
+      {
+        status: "In development",
+        title: "Your next reply, with the history beside it.",
+        body: "We are bringing email to the center of Web. Today will surface work that needs a decision. Inbox will put relevant meetings and earlier correspondence beside the reply. People, Library, and Activity will keep the history, sources, and results within reach.",
+        bullets: [
+          "Today: replies to review and people you are waiting on",
+          "Inbox: prepared responses with supporting context",
+          "People, Library, and Activity: history you can inspect",
+        ],
+        screenshot: "/marketing/desktop-email.png",
+        alt: "Existing Desktop email view illustrating the direction for the planned Web inbox",
       },
     ],
     specs: [
-      { term: "Runs on", detail: "Any modern browser. Nothing to install." },
-      { term: "Sign in with", detail: "Google, through your existing work account." },
-      { term: "Best for", detail: "Shared queues, managers, and reviewing a whole book." },
-      { term: "Works offline", detail: "No. Use the desktop app if you need local access." },
+      { term: "Where it runs", detail: "In your browser" },
+      { term: "Best for", detail: "Relationships, source review, and approvals" },
+      { term: "Installation", detail: "None required" },
     ],
+    setup: [
+      {
+        title: "Create your workspace",
+        body: "Sign in from your browser. You can start without installing Desktop or Voice.",
+      },
+      {
+        title: "Connect the sources you need",
+        body: "Choose the supported services that hold your work and review the access you grant.",
+      },
+      {
+        title: "Start with one relationship",
+        body: "Inspect its history, check an open commitment, and review a proposed next step.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Do I need to install another app?",
+        answer:
+          "No. Web runs in your browser. Desktop is an optional workspace for local files and native tools; Voice is an optional companion for dictation and capture.",
+      },
+      {
+        question: "Is the full email inbox available today?",
+        answer:
+          "The browser workspace has relationship views, connected sources, assistant work, and approvals. The redesigned Today, Inbox, People, Library, and Activity experience is in development. The Desktop email view shown here illustrates that direction.",
+      },
+      {
+        question: "Can I keep using my existing email app?",
+        answer:
+          "Yes. You can keep working in your existing email app while using Oppulence to inspect relationship context and review assistant work. The new Oppulence inbox is an additional experience being developed.",
+      },
+      {
+        question: "Will the assistant send messages on its own?",
+        answer:
+          "Supported external writes are proposed for human approval. Review the content and destination before approving, then check the action result. An attempted action is not proof that it completed.",
+      },
+      {
+        question: "Does signing in upload my local notes?",
+        answer:
+          "Signing in to Web does not make a local Desktop or Voice library available in the browser. The shared experience is being built around explicit transfer and sharing choices.",
+      },
+    ],
+    closing: {
+      title: "Start with the conversation that needs you.",
+      body: "Open your workspace, bring the relevant history into view, and choose the next step.",
+    },
   },
   {
     slug: "desktop",
     name: "Oppulence Desktop",
-    eyebrow: "Oppulence Desktop",
-    title: "It sits next to the work instead of in another tab.",
-    lede: "Same accounts, same history, except it is right there while you write the email, sit in the meeting, or dig through a doc. Some things never leave your machine, which matters more than people admit.",
-    summary: "A native Mac, Windows, and Linux app. Best for the person doing the work all day.",
+    eyebrow: "Your full working environment",
+    title: "Bring your files into the conversation.",
+    lede: "Email, local notes, documents, and a browser in one native workspace. Give the assistant the context you choose, work beside the original material, and stay with the task from research to reply.",
+    summary:
+      "A native workspace for email, local files, a Markdown vault, and deeper work with the assistant.",
     screenshot: "/marketing/desktop-home.png",
-    screenshotAlt: "Oppulence Desktop home view",
+    screenshotAlt:
+      "Oppulence Desktop workspace with local notes, email, and an assistant panel using example data",
     download: true,
+    cta: { label: "Download Desktop", href: "/download#desktop" },
+    availability: {
+      current:
+        "Desktop brings together email, meeting capture, local Markdown notes, an embedded browser, and background tasks. Choose a supported release for your operating system.",
+      planned:
+        "We are aligning Desktop and Web around Today, Inbox, People, Library, and Activity. Shared relationship context and action history across the full experience remain in development.",
+    },
     sections: [
       {
-        title: "Ask about an account without leaving what you are doing.",
-        body: "Pull up who this person is, what you last promised them, and what they pushed back on, without hunting through six months of thread.",
+        title: "Your working notes. In ordinary files.",
+        body: "Keep research, customer notes, and project material in a Markdown vault you can open and back up. Ask the assistant about the material you make available, then inspect the original before relying on the answer.",
         bullets: [
-          "Full account history, one keystroke away",
-          "Answers cite the message they came from",
-          "Works against the same state as the web app",
-        ],
-        screenshot: "/marketing/desktop-chat.png",
-        alt: "Oppulence Desktop conversational view over account history",
-      },
-      {
-        title: "Walk into the call already briefed.",
-        body: "Before a meeting you get the account as it stands: what you last promised, what they objected to, who has gone quiet. Afterwards, what was agreed becomes part of the history instead of a note you meant to write.",
-        bullets: [
-          "A brief built from the account, not a template",
-          "Commitments captured as commitments, with dates",
-          "Pairs with Oppulence Voice for the transcript itself",
-        ],
-        screenshot: "/marketing/desktop-email.png",
-        alt: "Oppulence Desktop showing customer threads flagged as important with the assistant alongside",
-      },
-      {
-        title: "Your own notes count as evidence too.",
-        body: "The doc you keep on a key account, the thing a colleague told you in passing. Local knowledge feeds the same picture, and stays yours.",
-        bullets: [
-          "Local files searched alongside connected sources",
-          "You choose what syncs and what stays put",
-          "Corrections you make beat whatever it inferred",
+          "Search local notes and documents",
+          "Keep the source beside the assistant",
+          "Open, edit, and back up your Markdown files",
         ],
         screenshot: "/marketing/desktop-knowledge.png",
-        alt: "Local knowledge and notes in Oppulence Desktop",
+        alt: "Desktop Markdown vault with customer notes, live notes, and a contextual assistant",
+      },
+      {
+        title: "Move from the meeting to the reply.",
+        body: "Keep email, captured meetings, and your notes in the same workspace. Read the thread, find the relevant material, and prepare the response with the assistant beside you. Review the wording and sources before the reply leaves your hands.",
+        bullets: [
+          "Work through email in the native workspace",
+          "Review meeting notes and transcripts",
+          "Keep private interpretations distinct from source evidence",
+        ],
+        screenshot: "/marketing/desktop-email.png",
+        alt: "Desktop email workspace with the current conversation and assistant side panel",
+      },
+      {
+        title: "Stay with the task when it gets bigger.",
+        body: "Open a reference in the embedded browser, navigate with the keyboard, and inspect work handled by background tasks. When you need to investigate how notes connect, open the knowledge graph and follow the details.",
+        bullets: [
+          "An embedded browser for research",
+          "Background tasks with a history to inspect",
+          "Connected tools and an explorable knowledge graph",
+        ],
+        screenshot: "/marketing/desktop-background-tasks.png",
+        alt: "Desktop background task list showing work and run history",
       },
     ],
     specs: [
-      { term: "Runs on", detail: "macOS (Apple silicon and Intel), Windows, and Linux." },
-      { term: "Install size", detail: "Signed installer. DMG, EXE, DEB, or RPM." },
-      { term: "Offline", detail: "Local notes, capture, and search work without a connection." },
-      { term: "Updates", detail: "Ships with the app. You do not have to chase releases." },
+      { term: "Where it runs", detail: "macOS, Windows, and Linux releases" },
+      { term: "Best for", detail: "Local context and sustained work" },
+      { term: "Your notes", detail: "A local Markdown vault" },
     ],
+    setup: [
+      {
+        title: "Choose your release",
+        body: "Open the download page and select the available installer for your operating system.",
+      },
+      {
+        title: "Set up your workspace",
+        body: "Choose your model configuration and connect the accounts and tools you want to use.",
+      },
+      {
+        title: "Bring in one piece of work",
+        body: "Open a note, document, or email. Ask a specific question and inspect the material behind the answer.",
+      },
+    ],
+    faqs: [
+      {
+        question: "How is Desktop different from Web?",
+        answer:
+          "Desktop adds a local Markdown vault, files on your computer, an embedded browser, native controls, and background tasks. Web is the browser workspace. We are aligning their everyday navigation and relationship workflows.",
+      },
+      {
+        question: "Is everything processed locally?",
+        answer:
+          "No. Local storage and local processing are different choices. Your vault can live on your computer, while a configured cloud model or connected service may receive content needed for a request. Review your provider and tool configuration.",
+      },
+      {
+        question: "Can I use my own model provider?",
+        answer:
+          "Desktop supports configurable model providers, including supported cloud providers and local model setups. Available capabilities depend on the provider, model, and tools you configure.",
+      },
+      {
+        question: "Are my files automatically shared with Web?",
+        answer:
+          "Signing in does not turn your private vault into a shared library. The connected Web and Desktop experience is being developed around explicit sharing of selected material.",
+      },
+      {
+        question: "Do I also need Voice?",
+        answer:
+          "No. Desktop is useful on its own. Voice is a separate, optional download for global dictation, floating capture controls, and working by voice in other applications.",
+      },
+    ],
+    closing: {
+      title: "Give the work a little more room.",
+      body: "Bring your notes, files, and conversations into a workspace built for the task in front of you.",
+    },
   },
   {
     slug: "voice-app",
     name: "Oppulence Voice",
-    eyebrow: "Oppulence Voice",
-    title: "Talk instead of typing. It lands where your cursor is.",
-    lede: "Hit a hotkey, say the thing, and the words appear in whatever app you are in \u2014 the email, the CRM box, the doc. It also sits in your meetings and writes them down. Transcription can run entirely on your machine, so the audio never leaves.",
-    summary: "A standalone dictation and meeting app for macOS, Windows, and Linux.",
-    screenshot: "/marketing/voice-transcription.png",
+    eyebrow: "Your assistant within reach",
+    title: "Say it. Keep working.",
+    lede: "Speak into the app you are already using. Dictate a reply, capture a thought, or record a meeting through a lightweight companion that stays within reach.",
+    summary:
+      "An optional desktop companion for dictation, meeting recording, selected-text editing, and thought capture.",
+    screenshot: "/marketing/voice-hotkeys.png",
     screenshotAlt:
-      "Oppulence Voice speech-to-text settings offering cloud, bring-your-own-key, local on-device, and self-hosted engines",
+      "Voice settings for dictation, voice assistant, translation, and meeting hotkeys",
     download: true,
+    cta: { label: "Download Voice", href: "/download#voice" },
+    availability: {
+      current:
+        "Use Voice for dictation, selected-text editing, meeting capture, and local or cloud transcription. It can be used independently of Oppulence Desktop.",
+      planned:
+        "Ask Oppulence will connect the floating panel to the shared assistant. Reviewing relationship matches and publishing accepted captures into relationship history are still in development.",
+    },
     sections: [
       {
-        title: "Dictate into any app on your machine.",
-        body: "One global hotkey. Speak, and the cleaned-up text is pasted at your cursor, whether that is Gmail, HubSpot, Slack, or a terminal. Roughly three times faster than typing it out, and you stop losing the thought halfway through.",
+        title: "The cursor is already in the right place.",
+        body: "Press your dictation shortcut and speak into the email, document, or message you are writing. Use selection editing to revise a passage without moving the whole task into a chat window.",
         bullets: [
-          "Works in any application, not just ours",
-          "Filler words and false starts cleaned up automatically",
-          "A second hotkey dictates in one language and pastes another",
+          "Choose a global hotkey that fits your workflow",
+          "Insert text at the cursor in supported apps",
+          "Revise selected text where you are working",
         ],
         screenshot: "/marketing/voice-hotkeys.png",
-        alt: "Oppulence Voice hotkey settings for dictation, the voice agent, translation, and meeting mode",
+        alt: "Configurable dictation hotkey with tap or hold activation and voice assistant shortcuts",
       },
       {
-        title: "It writes down your meetings.",
-        body: "Zoom, Teams, and FaceTime calls are detected automatically. You get a live transcript with speakers labelled, and afterwards a set of notes instead of a memory of what was said.",
+        title: "Capture it before the details disappear.",
+        body: "Record a meeting with appropriate consent, or speak a note while the thought is fresh. Review the transcript and speakers afterward. A personal observation remains your perspective; it is not the same as something a customer said.",
         bullets: [
-          "Speaker labelling that runs on your device",
-          "Google, Microsoft, and Apple calendar integration",
-          "Import an existing recording, or a YouTube link, and get a transcript",
+          "Visible controls while recording",
+          "Transcripts and speaker corrections",
+          "Private notes you can review before sharing",
         ],
         screenshot: "/marketing/voice-integrations.png",
-        alt: "Oppulence Voice integrations connecting Google Calendar, the API, MCP, and the CLI",
+        alt: "Voice meeting and integration settings",
       },
       {
-        title: "It learns your customers\u2019 names.",
-        body: "Every account list is full of words no general model has heard: company names, product codenames, the acronym your team invented last quarter. Add them once and they stop coming out garbled.",
+        title: "Choose where your words are processed.",
+        body: "Select a local transcription engine when you want audio processed on your device, or configure a cloud provider. Add names and specialized terms to your vocabulary so recurring words are easier to capture correctly.",
         bullets: [
-          "Names, tools, and acronyms it should always get right",
-          "Snippets expand a phrase into boilerplate you type constantly",
-          "Import a list instead of adding them one by one",
-        ],
-        screenshot: "/marketing/voice-dictionary.png",
-        alt: "The Oppulence Voice dictionary holding customer names and acronyms",
-      },
-      {
-        title: "The audio can stay on your laptop.",
-        body: "Run transcription locally with Whisper or Parakeet and nothing is uploaded, which matters when the call was about someone\u2019s contract. Or use a cloud model when you would rather have the speed. Your choice, per machine.",
-        bullets: [
-          "Local speech-to-text with GPU acceleration",
-          "No telemetry and no data collection",
-          "Open source, so you can go read what it does",
+          "Local and cloud transcription options",
+          "Provider settings you can inspect",
+          "Custom vocabulary for names and terms",
         ],
         screenshot: "/marketing/voice-transcription.png",
-        alt: "Choosing between cloud and fully local on-device transcription",
+        alt: "Speech-to-text settings showing available local and cloud transcription choices",
       },
     ],
     specs: [
-      { term: "Runs on", detail: "macOS (Apple silicon and Intel), Windows, and Linux." },
-      { term: "Transcription", detail: "Local Whisper or Parakeet, or a cloud model. You pick." },
-      { term: "Works with", detail: "Any app on your machine, via a global hotkey." },
-      { term: "Source", detail: "Open source, built on OpenWhispr." },
+      { term: "Where it runs", detail: "A lightweight desktop companion" },
+      { term: "Best for", detail: "Dictation, thoughts, and meetings" },
+      { term: "Transcription", detail: "Your choice of local or cloud" },
     ],
+    setup: [
+      {
+        title: "Install the companion",
+        body: "Choose an available Voice release. You do not need to install the full Desktop workspace first.",
+      },
+      {
+        title: "Choose an engine and shortcut",
+        body: "Select local or cloud transcription, set your hotkey, and grant the permissions required for capture.",
+      },
+      {
+        title: "Try it in your next reply",
+        body: "Place your cursor in a supported app, speak a short draft, and review the text before sending.",
+      },
+    ],
+    faqs: [
+      {
+        question: "Does Voice require Oppulence Desktop?",
+        answer:
+          "No. Voice is an optional, separate application and can be used on its own. Install Desktop when you also want the full workspace for local files, email, and deeper review.",
+      },
+      {
+        question: "Does my audio leave my device?",
+        answer:
+          "It depends on your configuration. A selected local transcription engine processes speech on the device. Cloud transcription sends audio to that provider, and cloud assistant features may send text or other selected context for processing.",
+      },
+      {
+        question: "Can I use it in my existing email or messaging app?",
+        answer:
+          "Dictation inserts text at the cursor in supported applications. Permissions and behavior can vary by operating system and app. Start with a short draft and review the result before sending.",
+      },
+      {
+        question: "Will recordings automatically appear in People?",
+        answer:
+          "No. The full capture-to-relationship experience is in development. It is being designed to let you review speakers, confirm relationship matches, and choose which artifacts to share.",
+      },
+      {
+        question: "Is Ask Oppulence connected to the same assistant yet?",
+        answer:
+          "That shared connection is planned. Today, Voice has its own standalone capabilities. The goal is to ask about a person, email, meeting, or note from the floating panel and open the full workspace for a larger review.",
+      },
+    ],
+    closing: {
+      title: "Keep the thought. Keep your place.",
+      body: "Add Voice when speaking is the easiest way to get the next sentence down.",
+    },
   },
 ];
 

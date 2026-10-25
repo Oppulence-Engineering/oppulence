@@ -19,9 +19,9 @@ export function SimHero() {
       id="hero"
     >
       <p className="sr-only">
-        Oppulence is a two-sided register of business promises. It reads Gmail, Slack, calls, and
-        HubSpot, lists the sentences that look like commitments, and waits for you to confirm them.
-        External actions are drafted and held for approval before anything sends.
+        Oppulence is an email-first personal assistant built around your relationships. It connects
+        email, meetings, and notes so you can review the context, prepare a reply, and follow
+        through.
       </p>
 
       <div className={HOME_INSET}>
@@ -29,13 +29,13 @@ export function SimHero() {
           <div className="flex min-w-0 flex-col items-start gap-6">
             <Link
               className="inline-flex h-8 max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-2)] pr-3 pl-2 text-[13px] duration-150 hover:bg-[var(--surface-3)]"
-              href="/use-cases/account-management"
+              href="/products"
             >
               <span className="h-4 shrink-0 rounded-full bg-transparent px-1.5 font-medium text-[10px] uppercase leading-none tracking-[0.06em] text-[var(--text-secondary)]">
-                Kickoff
+                Oppulence
               </span>
               <span className="truncate font-medium text-[var(--text-primary)]">
-                Before your next customer kickoff
+                Web, Desktop, and Voice
               </span>
             </Link>
 
@@ -46,17 +46,17 @@ export function SimHero() {
               )}
               id="hero-heading"
             >
-              The commitment ledger
+              One assistant,
               <br />
-              that survives kickoff.
+              wherever you work.
             </h1>
           </div>
 
           <div className="flex min-w-0 flex-col items-start gap-8 max-[1400px]:max-w-[640px]">
             <p className="max-w-[44ch] text-pretty font-normal text-[18px] leading-[1.5] text-[var(--text-body)] max-sm:text-[16px]">
-              A two-sided register of business promises. Oppulence reads Gmail, Slack, calls, and
-              HubSpot, lists the sentences that look like commitments, and waits for you to confirm
-              them.
+              An email-first personal assistant that brings your relationships, meetings, and notes
+              into the work at hand. Find the context, prepare the reply, and keep the next step in
+              view.
             </p>
             <div className="max-sm:w-full">
               <SimHeroCta size="display" />

@@ -9,18 +9,18 @@ import { SIM_SURFACE_CARD } from "./sim-surface-card";
 const channels = [
   {
     title: "In-page support",
-    body: "The chat control in the corner is the Plain widget used across the public site. Use that if you are already here.",
+    body: "Use the support chat on this site for help with your account, connected sources, or choosing an app.",
     href: null,
   },
   {
     title: "Discord",
-    body: "The public server linked from the rest of the product.",
+    body: "Join the community to discuss workflows and share product feedback.",
     href: "https://discord.gg/wajrgmJQ6b",
     external: true,
   },
   {
     title: "Email",
-    body: "hello@oppulence.io — the address the signed-in app already points at. Prefer the widget if you want a thread next to the page you are on.",
+    body: "Email hello@oppulence.io for product questions or help getting started.",
     href: "mailto:hello@oppulence.io",
   },
   {
@@ -94,11 +94,11 @@ export function SimContactPage() {
           className="max-w-[16ch] text-balance text-[48px] text-[var(--text-primary)] leading-[1.1] max-sm:text-[32px] max-xl:text-[40px]"
           id="contact-heading"
         >
-          A human answers. Start where you already are.
+          Talk to the Oppulence team.
         </h1>
         <p className="max-w-[46ch] text-pretty text-[var(--text-body)] text-lg leading-[1.5] max-sm:text-base">
-          The dark support widget on this site is the fastest path. Discord is public. The product
-          email is the same one the dashboard already uses.
+          Tell us where you need help: email, meetings, local work, or voice capture. Use support
+          chat or email for account questions, and the community for public discussion.
         </p>
       </div>
 
@@ -111,14 +111,14 @@ export function SimContactPage() {
             ))}
           </div>
           <p className="text-[13px] text-[var(--text-muted)] leading-[1.5]">
-            Most evaluation starts with the free report, not a conversation. See{" "}
+            You can start on the web without installing an app. See{" "}
             <Link
-              className="text-[var(--text-body)] underline-offset-4 hover:underline"
+              className="text-[var(--text-body)] underline underline-offset-4"
               href="/resources"
             >
               resources
             </Link>{" "}
-            if you want the docs first.
+            for setup guides and product details.
           </p>
         </div>
       </div>

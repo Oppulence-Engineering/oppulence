@@ -8,7 +8,7 @@ import { marketingMetadata } from "../metadata";
 export const metadata = marketingMetadata({
   title: "Blog",
   description:
-    "Editorial notes on the commitment ledger, approval, install, and what stays on the machine. Written from the product, not from leftover help-center keywords.",
+    "Notes on relationship memory, email, meetings, approvals, and local work with Oppulence.",
   path: "/blog",
 });
 

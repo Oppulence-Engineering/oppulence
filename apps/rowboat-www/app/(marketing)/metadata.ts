@@ -25,7 +25,7 @@ export function marketingMetadata({
   const fullTitle = title.includes(SITE_NAME) ? title : `${title} — ${SITE_NAME}`;
 
   return createMetadata({
-    title: fullTitle,
+    title: { absolute: fullTitle },
     description,
     alternates: { canonical: url },
     robots: index ? undefined : { index: false, follow: false },
