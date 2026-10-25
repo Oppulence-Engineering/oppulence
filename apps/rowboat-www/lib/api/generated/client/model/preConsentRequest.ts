@@ -7,11 +7,13 @@
  */
 
 /**
- * Strict oauth-consent context request bound to one Hydra challenge and pending connector flow.
+ * Strict oauth-consent context request bound to the original OAuth state and one Hydra challenge.
  */
 export interface PreConsentRequest {
   /** Hydra consent challenge. */
   challenge: string;
+  /** Original OAuth state from Hydra request_url; omitted only for revalidation of an already-bound challenge. */
+  state?: string;
   /** Hydra client id. Must match the configured Rowboat Desktop broker client. */
   hydra_client_id: string;
   /** Exactly one requested connector audience. */

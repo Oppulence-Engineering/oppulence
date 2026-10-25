@@ -212,12 +212,16 @@ export const ConnectorConsentContext503Response = zod
   );
 
 /**
- * HMAC-signed oauth-consent hook. It binds the Hydra challenge, WorkOS subject, desktop client, one connector audience, exact scope catalog, and current entitlement to one pending flow.
+ * HMAC-signed oauth-consent hook. It binds the original OAuth state and Hydra challenge to the WorkOS subject, desktop client, connector audience, exact scope catalog, and current entitlement. Revalidation may omit state only after this exact binding exists.
  * @summary Resolve strict connector consent context
  */
 export const PreConsentBody = zod
   .strictObject({
     challenge: zod.string().describe("Hydra consent challenge."),
+    state: zod
+      .string()
+      .optional()
+      .describe("Original OAuth state from Hydra request_url. Omitted only when revalidating a challenge already bound to that state."),
     hydra_client_id: zod
       .string()
       .describe("Hydra client id. Must match the configured Rowboat Desktop broker client."),
@@ -233,7 +237,7 @@ export const PreConsentBody = zod
       .describe("WorkOS user id used to resolve bearer tokens into local users."),
   })
   .describe(
-    "Strict oauth-consent context request bound to one Hydra challenge and pending connector flow.",
+    "Strict oauth-consent context request bound to the original OAuth state and one Hydra challenge.",
   );
 
 export const PreConsent200Response = zod

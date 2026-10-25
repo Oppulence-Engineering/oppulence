@@ -119,7 +119,6 @@ type ProposeInput struct {
 	Target        string
 	Kind          string
 	ParamsJSON    string
-	Financial     bool
 	Rationale     string
 	EntityID      string
 	OriginRunID   string
@@ -142,11 +141,12 @@ func (b *Broker) Propose(ctx context.Context, user *ent.User, in ProposeInput) (
 	if correlation == "" {
 		correlation = uuid.NewString()
 	}
+	// shortcut: classify every proposal as financial until a trusted server-side effect catalog exists.
 	create := b.client.ActionProposal.Create().
 		SetUser(user).
 		SetTarget(target).
 		SetKind(kind).
-		SetFinancial(in.Financial).
+		SetFinancial(true).
 		SetCorrelationID(correlation).
 		SetStatus(StatusPending)
 	if p := strings.TrimSpace(in.ParamsJSON); p != "" {
@@ -225,6 +225,19 @@ func (b *Broker) Approve(ctx context.Context, user *ent.User, id uuid.UUID, step
 	if err != nil {
 		return nil, fmt.Errorf("actions: begin tx: %w", err)
 	}
+	updatedCount, err := tx.ActionProposal.Update().
+		Where(actionproposal.IDEQ(p.ID), actionproposal.StatusEQ(StatusPending)).
+		SetStatus(StatusApproved).
+		SetApprovedAt(now).
+		Save(ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, fmt.Errorf("actions: approve proposal: %w", err)
+	}
+	if updatedCount != 1 {
+		_ = tx.Rollback()
+		return nil, ErrNotPending
+	}
 	if _, err := tx.ApprovalToken.Create().
 		SetUser(user).
 		SetTokenHash(Hash(token)).
@@ -238,10 +251,7 @@ func (b *Broker) Approve(ctx context.Context, user *ent.User, id uuid.UUID, step
 		_ = tx.Rollback()
 		return nil, fmt.Errorf("actions: store token: %w", err)
 	}
-	updated, err := tx.ActionProposal.UpdateOneID(p.ID).
-		SetStatus(StatusApproved).
-		SetApprovedAt(now).
-		Save(ctx)
+	updated, err := tx.ActionProposal.Get(ctx, p.ID)
 	if err != nil {
 		_ = tx.Rollback()
 		return nil, fmt.Errorf("actions: approve proposal: %w", err)

@@ -10,14 +10,5 @@ spec:
     - slack.read_thread
     - name: slack.post_message
       requiresApproval: true
-    - connector.read.gmail
-    - connector.read.calendar
-    - name: connector.write.gmail_draft
-      requiresApproval: true
     - web.search
-    - conduit.read
-    - eigen.simulate
-    - connector.read.composio_tool_search
-    - connector.read.composio_tool_describe
-    - connector.write.composio_tool_execute
   channels: [slack]

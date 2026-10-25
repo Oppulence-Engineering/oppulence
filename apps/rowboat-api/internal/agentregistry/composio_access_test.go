@@ -1,8 +1,15 @@
 package agentregistry
 
 import (
+	"context"
+	"encoding/json"
 	"slices"
+	"strings"
 	"testing"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composioapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 )
 
 var composioTools = []string{
@@ -12,9 +19,8 @@ var composioTools = []string{
 }
 
 // A capability that no agent lists is unreachable however well it is built, so
-// membership of the built-in allowlists is the thing that makes Composio usable.
-// Every built-in carries it, the shared-channel Slack agent included.
-func TestComposioToolsAreReachableFromTheBuiltInAgents(t *testing.T) {
+// membership of the authenticated built-in allowlists makes Composio usable.
+func TestComposioToolsAreReachableOnlyFromAuthenticatedBuiltInAgents(t *testing.T) {
 	loader, err := NewLoader(nil, DefaultCatalog())
 	if err != nil {
 		t.Fatalf("NewLoader: %v", err)
@@ -23,7 +29,7 @@ func TestComposioToolsAreReachableFromTheBuiltInAgents(t *testing.T) {
 	for _, builtin := range loader.Builtins() {
 		bySlug[builtin.Slug] = builtin
 	}
-	for _, slug := range []string{"assistant", "concierge", "concierge-slack"} {
+	for _, slug := range []string{"assistant", "concierge"} {
 		agent, ok := bySlug[slug]
 		if !ok {
 			t.Fatalf("missing built-in agent %q", slug)
@@ -33,6 +39,45 @@ func TestComposioToolsAreReachableFromTheBuiltInAgents(t *testing.T) {
 				t.Fatalf("%s cannot reach %q", slug, tool)
 			}
 		}
+	}
+	for _, builtin := range loader.Builtins() {
+		if builtin.Slug != "concierge-slack" {
+			continue
+		}
+		for _, tool := range composioTools {
+			if slices.Contains(builtin.EnabledTools, tool) {
+				t.Fatalf("shared-channel agent %s must not expose %q", builtin.Slug, tool)
+			}
+		}
+		return
+	}
+	t.Fatal("missing built-in agent concierge-slack")
+}
+
+func TestComposioToolsRejectSlackChannelSessions(t *testing.T) {
+	deps, scope := slackSessionToolDeps(t)
+	deps.Composio = composioapi.New("test-key", outbound.Policy{})
+	for _, tc := range []struct {
+		name string
+		args json.RawMessage
+	}{
+		{name: "connector.read.composio_tool_search", args: json.RawMessage(`{"query":"create issue"}`)},
+		{name: "connector.read.composio_tool_describe", args: json.RawMessage(`{"slug":"jira.create_issue"}`)},
+		{name: "connector.write.composio_tool_execute", args: json.RawMessage(`{"slug":"jira.create_issue"}`)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			capability, ok := DefaultCatalog().Get(tc.name)
+			if !ok {
+				t.Fatalf("capability %q is not registered", tc.name)
+			}
+			out, err := capability.Build(deps).Invoke(auth.WithInternal(context.Background()), scope, tc.args)
+			if err != nil {
+				t.Fatalf("invoke returned hard error: %v", err)
+			}
+			if !strings.Contains(string(out), "not available from Slack") {
+				t.Fatalf("expected Slack restriction observation, got %s", out)
+			}
+		})
 	}
 }
 

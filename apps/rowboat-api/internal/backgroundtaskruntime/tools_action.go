@@ -31,7 +31,6 @@ type ActionProposalRequest struct {
 	Target     string
 	Kind       string
 	ParamsJSON string
-	Financial  bool
 	Rationale  string
 	EntityID   string
 }
@@ -174,7 +173,6 @@ func (t *proposeActionTool) JSONSchema() json.RawMessage {
     "target": {"type": "string", "description": "resourceRef of the object to operate, e.g. \"conduit:invoice:inv_456\""},
     "kind": {"type": "string", "description": "product action kind, e.g. \"conduit.dunning.advance\""},
     "params": {"type": "object", "description": "product-defined action parameters"},
-    "financial": {"type": "boolean", "description": "true if the action moves money; requires step-up approval"},
     "rationale": {"type": "string", "description": "why this action is proposed; shown on the approval card"},
     "entityId": {"type": "string", "description": "optional entity/relationship this concerns"}
   },
@@ -187,7 +185,6 @@ func (t *proposeActionTool) Invoke(ctx context.Context, scope ToolScope, args js
 		Target    string          `json:"target"`
 		Kind      string          `json:"kind"`
 		Params    json.RawMessage `json:"params"`
-		Financial bool            `json:"financial"`
 		Rationale string          `json:"rationale"`
 		EntityID  string          `json:"entityId"`
 	}
@@ -213,7 +210,6 @@ func (t *proposeActionTool) Invoke(ctx context.Context, scope ToolScope, args js
 		Target:     strings.TrimSpace(in.Target),
 		Kind:       strings.TrimSpace(in.Kind),
 		ParamsJSON: paramsJSON,
-		Financial:  in.Financial,
 		Rationale:  strings.TrimSpace(in.Rationale),
 		EntityID:   strings.TrimSpace(in.EntityID),
 	})

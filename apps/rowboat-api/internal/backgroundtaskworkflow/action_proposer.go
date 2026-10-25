@@ -35,7 +35,6 @@ func (a *actionProposerAdapter) ProposeAction(ctx context.Context, req backgroun
 		Target:      req.Target,
 		Kind:        req.Kind,
 		ParamsJSON:  req.ParamsJSON,
-		Financial:   req.Financial,
 		Rationale:   req.Rationale,
 		EntityID:    req.EntityID,
 		OriginRunID: req.RunID,

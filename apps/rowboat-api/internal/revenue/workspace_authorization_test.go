@@ -118,6 +118,16 @@ func TestWorkspaceRoleAndResourceAuthorizationMatrix(t *testing.T) {
 	if _, err := f.svc.UpsertWorkspaceMember(adminCtx, adminUser, invitee.ID, "admin"); !errors.Is(err, ErrForbidden) {
 		t.Fatalf("only owner may grant admin, got %v", err)
 	}
+	peerAdmin := newUser(t, f.client, "peer-admin@x.co", "user_workspace_peer_admin")
+	if _, err := f.svc.UpsertWorkspaceMember(f.ctx, f.user, peerAdmin.ID, "admin"); err != nil {
+		t.Fatalf("owner grant peer admin: %v", err)
+	}
+	if _, err := f.svc.UpsertWorkspaceMember(adminCtx, adminUser, peerAdmin.ID, "viewer"); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("admin demoted peer admin: %v", err)
+	}
+	if _, err := f.svc.UpsertWorkspaceMember(f.ctx, f.user, peerAdmin.ID, "viewer"); err != nil {
+		t.Fatalf("owner could not demote peer admin: %v", err)
+	}
 
 	if _, err := f.svc.RemoveWorkspaceMember(f.ctx, f.user, member.ID); err != nil {
 		t.Fatalf("remove member: %v", err)

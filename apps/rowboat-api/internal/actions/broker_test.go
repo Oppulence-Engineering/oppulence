@@ -86,13 +86,12 @@ func newFixture(t *testing.T) *fixture {
 	return f
 }
 
-func (f *fixture) propose(financial bool) *ent.ActionProposal {
+func (f *fixture) propose() *ent.ActionProposal {
 	f.t.Helper()
 	p, err := f.broker.Propose(f.ctx, f.user, ProposeInput{
 		Target:     "conduit:invoice:inv_456",
 		Kind:       "conduit.dunning.advance",
 		ParamsJSON: `{"amount":100,"step":2}`,
-		Financial:  financial,
 		Rationale:  "Acme is 14 days overdue",
 	})
 	if err != nil {
@@ -105,7 +104,7 @@ func (f *fixture) propose(financial bool) *ent.ActionProposal {
 
 func TestProposeCreatesPending(t *testing.T) {
 	f := newFixture(t)
-	p := f.propose(false)
+	p := f.propose()
 	if p.Status != StatusPending {
 		t.Fatalf("status = %q, want pending", p.Status)
 	}
@@ -130,7 +129,7 @@ func TestProposeRejectsMissingFields(t *testing.T) {
 
 func TestRejectTransition(t *testing.T) {
 	f := newFixture(t)
-	p := f.propose(false)
+	p := f.propose()
 	got, err := f.broker.Reject(f.ctx, p.ID, "not now")
 	if err != nil {
 		t.Fatalf("reject: %v", err)
@@ -148,9 +147,9 @@ func TestRejectTransition(t *testing.T) {
 
 func TestFullRoundTrip(t *testing.T) {
 	f := newFixture(t)
-	p := f.propose(false)
+	p := f.propose()
 
-	res, err := f.broker.Approve(f.ctx, f.user, p.ID, false)
+	res, err := f.broker.Approve(f.ctx, f.user, p.ID, true)
 	if err != nil {
 		t.Fatalf("approve: %v", err)
 	}
@@ -190,8 +189,8 @@ func TestFullRoundTrip(t *testing.T) {
 // update, and a concurrent replay).
 func TestReusedTokenRejected(t *testing.T) {
 	f := newFixture(t)
-	p := f.propose(false)
-	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, false)
+	p := f.propose()
+	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, true)
 
 	// Simulate the token already having been consumed by a prior execute.
 	n, err := f.client.ApprovalToken.Update().
@@ -213,8 +212,8 @@ func TestReusedTokenRejected(t *testing.T) {
 // A second execute after a successful one is rejected (no double execution).
 func TestDoubleExecuteRejected(t *testing.T) {
 	f := newFixture(t)
-	p := f.propose(false)
-	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, false)
+	p := f.propose()
+	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, true)
 	if _, err := f.broker.Execute(f.ctx, f.user, p.ID, res.Token); err != nil {
 		t.Fatalf("first execute: %v", err)
 	}
@@ -229,8 +228,8 @@ func TestDoubleExecuteRejected(t *testing.T) {
 // Editing params after approval invalidates the token (defeats approve-then-swap).
 func TestEditedParamsInvalidatesToken(t *testing.T) {
 	f := newFixture(t)
-	p := f.propose(false)
-	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, false)
+	p := f.propose()
+	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, true)
 
 	// Simulate an operator edit: the params change, re-hashing them.
 	if _, err := f.client.ActionProposal.UpdateOneID(p.ID).
@@ -249,8 +248,8 @@ func TestEditedParamsInvalidatesToken(t *testing.T) {
 // An expired token cannot execute.
 func TestExpiredTokenRejected(t *testing.T) {
 	f := newFixture(t)
-	p := f.propose(false)
-	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, false)
+	p := f.propose()
+	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, true)
 
 	f.now = f.now.Add(6 * time.Minute) // past the 5m TTL
 	if _, err := f.broker.Execute(f.ctx, f.user, p.ID, res.Token); !errors.Is(err, ErrTokenExpired) {
@@ -264,12 +263,12 @@ func TestExpiredTokenRejected(t *testing.T) {
 // A token minted for a different proposal cannot execute this one.
 func TestForeignTokenRejected(t *testing.T) {
 	f := newFixture(t)
-	p1 := f.propose(false)
-	p2 := f.propose(false)
-	res2, _ := f.broker.Approve(f.ctx, f.user, p2.ID, false)
+	p1 := f.propose()
+	p2 := f.propose()
+	res2, _ := f.broker.Approve(f.ctx, f.user, p2.ID, true)
 
 	// Approve p1 too so it is in the executable state, then try p2's token.
-	if _, err := f.broker.Approve(f.ctx, f.user, p1.ID, false); err != nil {
+	if _, err := f.broker.Approve(f.ctx, f.user, p1.ID, true); err != nil {
 		t.Fatalf("approve p1: %v", err)
 	}
 	if _, err := f.broker.Execute(f.ctx, f.user, p1.ID, res2.Token); !errors.Is(err, ErrTokenInvalid) {
@@ -284,21 +283,37 @@ func TestForeignTokenRejected(t *testing.T) {
 
 func TestFinancialRequiresStepUp(t *testing.T) {
 	f := newFixture(t)
-	p := f.propose(true)
+	p := f.propose()
 	if _, err := f.broker.Approve(f.ctx, f.user, p.ID, false); !errors.Is(err, ErrStepUpRequired) {
 		t.Fatalf("financial approve without step-up err = %v, want ErrStepUpRequired", err)
 	}
-	// With step-up it succeeds.
 	if _, err := f.broker.Approve(f.ctx, f.user, p.ID, true); err != nil {
 		t.Fatalf("financial approve with step-up: %v", err)
 	}
 }
 
-func TestNonFinancialSkipsStepUp(t *testing.T) {
+func TestProposedActionAlwaysRequiresStepUp(t *testing.T) {
 	f := newFixture(t)
-	p := f.propose(false)
-	if _, err := f.broker.Approve(f.ctx, f.user, p.ID, false); err != nil {
-		t.Fatalf("non-financial approve without step-up should pass: %v", err)
+	p := f.propose()
+	if !p.Financial {
+		t.Fatal("proposal must use server-controlled financial classification")
+	}
+	if _, err := f.broker.Approve(f.ctx, f.user, p.ID, false); !errors.Is(err, ErrStepUpRequired) {
+		t.Fatalf("approve without step-up err = %v, want ErrStepUpRequired", err)
+	}
+}
+
+func TestApproveOnlyOnce(t *testing.T) {
+	f := newFixture(t)
+	p := f.propose()
+	if _, err := f.broker.Approve(f.ctx, f.user, p.ID, true); err != nil {
+		t.Fatalf("first approve: %v", err)
+	}
+	if _, err := f.broker.Approve(f.ctx, f.user, p.ID, true); !errors.Is(err, ErrNotPending) {
+		t.Fatalf("second approve err = %v, want ErrNotPending", err)
+	}
+	if count := f.client.ApprovalToken.Query().CountX(f.ctx); count != 1 {
+		t.Fatalf("approval token count = %d, want 1", count)
 	}
 }
 
@@ -307,8 +322,8 @@ func TestNonFinancialSkipsStepUp(t *testing.T) {
 func TestExecutionUnavailablePreservesToken(t *testing.T) {
 	f := newFixture(t)
 	f.broker.exec = nil // no Act-seam configured
-	p := f.propose(false)
-	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, false)
+	p := f.propose()
+	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, true)
 
 	if _, err := f.broker.Execute(f.ctx, f.user, p.ID, res.Token); !errors.Is(err, ErrExecutionUnavailable) {
 		t.Fatalf("execute with no backend err = %v, want ErrExecutionUnavailable", err)
@@ -329,8 +344,8 @@ func TestExecutionUnavailablePreservesToken(t *testing.T) {
 func TestFailedExecutionBurnsToken(t *testing.T) {
 	f := newFixture(t)
 	f.exec.err = errors.New("product 500")
-	p := f.propose(false)
-	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, false)
+	p := f.propose()
+	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, true)
 
 	if _, err := f.broker.Execute(f.ctx, f.user, p.ID, res.Token); err == nil {
 		t.Fatal("expected execute to surface the product error")
@@ -351,7 +366,7 @@ func TestFailedExecutionBurnsToken(t *testing.T) {
 
 func TestTenantIsolation(t *testing.T) {
 	f := newFixture(t)
-	p := f.propose(false)
+	p := f.propose()
 
 	// A second operator with their own viewer context.
 	other := f.client.User.Create().SetEmail("b@example.com").SetWorkosUserID("op_2").
@@ -374,8 +389,8 @@ func TestTenantIsolation(t *testing.T) {
 
 func TestAuditChain(t *testing.T) {
 	f := newFixture(t)
-	p := f.propose(false)
-	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, false)
+	p := f.propose()
+	res, _ := f.broker.Approve(f.ctx, f.user, p.ID, true)
 	if _, err := f.broker.Execute(f.ctx, f.user, p.ID, res.Token); err != nil {
 		t.Fatalf("execute: %v", err)
 	}
@@ -414,8 +429,8 @@ func TestAuditRequiresRef(t *testing.T) {
 // sanity: the proposal count filter for pending excludes non-pending.
 func TestListPendingExcludesResolved(t *testing.T) {
 	f := newFixture(t)
-	p1 := f.propose(false)
-	p2 := f.propose(false)
+	p1 := f.propose()
+	p2 := f.propose()
 	if _, err := f.broker.Reject(f.ctx, p2.ID, "x"); err != nil {
 		t.Fatalf("reject: %v", err)
 	}

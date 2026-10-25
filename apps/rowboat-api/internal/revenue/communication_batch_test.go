@@ -226,6 +226,25 @@ func TestCommunicationTimelineRedactsTeammateBody(t *testing.T) {
 	}
 }
 
+func TestCommunicationTimelineDeniesRowsWhoseMetadataAccessWasRevoked(t *testing.T) {
+	f, teammate, teammateCtx, _ := communicationPrivacyFixture(t)
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Buyer", PrimaryEmail: "buyer@example.com",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	seedCommunicationInteraction(t, f, rel.ID)
+	if _, err := f.svc.SetWorkspaceCommunicationDefaults(f.ctx, f.user, CommunicationPolicyInput{
+		MetadataVisibility: "private", RetentionDays: 30,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.RelationshipCommunicationTimeline(teammateCtx, teammate, rel.ID, nil, nil, 10); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("private interaction metadata was returned: %v", err)
+	}
+}
+
 func TestCommunicationAttachmentRequiresGrant(t *testing.T) {
 	f, teammate, teammateCtx, _ := communicationPrivacyFixture(t)
 	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

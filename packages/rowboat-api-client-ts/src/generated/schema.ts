@@ -10075,13 +10075,15 @@ export interface components {
       verification_json?: string;
       workspace: components["schemas"]["RevenueWorkspace"];
     };
-    /** @description Strict oauth-consent context request bound to one Hydra challenge and pending connector flow. */
+    /** @description Strict oauth-consent context request bound to the original OAuth state and one Hydra challenge. */
     PreConsentRequest: {
       /**
        * @description Hydra consent challenge.
        * @example challenge_01HABCDEF
        */
       challenge: string;
+      /** @description Original OAuth state from Hydra request_url. Omitted only when revalidating a challenge already bound to that state. */
+      state?: string;
       /**
        * @description Hydra client id. Must match the configured Rowboat Desktop broker client.
        * @example rowboat-desktop

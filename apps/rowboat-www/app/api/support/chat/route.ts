@@ -52,10 +52,12 @@ export async function GET(request: NextRequest) {
 
   let externalId: string | undefined;
   let email: string | undefined;
+  let verifiedEmail: string | undefined;
   try {
     const identity = await fetchViewerIdentity(session);
     externalId = identity?.user.id || undefined;
-    email = identity?.user.email || undefined;
+    verifiedEmail = identity?.user.email || undefined;
+    email = verifiedEmail;
   } catch {
     // The inbox can still see who is chatting from the sealed session when
     // rowboat-api is down. That email is an unverified hint, never hashed.
@@ -63,7 +65,7 @@ export async function GET(request: NextRequest) {
   externalId = externalId || session.user.workosUserId || undefined;
   email = email || session.user.email || undefined;
 
-  const hash = email && shouldIdentifySupportChatCustomer() ? emailHash(email) : null;
+  const hash = verifiedEmail && shouldIdentifySupportChatCustomer() ? emailHash(verifiedEmail) : null;
   const customer =
     externalId || email
       ? {

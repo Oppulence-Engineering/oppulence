@@ -186,6 +186,9 @@ func (s *Service) communicationTimelineItem(
 	if err != nil {
 		return CommunicationTimelineItem{}, err
 	}
+	if !access.Metadata {
+		return CommunicationTimelineItem{}, ErrForbidden
+	}
 	owner, err := interaction.Edges.OwnerOrErr()
 	if err != nil {
 		return CommunicationTimelineItem{}, err

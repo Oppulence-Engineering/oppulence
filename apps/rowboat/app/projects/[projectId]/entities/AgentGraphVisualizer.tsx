@@ -137,6 +137,7 @@ export const AgentGraphVisualizer = ({ workflow }: { workflow: any }) => {
       const isDark = document.documentElement.classList.contains('dark');
       mermaid.initialize({
         startOnLoad: true,
+        securityLevel: "strict",
         theme: isDark ? 'dark' : 'default',
         themeVariables: {
           background: getCssVarValue('--background', isDark ? '#18181b' : '#fff'),
@@ -151,7 +152,7 @@ export const AgentGraphVisualizer = ({ workflow }: { workflow: any }) => {
           arrowheadColor: isDark ? '#a78bfa' : '#6366f1',
         },
       });
-      ref.current.innerHTML = generateMermaidFromWorkflow(workflow, isDark);
+      ref.current.textContent = generateMermaidFromWorkflow(workflow, isDark);
       ref.current.className = "mermaid";
       mermaid.init(undefined, ref.current);
     }

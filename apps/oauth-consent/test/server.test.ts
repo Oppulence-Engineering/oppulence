@@ -22,6 +22,7 @@ type ConsentRequest = {
   challenge: string;
   requested_scope: string[];
   requested_access_token_audience: string[];
+  request_url: string;
   client: { client_id: string };
 };
 
@@ -107,6 +108,7 @@ class OryMock {
       challenge,
       requested_scope: ['offline_access', ...scopes.map((scope) => scope.name)],
       requested_access_token_audience: [AUDIENCE],
+      request_url: `https://hydra.test/oauth2/auth?state=state_${encodeURIComponent(challenge)}`,
       client: { client_id: CLIENT_ID },
       ...overrides,
     });
@@ -164,6 +166,7 @@ class WorkOSMock {
 class RowboatMock {
   readonly app = express();
   readonly audits: Array<Record<string, unknown>> = [];
+  readonly contextRequests: Array<Record<string, unknown>> = [];
   verifiedRequests = 0;
   badResponseSignature = false;
   failNextAudits = 0;
@@ -180,6 +183,7 @@ class RowboatMock {
       if (!this.verifyRequest(req)) return res.status(401).json({ error: 'bad signature' });
       if (this.failNextContexts-- > 0) return res.status(503).json({ error: 'temporary' });
       const request = JSON.parse(String(req.body)) as Record<string, unknown>;
+      this.contextRequests.push(request);
       return this.sendSigned(req, res, this.contextFactory(request));
     });
     this.app.post('/oauth-hooks/consent-audit', (req, res) => {
@@ -423,6 +427,17 @@ describe('Hydra login and logout', () => {
 });
 
 describe('consent rendering and decisions', () => {
+  it('rejects consent when Hydra omits the original authorization state', async () => {
+    const challenge = 'consent_missing_state';
+    harness.ory.setConsent(challenge, [lowScope], { request_url: 'https://hydra.test/oauth2/auth' });
+
+    const response = await harness.browser.get(harness.app.url, `/consent?consent_challenge=${challenge}`);
+
+    expect(response.status).toBe(400);
+    expect(await response.text()).toContain('consent_state_missing');
+    expect(harness.rowboat.contextRequests).toHaveLength(0);
+  });
+
   it('renders trusted catalog copy by tier with product/client and required/optional scopes, then grants only selected scopes', async () => {
     const challenge = 'consent_render';
     const scopes = [lowScope, mediumScope, highScope, moneyScope];
@@ -442,6 +457,7 @@ describe('consent rendering and decisions', () => {
     expect(html).toContain(`data-scope="${mediumScope.name}" data-required="false"`);
     expect(harness.ory.acceptedConsents).toHaveLength(0);
     expect(eventNames(harness.rowboat)).toEqual(['consent.shown']);
+    expect(harness.rowboat.contextRequests[0]?.state).toBe(`state_${challenge}`);
 
     const approved = await harness.browser.post(harness.app.url, '/consent/decision', [
       ['csrf', csrf(html)],

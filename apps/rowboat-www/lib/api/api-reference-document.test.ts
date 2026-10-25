@@ -328,6 +328,7 @@ describe("API reference document", () => {
     expect(samples.ConsentClientIdentity.properties.display_name.example).toBe("Oppulence Desktop");
     expect(samples.VoiceTextToSpeechRequest.properties.text.example).toBe("Hello from Oppulence.");
     expect(samples.PreConsentRequest.properties.hydra_client_id.example).toBe("rowboat-desktop");
+    expect(samples.PreConsentRequest.properties.state.description).toContain("Original OAuth state");
     expect(presented.components.schemas.RevenuePolicyDecision.description).toBe(
       "Immutable sending check decision for one exact action revision. Oppulence snapshots the decision; it never composes one.",
     );

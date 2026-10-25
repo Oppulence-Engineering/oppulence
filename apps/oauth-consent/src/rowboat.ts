@@ -81,6 +81,7 @@ export type ConsentAuditEvent = 'consent.shown' | 'consent.granted' | 'consent.d
 
 export interface ContextRequest {
   challenge: string;
+  state?: string;
   workosUserId: string;
   hydraClientId: string;
   requestedAudience: string[];
@@ -110,6 +111,7 @@ export class RowboatHooks {
       {
         version: 1,
         challenge: input.challenge,
+        ...(input.state ? { state: input.state } : {}),
         workos_user_id: input.workosUserId,
         hydra_client_id: input.hydraClientId,
         requested_audience: input.requestedAudience,

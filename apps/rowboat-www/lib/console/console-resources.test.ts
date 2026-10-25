@@ -1,12 +1,11 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import {
-  GRAPH_VIEWS_MIGRATED_KEY,
-  LEGACY_GRAPH_VIEWS_KEY,
   graphSavedViews,
-  migrateLegacyGraphViews,
+  graphViewsStorageKey,
+  readLegacyGraphViews,
   noteFavorites,
   noteTemplates,
 } from "@/lib/console/console-resources";
@@ -62,122 +61,22 @@ describe("console resource projections", () => {
     expect(noteFavorites(resources)[0]?.payload.noteId).toBe("note-1");
   });
 
-  it("imports each legacy graph view once and marks completion", async () => {
-    storage.setItem(
-      LEGACY_GRAPH_VIEWS_KEY,
-      JSON.stringify([
-        {
-          id: "33333333-3333-4333-8333-333333333333",
-          label: "Portfolio",
-          createdAt: timestamps.createdAt,
-          updatedAt: timestamps.updatedAt,
-          state,
-        },
-      ]),
-    );
-    const create = vi.fn().mockResolvedValue(undefined);
-
-    await expect(migrateLegacyGraphViews({ storage, remote: [], create })).resolves.toBe(true);
-    await expect(migrateLegacyGraphViews({ storage, remote: [], create })).resolves.toBe(false);
-
-    expect(create).toHaveBeenCalledTimes(1);
-    expect(storage.getItem(GRAPH_VIEWS_MIGRATED_KEY)).toBe("true");
-  });
-
-  it("does not duplicate a matching remote graph view", async () => {
-    storage.setItem(
-      LEGACY_GRAPH_VIEWS_KEY,
-      JSON.stringify([
-        {
-          id: "33333333-3333-4333-8333-333333333333",
-          label: "Portfolio",
-          createdAt: timestamps.createdAt,
-          updatedAt: timestamps.updatedAt,
-          state,
-        },
-      ]),
-    );
-    const remote = graphSavedViews([
-      {
-        ...timestamps,
-        id: "44444444-4444-4444-8444-444444444444",
-        kind: "graph_saved_view",
-        name: "Portfolio",
-        payload: { state },
-      },
-    ]);
-    const create = vi.fn();
-
-    await migrateLegacyGraphViews({ storage, remote, create });
-
-    expect(create).not.toHaveBeenCalled();
-  });
-
-  it("treats a reordered saved view as the same view", async () => {
-    const reordered = {
-      changedSinceReview: false,
-      focusDepth: 0 as const,
-      hideIsolated: false,
-      density: 0.72,
-      layout: "force" as const,
-      query: "",
-      scope: "portfolio" as const,
+  it("keeps offline saved graph views scoped to the signed-in user", () => {
+    const userAKey = graphViewsStorageKey("user-a")!;
+    const userBKey = graphViewsStorageKey("user-b")!;
+    const view = {
+      id: "33333333-3333-4333-8333-333333333333",
+      label: "Portfolio",
+      createdAt: timestamps.createdAt,
+      updatedAt: timestamps.updatedAt,
+      state,
     };
-    storage.setItem(
-      LEGACY_GRAPH_VIEWS_KEY,
-      JSON.stringify([
-        {
-          id: "33333333-3333-4333-8333-333333333333",
-          label: "Portfolio",
-          createdAt: timestamps.createdAt,
-          updatedAt: timestamps.updatedAt,
-          state,
-        },
-      ]),
-    );
-    const remote = graphSavedViews([
-      {
-        ...timestamps,
-        id: "44444444-4444-4444-8444-444444444444",
-        kind: "graph_saved_view",
-        name: "Portfolio",
-        payload: { state: reordered },
-      },
-    ]);
-    const create = vi.fn();
 
-    await migrateLegacyGraphViews({ storage, remote, create });
+    storage.setItem(userAKey, JSON.stringify([view]));
 
-    expect(create).not.toHaveBeenCalled();
-  });
-
-  it("imports the views captured before storage is overwritten", async () => {
-    const captured = [
-      {
-        id: "33333333-3333-4333-8333-333333333333",
-        label: "Portfolio",
-        createdAt: timestamps.createdAt,
-        updatedAt: timestamps.updatedAt,
-        state,
-      },
-    ];
-    storage.setItem(
-      LEGACY_GRAPH_VIEWS_KEY,
-      JSON.stringify([
-        {
-          id: "55555555-5555-4555-8555-555555555555",
-          label: "Cedar graph",
-          createdAt: timestamps.createdAt,
-          updatedAt: timestamps.updatedAt,
-          state,
-        },
-      ]),
-    );
-    const create = vi.fn().mockResolvedValue(undefined);
-
-    await migrateLegacyGraphViews({ storage, remote: [], legacy: captured, create });
-
-    expect(create).toHaveBeenCalledTimes(1);
-    expect(create.mock.calls[0]?.[0].label).toBe("Portfolio");
+    expect(graphViewsStorageKey()).toBeNull();
+    expect(readLegacyGraphViews(storage, userAKey)).toEqual([view]);
+    expect(readLegacyGraphViews(storage, userBKey)).toEqual([]);
+    expect(readLegacyGraphViews(storage, null)).toEqual([]);
   });
 });

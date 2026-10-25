@@ -518,7 +518,7 @@ func (s *Service) UpsertWorkspaceMember(
 		).
 		Only(ctx)
 	if err == nil {
-		if existing.Role == "owner" {
+		if existing.Role == "owner" || (existing.Role == "admin" && actorRole != "owner") {
 			return nil, ErrForbidden
 		}
 		return existing.Update().SetRole(role).SetStatus("active").Save(ctx)

@@ -940,9 +940,10 @@ func addCloudEventSchemas(schemas obj) {
 }
 
 func addInternalSchemas(schemas obj) {
-	schemas["PreConsentRequest"] = objectSchema("Strict oauth-consent context request bound to one Hydra challenge and pending connector flow.", obj{
+	schemas["PreConsentRequest"] = objectSchema("Strict oauth-consent context request bound to the original OAuth state and one Hydra challenge.", obj{
 		"version":            intSchema("Hook contract version. Only version 1 is accepted.", 1),
 		"challenge":          stringSchema("Hydra consent challenge.", "challenge_01HABCDEF"),
+		"state":              stringSchema("Original OAuth state from Hydra request_url. Omitted only when revalidating a challenge already bound to that state.", "state_01HABCDEF"),
 		"workos_user_id":     stringSchema("WorkOS subject that started the connector flow.", "user_01HABCDEF"),
 		"hydra_client_id":    stringSchema("Hydra client id. Must match the configured Rowboat Desktop broker client.", "rowboat-desktop"),
 		"requested_audience": arraySchema("Exactly one requested connector audience.", stringSchema("Connector audience.", "mcp:canvas")),
@@ -2053,7 +2054,7 @@ func aliasConnectorPath(paths obj, source, target, method, operationID string) {
 }
 
 func addInternalPaths(paths obj) {
-	paths["/oauth-hooks/pre-consent"] = obj{"post": operation("Webhooks", "Resolve strict connector consent context", "HMAC-signed oauth-consent hook. It binds the Hydra challenge, WorkOS subject, desktop client, one connector audience, exact scope catalog, and current entitlement to one pending flow.", "preConsent", hookHMAC(), nil, jsonRequest("Strict pre-consent context request.", ref("PreConsentRequest"), obj{"version": 1, "challenge": "challenge_01HABCDEF", "workos_user_id": "user_01HABCDEF", "hydra_client_id": "rowboat-desktop", "requested_audience": []any{"mcp:canvas"}, "requested_scopes": []any{"canvas:invoices.read"}}), obj{
+	paths["/oauth-hooks/pre-consent"] = obj{"post": operation("Webhooks", "Resolve strict connector consent context", "HMAC-signed oauth-consent hook. It binds the original OAuth state and Hydra challenge to the WorkOS subject, desktop client, connector audience, exact scope catalog, and current entitlement. Revalidation may omit state only after this exact binding exists.", "preConsent", hookHMAC(), nil, jsonRequest("Strict pre-consent context request.", ref("PreConsentRequest"), obj{"version": 1, "challenge": "challenge_01HABCDEF", "state": "state_01HABCDEF", "workos_user_id": "user_01HABCDEF", "hydra_client_id": "rowboat-desktop", "requested_audience": []any{"mcp:canvas"}, "requested_scopes": []any{"canvas:invoices.read"}}), obj{
 		"200": jsonResponse("Structured connector consent context.", ref("PreConsentResponse"), nil),
 		"400": responseRef("400"),
 		"401": responseRef("401"),

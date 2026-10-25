@@ -5,14 +5,15 @@ import "client-only";
 import {
   RelationshipGraphSavedViewSchema,
   RelationshipGraphSavedViewsSchema,
-  RelationshipGraphSavedViewStateSchema,
   type RelationshipGraphSavedView,
   type RelationshipGraphSavedViewState,
 } from "@/lib/revenue/types";
 import type { ConsoleResource } from "@/lib/console/console";
 
-export const LEGACY_GRAPH_VIEWS_KEY = "oppulence.relationship-graph.saved-views.v1";
-export const GRAPH_VIEWS_MIGRATED_KEY = "oppulence.relationship-graph.saved-views.v2-imported";
+const GRAPH_VIEWS_STORAGE_KEY = "oppulence.relationship-graph.saved-views.v2";
+
+export const graphViewsStorageKey = (userId?: string): string | null =>
+  userId ? `${GRAPH_VIEWS_STORAGE_KEY}.${encodeURIComponent(userId)}` : null;
 
 export type NoteTemplateResource = ConsoleResource & {
   kind: "note_template";
@@ -52,48 +53,14 @@ export const graphSavedViews = (resources: ConsoleResource[]): GraphSavedViewRes
 
 export function readLegacyGraphViews(
   storage: Pick<Storage, "getItem">,
+  key: string | null,
 ): RelationshipGraphSavedView[] {
+  if (!key) return [];
   try {
     return RelationshipGraphSavedViewsSchema.parse(
-      JSON.parse(storage.getItem(LEGACY_GRAPH_VIEWS_KEY) || "[]"),
+      JSON.parse(storage.getItem(key) || "[]"),
     );
   } catch {
     return [];
   }
-}
-
-const savedViewFingerprint = (name: string, state: RelationshipGraphSavedViewState) =>
-  JSON.stringify([name, RelationshipGraphSavedViewStateSchema.parse(state)]);
-
-/**
- * Imports legacy views only after the API is known to be available. Existing
- * fingerprints make retries safe if a previous import stopped midway.
- */
-export async function migrateLegacyGraphViews({
-  storage,
-  remote,
-  legacy,
-  create,
-}: {
-  storage: Pick<Storage, "getItem" | "setItem">;
-  remote: GraphSavedViewResource[];
-  /** Views read before the graph overwrites browser storage with the server list. */
-  legacy?: RelationshipGraphSavedView[];
-  create: (view: RelationshipGraphSavedView) => Promise<unknown>;
-}): Promise<boolean> {
-  if (storage.getItem(GRAPH_VIEWS_MIGRATED_KEY) === "true") return false;
-
-  const existing = new Set(
-    remote.map((view) => savedViewFingerprint(view.name, view.payload.state)),
-  );
-  for (const candidate of legacy ?? readLegacyGraphViews(storage)) {
-    const view = RelationshipGraphSavedViewSchema.parse(candidate);
-    const fingerprint = savedViewFingerprint(view.label, view.state);
-    if (!existing.has(fingerprint)) {
-      await create(view);
-      existing.add(fingerprint);
-    }
-  }
-  storage.setItem(GRAPH_VIEWS_MIGRATED_KEY, "true");
-  return true;
 }

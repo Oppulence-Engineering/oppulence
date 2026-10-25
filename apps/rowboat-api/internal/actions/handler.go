@@ -115,7 +115,6 @@ func (h *Handler) Propose(w http.ResponseWriter, r *http.Request) {
 		Target        string `json:"target"`
 		Kind          string `json:"kind"`
 		ParamsJSON    string `json:"paramsJson"`
-		Financial     bool   `json:"financial"`
 		Rationale     string `json:"rationale"`
 		EntityID      string `json:"entityId"`
 		OriginRunID   string `json:"originRunId"`
@@ -128,7 +127,6 @@ func (h *Handler) Propose(w http.ResponseWriter, r *http.Request) {
 		Target:        body.Target,
 		Kind:          body.Kind,
 		ParamsJSON:    body.ParamsJSON,
-		Financial:     body.Financial,
 		Rationale:     body.Rationale,
 		EntityID:      body.EntityID,
 		OriginRunID:   body.OriginRunID,

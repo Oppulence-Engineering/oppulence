@@ -109,7 +109,7 @@ export interface ConsentStateStore {
     expected: ConsentStatus | ConsentStatus[],
     next: ConsentStatus,
   ): Promise<ConsentSession> | ConsentSession;
-  setSelectedScopes(id: string, scopes: string[]): Promise<ConsentSession> | ConsentSession;
+  beginStepUp(id: string, scopes: string[]): Promise<ConsentSession> | ConsentSession;
   failConsent(id: string): Promise<void> | void;
   createLoginFlow(challenge: string): Promise<BrowserFlow & { state: string }> | (BrowserFlow & { state: string });
   claimLoginFlow(
@@ -144,6 +144,8 @@ export interface ConsentStateStore {
     decision: 'approve' | 'deny',
     payload: unknown,
     leaseMs: number,
+    scopes?: string[],
+    stepUpVerified?: boolean,
   ): Promise<DecisionClaim> | DecisionClaim;
   claimDecisions(limit: number, leaseMs: number): Promise<DecisionClaim[]> | DecisionClaim[];
   replaceClaimedDecision(
@@ -233,10 +235,11 @@ export class StateStore implements ConsentStateStore {
     return value;
   }
 
-  setSelectedScopes(id: string, scopes: string[]): ConsentSession {
+  beginStepUp(id: string, scopes: string[]): ConsentSession {
     const value = this.getConsent(id);
-    if (!['shown', 'step_up_pending'].includes(value.status)) throw conflict('consent_replay');
+    if (value.status !== 'shown') throw conflict('consent_replay');
     value.selectedScopes = [...scopes];
+    value.status = 'step_up_pending';
     return value;
   }
 
@@ -376,8 +379,26 @@ export class StateStore implements ConsentStateStore {
 
   retryAudit(_id: string, _error: string): void {}
 
-  prepareDecision(id: string, decision: 'approve' | 'deny', payload: unknown, leaseMs: number): DecisionClaim {
-    const value = this.transition(id, ['shown', 'step_up_pending'], 'processing');
+  prepareDecision(
+    id: string,
+    decision: 'approve' | 'deny',
+    payload: unknown,
+    leaseMs: number,
+    scopes?: string[],
+    stepUpVerified = false,
+  ): DecisionClaim {
+    const value = this.getConsent(id);
+    const allowed: ConsentStatus[] = decision === 'deny'
+      ? ['shown', 'step_up_pending']
+      : stepUpVerified ? ['step_up_pending'] : ['shown'];
+    if (decision === 'approve') {
+      if (!scopes) throw conflict('consent_scopes_missing');
+      if (stepUpVerified) {
+        if (JSON.stringify(value.selectedScopes ?? []) !== JSON.stringify(scopes)) throw conflict('consent_scopes_changed');
+      }
+    }
+    this.transition(id, allowed, 'processing');
+    if (decision === 'approve' && !stepUpVerified) value.selectedScopes = [...scopes!];
     value.decision = decision;
     value.decisionPayload = payload;
     const claimToken = randomToken();
@@ -613,11 +634,11 @@ export class PostgresStateStore implements ConsentStateStore {
     return rowToConsent(result.rows[0]);
   }
 
-  async setSelectedScopes(id: string, scopes: string[]): Promise<ConsentSession> {
+  async beginStepUp(id: string, scopes: string[]): Promise<ConsentSession> {
     const result = await this.pool.query(
-      `UPDATE oauth_consent_sessions SET selected_scopes=$2, version=version+1
-       WHERE id=$1 AND status = ANY($3::text[]) AND expires_at > now() RETURNING ${CONSENT_COLUMNS}`,
-      [id, JSON.stringify(scopes), ['shown', 'step_up_pending']],
+      `UPDATE oauth_consent_sessions SET selected_scopes=$2, status='step_up_pending', version=version+1
+       WHERE id=$1 AND status='shown' AND expires_at > now() RETURNING ${CONSENT_COLUMNS}`,
+      [id, JSON.stringify(scopes)],
     );
     if (!result.rowCount) throw conflict('consent_replay');
     return rowToConsent(result.rows[0]);
@@ -891,16 +912,25 @@ export class PostgresStateStore implements ConsentStateStore {
     decision: 'approve' | 'deny',
     payload: unknown,
     leaseMs: number,
+    scopes?: string[],
+    stepUpVerified = false,
   ): Promise<DecisionClaim> {
+    if (decision === 'approve' && !scopes) throw conflict('consent_scopes_missing');
     const claimToken = randomToken();
+    const allowed: ConsentStatus[] = decision === 'deny'
+      ? ['shown', 'step_up_pending']
+      : stepUpVerified ? ['step_up_pending'] : ['shown'];
     const result = await this.pool.query(
       `UPDATE oauth_consent_sessions
        SET status='processing', decision=$2, decision_payload=$3, decision_claim_token=$4,
            decision_lease_until=now() + ($5::int * interval '1 millisecond'), decision_attempts=decision_attempts+1,
-           decision_next_attempt_at=now(), decision_last_error=NULL, version=version+1
-       WHERE id=$1 AND status = ANY($6::text[]) AND expires_at > now()
+           decision_next_attempt_at=now(), decision_last_error=NULL,
+           selected_scopes=CASE WHEN $2='approve' AND NOT $7::boolean THEN $6::jsonb ELSE selected_scopes END,
+           version=version+1
+       WHERE id=$1 AND status = ANY($8::text[]) AND expires_at > now()
+         AND ($2 <> 'approve' OR NOT $7::boolean OR selected_scopes=$6::jsonb)
        RETURNING ${CONSENT_COLUMNS}`,
-      [id, decision, JSON.stringify(payload), claimToken, leaseMs, ['shown', 'step_up_pending']],
+      [id, decision, JSON.stringify(payload), claimToken, leaseMs, scopes ? JSON.stringify(scopes) : null, stepUpVerified, allowed],
     );
     if (!result.rowCount) throw conflict('consent_replay');
     return { session: rowToConsent(result.rows[0]), claimToken };

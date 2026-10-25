@@ -6,6 +6,7 @@ import { PaginatedList } from "@/src/entities/common/paginated-list";
 
 const DocSchema = AssistantTemplate.omit({ id: true });
 const LikeDocSchema = AssistantTemplateLike.omit({ id: true });
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export class MongoDBAssistantTemplatesRepository {
     private readonly collection = db.collection<z.infer<typeof DocSchema>>("assistant_templates");
@@ -40,10 +41,11 @@ export class MongoDBAssistantTemplatesRepository {
         if (filters.authorId) query.authorId = filters.authorId;
         if (filters.source) query.source = filters.source;
         if (filters.search) {
+            const search = escapeRegex(filters.search);
             query.$or = [
-                { name: { $regex: filters.search, $options: 'i' } },
-                { description: { $regex: filters.search, $options: 'i' } },
-                { tags: { $in: [new RegExp(filters.search, 'i')] } },
+                { name: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } },
+                { tags: { $in: [new RegExp(search, 'i')] } },
             ];
         }
 
