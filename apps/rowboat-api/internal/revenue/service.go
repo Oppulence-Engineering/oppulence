@@ -8551,6 +8551,43 @@ func relationshipMailAccess(actor uuid.UUID, now time.Time, reason string) predi
 	})
 }
 
+func communicationMetadataVisibleTo(actorID uuid.UUID) predicate.CommunicationInteraction {
+	return predicate.CommunicationInteraction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeCommunicationMetadataVisible(
+				b,
+				s.C(communicationinteraction.WorkspaceColumn),
+				s.C(communicationinteraction.OwnerColumn),
+				s.C(communicationinteraction.FieldID),
+				s.C(communicationinteraction.FieldSourceAccountID),
+				actorID,
+			)
+		}))
+	})
+}
+
+func writeCommunicationMetadataVisible(
+	b *sql.Builder,
+	workspaceColumn, ownerColumn, interactionIDColumn, sourceAccountColumn string,
+	actorID uuid.UUID,
+) {
+	b.WriteString("(")
+	b.WriteString(ownerColumn)
+	b.WriteString(" = ")
+	b.Arg(actorID.String())
+	b.WriteString(" OR (")
+	b.WriteString(ownerColumn)
+	b.WriteString(" <> ")
+	b.Arg(actorID.String())
+	b.WriteString(" AND NOT ")
+	writeMailRuleMatchFor(b, workspaceColumn, ownerColumn, interactionIDColumn, "protected_address", "protected_domain")
+	b.WriteString(" AND NOT (")
+	writeMailRuleMatchFor(b, workspaceColumn, ownerColumn, interactionIDColumn, "blocked_address", "blocked_domain")
+	b.WriteString(" OR ")
+	writeMailPrivatePolicyFor(b, workspaceColumn, ownerColumn, sourceAccountColumn)
+	b.WriteString(")))")
+}
+
 func writeMailAccessReason(b *sql.Builder, s *sql.Selector, actor uuid.UUID, now time.Time, reason string) {
 	switch reason {
 	case "mailbox_owner":
@@ -8611,6 +8648,20 @@ func writeMailKeptPrivate(b *sql.Builder, s *sql.Selector) {
 }
 
 func writeMailRuleMatch(b *sql.Builder, s *sql.Selector, addressKind, domainKind string) {
+	writeMailRuleMatchFor(
+		b,
+		"mail."+communicationinteraction.WorkspaceColumn,
+		"mail."+communicationinteraction.OwnerColumn,
+		"mail."+communicationinteraction.FieldID,
+		addressKind,
+		domainKind,
+	)
+}
+
+func writeMailRuleMatchFor(
+	b *sql.Builder,
+	workspaceColumn, ownerColumn, interactionIDColumn, addressKind, domainKind string,
+) {
 	email := "lower(trim(person." + communicationparticipant.FieldEmail + "))"
 	value := "rule." + communicationprivacyrule.FieldValue
 	b.WriteString("EXISTS (SELECT 1 FROM ")
@@ -8623,16 +8674,16 @@ func writeMailRuleMatch(b *sql.Builder, s *sql.Selector, addressKind, domainKind
 	b.Arg(true)
 	b.WriteString(" AND rule.")
 	b.WriteString(communicationprivacyrule.WorkspaceColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(workspaceColumn)
 	b.WriteString(" AND rule.")
 	b.WriteString(communicationprivacyrule.OwnerColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.OwnerColumn)
+	b.WriteString(" = ")
+	b.WriteString(ownerColumn)
 	b.WriteString(" AND person.")
 	b.WriteString(communicationparticipant.InteractionColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.FieldID)
+	b.WriteString(" = ")
+	b.WriteString(interactionIDColumn)
 	b.WriteString(" AND ((rule.")
 	b.WriteString(communicationprivacyrule.FieldKind)
 	b.WriteString(" = ")
@@ -8667,30 +8718,39 @@ func writeMailRuleMatch(b *sql.Builder, s *sql.Selector, addressKind, domainKind
 }
 
 func writeMailPrivatePolicy(b *sql.Builder, s *sql.Selector) {
+	writeMailPrivatePolicyFor(
+		b,
+		"mail."+communicationinteraction.WorkspaceColumn,
+		"mail."+communicationinteraction.OwnerColumn,
+		"mail."+communicationinteraction.FieldSourceAccountID,
+	)
+}
+
+func writeMailPrivatePolicyFor(b *sql.Builder, workspaceColumn, ownerColumn, sourceAccountColumn string) {
 	b.WriteString("COALESCE((SELECT policy.")
 	b.WriteString(communicationprivacypolicy.FieldMetadataVisibility)
 	b.WriteString(" FROM ")
 	b.WriteString(communicationprivacypolicy.Table)
 	b.WriteString(" AS policy WHERE policy.")
 	b.WriteString(communicationprivacypolicy.WorkspaceColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(workspaceColumn)
 	b.WriteString(" AND policy.")
 	b.WriteString(communicationprivacypolicy.OwnerColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.OwnerColumn)
+	b.WriteString(" = ")
+	b.WriteString(ownerColumn)
 	b.WriteString(" AND policy.")
 	b.WriteString(communicationprivacypolicy.FieldSourceAccountID)
-	b.WriteString(" = lower(trim(mail.")
-	b.WriteString(communicationinteraction.FieldSourceAccountID)
+	b.WriteString(" = lower(trim(")
+	b.WriteString(sourceAccountColumn)
 	b.WriteString(")) LIMIT 1), (SELECT policy.")
 	b.WriteString(communicationprivacypolicy.FieldMetadataVisibility)
 	b.WriteString(" FROM ")
 	b.WriteString(communicationprivacypolicy.Table)
 	b.WriteString(" AS policy WHERE policy.")
 	b.WriteString(communicationprivacypolicy.WorkspaceColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(workspaceColumn)
 	b.WriteString(" AND policy.")
 	b.WriteString(communicationprivacypolicy.FieldSourceAccountID)
 	b.WriteString(" = ")

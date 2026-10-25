@@ -65,7 +65,8 @@ export async function GET(request: NextRequest) {
   externalId = externalId || session.user.workosUserId || undefined;
   email = email || session.user.email || undefined;
 
-  const hash = verifiedEmail && shouldIdentifySupportChatCustomer() ? emailHash(verifiedEmail) : null;
+  const hash =
+    verifiedEmail && shouldIdentifySupportChatCustomer() ? emailHash(verifiedEmail) : null;
   const customer =
     externalId || email
       ? {

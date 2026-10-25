@@ -218,10 +218,6 @@ export const ConnectorConsentContext503Response = zod
 export const PreConsentBody = zod
   .strictObject({
     challenge: zod.string().describe("Hydra consent challenge."),
-    state: zod
-      .string()
-      .optional()
-      .describe("Original OAuth state from Hydra request_url. Omitted only when revalidating a challenge already bound to that state."),
     hydra_client_id: zod
       .string()
       .describe("Hydra client id. Must match the configured Rowboat Desktop broker client."),
@@ -231,6 +227,12 @@ export const PreConsentBody = zod
     requested_scopes: zod
       .array(zod.string().describe("Connector scope."))
       .describe("Exact non-empty connector scope set requested from the catalog."),
+    state: zod
+      .string()
+      .optional()
+      .describe(
+        "Original OAuth state from Hydra request_url. Omitted only when revalidating a challenge already bound to that state.",
+      ),
     version: zod.int().describe("Hook contract version. Only version 1 is accepted."),
     workos_user_id: zod
       .string()

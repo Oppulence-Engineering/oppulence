@@ -12,14 +12,14 @@
 export interface PreConsentRequest {
   /** Hydra consent challenge. */
   challenge: string;
-  /** Original OAuth state from Hydra request_url; omitted only for revalidation of an already-bound challenge. */
-  state?: string;
   /** Hydra client id. Must match the configured Rowboat Desktop broker client. */
   hydra_client_id: string;
   /** Exactly one requested connector audience. */
   requested_audience: string[];
   /** Exact non-empty connector scope set requested from the catalog. */
   requested_scopes: string[];
+  /** Original OAuth state from Hydra request_url. Omitted only when revalidating a challenge already bound to that state. */
+  state?: string;
   /** Hook contract version. Only version 1 is accepted. */
   version: number;
   /** WorkOS user id used to resolve bearer tokens into local users. */

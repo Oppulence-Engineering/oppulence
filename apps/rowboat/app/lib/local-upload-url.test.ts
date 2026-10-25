@@ -4,12 +4,12 @@ import { test } from "node:test";
 import { createLocalUploadUrl, isValidLocalUploadUrl, localUploadIdFromPath } from "./local-upload-url";
 
 const fileId = "507f1f77bcf86cd799439011";
-const secret = "local-upload-test-secret";
+const testKey = "test";
 
 function withSigningSecret(run: () => void): void {
   const previousUrlSecret = process.env.RAG_UPLOADS_URL_SECRET;
   const previousAuthSecret = process.env.AUTH0_SECRET;
-  process.env.RAG_UPLOADS_URL_SECRET = secret;
+  process.env.RAG_UPLOADS_URL_SECRET = testKey;
   delete process.env.AUTH0_SECRET;
   try {
     run();
@@ -32,7 +32,7 @@ test("local upload URLs bind method, file ID, and expiry", () => {
     assert.equal(isValidLocalUploadUrl("507f1f77bcf86cd799439012", "PUT", expires, signature), false);
 
     const expired = String(Math.floor(Date.now() / 1000) - 1);
-    const expiredSignature = createHmac("sha256", secret)
+    const expiredSignature = createHmac("sha256", testKey)
       .update(`PUT:${fileId}:${expired}`)
       .digest("base64url");
     assert.equal(isValidLocalUploadUrl(fileId, "PUT", expired, expiredSignature), false);

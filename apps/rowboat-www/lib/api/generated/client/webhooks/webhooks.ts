@@ -213,7 +213,7 @@ export const getPreConsentUrl = () => {
 };
 
 /**
- * HMAC-signed oauth-consent hook. It binds the Hydra challenge, WorkOS subject, desktop client, one connector audience, exact scope catalog, and current entitlement to one pending flow.
+ * HMAC-signed oauth-consent hook. It binds the original OAuth state and Hydra challenge to the WorkOS subject, desktop client, connector audience, exact scope catalog, and current entitlement. Revalidation may omit state only after this exact binding exists.
  * @summary Resolve strict connector consent context
  */
 export const preConsent = async (

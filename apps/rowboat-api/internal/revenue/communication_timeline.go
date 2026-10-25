@@ -121,6 +121,7 @@ func (s *Service) RelationshipCommunicationTimeline(
 		Where(
 			communicationinteraction.HasRelationshipWith(relationship.IDEQ(relationshipID)),
 			communicationinteraction.DeletedEQ(false),
+			communicationMetadataVisibleTo(actor.ID),
 		).
 		WithWorkspace().
 		WithOwner().

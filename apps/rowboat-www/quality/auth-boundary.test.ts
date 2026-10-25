@@ -32,15 +32,14 @@ describe("authentication and BFF boundaries", () => {
     "//evil.example/path",
     "/x/..//evil.example/path",
     "javascript:alert(1)",
-  ])(
-    "rejects unsafe return target %s",
-    (target) => {
-      expect(safeReturnTo(target)).toBe("/app");
-    },
-  );
+  ])("rejects unsafe return target %s", (target) => {
+    expect(safeReturnTo(target)).toBe("/app");
+  });
 
   it("preserves safe relative paths including query and fragment", () => {
-    expect(safeReturnTo("/app/agents?view=active#agent-1")).toBe("/app/agents?view=active#agent-1");
+    expect(safeReturnTo("/app/agents?view=active#agent-1")).toBe(
+      "/app/agents?view=active#agent-1",
+    );
   });
 
   it("expires stale PKCE state server-side", () => {

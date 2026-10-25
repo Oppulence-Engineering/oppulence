@@ -57,9 +57,7 @@ export function readLegacyGraphViews(
 ): RelationshipGraphSavedView[] {
   if (!key) return [];
   try {
-    return RelationshipGraphSavedViewsSchema.parse(
-      JSON.parse(storage.getItem(key) || "[]"),
-    );
+    return RelationshipGraphSavedViewsSchema.parse(JSON.parse(storage.getItem(key) || "[]"));
   } catch {
     return [];
   }

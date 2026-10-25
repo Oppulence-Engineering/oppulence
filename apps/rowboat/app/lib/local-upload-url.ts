@@ -39,8 +39,9 @@ export function isValidLocalUploadUrl(
   ) {
     return false;
   }
-  const expected = Buffer.from(signature(fileId, method, expiresAt, secret));
-  const actual = Buffer.from(token);
+  const encoder = new TextEncoder();
+  const expected = encoder.encode(signature(fileId, method, expiresAt, secret));
+  const actual = encoder.encode(token);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
