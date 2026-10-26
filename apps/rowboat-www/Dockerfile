@@ -16,6 +16,10 @@ RUN ln -s /repo/apps/rowboat-www/node_modules /repo/packages/ui/node_modules
 FROM deps AS build
 WORKDIR /repo/apps/rowboat-www
 ENV NEXT_TELEMETRY_DISABLED=1
+# The deploy passes the commit SHA. Next.js bakes it into the standalone build,
+# so a browser still running an older deploy reloads instead of crashing.
+ARG NEXT_DEPLOYMENT_ID=""
+ENV NEXT_DEPLOYMENT_ID=${NEXT_DEPLOYMENT_ID}
 COPY apps/rowboat-www .
 RUN npm run build
 
