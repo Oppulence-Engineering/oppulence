@@ -5,6 +5,7 @@ import { noContainerResolve } from "./rules/no-container-resolve.js";
 import { noDangerousElectronOptions } from "./rules/no-dangerous-electron-options.js";
 import { noDeepDistImports } from "./rules/no-deep-dist-imports.js";
 import { noElectronInCore } from "./rules/no-electron-in-core.js";
+import { noRawDesignValues } from "./rules/no-raw-design-values.js";
 import { noRawIpcRendererExposure } from "./rules/no-raw-ipc-renderer-exposure.js";
 import { noRawIpc } from "./rules/no-raw-ipc.js";
 import { noUnboundedPoller } from "./rules/no-unbounded-poller.js";
@@ -21,6 +22,7 @@ export const rules = {
   "no-dangerous-electron-options": noDangerousElectronOptions,
   "no-deep-dist-imports": noDeepDistImports,
   "no-electron-in-core": noElectronInCore,
+  "no-raw-design-values": noRawDesignValues,
   "no-raw-ipc-renderer-exposure": noRawIpcRendererExposure,
   "no-raw-ipc": noRawIpc,
   "no-unbounded-poller": noUnboundedPoller,
