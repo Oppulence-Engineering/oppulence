@@ -13,6 +13,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googlechannel"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"go.uber.org/zap"
 )
@@ -155,9 +156,9 @@ func (h *Handler) handleGoogleChannelNotification(w http.ResponseWriter, r *http
 		return
 	}
 	switch {
-	case strings.HasPrefix(channelID, "gcal:"):
+	case strings.HasPrefix(channelID, "gcal+") || strings.HasPrefix(channelID, "gcal:"):
 		h.handleCalendarNotification(w, r, state, channelID, messageNumber, resourceID)
-	case strings.HasPrefix(channelID, "gdrive:"):
+	case strings.HasPrefix(channelID, "gdrive+") || strings.HasPrefix(channelID, "gdrive:"):
 		h.handleDriveNotification(w, r, state, channelID, messageNumber, resourceID)
 	default:
 		metricUnresolved.WithLabelValues(SourceGoogleCalendar).Inc()
@@ -168,8 +169,7 @@ func (h *Handler) handleGoogleChannelNotification(w http.ResponseWriter, r *http
 }
 
 func (h *Handler) handleCalendarNotification(w http.ResponseWriter, r *http.Request, state, channelID, messageNumber, resourceID string) {
-	// The watching account travels in the channel id, which Rowboat controls
-	// at watch time: "gcal:{accountEmail}:{uuid}".
+	// The watching account travels in the channel ID minted at watch time.
 	email := calendarAccountFromChannelID(channelID)
 	owner, ok := h.resolveActiveGoogleWatch(r, "calendar", email, channelID, resourceID)
 	if !ok {
@@ -209,8 +209,7 @@ func (h *Handler) respondGoogleInvalidation(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *Handler) handleDriveNotification(w http.ResponseWriter, r *http.Request, state, channelID, messageNumber, resourceID string) {
-	// The watching account travels in the channel id, which Rowboat controls
-	// at watch time: "gdrive:{accountEmail}:{uuid}".
+	// The watching account travels in the channel ID minted at watch time.
 	email := driveAccountFromChannelID(channelID)
 	owner, ok := h.resolveActiveGoogleWatch(r, "drive", email, channelID, resourceID)
 	if !ok {
@@ -241,23 +240,19 @@ func (h *Handler) handleDriveNotification(w http.ResponseWriter, r *http.Request
 }
 
 // calendarAccountFromChannelID extracts the account email from a Rowboat-
-// minted channel id ("gcal:{email}:{uuid}"), or "" for foreign formats.
+// minted channel ID, or "" for foreign formats.
 func calendarAccountFromChannelID(channelID string) string {
 	return googleChannelAccountFromID(channelID, "gcal")
 }
 
 // driveAccountFromChannelID extracts the account email from a Rowboat-minted
-// Drive channel id ("gdrive:{email}:{uuid}"), or "" for foreign formats.
+// Drive channel ID, or "" for foreign formats.
 func driveAccountFromChannelID(channelID string) string {
 	return googleChannelAccountFromID(channelID, "gdrive")
 }
 
 func googleChannelAccountFromID(channelID, prefix string) string {
-	parts := strings.SplitN(channelID, ":", 3)
-	if len(parts) != 3 || parts[0] != prefix {
-		return ""
-	}
-	return strings.ToLower(strings.TrimSpace(parts[1]))
+	return googlechannel.Account(channelID, prefix)
 }
 
 // resolveActiveGoogleWatch binds a push to the exact registration Rowboat

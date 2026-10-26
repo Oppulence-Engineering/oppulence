@@ -17,13 +17,7 @@ import { toast } from "sonner";
 import { PRODUCT_NAME, PRODUCT_PROVIDER_ID } from "@x/shared/branding";
 
 type LlmProviderFlavor =
-  | "openai"
-  | "anthropic"
-  | "google"
-  | "openrouter"
-  | "aigateway"
-  | "ollama"
-  | "openai-compatible";
+  "openai" | "anthropic" | "google" | "openrouter" | "aigateway" | "ollama" | "openai-compatible";
 
 interface LlmModelOption {
   id: string;

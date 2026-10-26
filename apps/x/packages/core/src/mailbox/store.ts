@@ -37,12 +37,7 @@ import type {
 } from "./reply/types.js";
 
 export type MailboxSyncMode =
-  | "idle"
-  | "backfill"
-  | "incremental"
-  | "backoff"
-  | "needs_reconnect"
-  | "paused";
+  "idle" | "backfill" | "incremental" | "backoff" | "needs_reconnect" | "paused";
 
 export type MailboxSyncState = {
   accountId: string;

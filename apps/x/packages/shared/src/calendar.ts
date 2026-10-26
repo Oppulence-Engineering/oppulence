@@ -96,8 +96,7 @@ function findMeetingUrl(value: unknown): string | undefined {
  */
 export function extractConferenceLink(raw: Record<string, unknown>): string | undefined {
   const confData = raw.conferenceData as
-    | { entryPoints?: { entryPointType?: string; uri?: string }[] }
-    | undefined;
+    { entryPoints?: { entryPointType?: string; uri?: string }[] } | undefined;
   const video = confData?.entryPoints?.find((ep) => ep.entryPointType === "video");
   if (video?.uri) return video.uri;
   if (typeof raw.hangoutLink === "string") return raw.hangoutLink;

@@ -1,0 +1,63 @@
+name: Deploy rowboat-api to App Platform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/rowboat-api/**"
+      - "packages/oauth-resource-server-go/**"
+      - ".do/rowboat-api-production.json"
+      - "charts/rowboat-api/values-production.yaml"
+      - "scripts/rowboat-database-pool.sh"
+      - ".github/workflows/rowboat-api-app-platform.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - run: go test ./... -count=1 -timeout=30m
+        working-directory: apps/rowboat-api
+      - run: go vet ./...
+        working-directory: apps/rowboat-api
+
+  database-pool:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: digitalocean/action-doctl@3cb3953159719656269e044e0e24ca16dd2a690f # v2.5.2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_DATABASE_TOKEN }}
+      - run: scripts/rowboat-database-pool.sh charts/rowboat-api/values-production.yaml
+
+  deploy:
+    needs: [quality, database-pool]
+    uses: Oppulence-Engineering/shared-workflows/.github/workflows/digitalocean-app-platform.yml@39e73ce91a0280405ae5bfd35ef7834b2f96c58f # v1.2.0
+    with:
+      app_id: ${{ vars.ROWBOAT_API_APP_ID }}
+      app_spec_path: .do/rowboat-api-production.json
+      deploy_ref: refs/heads/main
+      environment: production
+      doctl_version: 1.183.0
+      timeout_minutes: 90
+      build_image: true
+      image_registry_type: GHCR
+      image_registry: oppulence-engineering
+      image_repository: desktop-assistant-rowboat-api
+      dockerfile_path: apps/rowboat-api/Dockerfile
+      build_context: .
+      healthcheck_url: ${{ vars.ROWBOAT_API_HEALTHCHECK_URL }}
+      healthcheck_attempts: 30
+      healthcheck_interval_seconds: 10
+    secrets:
+      digitalocean_token: ${{ secrets.DIGITALOCEAN_PRODUCTION_TOKEN }}

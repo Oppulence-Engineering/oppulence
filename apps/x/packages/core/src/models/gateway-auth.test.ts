@@ -21,8 +21,7 @@ vi.mock("../auth/tokens.js", () => ({ getAccessToken: async () => auth.token }))
 
 const useCase = vi.hoisted(() => ({
   value: { useCase: "knowledge_sync", subUseCase: "label_emails" } as
-    | { useCase: string; subUseCase?: string }
-    | undefined,
+    { useCase: string; subUseCase?: string } | undefined,
 }));
 vi.mock("../analytics/use_case.js", () => ({ getCurrentUseCase: () => useCase.value }));
 
