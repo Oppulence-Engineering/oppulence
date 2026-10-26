@@ -18,7 +18,12 @@ const SERVER_SAFE_FILES = [
 
 // PrefetchHydration is a Server Component that renders this explicit client
 // boundary to seed pending queries during hydration.
-const HYDRATION_CLIENT_MODULE = path.join(appRoot, "components", "providers", "settle-prefetch.tsx");
+const HYDRATION_CLIENT_MODULE = path.join(
+  appRoot,
+  "components",
+  "providers",
+  "settle-prefetch.tsx",
+);
 const HYDRATION_SERVER_MODULE = path.join(
   appRoot,
   "components",
