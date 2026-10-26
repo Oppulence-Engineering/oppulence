@@ -65,6 +65,8 @@ jobs:
       image_repository: rowboat-www
       dockerfile_path: apps/rowboat-www/Dockerfile
       build_context: .
+      # Version skew protection: an open tab from an older deploy reloads.
+      build_args: NEXT_DEPLOYMENT_ID=${{ github.sha }}
       healthcheck_url: ${{ vars.ROWBOAT_WWW_HEALTHCHECK_URL }}
       healthcheck_attempts: 30
       healthcheck_interval_seconds: 10
