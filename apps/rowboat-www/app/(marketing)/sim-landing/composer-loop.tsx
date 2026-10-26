@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { cn, usePrefersReducedMotion } from "@sim/emcn";
-import { Blimp } from "@sim/emcn/icons";
+import { Sparkle as Blimp } from "@/lib/icons";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { ThinkingLoader } from "@/components/sim/thinking-loader";
 import { ProductionWorkflowStage, type ScriptedWorkflowState } from "./production-workflow-stage";

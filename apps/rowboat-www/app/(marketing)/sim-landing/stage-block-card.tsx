@@ -12,7 +12,7 @@ import {
   Tooltip,
   Trash,
 } from "@sim/emcn";
-import { Circle, Square, Unlock } from "@sim/emcn/icons";
+import { Circle, LockSimpleOpen as Unlock, Square } from "@/lib/icons";
 import {
   BLOCK_DIMENSIONS,
   CanvasSentenceView,

@@ -1,0 +1,468 @@
+/*
+ * Catalog / compare / article chrome. The TSX already uses mk-* class names;
+ * this is the missing stylesheet. Tokens come from .sm-site so these pages
+ * match the header instead of rendering as an unstyled document.
+ */
+@layer utilities {
+  .sm-site .mk-capability,
+  .sm-site .mk-index,
+  .sm-site .mk-article {
+    padding-bottom: clamp(72px, 8vw, 120px);
+  }
+
+  .sm-site .mk-breadcrumbs {
+    margin-bottom: 28px;
+    color: var(--sm-muted);
+    font-size: 12px;
+    letter-spacing: -0.01em;
+  }
+
+  .sm-site .mk-breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sm-site .mk-breadcrumbs a {
+    color: var(--sm-muted);
+    text-decoration: none;
+  }
+
+  .sm-site .mk-breadcrumbs a:hover {
+    color: var(--sm-ink);
+  }
+
+  .sm-site .mk-section-heading {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+
+  .sm-site .mk-section-heading h2,
+  .sm-site .mk-related h2,
+  .sm-site .mk-cta h2,
+  .sm-site .mk-inline-links h2,
+  .sm-site .mk-security-note h2,
+  .sm-site .mk-specs h2,
+  .sm-site .mk-download-apps h2,
+  .sm-site .mk-changelog h2 {
+    color: var(--sm-ink);
+    font-family: var(--typeface-sans);
+    font-size: clamp(1.25rem, 2vw, 1.4rem);
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    line-height: 1.25;
+  }
+
+  .sm-site .mk-section-lede,
+  .sm-site .mk-section-lede p {
+    max-width: 60ch;
+    color: var(--sm-muted);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .sm-site .mk-index-grid {
+    display: grid;
+    gap: 14px;
+    margin-top: clamp(36px, 5vw, 56px);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sm-site .mk-index-card {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    min-height: 148px;
+    border: 1px solid var(--sm-line);
+    border-radius: 12px;
+    background: #ffffff;
+    padding: 18px 20px;
+    color: inherit;
+    text-decoration: none;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .sm-site .mk-index-card:hover,
+  .sm-site .mk-index-card:focus-visible {
+    border-color: rgb(20 24 28 / 16%);
+    background: rgb(17 20 24 / 3.5%);
+  }
+
+  .sm-site .mk-index-card strong {
+    color: var(--sm-ink);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.014em;
+  }
+
+  .sm-site .mk-index-card p,
+  .sm-site .mk-index-card [data-slot="card-description"] {
+    color: var(--sm-muted);
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  .sm-site .mk-related {
+    margin-top: clamp(48px, 6vw, 80px);
+  }
+
+  .sm-site .mk-related > div {
+    display: grid;
+    gap: 14px;
+    margin-top: 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sm-site .mk-related a {
+    display: grid;
+    gap: 6px;
+    border: 1px solid var(--sm-line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    text-decoration: none;
+  }
+
+  .sm-site .mk-related a:hover {
+    background: rgb(17 20 24 / 3.5%);
+  }
+
+  .sm-site .mk-related strong {
+    color: var(--sm-ink);
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .sm-site .mk-cta {
+    display: grid;
+    gap: 14px;
+    margin-top: clamp(56px, 7vw, 88px);
+    border: 1px solid var(--sm-line);
+    border-radius: 12px;
+    background: var(--sm-soft);
+    padding: clamp(24px, 4vw, 36px);
+  }
+
+  .sm-site .mk-cta p {
+    max-width: 52ch;
+    color: var(--sm-muted);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .sm-site .mk-product-frame {
+    overflow: hidden;
+    margin: clamp(28px, 4vw, 44px) 0 0;
+    border: 1px solid var(--sm-line);
+    border-radius: 12px;
+    background: var(--sm-soft);
+  }
+
+  .sm-site .mk-product-frame-chrome {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--sm-line);
+    padding: 10px 14px;
+  }
+
+  .sm-site .mk-product-frame-chrome span {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #d5dbe3;
+  }
+
+  .sm-site .mk-product-frame-image {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .sm-site .mk-product-frame figcaption {
+    padding: 12px 16px 16px;
+    color: var(--sm-muted);
+    font-size: 13px;
+  }
+
+  .sm-site .mk-capability-split {
+    display: grid;
+    gap: 20px;
+    margin-top: clamp(40px, 6vw, 72px);
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sm-site .mk-capability-split > div,
+  .sm-site .mk-capability-grid > article,
+  .sm-site .mk-capability-grid > div > article,
+  .sm-site .mk-examples > div > article {
+    border: 1px solid var(--sm-line);
+    border-radius: 12px;
+    background: #ffffff;
+    padding: 20px 22px;
+  }
+
+  .sm-site .mk-capability-grid,
+  .sm-site .mk-examples,
+  .sm-site .mk-workflow,
+  .sm-site .mk-inline-links,
+  .sm-site .mk-security-note,
+  .sm-site .mk-pricing-path,
+  .sm-site .mk-download-apps,
+  .sm-site .mk-specs {
+    margin-top: clamp(40px, 6vw, 72px);
+  }
+
+  .sm-site .mk-capability-grid:not(:has(> div)) {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sm-site .mk-capability-grid > div,
+  .sm-site .mk-examples > div {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .sm-site .mk-capability-grid h2,
+  .sm-site .mk-capability-grid h3,
+  .sm-site .mk-examples h3 {
+    color: var(--sm-ink);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.014em;
+  }
+
+  .sm-site .mk-capability-split ol,
+  .sm-site .mk-capability-split ul {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .sm-site .mk-capability-split li {
+    color: var(--sm-muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .sm-site .mk-capability-split p,
+  .sm-site .mk-capability-grid p,
+  .sm-site .mk-examples p,
+  .sm-site .mk-security-note p,
+  .sm-site .mk-pricing-path p,
+  .sm-site .mk-download-apps p {
+    margin-top: 8px;
+    color: var(--sm-muted);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .sm-site .mk-workflow ol {
+    display: grid;
+    gap: 12px;
+  }
+
+  .sm-site .mk-workflow li {
+    display: grid;
+    align-items: start;
+    gap: 14px;
+    border: 1px solid var(--sm-line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    grid-template-columns: auto 1fr;
+  }
+
+  .sm-site .mk-workflow p {
+    margin: 0;
+    color: var(--sm-ink);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .sm-site .mk-inline-links a,
+  .sm-site .mk-text-link,
+  .sm-site .mk-security-note a,
+  .sm-site .mk-changelog a,
+  .sm-site .mk-resources-note a {
+    color: var(--sm-blue);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .sm-site .mk-security-note,
+  .sm-site .mk-customers-empty,
+  .sm-site .mk-resources-note {
+    border: 1px solid var(--sm-line);
+    border-radius: 12px;
+    background: var(--sm-soft);
+    padding: 20px 22px;
+    color: var(--sm-muted);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .sm-site .mk-article-body {
+    max-width: 68ch;
+    margin-top: clamp(28px, 4vw, 44px);
+    color: var(--sm-ink);
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  .sm-site .mk-article-body :is(h2, h3) {
+    margin-top: 1.6em;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .sm-site .mk-article-body p + p {
+    margin-top: 1em;
+  }
+
+  /*
+   * Ferndesk leftover landers: cream paper, huge definition type, chips.
+   * Product frames stay white; only the SEO catch-alls pick up the paper.
+   */
+  .sm-site .mk-seo-lander {
+    color: var(--sm-ink);
+  }
+
+  .sm-site .mk-seo-lander .linear-subpage-title {
+    font-size: clamp(40px, 6vw, 64px);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+  }
+
+  .sm-site .mk-seo-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .sm-site .mk-seo-chips span,
+  .sm-site .mk-seo-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--sm-line);
+    border-radius: 999px;
+    padding: 6px 12px;
+    color: var(--sm-muted);
+    background: #fffdf8;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .sm-site .mk-seo-definition {
+    max-width: 68ch;
+    margin-top: clamp(40px, 5vw, 64px);
+  }
+
+  .sm-site .mk-seo-definition p {
+    margin-top: 16px;
+    color: var(--sm-ink);
+    font-size: 17px;
+    line-height: 1.65;
+  }
+
+  .sm-site .mk-seo-audience {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 1fr 1fr;
+    margin-top: clamp(36px, 4vw, 56px);
+  }
+
+  .sm-site .mk-seo-audience ul {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+    padding-left: 1.15em;
+    color: var(--sm-ink);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .sm-site .mk-seo-audience p {
+    margin-top: 16px;
+    color: var(--sm-ink);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 900px) {
+    .sm-site .mk-index-grid,
+    .sm-site .mk-capability-grid:not(:has(> div)),
+    .sm-site .mk-capability-split,
+    .sm-site .mk-download-apps,
+    .sm-site .mk-related > div,
+    .sm-site .mk-specs dl,
+    .sm-site .mk-seo-audience {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /*
+   * Leftover GenericPage / FeatureMirrorPage cards still use marketing-surface.
+   * Polar left them looking like a dark help-center. Map them onto the same
+   * hairline cards as mk-index so old SEO routes match the public shell.
+   */
+  .sm-site .marketing-surface,
+  .sm-site .marketing-surface-strong,
+  .sm-site .marketing-preview,
+  .sm-site .marketing-chip {
+    border: 1px solid var(--sm-line);
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: none;
+  }
+
+  .sm-site .marketing-surface-strong {
+    background: var(--sm-soft);
+  }
+
+  .sm-site .marketing-cta-primary,
+  .sm-site .marketing-cta-secondary {
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .sm-site .marketing-cta-primary {
+    border: 0;
+    background: var(--sm-blue);
+    color: var(--primary-foreground);
+  }
+
+  .sm-site .marketing-cta-primary:hover {
+    border: 0;
+    background: color-mix(in oklab, var(--primary) 90%, transparent);
+    color: var(--primary-foreground);
+    filter: none;
+  }
+
+  .sm-site .marketing-cta-secondary {
+    border: 1px solid var(--sm-line);
+    background: #ffffff;
+    color: var(--sm-ink);
+  }
+
+  .sm-site .marketing-cta-secondary:hover {
+    border-color: var(--sm-line);
+    background: var(--sm-soft);
+    color: var(--sm-ink);
+  }
+}
+
+@layer utilities {
+  /* Loaded after legacy sm-site mk-* rules so Sim shell overrides win. */
+  .sm-site.sim-marketing-site .mk-cta {
+    display: none;
+  }
+}

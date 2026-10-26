@@ -1,4 +1,4 @@
-import { Table as TableIcon } from "@sim/emcn/icons";
+import { Table as TableIcon } from "@/lib/icons";
 import {
   AgentIcon,
   ConditionalIcon,

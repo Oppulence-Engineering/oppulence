@@ -1,4 +1,4 @@
-import { Table } from "@sim/emcn/icons";
+import { Table } from "@/lib/icons";
 import { GmailIcon } from "@/components/sim/icons";
 import { ActivityStatus } from "@/components/sim/activity-status";
 import { getToolStatusDisplayTitle } from "@/lib/sim-port/copilot/tools/tool-display";

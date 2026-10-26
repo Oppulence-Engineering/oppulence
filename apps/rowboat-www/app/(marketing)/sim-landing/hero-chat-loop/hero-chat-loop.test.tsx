@@ -30,14 +30,6 @@ vi.mock("@sim/emcn", () => ({
     Content: () => null,
   },
 }));
-vi.mock("@sim/emcn/icons", () => ({
-  Workflow: () => null,
-  Mic: () => null,
-  Paperclip: () => null,
-  Plus: () => null,
-  Slash: () => null,
-  X: () => null,
-}));
 vi.mock("./hero-chat-welcome", () => ({
   HeroChatWelcome: () => null,
 }));

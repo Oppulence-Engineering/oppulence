@@ -14,12 +14,12 @@ import {
 } from "@sim/emcn";
 import {
   FileText,
-  PanelLeft,
-  PlayOutline,
+  FlowArrow as Workflow,
+  Play as PlayOutline,
   Plus,
+  SidebarSimple as PanelLeft,
   Table as TableIcon,
-  Workflow,
-} from "@sim/emcn/icons";
+} from "@/lib/icons";
 import { HeroWorkflowStage } from "./hero-workflow-stage";
 import type { LeadRecord } from "./tables-records-preview/data";
 import { TablesRecordsTable } from "./tables-records-preview/tables-records-table";

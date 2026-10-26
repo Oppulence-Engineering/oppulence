@@ -631,7 +631,7 @@
 
 .oppulence-compact-lockup__wordmark {
   color: var(--foreground);
-  font-family: var(--font-geist-sans, "Geist Variable"), ui-sans-serif, sans-serif;
+  font-family: var(--typeface-sans);
   font-size: 19px;
   font-weight: 600;
   letter-spacing: -0.035em;

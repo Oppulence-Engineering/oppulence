@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, cn, Tooltip } from "@sim/emcn";
-import { PanelLeft } from "@sim/emcn/icons";
+import { SidebarSimple as PanelLeft } from "@/lib/icons";
 import { HeroChatLoop, type HeroChatPhase } from "./hero-chat-loop";
 import { HeroPlatformIntro } from "./hero-platform-intro";
 import { type HeroResourceId, HeroResourcePanel } from "./hero-resource-panel";

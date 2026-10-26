@@ -10,7 +10,7 @@ import {
   Trash,
   usePrefersReducedMotion,
 } from "@sim/emcn";
-import { Circle, Minus, Plus, Square, Unlock } from "@sim/emcn/icons";
+import { Circle, LockSimpleOpen as Unlock, Minus, Plus, Square } from "@/lib/icons";
 import {
   CanvasSentenceView,
   InlineChip,

@@ -1,5 +1,11 @@
 import { Badge, Chip } from "@sim/emcn";
-import { ChevronDown, Layout, ListFilter, TagIcon, TypeText } from "@sim/emcn/icons";
+import {
+  CaretDown as ChevronDown,
+  FunnelSimple as ListFilter,
+  Layout,
+  Tag as TagIcon,
+  TextT as TypeText,
+} from "@/lib/icons";
 
 import { cn } from "@/lib/sim/cn";
 

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Button, cn, Tooltip } from "@sim/emcn";
-import { Mic, Paperclip, Plus, Slash, X } from "@sim/emcn/icons";
+import { Lightning as Slash, Microphone as Mic, Paperclip, Plus, X } from "@/lib/icons";
 import { HeroChatReply } from "./hero-chat-reply";
 import { HeroToolCallItem } from "./hero-tool-call-item";
 import { HeroChatWelcome } from "../hero-chat-welcome/hero-chat-welcome";

@@ -2,8 +2,6 @@ import { redirect } from "next/navigation";
 
 import { isSessionUsable } from "@/lib/auth/cookies";
 import { getOptionalSession } from "@/lib/auth/session";
-import { marketingFontVariables } from "@/lib/fonts";
-import { cn } from "@/lib/utils";
 
 import "@/app/(marketing)/sim-landing/sim-landing.css";
 
@@ -13,7 +11,6 @@ export const instant = false;
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#fefefe",
 };
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -25,7 +22,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <div className={cn("sim-landing-root min-h-svh", marketingFontVariables)} data-auth-route>
+    <div className="sim-landing-root min-h-svh" data-auth-route>
       {children}
     </div>
   );
