@@ -1,0 +1,349 @@
+/*
+ * Oppulence design tokens
+ *
+ * The one source for color, type, radius, shadow, and motion on the desktop
+ * app, the web app, and the landing page. A surface imports this file through
+ * Tailwind (`@import "@oppulence/ui/tokens.css";`). App CSS keeps only layout.
+ *
+ * Layers:
+ * 1. Primitives: raw scales. Do not use them in components.
+ * 2. Semantic tokens: what components use. Light in `:root`, dark in `.dark`.
+ * 3. Density: type size and layout space. Compact is the default.
+ *    `[data-density="marketing"]` gives the landing page a larger scale.
+ *    Density never changes color, radius, font, or icons.
+ *
+ * Fonts: this file names the families. Each app loads the same self-hosted
+ * files from its own CSS entry, because the web app cannot resolve packages
+ * from this folder:
+ *   @import "@fontsource-variable/inter";
+ *   @import "@fontsource-variable/geist-mono";
+ *
+ * Contrast: `apps/rowboat-www/quality/design-tokens.test.ts` checks the
+ * semantic pairs against WCAG 2.2 AA. Run it when you change a color.
+ */
+
+/* ── 1. Primitives ───────────────────────────────────────────────────────── */
+:root {
+  /* Light-mode neutrals, light to dark. */
+  --gray-0: #ffffff;
+  --gray-25: #f9fafb;
+  --gray-50: #f7f8f9;
+  --gray-100: #f3f4f6;
+  --gray-150: #edeef1;
+  --gray-200: #e5e7eb;
+  --gray-300: #d7d8da;
+  --gray-400: #c7c8cc;
+  --gray-500: #aaabb1;
+  --gray-600: #9a9ba2;
+  --gray-650: #7d828b;
+  --gray-700: #666970;
+  --gray-800: #5d5d5d;
+  --gray-950: #292929;
+
+  /* Dark-mode neutrals (graphite), light to dark. */
+  --graphite-50: #f1f2f4;
+  --graphite-300: #909298;
+  --graphite-350: #8a8c93;
+  --graphite-450: #6e7077;
+  --graphite-500: #606168;
+  --graphite-600: #4c4d53;
+  --graphite-650: #3c3d41;
+  --graphite-700: #303137;
+  --graphite-750: #292a2f;
+  --graphite-800: #202126;
+  --graphite-825: #1b1c20;
+  --graphite-850: #18191c;
+  --graphite-875: #141518;
+  --graphite-900: #111214;
+  --graphite-950: #0d0e0f;
+
+  /* Brand and status hues. Use hues only for focus, status, and charts. */
+  --blue-500: #3578f6;
+  --red-600: #c4320a;
+  --red-300: #f97066;
+  --green-700: #067647;
+  --green-300: #47cd89;
+  --amber-700: #965a0b;
+  --amber-300: #fdb022;
+
+  /* Type */
+  --typeface-sans:
+    "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --typeface-mono:
+    "Geist Mono Variable", "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --weight-regular: 400;
+  --weight-medium: 500;
+
+  /* Shape: square product chrome. Circles use `rounded-full`. */
+  --radius: 0;
+
+  /* Motion */
+  --motion-fast: 120ms;
+  --motion-base: 160ms;
+  --motion-slow: 240ms;
+  --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
+}
+
+/* ── 2. Semantic tokens: light ───────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+
+  --background: var(--gray-25);
+  --background-50: var(--gray-50);
+  --background-100: var(--gray-100);
+  --background-200: var(--gray-150);
+  --background-300: var(--gray-200);
+  --background-400: var(--gray-300);
+  --background-500: var(--gray-400);
+  --background-600: var(--gray-500);
+  --background-700: var(--gray-600);
+  --surface: var(--gray-0);
+  --surface-raised: var(--gray-0);
+
+  --foreground: var(--gray-950);
+  --muted-foreground: var(--gray-800);
+  --subtle-foreground: var(--gray-700);
+
+  --primary: var(--gray-950);
+  --primary-foreground: var(--gray-0);
+  --secondary: var(--gray-100);
+  --secondary-foreground: var(--gray-950);
+  --muted: var(--gray-100);
+  --accent: var(--gray-150);
+  --accent-foreground: var(--gray-950);
+
+  /* `--border` divides panels. `--input` outlines a control and needs 3:1. */
+  --border: var(--gray-200);
+  --input: var(--gray-650);
+  --ring: var(--blue-500);
+
+  --destructive: var(--red-600);
+  --destructive-foreground: var(--gray-0);
+  --success: var(--green-700);
+  --success-foreground: var(--gray-0);
+  --warning: var(--amber-700);
+  --warning-foreground: var(--gray-0);
+
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--foreground);
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  --elevation-soft: 0 1px 2px rgb(16 24 40 / 0.04), 0 5px 16px rgb(16 24 40 / 0.05);
+  --elevation-overlay: 0 1px 2px rgb(16 24 40 / 0.05), 0 8px 24px rgb(16 24 40 / 0.06);
+}
+
+/* ── 2. Semantic tokens: dark ────────────────────────────────────────────── */
+.dark {
+  color-scheme: dark;
+
+  --background: var(--graphite-900);
+  --background-50: var(--graphite-950);
+  --background-100: var(--graphite-850);
+  --background-200: var(--graphite-800);
+  --background-300: var(--graphite-750);
+  --background-400: var(--graphite-700);
+  --background-500: var(--graphite-650);
+  --background-600: var(--graphite-600);
+  --background-700: var(--graphite-500);
+  --surface: var(--graphite-875);
+  --surface-raised: var(--graphite-850);
+
+  --foreground: var(--graphite-50);
+  --muted-foreground: var(--graphite-300);
+  --subtle-foreground: var(--graphite-350);
+
+  --primary: var(--graphite-50);
+  --primary-foreground: var(--graphite-900);
+  --secondary: var(--graphite-825);
+  --secondary-foreground: var(--graphite-50);
+  --muted: var(--graphite-825);
+  --accent: var(--graphite-800);
+  --accent-foreground: var(--graphite-50);
+
+  --border: var(--graphite-750);
+  --input: var(--graphite-450);
+  --ring: var(--blue-500);
+
+  --destructive: var(--red-300);
+  --destructive-foreground: var(--graphite-900);
+  --success: var(--green-300);
+  --success-foreground: var(--graphite-900);
+  --warning: var(--amber-300);
+  --warning-foreground: var(--graphite-900);
+
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+
+  --elevation-soft: 0 1px 2px rgb(0 0 0 / 0.24), 0 8px 20px rgb(0 0 0 / 0.16);
+  --elevation-overlay: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px rgb(0 0 0 / 0.22);
+}
+
+/* ── 3. Density ──────────────────────────────────────────────────────────── */
+/* Compact: the desktop app and the web app. Four type stops, as in product-system.css. */
+:root,
+[data-density="compact"] {
+  --size-caption: 12px;
+  --size-control: 13px;
+  --size-body: 14px;
+  --size-lead: 14px;
+  --size-title: 18px;
+  --size-heading: 18px;
+  --size-display: 24px;
+  --leading-body: 1.45;
+  --leading-heading: 1.2;
+  --leading-display: 1.1;
+  --tracking-body: -0.15px;
+  --tracking-display: -0.015em;
+  --space-gutter: 16px;
+  --space-section: 24px;
+}
+
+/* Marketing: the landing page. Values come from sim-landing/tokens.ts (HOME_TYPE). */
+[data-density="marketing"] {
+  --size-caption: 14px;
+  --size-control: 15px;
+  --size-body: 16px;
+  --size-lead: 20px;
+  --size-title: 32px;
+  --size-heading: 40px;
+  --size-display: 80px;
+  --leading-body: 1.45;
+  --leading-heading: 1.1;
+  --leading-display: 0.96;
+  --tracking-body: 0;
+  --tracking-display: -0.025em;
+  --space-gutter: 24px;
+  --space-section: 96px;
+}
+
+@media (max-width: 1279px) {
+  [data-density="marketing"] {
+    --size-heading: 34px;
+    --size-display: 64px;
+  }
+}
+
+@media (max-width: 639px) {
+  [data-density="marketing"] {
+    --size-lead: 17px;
+    --size-title: 24px;
+    --size-heading: 28px;
+    --size-display: 42px;
+  }
+}
+
+/* ── Tailwind v4 theme: one mapping, so a utility means the same in each app ─ */
+@theme inline {
+  --color-background: var(--background);
+  --color-background-50: var(--background-50);
+  --color-background-100: var(--background-100);
+  --color-background-200: var(--background-200);
+  --color-background-300: var(--background-300);
+  --color-background-400: var(--background-400);
+  --color-background-500: var(--background-500);
+  --color-background-600: var(--background-600);
+  --color-background-700: var(--background-700);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--typeface-sans);
+  --font-display: var(--typeface-sans);
+  --font-mono: var(--typeface-mono);
+  --font-weight-normal: var(--weight-regular);
+  --font-weight-medium: var(--weight-medium);
+
+  --text-caption: var(--size-caption);
+  --text-caption--line-height: var(--leading-body);
+  --text-control: var(--size-control);
+  --text-control--line-height: var(--leading-body);
+  --text-body: var(--size-body);
+  --text-body--line-height: var(--leading-body);
+  --text-lead: var(--size-lead);
+  --text-lead--line-height: var(--leading-body);
+  --text-title: var(--size-title);
+  --text-title--line-height: var(--leading-heading);
+  --text-heading: var(--size-heading);
+  --text-heading--line-height: var(--leading-heading);
+  --text-display: var(--size-display);
+  --text-display--line-height: var(--leading-display);
+  --text-display--letter-spacing: var(--tracking-display);
+
+  --radius-xs: var(--radius);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+  --radius-2xl: var(--radius);
+  --radius-3xl: var(--radius);
+  --radius-4xl: var(--radius);
+
+  --shadow-soft: var(--elevation-soft);
+  --shadow-overlay: var(--elevation-overlay);
+
+  --ease-standard: var(--motion-ease);
+  --ease-spring: var(--motion-ease-spring);
+}
