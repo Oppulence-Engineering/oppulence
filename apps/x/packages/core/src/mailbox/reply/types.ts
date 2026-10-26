@@ -33,12 +33,7 @@ export type MailboxThreadTracker = {
 export type MailboxDraftSource = "manual" | "rule" | "nudge" | "assistant" | "reply_zero";
 
 export type MailboxDraftStatus =
-  | "suggested"
-  | "created_provider_draft"
-  | "edited"
-  | "stale"
-  | "sent"
-  | "discarded";
+  "suggested" | "created_provider_draft" | "edited" | "stale" | "sent" | "discarded";
 
 export type MailboxMessageCitation = {
   messageId: string;
