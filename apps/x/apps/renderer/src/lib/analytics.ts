@@ -97,7 +97,7 @@ function appVersionProperties(): Record<string, string> {
   return appVersion ? { app_version: appVersion } : {};
 }
 
-export function configureAnalyticsContext(props: { appVersion?: string; apiUrl?: string }) {
+function configureAnalyticsContext(props: { appVersion?: string; apiUrl?: string }) {
   appVersion = props.appVersion?.trim() || undefined;
   apiUrl = props.apiUrl?.trim() || undefined;
 
