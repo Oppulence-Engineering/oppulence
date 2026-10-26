@@ -58,7 +58,7 @@ jobs:
         working-directory: apps/rowboat-www
 
       - name: Install browser quality dependencies
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
         working-directory: apps/rowboat-www
 
       - name: Verify rowboat-www

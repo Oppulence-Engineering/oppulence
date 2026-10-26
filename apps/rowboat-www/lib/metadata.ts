@@ -38,11 +38,13 @@ export function createMetadata(override: Metadata): Metadata {
       images: DEFAULT_OG_IMAGE,
       ...override.twitter,
     },
+    // Tab and touch icons use the small app/icon.png and app/apple-icon.png
+    // files. The 512px social image is 180 KB and slowed every first load.
     icons:
       override.icons ??
       ({
-        icon: [{ url: DEFAULT_OG_IMAGE, sizes: "any" }],
-        apple: DEFAULT_OG_IMAGE,
+        icon: [{ url: "/icon.png", sizes: "96x96" }],
+        apple: "/apple-icon.png",
       } satisfies Metadata["icons"]),
   };
 }

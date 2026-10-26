@@ -1,6 +1,5 @@
 "use client";
 
-import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { Toaster } from "@oppulence/ui/components/sonner";
 import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
@@ -10,8 +9,7 @@ import { DevProviders } from "@/components/providers/dev-providers";
 
 /**
  * Root client boundary for the whole app. Mirrors the Better Auth docs shell:
- * theme class on `<html>`, global toasts, and MUI's App Router cache for any
- * remaining Material icons used on marketing pages.
+ * theme class on `<html>` and global toasts.
  */
 export function AppProviders({
   children,
@@ -30,11 +28,9 @@ export function AppProviders({
       */}
       <Suspense fallback={null}>
         <NuqsAdapter>
-          <AppRouterCacheProvider options={{ key: "css" }}>
-            {children}
-            <DevProviders enabled={devToolsEnabled} />
-            <Toaster richColors closeButton position="bottom-right" />
-          </AppRouterCacheProvider>
+          {children}
+          <DevProviders enabled={devToolsEnabled} />
+          <Toaster richColors closeButton position="bottom-right" />
         </NuqsAdapter>
       </Suspense>
     </ThemeProvider>

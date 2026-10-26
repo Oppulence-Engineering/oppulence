@@ -56,7 +56,7 @@ export function InlineLogo({
             alt=""
             className="oppulence-compact-lockup__mark-image"
             height={iconSize}
-            src="/marketing/oppulence-icon.png"
+            src="/icon.png"
             width={iconSize}
           />
         </Badge>
@@ -65,7 +65,7 @@ export function InlineLogo({
           alt=""
           className={cn("rounded-[3px]", compact ? "size-5" : prominent ? "size-10" : "size-7")}
           height={iconSize}
-          src="/marketing/oppulence-icon.png"
+          src="/icon.png"
           width={iconSize}
         />
       )}
