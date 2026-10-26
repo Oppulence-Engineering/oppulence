@@ -93,10 +93,7 @@
   line-height: 1.4;
 }
 
-.settings-workspace .rounded,
-.settings-workspace .rounded-none,
-.settings-workspace .rounded-none,
-.settings-workspace .rounded-none {
+.settings-workspace .rounded {
   border-radius: 8px;
 }
 

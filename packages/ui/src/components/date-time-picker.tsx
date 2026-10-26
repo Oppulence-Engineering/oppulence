@@ -108,7 +108,7 @@ function DateTimePicker({
             </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent ref={contentRef} align="start" className="w-auto rounded-none p-0">
+        <PopoverContent ref={contentRef} align="start" className="w-auto rounded-md p-0">
           <Calendar mode="single" selected={selected} onSelect={selectDate} />
           <div className="flex items-center gap-2 border-t p-3">
             <Input

@@ -1674,37 +1674,6 @@
   background: var(--background);
 }
 
-.rowboat-shell .rounded-none {
-  border-radius: var(--radius) !important;
-}
-
-/* The settings dialog renders in a portal outside `.rowboat-shell`, so its
-   `rounded-none` sentinels would collapse to sharp corners. Re-round them here
-   to keep the ElevenLabs developer-console look (rounded cards and fields). */
-.rowboat-settings .rounded-none {
-  border-radius: var(--radius) !important;
-}
-
-.rowboat-shell .rounded-l-none {
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-}
-
-.rowboat-shell .rounded-r-none {
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-}
-
-.rowboat-shell .rounded-t-none {
-  border-top-left-radius: 0 !important;
-  border-top-right-radius: 0 !important;
-}
-
-.rowboat-shell .rounded-b-none {
-  border-bottom-right-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-}
-
 /* Inset shell: the sidebar floats on the tinted canvas, so no hard edge. */
 .rowboat-sidebar [data-sidebar="sidebar"] {
   background: var(--sidebar);
@@ -2180,28 +2149,3 @@ svg.app-icon.animate-spin {
   }
 }
 
-/* ── No rounded borders ──────────────────────────────────────────────────────
-   The desktop app uses square corners throughout. This zeroes every rounded
-   utility (named like `rounded-none` and arbitrary like `rounded-[14px]`) and the
-   hardcoded panel/email radii. Two classes of element keep their shape:
-     • anything `rounded-full` (utility pills, circular badges, avatars), and
-     • the CSS circles `border-radius: 50%` (message avatar, status dot, chip-x).
-   Placed last so it wins source-order ties against earlier !important rules. */
-[class*="rounded-"]:not([class*="rounded-full"]) {
-  border-radius: 0 !important;
-}
-
-/* Hardcoded panel radii that carry no utility class. */
-.rowboat-section-switcher,
-.rowboat-section-switcher button,
-.rowboat-quick-actions button,
-.rowboat-sidebar button,
-.rowboat-titlebar button,
-.rowboat-dev-card {
-  border-radius: 0 !important;
-}
-
-/* Email view: square every surface except its three genuine circles. */
-.gmail-shell *:not(.gmail-message-avatar):not(.gmail-row-dot):not(.gmail-recipient-chip-remove) {
-  border-radius: 0 !important;
-}
