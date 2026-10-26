@@ -42,7 +42,7 @@
   --destructive-foreground: var(--error-color, oklch(80% 0.22 31));
   --border: #e5e7eb;
   --input: #e5e7eb;
-  --ring: var(--main-color, oklch(70.8% 0 0));
+  --ring: var(--main-color, #3578f6);
   --radius: 0.5rem;
   --sidebar: hsl(0 0% 98%);
   --sidebar-foreground: hsl(240 5.3% 26.1%);
@@ -103,7 +103,7 @@
   --destructive-foreground: var(--error-color, oklch(80% 0.22 31));
   --border: var(--polar-700);
   --input: var(--polar-700);
-  --ring: var(--polar-500);
+  --ring: #3578f6;
   --sidebar: var(--polar-950);
   --sidebar-foreground: var(--polar-50);
   --sidebar-primary: #ffffff;

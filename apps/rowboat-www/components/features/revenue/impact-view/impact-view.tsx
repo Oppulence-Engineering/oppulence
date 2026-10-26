@@ -300,7 +300,7 @@ export function ImpactView({
         >
           {onScan ? (
             <Button
-              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
               disabled={scanning}
               onClick={onScan}
               size="sm"
