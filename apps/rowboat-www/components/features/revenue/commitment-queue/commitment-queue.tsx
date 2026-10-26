@@ -8,9 +8,14 @@ import {
   ArrowClockwise,
   Check,
   Export,
+  Hash as TypeNumber,
   MagnifyingGlass,
   PencilSimple,
   Plugs,
+  Plus,
+  Table as TableIcon,
+  Tag as TagIcon,
+  TextT as TypeText,
   Warning,
   X,
 } from "@/lib/icons";
@@ -55,7 +60,6 @@ import {
 } from "@oppulence/ui/components/select";
 import { cn } from "@oppulence/ui/lib/utils";
 import { Badge as SimBadge, Chip } from "@sim/emcn";
-import { Plus, Table as TableIcon, TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
 import { WorkspaceEmptyIllustration } from "@/components/features/revenue/shared/shared";
 import {
   SimProductHeader,
@@ -1085,8 +1089,8 @@ export function CommitmentQueue({
         </SimProductToolbar>
 
         {latestScan?.status === "completed" ? (
-          <div className="flex min-h-12 flex-wrap items-center gap-4 border-b border-border bg-background-50 px-3 text-[12px] text-primary/55">
-            <Label className="font-medium text-primary">
+          <div className="flex min-h-12 flex-wrap items-center gap-4 border-b border-border bg-background-50 px-3 text-[12px] text-foreground/55">
+            <Label className="font-medium text-foreground">
               Latest {latestScan.lookbackDays}-day audit
             </Label>
             <dl className="flex items-center gap-4">
@@ -1095,7 +1099,7 @@ export function CommitmentQueue({
                 was actually examined, and says separately what was passed
                 over, so the number cannot imply a depth the scan did not have. */}
               <div className="flex items-center gap-1.5">
-                <dd className="font-medium text-primary">{examined}</dd>
+                <dd className="font-medium text-foreground">{examined}</dd>
                 <dt>Conversations reviewed</dt>
               </div>
               {skipped > 0 ? (
@@ -1103,7 +1107,7 @@ export function CommitmentQueue({
                   className="flex items-center gap-1.5"
                   title="Swept but not judged: no message from you in the thread, so there was no promise of yours to find. Usually newsletters, receipts and notifications."
                 >
-                  <dd className="font-medium text-primary/70">{skipped}</dd>
+                  <dd className="font-medium text-foreground/70">{skipped}</dd>
                   <dt>Not a conversation</dt>
                 </div>
               ) : null}
@@ -1117,11 +1121,13 @@ export function CommitmentQueue({
                 </div>
               ) : null}
               <div className="flex items-center gap-1.5">
-                <dd className="font-medium text-primary">{latestScan.relationshipsCreated ?? 0}</dd>
+                <dd className="font-medium text-foreground">
+                  {latestScan.relationshipsCreated ?? 0}
+                </dd>
                 <dt>New companies</dt>
               </div>
               <div className="hidden items-center gap-1.5 lg:flex">
-                <dd className="font-medium text-primary">{latestScan.candidatesSeen ?? 0}</dd>
+                <dd className="font-medium text-foreground">{latestScan.candidatesSeen ?? 0}</dd>
                 <dt>Follow-up signals</dt>
               </div>
             </dl>
@@ -1202,15 +1208,15 @@ export function CommitmentQueue({
             ) : null}
           </div>
         ) : loading ? (
-          <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-primary/55">
+          <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-foreground/55">
             <Spinner className="size-4" /> Loading promises…
           </div>
         ) : noAccounts ? (
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
-            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+            <h2 className="text-[20px] font-semibold leading-6 text-foreground">
               {registerEmptyAccountsTitle(false)}
             </h2>
-            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+            <p className="mt-2 max-w-md text-sm leading-6 text-foreground/55">
               {registerEmptyAccountsDetail(false)}
             </p>
             <Button
@@ -1228,10 +1234,10 @@ export function CommitmentQueue({
               "flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center"
             }
           >
-            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+            <h2 className="text-[20px] font-semibold leading-6 text-foreground">
               {registerEmptyAccountsTitle(true)}
             </h2>
-            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+            <p className="mt-2 max-w-md text-sm leading-6 text-foreground/55">
               {registerEmptyAccountsDetail(true)}
             </p>
             <Button
@@ -1246,10 +1252,10 @@ export function CommitmentQueue({
           </div>
         ) : scopeMissing ? (
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
-            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+            <h2 className="text-[20px] font-semibold leading-6 text-foreground">
               {view === "by_account" ? "Choose a company" : "Enter an owner"}
             </h2>
-            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+            <p className="mt-2 max-w-md text-sm leading-6 text-foreground/55">
               {view === "by_account"
                 ? registerAccountScopeCopy(otherPromises)
                 : "Use a name or email to see what that person has promised."}
@@ -1260,11 +1266,11 @@ export function CommitmentQueue({
           // because nothing was found. Saying "no promises were found" here reads
           // as a result and it is the wrong one.
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
-            <Spinner className="mb-3 size-7 text-primary/40" />
-            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+            <Spinner className="mb-3 size-7 text-foreground/40" />
+            <h2 className="text-[20px] font-semibold leading-6 text-foreground">
               Reading your last {REVENUE_EVIDENCE_LOOKBACK_LABEL}
             </h2>
-            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+            <p className="mt-2 max-w-md text-sm leading-6 text-foreground/55">
               This takes a few minutes. You can keep working and come back.
             </p>
           </div>
@@ -1272,8 +1278,10 @@ export function CommitmentQueue({
           // The empty register and the reason for it, together.
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
             <Warning className="mb-3 size-7 text-destructive" />
-            <h2 className="text-[20px] font-semibold leading-6 text-primary">{failure.headline}</h2>
-            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">{failure.detail}</p>
+            <h2 className="text-[20px] font-semibold leading-6 text-foreground">
+              {failure.headline}
+            </h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-foreground/55">{failure.detail}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               {failure.needsReconnect ? (
                 <Button
@@ -1301,14 +1309,14 @@ export function CommitmentQueue({
         ) : filtered.length === 0 ? (
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[84px] text-center">
             <WorkspaceEmptyIllustration image="commitments" />
-            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+            <h2 className="text-[20px] font-semibold leading-6 text-foreground">
               {items.length === 0
                 ? otherPromisesPending
                   ? "Checking the other views"
                   : (elsewhere?.title ?? "No promises yet")
                 : registerMissTitle(hasMorePromises)}
             </h2>
-            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+            <p className="mt-2 max-w-md text-sm leading-6 text-foreground/55">
               {items.length === 0
                 ? otherPromisesPending
                   ? "Looking for promises in the other register views."
@@ -1362,29 +1370,29 @@ export function CommitmentQueue({
                 {/* These are actions. "Learn more" made the recovery card
                     read like an article, and its label described an approval
                     the click never performs. It only opens the recovery queue. */}
-                <p className="mb-2 text-[12px] text-primary/45">What you can do</p>
+                <p className="mb-2 text-[12px] text-foreground/45">What you can do</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Button
-                    className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
+                    className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-foreground/80 hover:bg-background-100"
                     onClick={() => openCompanyCreate(onOpenAccounts)}
                     type="button"
                     variant="ghost"
                   >
                     <Avatar className="size-10 rounded-none">
-                      <AvatarFallback className="rounded-none border border-border bg-background text-primary/45">
+                      <AvatarFallback className="rounded-none border border-border bg-background text-foreground/45">
                         <Check className="size-4" />
                       </AvatarFallback>
                     </Avatar>
                     Add a company
                   </Button>
                   <Button
-                    className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
+                    className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-foreground/80 hover:bg-background-100"
                     onClick={onOpenRecoveryQueue}
                     type="button"
                     variant="ghost"
                   >
                     <Avatar className="size-10 rounded-none">
-                      <AvatarFallback className="rounded-none border border-border bg-background text-primary/45">
+                      <AvatarFallback className="rounded-none border border-border bg-background text-foreground/45">
                         <ArrowClockwise className="size-4" />
                       </AvatarFallback>
                     </Avatar>
@@ -1494,7 +1502,7 @@ export function CommitmentQueue({
           <aside className="flex w-[320px] shrink-0 flex-col border-r border-border bg-background">
             <div className="flex h-12 items-center gap-2 border-b border-border px-3">
               <Button
-                className="size-8 rounded-none text-primary/50 hover:bg-background-100 hover:text-primary"
+                className="size-8 rounded-none text-foreground/50 hover:bg-background-100 hover:text-foreground"
                 onClick={() => setSelected(null)}
                 type="button"
                 aria-label="Close"
@@ -1503,7 +1511,7 @@ export function CommitmentQueue({
               >
                 <X className="size-4" />
               </Button>
-              <Label className="text-[12px] font-normal text-primary/45">Promise record</Label>
+              <Label className="text-[12px] font-normal text-foreground/45">Promise record</Label>
               {/* One-pager §3: a record that cannot leave the tool cannot
                   settle an argument. */}
               {onExport ? (
@@ -1542,10 +1550,10 @@ export function CommitmentQueue({
                   <Plugs className="size-4" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-[16px] font-medium leading-5 text-primary">
+                  <h2 className="text-[16px] font-medium leading-5 text-foreground">
                     {selected.relationshipName}
                   </h2>
-                  <p className="mt-1 text-[12px] text-primary/50">{selected.text}</p>
+                  <p className="mt-1 text-[12px] text-foreground/50">{selected.text}</p>
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -1596,13 +1604,13 @@ export function CommitmentQueue({
               </div>
             </div>
             <div className="p-4">
-              <p className="mb-4 text-[12px] font-medium text-primary/55">Record details</p>
+              <p className="mb-4 text-[12px] font-medium text-foreground/55">Record details</p>
               <dl className="space-y-4 text-[13px]">
                 <Fact label="Promised by" value={selected.owner} />
                 <Fact label="To" value={selected.counterparty} />
                 <Fact label="Due date" value={promiseDueDay(selected.dueAt) ?? "Missing"} />
                 <div>
-                  <dt className="text-[12px] text-primary/45">Status</dt>
+                  <dt className="text-[12px] text-foreground/45">Status</dt>
                   <dd className="mt-1">
                     <StatusBadge acceptance={selected.acceptance} state={selected.state} />
                   </dd>
@@ -1620,20 +1628,20 @@ export function CommitmentQueue({
                 className="h-12 w-full justify-start rounded-none border-b border-border bg-transparent px-4"
               >
                 <TabsTrigger
-                  className="flex-none rounded-none px-3 py-1.5 text-[13px] text-primary/45 data-[state=active]:bg-background-200 data-[state=active]:text-primary"
+                  className="flex-none rounded-none px-3 py-1.5 text-[13px] text-foreground/45 data-[state=active]:bg-background-200 data-[state=active]:text-foreground"
                   value="overview"
                 >
                   Overview
                 </TabsTrigger>
                 <TabsTrigger
-                  className="flex-none rounded-none px-3 py-1.5 text-[13px] text-primary/45 data-[state=active]:bg-background-200 data-[state=active]:text-primary"
+                  className="flex-none rounded-none px-3 py-1.5 text-[13px] text-foreground/45 data-[state=active]:bg-background-200 data-[state=active]:text-foreground"
                   value="evidence"
                 >
                   Evidence
                 </TabsTrigger>
               </TabsList>
               <TabsContent className="mx-auto w-full max-w-4xl p-6" value="overview">
-                <h3 className="text-sm font-medium text-primary/60">Highlights</h3>
+                <h3 className="text-sm font-medium text-foreground/60">Highlights</h3>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   <DetailCard label="Urgency" value={urgencyLabel(selected.urgency)} />
                   <DetailCard label="Promise status" value={commitmentDetailStatus(selected)} />
@@ -1654,9 +1662,9 @@ export function CommitmentQueue({
                   />
                 </div>
                 <section className="mt-8">
-                  <h3 className="text-sm font-medium text-primary/60">Next action</h3>
+                  <h3 className="text-sm font-medium text-foreground/60">Next action</h3>
                   <Card className="mt-3 gap-3 py-4">
-                    <CardContent className="px-4 text-[14px] text-primary">
+                    <CardContent className="px-4 text-[14px] text-foreground">
                       {selected.nextAction}
                     </CardContent>
                     {selected.missingEvidence.length > 0 ? (
@@ -1778,7 +1786,7 @@ export function CommitmentQueue({
                         selected.blocker) ? (
                         fulfilling ? (
                           <>
-                            <p className="w-full text-[13px] text-primary/70">
+                            <p className="w-full text-[13px] text-foreground/70">
                               Mark this promise fulfilled?
                             </p>
                             <Button
@@ -1840,12 +1848,15 @@ export function CommitmentQueue({
               <TabsContent className="mx-auto w-full max-w-4xl p-6" value="evidence">
                 <section>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-primary/60">Supporting evidence</h3>
-                    <Badge className="text-[12px] font-normal text-primary/40" variant="secondary">
+                    <h3 className="text-sm font-medium text-foreground/60">Supporting evidence</h3>
+                    <Badge
+                      className="text-[12px] font-normal text-foreground/40"
+                      variant="secondary"
+                    >
                       Exact quote
                     </Badge>
                   </div>
-                  <blockquote className="mt-3 rounded-none border border-border bg-background-50 p-4 text-[14px] leading-6 text-primary/75">
+                  <blockquote className="mt-3 rounded-none border border-border bg-background-50 p-4 text-[14px] leading-6 text-foreground/75">
                     {selected.quote ? `“${selected.quote}”` : "No exact quote is attached yet."}
                   </blockquote>
                 </section>
@@ -1856,14 +1867,14 @@ export function CommitmentQueue({
       ) : null}
 
       <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent className="app-shell rounded-[2px] sm:max-w-lg">
+        <DialogContent className="app-shell rounded-xs sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Correct this promise</DialogTitle>
             <DialogDescription>
               The correction is saved, and the original quote stays with it.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-1 text-xs text-primary/60">
+          <div className="space-y-1 text-xs text-foreground/60">
             <p>Promise</p>
             <Input
               aria-label="Corrected promise"
@@ -1871,7 +1882,7 @@ export function CommitmentQueue({
               onChange={(event) => setCorrectedText(event.target.value)}
             />
           </div>
-          <div className="space-y-1 text-xs text-primary/60">
+          <div className="space-y-1 text-xs text-foreground/60">
             <p>Due date</p>
             <Input
               type="datetime-local"
@@ -1917,7 +1928,9 @@ function DetailCard({ label, value }: { label: string; value: string }) {
       <CardHeader className="px-3 pb-0">
         <CardDescription className="text-[12px]">{label}</CardDescription>
       </CardHeader>
-      <CardContent className="px-3 pt-0 text-[14px] font-medium text-primary">{value}</CardContent>
+      <CardContent className="px-3 pt-0 text-[14px] font-medium text-foreground">
+        {value}
+      </CardContent>
     </Card>
   );
 }
@@ -1925,10 +1938,10 @@ function DetailCard({ label, value }: { label: string; value: string }) {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <Label asChild className="text-[10px] font-normal uppercase tracking-wide text-primary/40">
+      <Label asChild className="text-[10px] font-normal uppercase tracking-wide text-foreground/40">
         <dt>{label}</dt>
       </Label>
-      <dd className="mt-1 text-primary/70">{value}</dd>
+      <dd className="mt-1 text-foreground/70">{value}</dd>
     </div>
   );
 }
@@ -1939,7 +1952,7 @@ function StatusBadge({ state, acceptance }: { state: string; acceptance: string 
     <Badge
       variant="outline"
       className={cn(
-        "rounded-[2px]",
+        "rounded-xs",
         !review &&
           state === "met" &&
           "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",

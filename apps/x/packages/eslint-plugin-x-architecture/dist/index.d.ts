@@ -20,6 +20,9 @@ export declare const rules: {
     "no-electron-in-core": import("@typescript-eslint/utils/ts-eslint").RuleModule<"forbidden", [], unknown, import("@typescript-eslint/utils/ts-eslint").RuleListener> & {
         name: string;
     };
+    "no-raw-design-values": import("@typescript-eslint/utils/ts-eslint").RuleModule<"raw", import("./utils.js").BaselineOptions, unknown, import("@typescript-eslint/utils/ts-eslint").RuleListener> & {
+        name: string;
+    };
     "no-raw-ipc-renderer-exposure": import("@typescript-eslint/utils/ts-eslint").RuleModule<"forbidden", [], unknown, import("@typescript-eslint/utils/ts-eslint").RuleListener> & {
         name: string;
     };
@@ -67,6 +70,9 @@ declare const plugin: {
             name: string;
         };
         "no-electron-in-core": import("@typescript-eslint/utils/ts-eslint").RuleModule<"forbidden", [], unknown, import("@typescript-eslint/utils/ts-eslint").RuleListener> & {
+            name: string;
+        };
+        "no-raw-design-values": import("@typescript-eslint/utils/ts-eslint").RuleModule<"raw", import("./utils.js").BaselineOptions, unknown, import("@typescript-eslint/utils/ts-eslint").RuleListener> & {
             name: string;
         };
         "no-raw-ipc-renderer-exposure": import("@typescript-eslint/utils/ts-eslint").RuleModule<"forbidden", [], unknown, import("@typescript-eslint/utils/ts-eslint").RuleListener> & {

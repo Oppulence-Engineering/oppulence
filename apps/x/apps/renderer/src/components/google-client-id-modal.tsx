@@ -110,7 +110,7 @@ export function GoogleClientIdModal({
           <p className="text-xs text-muted-foreground">
             Need help?{" "}
             <a
-              className="text-primary underline underline-offset-4 hover:text-primary/80"
+              className="text-foreground underline underline-offset-4 hover:text-foreground/80"
               href={GOOGLE_CLIENT_ID_SETUP_GUIDE_URL}
               target="_blank"
               rel="noreferrer"

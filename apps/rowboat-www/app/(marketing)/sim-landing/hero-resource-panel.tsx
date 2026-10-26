@@ -14,12 +14,12 @@ import {
 } from "@sim/emcn";
 import {
   FileText,
-  PanelLeft,
-  PlayOutline,
+  FlowArrow as Workflow,
+  Play as PlayOutline,
   Plus,
+  SidebarSimple as PanelLeft,
   Table as TableIcon,
-  Workflow,
-} from "@sim/emcn/icons";
+} from "@/lib/icons";
 import { HeroWorkflowStage } from "./hero-workflow-stage";
 import type { LeadRecord } from "./tables-records-preview/data";
 import { TablesRecordsTable } from "./tables-records-preview/tables-records-table";
@@ -222,7 +222,7 @@ export function HeroResourcePanel({
               variant="ghost"
               size={null}
               onClick={onClose}
-              className="after:-translate-x-1/2 after:-translate-y-1/2 relative size-[var(--resource-header-toggle-size)] rounded-[8px] after:absolute after:top-1/2 after:left-1/2 after:size-[var(--resource-header-toggle-hit-size)] after:content-[''] hover-hover:bg-[var(--surface-active)]"
+              className="after:-translate-x-1/2 after:-translate-y-1/2 relative size-[var(--resource-header-toggle-size)] rounded-md after:absolute after:top-1/2 after:left-1/2 after:size-[var(--resource-header-toggle-hit-size)] after:content-[''] hover-hover:bg-[var(--surface-active)]"
               aria-label="Collapse resource view"
             >
               <PanelLeft className="-scale-x-100 size-[16px] text-[var(--text-icon)]" />

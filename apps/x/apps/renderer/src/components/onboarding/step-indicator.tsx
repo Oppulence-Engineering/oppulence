@@ -42,7 +42,8 @@ export function StepIndicator({ currentStep, path }: StepIndicatorProps) {
               className={cn(
                 "size-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300",
                 i < currentIndex && "bg-primary text-primary-foreground",
-                i === currentIndex && "bg-primary text-primary-foreground ring-4 ring-primary/20",
+                i === currentIndex &&
+                  "bg-primary text-primary-foreground ring-4 ring-foreground/20",
                 i > currentIndex && "bg-muted text-muted-foreground",
               )}
             >

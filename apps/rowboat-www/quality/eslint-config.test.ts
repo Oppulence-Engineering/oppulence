@@ -15,5 +15,8 @@ describe("ESLint configuration", () => {
         true,
       );
     },
+    // The first call loads the full ESLint config (about 3s alone). Under the
+    // parallel suite it can pass the 5s default.
+    20_000,
   );
 });

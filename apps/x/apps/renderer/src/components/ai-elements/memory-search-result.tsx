@@ -77,7 +77,7 @@ export function MemorySearchSources({
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="not-prose mb-4 w-full rounded-[28px] border bg-[var(--card-surface)] transition-colors duration-150 ease-out hover:border-foreground/30"
+      className="not-prose mb-4 w-full rounded-xl border bg-[var(--card-surface)] transition-colors duration-150 ease-out hover:border-foreground/30"
     >
       <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-2.5">
         <span className="flex min-w-0 items-center gap-2 text-left text-sm font-medium">

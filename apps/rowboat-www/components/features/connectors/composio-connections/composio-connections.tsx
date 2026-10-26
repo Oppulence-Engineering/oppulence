@@ -138,8 +138,8 @@ export function ComposioConnections({
 
   return (
     <div className="settings-panel flex flex-col" data-slot="composio-connections">
-      <div className="border-b border-primary/10 p-4">
-        <h3 className="text-sm font-medium text-primary">More products</h3>
+      <div className="border-b border-foreground/10 p-4">
+        <h3 className="text-sm font-medium text-foreground">More products</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           Connect other tools, such as Jira or Asana. Agents can use them, but they are not treated
           as promises. Promises come from Gmail, Google Calendar, and HubSpot.
@@ -162,7 +162,7 @@ export function ComposioConnections({
       ) : toolkits.length === 0 && orphans.length === 0 ? (
         <p className="p-4 text-sm text-muted-foreground">No products are available to connect.</p>
       ) : (
-        <div className="flex flex-col divide-y divide-primary/10">
+        <div className="flex flex-col divide-y divide-foreground/10">
           {state === "error" ? (
             <div className="flex items-center justify-between gap-3 px-4 py-3">
               <p className="text-sm text-muted-foreground">
@@ -178,7 +178,7 @@ export function ComposioConnections({
             return (
               <div className="flex items-center justify-between gap-3 p-4" key={toolkit.slug}>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-primary">
+                  <p className="text-sm font-medium text-foreground">
                     {composioProductName(toolkit.name, toolkit.slug)}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -221,7 +221,7 @@ export function ComposioConnections({
           {orphans.map((connection) => (
             <div className="flex items-center justify-between gap-3 p-4" key={connection.id}>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-primary">
+                <p className="text-sm font-medium text-foreground">
                   {connectionNoticeName(connection.toolkit)}
                 </p>
                 <p className="text-xs text-muted-foreground">

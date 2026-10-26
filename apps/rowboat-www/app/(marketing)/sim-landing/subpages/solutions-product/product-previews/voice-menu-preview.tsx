@@ -1,7 +1,7 @@
 "use client";
 
 import { Chip } from "@sim/emcn";
-import { Mic, MicOff, Pause, Square } from "@sim/emcn/icons";
+import { Microphone as Mic, MicrophoneSlash as MicOff, Pause, Square } from "@/lib/icons";
 
 import { cn } from "@/lib/sim/cn";
 
@@ -25,7 +25,7 @@ const WAVEFORM = [
 export function VoiceMenuPreview({ layout = "menu" }: VoiceMenuPreviewProps) {
   return (
     <MenuPreviewFrame kind="voice" layout={layout}>
-      <div className="w-[420px] overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
+      <div className="w-[420px] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
         <div className="flex h-11 items-center gap-2 border-[var(--border)] border-b px-4">
           <Mic className="size-[14px] text-[var(--text-icon)]" />
           <span className="text-[var(--text-primary)]">Voice capture</span>

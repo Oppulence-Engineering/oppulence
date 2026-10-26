@@ -19,6 +19,7 @@ import {
   Book as PhBook,
   BookOpen as PhBookOpen,
   BookmarkSimple as PhBookmarkSimple,
+  Books as PhBooks,
   Brain as PhBrain,
   Briefcase as PhBriefcase,
   Buildings as PhBuildings,
@@ -31,6 +32,7 @@ import {
   ChartLine as PhChartLine,
   ChartLineUp as PhChartLineUp,
   ChatCircle as PhChatCircle,
+  ChatText as PhChatText,
   ChatsCircle as PhChatsCircle,
   Check as PhCheck,
   CheckCircle as PhCheckCircle,
@@ -42,9 +44,11 @@ import {
   ClockCounterClockwise as PhClockCounterClockwise,
   Cloud as PhCloud,
   Code as PhCode,
+  Columns as PhColumns,
   Copy as PhCopy,
   Cpu as PhCpu,
   CurrencyDollar as PhCurrencyDollar,
+  Database as PhDatabase,
   DotsThree as PhDotsThree,
   DownloadSimple as PhDownloadSimple,
   Envelope as PhEnvelope,
@@ -52,11 +56,13 @@ import {
   Export as PhExport,
   FilePlus as PhFilePlus,
   FileText as PhFileText,
+  Files as PhFiles,
   FlagBanner as PhFlagBanner,
   FloppyDisk as PhFloppyDisk,
   FlowArrow as PhFlowArrow,
   Folder as PhFolder,
   Funnel as PhFunnel,
+  FunnelSimple as PhFunnelSimple,
   Gear as PhGear,
   GearSix as PhGearSix,
   Globe as PhGlobe,
@@ -64,9 +70,12 @@ import {
   GridFour as PhGridFour,
   Handshake as PhHandshake,
   HardDrives as PhHardDrives,
+  Hash as PhHash,
   Headset as PhHeadset,
+  House as PhHouse,
   Image as PhImage,
   Key as PhKey,
+  Layout as PhLayout,
   Lightning as PhLightning,
   Link as PhLink,
   LinkSimple as PhLinkSimple,
@@ -75,8 +84,10 @@ import {
   ListChecks as PhListChecks,
   ListNumbers as PhListNumbers,
   LockSimple as PhLockSimple,
+  LockSimpleOpen as PhLockSimpleOpen,
   MagnifyingGlass as PhMagnifyingGlass,
   Microphone as PhMicrophone,
+  MicrophoneSlash as PhMicrophoneSlash,
   Minus as PhMinus,
   Monitor as PhMonitor,
   Moon as PhMoon,
@@ -106,16 +117,20 @@ import {
   SignOut as PhSignOut,
   SlidersHorizontal as PhSlidersHorizontal,
   Sparkle as PhSparkle,
+  Square as PhSquare,
   SquaresFour as PhSquaresFour,
   Stack as PhStack,
   Stop as PhStop,
   Sun as PhSun,
+  Table as PhTable,
+  Tag as PhTag,
   TextB as PhTextB,
   TextHOne as PhTextHOne,
   TextHThree as PhTextHThree,
   TextHTwo as PhTextHTwo,
   TextItalic as PhTextItalic,
   TextStrikethrough as PhTextStrikethrough,
+  TextT as PhTextT,
   TextUnderline as PhTextUnderline,
   Trash as PhTrash,
   Tray as PhTray,
@@ -195,6 +210,7 @@ export const Bell = styled(PhBell, "Bell");
 export const Book = styled(PhBook, "Book");
 export const BookOpen = styled(PhBookOpen, "BookOpen");
 export const BookmarkSimple = styled(PhBookmarkSimple, "BookmarkSimple");
+export const Books = styled(PhBooks, "Books");
 export const Brain = styled(PhBrain, "Brain");
 export const BrainIcon = styled(PhBrain, "BrainIcon");
 export const Briefcase = styled(PhBriefcase, "Briefcase");
@@ -210,6 +226,7 @@ export const CaretUpDown = styled(PhCaretUpDown, "CaretUpDown");
 export const ChartLineIcon = styled(PhChartLine, "ChartLineIcon");
 export const ChartLineUp = styled(PhChartLineUp, "ChartLineUp");
 export const ChatCircle = styled(PhChatCircle, "ChatCircle");
+export const ChatText = styled(PhChatText, "ChatText");
 export const ChatsCircle = styled(PhChatsCircle, "ChatsCircle");
 export const Check = styled(PhCheck, "Check");
 export const CheckCircle = styled(PhCheckCircle, "CheckCircle");
@@ -225,9 +242,11 @@ export const ClockCounterClockwise = styled(PhClockCounterClockwise, "ClockCount
 export const Cloud = styled(PhCloud, "Cloud");
 export const Code = styled(PhCode, "Code");
 export const CodeIcon = styled(PhCode, "CodeIcon");
+export const Columns = styled(PhColumns, "Columns");
 export const Copy = styled(PhCopy, "Copy");
 export const Cpu = styled(PhCpu, "Cpu");
 export const CurrencyDollar = styled(PhCurrencyDollar, "CurrencyDollar");
+export const Database = styled(PhDatabase, "Database");
 export const DotsThree = styled(PhDotsThree, "DotsThree");
 export const DownloadSimple = styled(PhDownloadSimple, "DownloadSimple");
 export const EnvelopeIcon = styled(PhEnvelope, "EnvelopeIcon");
@@ -237,12 +256,14 @@ export const ExportIcon = styled(PhExport, "ExportIcon");
 export const FilePlus = styled(PhFilePlus, "FilePlus");
 export const FileText = styled(PhFileText, "FileText");
 export const FileTextIcon = styled(PhFileText, "FileTextIcon");
+export const Files = styled(PhFiles, "Files");
 export const FlagBanner = styled(PhFlagBanner, "FlagBanner");
 export const FloppyDisk = styled(PhFloppyDisk, "FloppyDisk");
 export const FlowArrow = styled(PhFlowArrow, "FlowArrow");
 export const FlowArrowIcon = styled(PhFlowArrow, "FlowArrowIcon");
 export const Folder = styled(PhFolder, "Folder");
 export const Funnel = styled(PhFunnel, "Funnel");
+export const FunnelSimple = styled(PhFunnelSimple, "FunnelSimple");
 export const Gear = styled(PhGear, "Gear");
 export const GearSix = styled(PhGearSix, "GearSix");
 export const Globe = styled(PhGlobe, "Globe");
@@ -252,10 +273,13 @@ export const GridFour = styled(PhGridFour, "GridFour");
 export const Handshake = styled(PhHandshake, "Handshake");
 export const HardDrives = styled(PhHardDrives, "HardDrives");
 export const HardDrivesIcon = styled(PhHardDrives, "HardDrivesIcon");
+export const Hash = styled(PhHash, "Hash");
 export const Headset = styled(PhHeadset, "Headset");
 export const HeadsetIcon = styled(PhHeadset, "HeadsetIcon");
+export const House = styled(PhHouse, "House");
 export const Image = styled(PhImage, "Image");
 export const Key = styled(PhKey, "Key");
+export const Layout = styled(PhLayout, "Layout");
 export const Lightning = styled(PhLightning, "Lightning");
 export const Link = styled(PhLink, "Link");
 export const LinkSimple = styled(PhLinkSimple, "LinkSimple");
@@ -264,9 +288,11 @@ export const ListBullets = styled(PhListBullets, "ListBullets");
 export const ListChecks = styled(PhListChecks, "ListChecks");
 export const ListNumbers = styled(PhListNumbers, "ListNumbers");
 export const LockSimple = styled(PhLockSimple, "LockSimple");
+export const LockSimpleOpen = styled(PhLockSimpleOpen, "LockSimpleOpen");
 export const MagnifyingGlass = styled(PhMagnifyingGlass, "MagnifyingGlass");
 export const MagnifyingGlassIcon = styled(PhMagnifyingGlass, "MagnifyingGlassIcon");
 export const Microphone = styled(PhMicrophone, "Microphone");
+export const MicrophoneSlash = styled(PhMicrophoneSlash, "MicrophoneSlash");
 export const Minus = styled(PhMinus, "Minus");
 export const Monitor = styled(PhMonitor, "Monitor");
 export const MonitorIcon = styled(PhMonitor, "MonitorIcon");
@@ -302,17 +328,21 @@ export const SignOut = styled(PhSignOut, "SignOut");
 export const SlidersHorizontal = styled(PhSlidersHorizontal, "SlidersHorizontal");
 export const Sparkle = styled(PhSparkle, "Sparkle");
 export const SparkleIcon = styled(PhSparkle, "SparkleIcon");
+export const Square = styled(PhSquare, "Square");
 export const SquaresFour = styled(PhSquaresFour, "SquaresFour");
 export const Stack = styled(PhStack, "Stack");
 export const StackIcon = styled(PhStack, "StackIcon");
 export const Stop = styled(PhStop, "Stop");
 export const Sun = styled(PhSun, "Sun");
+export const Table = styled(PhTable, "Table");
+export const Tag = styled(PhTag, "Tag");
 export const TextB = styled(PhTextB, "TextB");
 export const TextHOne = styled(PhTextHOne, "TextHOne");
 export const TextHThree = styled(PhTextHThree, "TextHThree");
 export const TextHTwo = styled(PhTextHTwo, "TextHTwo");
 export const TextItalic = styled(PhTextItalic, "TextItalic");
 export const TextStrikethrough = styled(PhTextStrikethrough, "TextStrikethrough");
+export const TextT = styled(PhTextT, "TextT");
 export const TextUnderline = styled(PhTextUnderline, "TextUnderline");
 export const Trash = styled(PhTrash, "Trash");
 export const Tray = styled(PhTray, "Tray");

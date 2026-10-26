@@ -1,8 +1,8 @@
 /**
  * Authenticated product shell (`/app`, settings, …).
  *
- * The shell uses the desktop app's tokens: product-theme.css plus the
- * [data-product-shell] rules in @oppulence/ui/product-system.css. Sim
+ * The shell uses the shared tokens in @oppulence/ui/tokens.css (Polar base)
+ * plus the [data-product-shell] rules in @oppulence/ui/product-system.css. Sim
  * components (emcn, product previews) read Sim token names, so the shell maps
  * those names onto the shared tokens. The transform stays at scale 1 so fixed
  * in-shell panels keep the shell as their containing block.
@@ -43,27 +43,7 @@ html:has([data-product-shell]) {
   --shell-nav-row-height: 30px;
   --shell-control-size: 30px;
 
-  /* Sim token names → shared tokens. Light and dark come from the shared layer. */
-  --bg: var(--background);
-  --surface-1: var(--background-50);
-  --surface-2: var(--card);
-  --surface-3: var(--background-100);
-  --surface-4: var(--background-200);
-  --surface-5: var(--background-300);
-  --surface-6: var(--background-400);
-  --surface-7: var(--background-500);
-  --surface-hover: var(--background-100);
-  --surface-active: var(--accent);
-  --border: var(--background-300);
-  --text-primary: var(--foreground);
-  --text-body: var(--foreground);
-  --text-secondary: var(--product-text-secondary);
-  --text-tertiary: var(--product-text-secondary);
-  --text-muted: var(--muted-foreground);
-  --text-icon: var(--muted-foreground);
-  --text-subtle: var(--product-text-tertiary);
-  --text-icon-muted: var(--product-text-tertiary);
-  --text-inverse: var(--primary-foreground);
+  /* Sim token names map to the shared tokens in .sim-landing-root (sim-landing.css). */
 
   /* Compact type stops, as in product-system.css. */
   --text-micro: 12px;

@@ -86,11 +86,19 @@ do not call protected Go API endpoints directly from Client Components.
 ### UI and styling
 
 - Tailwind CSS is the primary styling mechanism.
-- Product chrome (`/app` and marketing product previews) uses Sim tokens plus
-  `@sim/emcn` when an emcn primitive exists.
-- `@oppulence/ui` remains the shared primitive kit for domain-neutral controls
-  that emcn does not provide. Do not mix both button/icon systems on one
-  surface.
+- Colors, radius, fonts, and icons come from `@oppulence/ui`. Read
+  `packages/ui/DESIGN_SYSTEM.md` before you change styles. The desktop app,
+  the web app, and the public site share these tokens.
+- Sim token names (`--bg`, `--surface-*`, `--text-*`) map to the shared tokens
+  in `.sim-landing-root` (`app/(marketing)/sim-landing/sim-landing.css`). Do
+  not give them new raw values.
+- Product chrome (`/app` and marketing product previews) uses `@sim/emcn` when
+  an emcn primitive exists. `@oppulence/ui` remains the shared primitive kit
+  for domain-neutral controls that emcn does not provide. Do not mix both
+  button systems on one surface.
+- Icons come from `@/lib/icons` (Phosphor), never from `@sim/emcn/icons`.
+- `WEB030` rejects raw colors, radii, and font stacks in class strings.
+  `WEB031` (`quality/css-design-values.test.ts`) ratchets raw values in CSS.
 - New product and route-private components must follow
   `components/README.md` and be created with `npm run gen -- component`
   (`npm run component:new` remains an alias). See `docs/growth-standard.md`.

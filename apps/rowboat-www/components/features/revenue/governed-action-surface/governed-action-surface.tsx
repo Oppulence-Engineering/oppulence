@@ -3,7 +3,7 @@
 import "client-only";
 
 import { Button, Chip } from "@sim/emcn";
-import { Mail } from "@sim/emcn/icons";
+import { EnvelopeSimple as Mail } from "@/lib/icons";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
@@ -57,7 +57,7 @@ export function GovernedActionSurface({
           {editable ? (
             <textarea
               aria-label="Draft message"
-              className="min-h-[120px] w-full resize-y rounded-[8px] border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-[var(--text-primary)] text-sm leading-[1.45] outline-none focus:border-[var(--text-primary)]"
+              className="min-h-[120px] w-full resize-y rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-[var(--text-primary)] text-sm leading-[1.45] outline-none focus:border-[var(--text-primary)]"
               onChange={(event) => onMessageChange?.(event.target.value)}
               value={message}
             />

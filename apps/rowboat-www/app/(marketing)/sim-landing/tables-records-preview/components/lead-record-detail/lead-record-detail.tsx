@@ -7,7 +7,7 @@ import {
   ChipModalFooter,
   ChipModalHeader,
 } from "@sim/emcn";
-import { TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
+import { Hash as TypeNumber, Tag as TagIcon, TextT as TypeText } from "@/lib/icons";
 import type { LeadRecord } from "../../data";
 
 interface LeadRecordDetailProps {

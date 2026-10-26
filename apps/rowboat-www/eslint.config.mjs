@@ -149,6 +149,7 @@ const config = [
       "oppulence-web/no-direct-api-fetch": ["error", { allowFiles: legacy.directFetch }],
       "oppulence-web/no-async-setinterval": ["error", { allowFiles: legacy.asyncIntervals }],
       "oppulence-web/no-raw-browser-storage": ["error", { allowFiles: legacy.browserStorage }],
+      "oppulence-web/no-raw-design-values": "error",
       "oppulence-web/no-sensitive-browser-storage": [
         "error",
         { allowFiles: legacy.sensitiveStorage },

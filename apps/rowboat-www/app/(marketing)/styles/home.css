@@ -1,0 +1,281 @@
+/* Homepage: sparse reference-style landing page with a left rail, blue accent, and ASCII system diagram. */
+@layer utilities {
+  /* Homepage used to share this class. Product pages no longer do, so the
+     public header stays visible on /products, /web, /desktop, and /voice-app. */
+
+  .sm-suite-public {
+    width: min(100%, 1200px);
+    margin-inline: auto;
+  }
+
+  .sm-suite-shell :is(.linear-hero, .linear-subpage, .linear-subpage-simple) {
+    padding-top: 0;
+  }
+
+  .sm-suite-shell
+    :is(.linear-hero-title, .linear-product-title, .linear-subpage-title, .linear-page-title),
+  .sm-suite-shell .linear-final-cta h2 {
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    color: var(--mem-ink);
+    font-family: var(--typeface-sans);
+    font-weight: 600;
+    letter-spacing: -0.026em;
+  }
+
+  .sm-pricing {
+    padding-bottom: clamp(68px, 8vw, 104px);
+  }
+
+  .sm-pricing-hero {
+    display: grid;
+    max-width: 760px;
+    gap: 22px;
+  }
+
+  .sm-pricing-hero h1 {
+    color: var(--mem-ink);
+    font-family: var(--typeface-sans);
+    font-size: clamp(2.8rem, 5.6vw, 5.2rem);
+    font-weight: 600;
+    letter-spacing: -0.026em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  .sm-pricing-hero > p {
+    max-width: 610px;
+    color: var(--mem-muted);
+    font-size: clamp(1rem, 1.55vw, 1.25rem);
+    line-height: 1.55;
+  }
+
+  .sm-pricing-hero > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+
+  .sm-pricing-hero span {
+    border: 1px solid var(--mem-line);
+    background: #ffffff;
+    padding: 7px 10px;
+    color: #54606b;
+    font-family: var(--typeface-sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .sm-pricing-board {
+    display: grid;
+    margin-top: clamp(48px, 7vw, 72px);
+    border-top: 1px solid var(--mem-line);
+    border-left: 1px solid var(--mem-line);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sm-pricing-plan {
+    display: flex;
+    min-height: 420px;
+    flex-direction: column;
+    border-right: 1px solid var(--mem-line);
+    border-bottom: 1px solid var(--mem-line);
+    background: #ffffff;
+    padding: 28px;
+  }
+
+  .sm-pricing-plan-featured {
+    background: var(--mem-soft);
+  }
+
+  .sm-pricing-plan > div {
+    display: flex;
+    min-height: 24px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .sm-pricing-plan > div p,
+  .sm-pricing-plan > div span {
+    color: var(--mem-blue);
+    font-family: var(--typeface-sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .sm-pricing-plan > div span {
+    border: 1px solid #cfe0ff;
+    background: #ffffff;
+    padding: 5px 7px;
+  }
+
+  .sm-pricing-plan > strong {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin-top: 26px;
+    color: var(--mem-ink);
+    font-family: var(--typeface-sans);
+    font-size: clamp(2.35rem, 4vw, 3.4rem);
+    font-weight: 600;
+    letter-spacing: -0.026em;
+    line-height: 0.95;
+  }
+
+  .sm-pricing-plan > strong small {
+    color: var(--mem-muted);
+    font-family: var(--typeface-sans);
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  .sm-pricing-plan > p {
+    min-height: 46px;
+    margin-top: 18px;
+    color: var(--mem-muted);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .sm-pricing-plan ul {
+    display: grid;
+    gap: 11px;
+    margin-top: 28px;
+    margin-bottom: 28px;
+  }
+
+  .sm-pricing-plan li {
+    color: var(--mem-ink);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .sm-pricing-plan li::before {
+    content: "+";
+    margin-right: 9px;
+    color: var(--mem-blue);
+    font-family: var(--typeface-mono);
+  }
+
+  .sm-pricing-plan .sm-memory-button {
+    margin-top: auto;
+  }
+
+  .sm-pricing-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    border: 1px solid var(--mem-line);
+    border-top: 0;
+    padding: 18px 22px;
+  }
+
+  .sm-pricing-note p {
+    color: var(--mem-muted);
+    font-size: 14px;
+  }
+
+  .sm-pricing-note a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--mem-blue);
+    font-family: var(--typeface-sans);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .sm-pricing-note svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  @media (max-width: 900px) {
+    .sm-pricing-board {
+      grid-template-columns: 1fr;
+    }
+
+    .sm-pricing-plan {
+      min-height: 0;
+    }
+  }
+
+  .sm-memory-announcement a:hover,
+  .sm-memory-button:hover {
+    border-color: var(--mem-blue);
+  }
+
+  .sm-memory-announcement svg,
+  .sm-memory-button svg,
+  .sm-memory-text-link svg,
+  .sm-memory-research-list svg,
+  .sm-memory-final svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .sm-memory-button {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 13px;
+    border: 1px solid #cfe0ff;
+    background: #f5f9ff;
+    padding: 0 16px;
+    color: var(--mem-ink);
+    font-family: var(--typeface-sans);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    text-transform: none;
+    transition:
+      border-color 150ms ease,
+      background 150ms ease,
+      color 150ms ease;
+  }
+
+  .sm-memory-button-primary {
+    border-color: var(--mem-blue);
+    background: var(--mem-blue);
+    color: #ffffff;
+  }
+
+  .sm-memory-button-primary:hover {
+    background: #004fc6;
+    color: #ffffff;
+  }
+
+  .sm-memory-button-primary > span {
+    display: grid;
+    align-self: stretch;
+    width: 42px;
+    place-items: center;
+    border-right: 1px solid rgb(255 255 255 / 32%);
+    margin-left: -16px;
+    background: #ffffff;
+  }
+
+  .sm-memory-button-primary > span img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+  }
+
+  @media (max-width: 720px) {
+    .sm-memory-button {
+      width: 100%;
+      min-height: 46px;
+    }
+  }
+}

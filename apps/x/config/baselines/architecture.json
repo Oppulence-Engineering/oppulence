@@ -101,5 +101,8 @@
     "packages/core/src/meetings/commitment-ledger.ts": 1,
     "packages/core/src/voice/whisper/model-manager.ts": 2,
     "packages/core/src/voice/whisper/runner.ts": 1
+  },
+  "rawDesignValues": {
+    "apps/renderer/src/components/settings-dialog.tsx": 1
   }
 }

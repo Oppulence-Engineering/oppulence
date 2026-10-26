@@ -63,7 +63,7 @@ export function InlineLogo({
       ) : (
         <Image
           alt=""
-          className={cn("rounded-[3px]", compact ? "size-5" : prominent ? "size-10" : "size-7")}
+          className={cn("rounded-xs", compact ? "size-5" : prominent ? "size-10" : "size-7")}
           height={iconSize}
           src="/icon.png"
           width={iconSize}
@@ -74,7 +74,7 @@ export function InlineLogo({
           className={cn(
             header
               ? "oppulence-compact-lockup__wordmark"
-              : "font-display text-[24px] leading-6 font-medium text-primary",
+              : "font-display text-[24px] leading-6 font-medium text-foreground",
           )}
         >
           {header ? "Oppulence" : "oppulence"}

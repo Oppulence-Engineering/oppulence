@@ -870,7 +870,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="shrink-0 rounded-[2px] font-normal">
+            <Badge variant="outline" className="shrink-0 rounded-xs font-normal">
               {dictationStatus?.monitorReady && dictationStatus.accessibilityTrusted
                 ? "Ready"
                 : "Needs setup"}
@@ -1110,7 +1110,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                 <div className="flex items-center gap-2 text-xs font-medium text-foreground">
                   <Wrench className="size-3.5" /> Voice Command Mode
                   {dictationSettings.commandModeEnabled && dictationStatus?.commandModeReady ? (
-                    <Badge variant="outline" className="rounded-[2px] font-normal">
+                    <Badge variant="outline" className="rounded-xs font-normal">
                       {dictationStatus.commandShortcut}
                     </Badge>
                   ) : null}
@@ -1150,7 +1150,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                 <div className="flex items-center gap-2 text-xs font-medium text-foreground">
                   Fast local dictation
                   {fastModels.ready ? (
-                    <Badge variant="outline" className="rounded-[2px] font-normal">
+                    <Badge variant="outline" className="rounded-xs font-normal">
                       Neural Engine ready
                     </Badge>
                   ) : null}
@@ -1333,7 +1333,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                     aria-hidden="true"
                     className={cn(
                       "flex size-3.5 shrink-0 items-center justify-center rounded-full border",
-                      activeModel === "auto" ? "border-primary" : "border-muted-foreground/40",
+                      activeModel === "auto" ? "border-foreground" : "border-muted-foreground/40",
                     )}
                   >
                     {activeModel === "auto" && (
@@ -1379,7 +1379,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                         <span
                           className={cn(
                             "flex size-3.5 shrink-0 items-center justify-center rounded-full border",
-                            active ? "border-primary" : "border-muted-foreground/40",
+                            active ? "border-foreground" : "border-muted-foreground/40",
                           )}
                         >
                           {active && <span className="size-1.5 rounded-full bg-primary" />}
@@ -2057,9 +2057,9 @@ function SettingToggle({
         "flex w-full items-center justify-between gap-3 rounded-none border px-3.5 py-3 text-left transition-all",
         disabled && "cursor-not-allowed opacity-50",
         !disabled && value
-          ? "border-primary bg-primary/[0.03] ring-2 ring-primary/20"
+          ? "border-foreground bg-primary/[0.03] ring-2 ring-foreground/20"
           : "border-border",
-        !disabled && "hover:border-primary/40 hover:bg-muted/40",
+        !disabled && "hover:border-foreground/40 hover:bg-muted/40",
       )}
     >
       <span className="flex flex-col">
@@ -2070,7 +2070,7 @@ function SettingToggle({
         className={cn(
           "shrink-0 rounded-none border px-2 py-0.5 text-xs",
           value
-            ? "border-primary bg-primary text-primary-foreground"
+            ? "border-foreground bg-primary text-primary-foreground"
             : "bg-card text-muted-foreground",
         )}
       >
@@ -2108,15 +2108,15 @@ function ProviderOption({
         // ... (ERRORS.md E61) Dim + block selection when local isn't supported.
         disabled && "cursor-not-allowed opacity-50",
         selected
-          ? "border-primary bg-primary/[0.03] ring-2 ring-primary/20"
-          : "border-border hover:border-primary/40 hover:bg-muted/40",
+          ? "border-foreground bg-primary/[0.03] ring-2 ring-foreground/20"
+          : "border-border hover:border-foreground/40 hover:bg-muted/40",
       )}
     >
       <span
         className={cn(
           "flex size-9 shrink-0 items-center justify-center rounded-none border",
           selected
-            ? "border-primary bg-primary text-primary-foreground"
+            ? "border-foreground bg-primary text-primary-foreground"
             : "bg-card text-muted-foreground",
         )}
       >

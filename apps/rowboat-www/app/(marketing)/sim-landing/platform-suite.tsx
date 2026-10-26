@@ -89,7 +89,7 @@ export function SimPlatformSuite() {
             return (
               <div
                 className={cn(
-                  "relative flex min-h-[420px] flex-col overflow-hidden rounded-[12px] motion-reduce:transition-none max-sm:min-h-[360px] md:basis-0 md:transition-[flex-grow] lg:min-h-0 md:[transition-duration:280ms] md:[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+                  "relative flex min-h-[420px] flex-col overflow-hidden rounded-xl motion-reduce:transition-none max-sm:min-h-[360px] md:basis-0 md:transition-[flex-grow] lg:min-h-0 md:[transition-duration:280ms] md:[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
                   hoveredCard === null && "md:grow",
                   hoveredCard === index && GROW_HOVERED,
                   idle && GROW_IDLE,
@@ -121,7 +121,7 @@ export function SimPlatformSuite() {
                       id={card.headingId}
                     >
                       <Link
-                        className="outline-none after:absolute after:inset-0 after:z-10 after:rounded-[12px] after:content-[''] focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-[var(--text-secondary)] focus-visible:after:outline-offset-[-2px]"
+                        className="outline-none after:absolute after:inset-0 after:z-10 after:rounded-xl after:content-[''] focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-[var(--text-secondary)] focus-visible:after:outline-offset-[-2px]"
                         href={card.href}
                         onBlur={() => setHoveredCard(null)}
                         onFocus={() => setHoveredCard(index)}

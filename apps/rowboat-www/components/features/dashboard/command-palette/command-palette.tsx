@@ -233,7 +233,7 @@ export function CommandPalette({
 
   return (
     <CommandDialog
-      className="app-shell rounded-[2px]"
+      className="app-shell rounded-xs"
       data-slot="command-palette"
       description="Search actions, agents, and conversations"
       onOpenChange={onOpenChange}

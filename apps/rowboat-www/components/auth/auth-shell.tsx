@@ -1,11 +1,13 @@
 import Link from "next/link";
 
+import { Button } from "@oppulence/ui/components/button";
+
 import { AuthLedgerPreview } from "@/components/auth/auth-ledger-preview";
 
 /** Multi-color Google "G". Explicit fills, so button color rules don't tint it. */
 function GoogleLogo() {
   return (
-    <svg aria-hidden height="18" viewBox="0 0 24 24" width="18">
+    <svg aria-hidden className="size-[18px]" height="18" viewBox="0 0 24 24" width="18">
       <path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
         fill="#4285F4"
@@ -79,20 +81,20 @@ export function AuthShell({
 
           {errorMessage ? (
             <p
-              className="mt-6 rounded-[8px] border border-[var(--border)] bg-[var(--surface-3)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--text-primary)]"
+              className="mt-6 rounded-md border border-[var(--border)] bg-[var(--surface-3)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--text-primary)]"
               role="alert"
             >
               {errorMessage}
             </p>
           ) : null}
 
-          <a
-            className="mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] border border-[var(--border)] bg-[var(--surface-2)] text-[15px] font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-primary)]/20"
-            href={loginHref}
-          >
-            <GoogleLogo />
-            Continue with Google
-          </a>
+          {/* The shared outline button: same border, dark fill, and focus ring as the apps. */}
+          <Button asChild className="mt-8 h-11 w-full text-[15px]" size="lg" variant="outline">
+            <a href={loginHref}>
+              <GoogleLogo />
+              Continue with Google
+            </a>
+          </Button>
 
           <p className="mt-5 text-[12.5px] leading-relaxed text-[var(--text-muted)]">
             By continuing, you agree to our{" "}

@@ -63,7 +63,7 @@ export function SimSecurity() {
               <Link
                 className={cn(
                   "group flex h-full flex-col items-start bg-[var(--surface-2)] px-8 pt-10 pb-10",
-                  "rounded-[10px] border border-[var(--border)] max-sm:px-6 max-sm:pb-8",
+                  "rounded-lg border border-[var(--border)] max-sm:px-6 max-sm:pb-8",
                   "transition-[border-color] duration-200 ease-out hover-hover:hover:border-[var(--text-muted)] motion-reduce:transition-none",
                   "focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--text-primary)] focus-visible:outline-offset-4",
                 )}

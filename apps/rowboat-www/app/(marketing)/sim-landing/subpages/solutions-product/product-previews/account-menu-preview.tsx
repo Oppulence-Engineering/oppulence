@@ -1,5 +1,5 @@
 import { Badge } from "@sim/emcn";
-import { Building } from "@sim/emcn/icons";
+import { Buildings as Building } from "@/lib/icons";
 
 import { MenuPreviewFrame } from "../../../shared/menu-preview-frame";
 
@@ -17,7 +17,7 @@ const TIMELINE = [
 export function AccountMenuPreview({ layout = "menu" }: AccountMenuPreviewProps) {
   return (
     <MenuPreviewFrame kind="account" layout={layout}>
-      <div className="w-[480px] overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
+      <div className="w-[480px] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
         <div className="flex h-11 items-center gap-2 border-[var(--border)] border-b px-4">
           <Building className="size-[14px] text-[var(--text-icon)]" />
           <span className="text-[var(--text-primary)]">Acme Corp</span>

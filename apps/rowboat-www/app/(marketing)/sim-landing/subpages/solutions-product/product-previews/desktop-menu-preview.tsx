@@ -1,5 +1,11 @@
 import { Chip } from "@sim/emcn";
-import { BookOpen, Calendar, MessageSquareText, Search, Sparkles } from "@sim/emcn/icons";
+import {
+  BookOpen,
+  CalendarBlank as Calendar,
+  ChatText as MessageSquareText,
+  MagnifyingGlass as Search,
+  Sparkle as Sparkles,
+} from "@/lib/icons";
 
 import { cn } from "@/lib/sim/cn";
 
@@ -33,7 +39,7 @@ const MESSAGES = [
 export function DesktopMenuPreview({ layout = "menu" }: DesktopMenuPreviewProps) {
   return (
     <MenuPreviewFrame kind="desktop" layout={layout}>
-      <div className="flex w-[720px] overflow-hidden rounded-[12px] border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
+      <div className="flex w-[720px] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
         <aside className="flex w-[238px] shrink-0 flex-col border-[var(--border)] border-r bg-[var(--surface-1)]">
           <div className="flex h-11 items-center gap-2 border-[var(--border)] border-b px-4">
             <Sparkles className="size-[14px] text-[var(--text-icon)]" />

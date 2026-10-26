@@ -11,7 +11,7 @@ import {
 import { RunEvent, ListRunsResponse } from "@x/shared/runs";
 import type { LanguageModelUsage, ToolUIPart } from "ai";
 import "./App.css";
-import "../../../../rowboat-www/app/product-theme.css";
+import "@oppulence/ui/product-theme.css";
 import z from "zod";
 import {
   CheckIcon,
@@ -6484,7 +6484,7 @@ function App() {
                   {files.map((filePath, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full"
+                      className="inline-flex items-center gap-1 text-xs bg-primary/10 text-foreground px-2 py-0.5 rounded-full"
                     >
                       @{wikiLabel(filePath)}
                     </span>

@@ -7,18 +7,18 @@ import {
   cn,
 } from "@sim/emcn";
 import {
+  Books as Library,
   Database,
+  DotsThree as MoreHorizontal,
   Files,
-  HelpCircle,
-  Home,
-  Integration,
-  Library,
-  MoreHorizontal,
-  PanelLeft,
+  House as Home,
+  MagnifyingGlass as Search,
+  PlugsConnected as Integration,
   Plus,
-  Search,
+  Question as HelpCircle,
+  SidebarSimple as PanelLeft,
   Table,
-} from "@sim/emcn/icons";
+} from "@/lib/icons";
 import Image from "next/image";
 import {
   PREVIEW_SIDEBAR_CHATS as SIDEBAR_CHATS,

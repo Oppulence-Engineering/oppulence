@@ -87,7 +87,7 @@ export function ChatHeader({
                 {recentRuns.length > 0 && <DropdownMenuSeparator />}
                 <DropdownMenuItem
                   onClick={onOpenChatHistory}
-                  className="gap-2 text-primary"
+                  className="gap-2 text-foreground"
                 >
                   <ArrowUpRight className="size-4" />
                   View all chats

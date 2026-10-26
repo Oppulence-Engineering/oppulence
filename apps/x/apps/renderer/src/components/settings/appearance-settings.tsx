@@ -28,8 +28,8 @@ function OptionCard({
       className={cn(
         "group relative flex flex-col gap-2 rounded-none border p-2 text-left transition-all",
         selected
-          ? "border-primary ring-2 ring-primary/20"
-          : "border-border hover:border-primary/40 hover:bg-muted/40",
+          ? "border-foreground ring-2 ring-foreground/20"
+          : "border-border hover:border-foreground/40 hover:bg-muted/40",
       )}
     >
       {children}

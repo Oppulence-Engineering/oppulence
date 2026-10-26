@@ -124,7 +124,7 @@ export function MeetingLivePanel() {
                 {cue.suggestedQuestion ? (
                   <button
                     type="button"
-                    className="mt-1.5 text-left text-xs font-medium text-primary hover:underline"
+                    className="mt-1.5 text-left text-xs font-medium text-foreground hover:underline"
                     onClick={() => {
                       setQuestion(cue.suggestedQuestion ?? "");
                       void window.ipc.invoke("meeting:liveCueFeedback", {
@@ -210,7 +210,7 @@ export function MeetingLivePanel() {
           </div>
 
           {answer && (
-            <p className="mt-2 whitespace-pre-wrap border-l-2 border-primary/40 py-1 pl-3 text-sm">
+            <p className="mt-2 whitespace-pre-wrap border-l-2 border-foreground/40 py-1 pl-3 text-sm">
               {answer}
             </p>
           )}

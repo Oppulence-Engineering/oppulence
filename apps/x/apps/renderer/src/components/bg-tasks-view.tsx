@@ -3386,7 +3386,7 @@ function FilterChip({
       onClick={onClick}
       className={`rounded-none border px-2 py-0.5 text-[11px] transition-colors ${
         active
-          ? "border-primary bg-primary/10 text-foreground"
+          ? "border-foreground bg-primary/10 text-foreground"
           : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
       }`}
     >
@@ -3572,12 +3572,12 @@ function GlobalCloudRunsView({
           <Select value={slugFilter} onValueChange={setSlugFilter}>
             <SelectTrigger
               size="sm"
-              className="h-6 max-w-[180px] rounded-[2px] text-[11px]"
+              className="h-6 max-w-[180px] rounded-xs text-[11px]"
               aria-label="Filter by task"
             >
               <SelectValue placeholder="All tasks" />
             </SelectTrigger>
-            <SelectContent className="app-shell rounded-[2px]">
+            <SelectContent className="app-shell rounded-xs">
               <SelectItem value="all">All tasks</SelectItem>
               {[...taskNameBySlug.entries()].map(([slug, name]) => (
                 <SelectItem key={slug} value={slug}>
@@ -3592,7 +3592,7 @@ function GlobalCloudRunsView({
             size="sm"
             variant="outline"
             onClick={() => void load(undefined, "replace")}
-            className="h-6 gap-1 rounded-[2px] px-2 text-[11px] text-muted-foreground"
+            className="h-6 gap-1 rounded-xs px-2 text-[11px] text-muted-foreground"
             title="Refresh"
           >
             {loading ? (
@@ -3834,7 +3834,7 @@ export function BgTasksView({
       <div className="shrink-0 border-b border-border px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <ListChecks className="size-5 text-primary" />
+            <ListChecks className="size-5 text-foreground" />
             <h2 className="text-base font-semibold text-foreground">Background tasks</h2>
           </div>
           <div className="flex items-center gap-2">
@@ -3963,7 +3963,7 @@ export function BgTasksView({
                               <button
                                 type="button"
                                 onClick={() => setSelectedSlug(task.slug)}
-                                className="truncate text-left text-sm font-medium text-foreground hover:text-primary"
+                                className="truncate text-left text-sm font-medium text-foreground hover:text-foreground"
                                 title={task.name}
                               >
                                 {task.name}

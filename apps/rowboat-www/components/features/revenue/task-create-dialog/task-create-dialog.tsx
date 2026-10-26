@@ -14,7 +14,7 @@ import {
   ChipTextarea,
   Switch,
 } from "@sim/emcn";
-import { Link, ListChecks, Loader, User } from "@sim/emcn/icons";
+import { CircleNotch as Loader, Link, ListChecks, User } from "@/lib/icons";
 
 import { errMessage } from "@/components/features/revenue/shared/shared";
 import { companyName } from "@/lib/revenue/revenue-records";
@@ -220,7 +220,7 @@ export function TaskCreateDialog({
                 : undefined,
           label: "Save",
           leftAdornment: busy ? (
-            <Loader animate className="size-[14px] text-[var(--text-tertiary)]" />
+            <Loader className="size-[14px] animate-spin text-[var(--text-tertiary)]" />
           ) : undefined,
           onClick: () => void submit(),
         }}

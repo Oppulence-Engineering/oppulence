@@ -257,7 +257,7 @@ function SearchBar({
 }) {
   return (
     <div className="relative min-w-[220px] max-w-sm flex-1">
-      <MagnifyingGlass className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-primary/35" />
+      <MagnifyingGlass className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-foreground/35" />
       <Input
         aria-label={label}
         className="h-8 border-border bg-background pl-8 text-[13px]"
@@ -287,7 +287,7 @@ function RecordHeader({
   const summary = (
     <>
       {icon} {label}{" "}
-      <Badge className="font-normal text-primary/40" variant="secondary">
+      <Badge className="font-normal text-foreground/40" variant="secondary">
         {count}
       </Badge>
     </>
@@ -297,7 +297,7 @@ function RecordHeader({
       {filtered && onClear ? (
         <Button
           aria-label="Clear people filters"
-          className="h-8 gap-2 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-primary hover:bg-background-100"
+          className="h-8 gap-2 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-foreground hover:bg-background-100"
           onClick={onClear}
           type="button"
           variant="ghost"
@@ -306,7 +306,7 @@ function RecordHeader({
         </Button>
       ) : (
         <Badge
-          className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-medium text-primary"
+          className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-medium text-foreground"
           variant="outline"
         >
           {summary}
@@ -782,7 +782,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
       />
       <div className="flex min-h-12 shrink-0 items-center gap-2 border-b border-border px-3 py-2">
         <SearchBar label="Search people" value={query} onChange={setQuery} />
-        <Label className="text-[12px] font-normal text-primary/45">
+        <Label className="text-[12px] font-normal text-foreground/45">
           Sorted by last interaction
         </Label>
         <Button
@@ -859,7 +859,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
             aria-label="People"
           >
             <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-border">
-              <TableRow className="h-10 border-b text-[12px] font-medium text-primary/55 hover:bg-transparent">
+              <TableRow className="h-10 border-b text-[12px] font-medium text-foreground/55 hover:bg-transparent">
                 <TableHead className="h-10 w-[250px] border-r px-3">Person</TableHead>
                 <TableHead className="h-10 w-[210px] border-r px-3">Company</TableHead>
                 <TableHead className="h-10 w-36 border-r px-3">Role</TableHead>
@@ -883,13 +883,13 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                       onClick={() => void loadPersonAttributes(person)}
                     >
                       <Avatar className="size-6 rounded-none" size="sm">
-                        <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/60">
+                        <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-foreground/60">
                           {initials(person.displayName)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
                         <div className="flex min-w-0 items-center gap-2">
-                          <Label className="truncate text-[13px] font-medium text-primary">
+                          <Label className="truncate text-[13px] font-medium text-foreground">
                             {person.displayName}
                           </Label>
                           {person.employmentStatus === "departed" ? (
@@ -907,28 +907,28 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                       </div>
                     </Button>
                   </TableCell>
-                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
+                  <TableCell className="truncate border-r px-3 text-[12px] text-foreground/60">
                     {personKnownFact(personCompanyTitle(person))}
                   </TableCell>
-                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
+                  <TableCell className="truncate border-r px-3 text-[12px] text-foreground/60">
                     {personDirectoryRole(person)}
                   </TableCell>
-                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
+                  <TableCell className="truncate border-r px-3 text-[12px] text-foreground/60">
                     {personKnownFact(person.department)}
                   </TableCell>
-                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
+                  <TableCell className="truncate border-r px-3 text-[12px] text-foreground/60">
                     {personKnownFact(person.location)}
                   </TableCell>
-                  <TableCell className="border-r px-3 text-[12px] text-primary/50">
+                  <TableCell className="border-r px-3 text-[12px] text-foreground/50">
                     {personLastInteractionLabel(person.lastInteractionAt)}
                   </TableCell>
-                  <TableCell className="border-r px-3 text-center text-[12px] text-primary/60">
+                  <TableCell className="border-r px-3 text-center text-[12px] text-foreground/60">
                     {personCompanyCountLabel(person.relationshipCount)}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px]">
                     {webAddressHref(person.linkedinUrl) ? (
                       <a
-                        className="text-primary/60 underline-offset-2 hover:text-primary hover:underline"
+                        className="text-foreground/60 underline-offset-2 hover:text-foreground hover:underline"
                         href={webAddressHref(person.linkedinUrl) ?? undefined}
                         rel="noreferrer"
                         target="_blank"
@@ -936,12 +936,12 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                         View profile
                       </a>
                     ) : (
-                      <Badge className="font-normal text-primary/35" variant="ghost">
+                      <Badge className="font-normal text-foreground/35" variant="ghost">
                         Not known
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="truncate px-3 text-[12px] text-primary/50">
+                  <TableCell className="truncate px-3 text-[12px] text-foreground/50">
                     {personEnrichmentLabel(person)}
                   </TableCell>
                 </TableRow>
@@ -1148,8 +1148,8 @@ function PersonSheet({
               const detail = personSheetDetail(label, value);
               return (
                 <React.Fragment key={label}>
-                  <dt className="text-primary/40">{label}</dt>
-                  <dd className="text-primary/75">
+                  <dt className="text-foreground/40">{label}</dt>
+                  <dd className="text-foreground/75">
                     {detail.href ? (
                       <a
                         className="underline-offset-2 hover:underline"
@@ -1170,7 +1170,7 @@ function PersonSheet({
           <div className="mt-6 border-t border-border pt-4">
             {confirmingRemove ? (
               <div className="space-y-3">
-                <p className="text-sm text-primary/70">
+                <p className="text-sm text-foreground/70">
                   {removePersonConfirmCopy(person.displayName)}
                 </p>
                 {removeError ? (
@@ -1211,44 +1211,47 @@ function PersonSheet({
               </Button>
             )}
           </div>
-          <h3 className="mt-8 border-b border-border pb-2 text-xs font-medium uppercase tracking-wide text-primary/45">
+          <h3 className="mt-8 border-b border-border pb-2 text-xs font-medium uppercase tracking-wide text-foreground/45">
             Where details came from
           </h3>
           {attributesStatus === "error" && evidence.length > 0 ? (
             <div className="mt-3 flex items-center justify-between gap-3">
-              <p className="text-sm text-primary/70">{personEvidenceFailureCopy()}</p>
+              <p className="text-sm text-foreground/70">{personEvidenceFailureCopy()}</p>
               <Button onClick={onReload} size="sm" type="button" variant="outline">
                 Try again
               </Button>
             </div>
           ) : null}
           {attributesStatus === "loading" && evidence.length === 0 ? (
-            <p className="py-4 text-sm text-primary/45">Loading profile details…</p>
+            <p className="py-4 text-sm text-foreground/45">Loading profile details…</p>
           ) : attributesStatus === "error" && evidence.length === 0 ? (
             <div className="flex items-center justify-between gap-3 py-4">
-              <p className="text-sm text-primary/70">{personEvidenceFailureCopy()}</p>
+              <p className="text-sm text-foreground/70">{personEvidenceFailureCopy()}</p>
               <Button onClick={onReload} size="sm" type="button" variant="outline">
                 Try again
               </Button>
             </div>
           ) : evidence.length === 0 ? (
-            <p className="py-4 text-sm text-primary/45">No extra details yet.</p>
+            <p className="py-4 text-sm text-foreground/45">No extra details yet.</p>
           ) : (
             <ul className="divide-y divide-border">
               {evidence.map((attribute) => (
                 <li className="py-3" key={attribute.id}>
                   <div className="flex items-center justify-between gap-3">
-                    <Label className="text-sm font-medium text-primary">
+                    <Label className="text-sm font-medium text-foreground">
                       {personEvidenceLabel(attribute.dimension)}
                     </Label>
-                    <Badge className="rounded-none font-normal text-primary/40" variant="outline">
+                    <Badge
+                      className="rounded-none font-normal text-foreground/40"
+                      variant="outline"
+                    >
                       {personResearchConfidenceLabel(attribute.confidence)}
                     </Badge>
                   </div>
-                  <p className="mt-1 text-sm text-primary/65">
+                  <p className="mt-1 text-sm text-foreground/65">
                     {personFactValue(attribute.dimension, attribute.value)}
                   </p>
-                  <p className="mt-1 text-[11px] text-primary/40">
+                  <p className="mt-1 text-[11px] text-foreground/40">
                     {personEvidenceProvenance(attribute)} · {relativeTime(attribute.observedAt)}
                   </p>
                   {(attribute.citations ?? [])
@@ -1256,7 +1259,7 @@ function PersonSheet({
                     .filter((url): url is string => Boolean(url))
                     .map((url, index) => (
                       <a
-                        className="mr-3 mt-1 inline-block text-[11px] text-primary/55 underline-offset-2 hover:underline"
+                        className="mr-3 mt-1 inline-block text-[11px] text-foreground/55 underline-offset-2 hover:underline"
                         href={url}
                         key={url}
                         rel="noreferrer"
@@ -1629,7 +1632,7 @@ export function NotesView({
             value="notes"
           >
             <Note className="size-4" /> Notes{" "}
-            <Badge className="font-normal text-primary/40" variant="secondary">
+            <Badge className="font-normal text-foreground/40" variant="secondary">
               {listNeverLoaded(notesQuery.isError, notesQuery.data) || timelinesUnread
                 ? "Couldn't load"
                 : noteCountLabel(notes.length, notesTabContinues(hasEarlierNotes))}
@@ -1640,7 +1643,7 @@ export function NotesView({
             value="templates"
           >
             <NotePencil className="size-4" /> Templates{" "}
-            <Badge className="font-normal text-primary/40" variant="secondary">
+            <Badge className="font-normal text-foreground/40" variant="secondary">
               {templateCountLabel(templates.length, hasMoreTemplates)}
             </Badge>
           </TabsTrigger>
@@ -1652,12 +1655,12 @@ export function NotesView({
         <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
           <Button
             type="button"
-            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
+            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-foreground/60 hover:bg-background-100"
             variant="ghost"
             onClick={() => chooseNoteOrder(!newestFirst)}
           >
             <List className="size-4" /> Sorted by{" "}
-            <Label className="font-normal text-primary">
+            <Label className="font-normal text-foreground">
               {newestFirst ? "Newest first" : "Oldest first"}
             </Label>
             <CaretDown
@@ -1671,7 +1674,7 @@ export function NotesView({
                 type="button"
                 className={cn(
                   "size-7 rounded-none p-0",
-                  layout === "list" ? "bg-background-200 text-primary" : "text-primary/45",
+                  layout === "list" ? "bg-background-200 text-foreground" : "text-foreground/45",
                 )}
                 size="icon-xs"
                 variant="ghost"
@@ -1684,7 +1687,7 @@ export function NotesView({
                 type="button"
                 className={cn(
                   "size-7 rounded-none p-0",
-                  layout === "grid" ? "bg-background-200 text-primary" : "text-primary/45",
+                  layout === "grid" ? "bg-background-200 text-foreground" : "text-foreground/45",
                 )}
                 size="icon-xs"
                 variant="ghost"
@@ -1694,13 +1697,13 @@ export function NotesView({
               </Button>
             </div>
             <details className="relative">
-              <summary className="flex h-8 cursor-pointer list-none items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100">
+              <summary className="flex h-8 cursor-pointer list-none items-center gap-2 border border-border bg-background px-3 text-[13px] text-foreground hover:bg-background-100">
                 <SlidersHorizontal className="size-4" /> View settings
               </summary>
               <div className="absolute right-0 z-20 mt-1 w-52 border border-border bg-background p-3 shadow-xl">
                 <label
                   htmlFor="notes-show-favorites"
-                  className="flex cursor-pointer items-center justify-between gap-4 text-[13px] text-primary/70"
+                  className="flex cursor-pointer items-center justify-between gap-4 text-[13px] text-foreground/70"
                 >
                   Show favorites
                   <Checkbox
@@ -1889,7 +1892,7 @@ export function NotesView({
         <div className="min-h-0 flex-1 overflow-auto">
           {showFavorites ? (
             <section className="px-4 pt-3">
-              <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/45">
+              <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-foreground/45">
                 Favorites
                 <Badge className="text-[10px] font-normal" variant="outline">
                   {favoriteNotesLabel(favoriteNotes.length, unresolvedFavorites)}
@@ -1938,7 +1941,7 @@ export function NotesView({
                 </>
               )}
               {favoriteNotes.length > 0 && unresolvedFavorites > 0 ? (
-                <p className="mt-2 text-xs text-primary/55">
+                <p className="mt-2 text-xs text-foreground/55">
                   {favoriteNotesEmptyCopy(unresolvedFavorites, hasEarlierNotes)}
                 </p>
               ) : null}
@@ -1970,7 +1973,7 @@ export function NotesView({
           ) : null}
           {noteGroups.map((group) => (
             <div className="mt-3 border-t border-border px-4 py-3" key={group.day}>
-              <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/55">
+              <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-foreground/55">
                 {group.label}{" "}
                 <Badge className="text-[10px] font-normal" variant="outline">
                   {group.notes.length}
@@ -2001,12 +2004,12 @@ export function NotesView({
                     tabIndex={0}
                   >
                     <CardHeader className="flex-1 gap-1 px-4 pb-0 pt-4">
-                      <div className="flex items-center gap-2 text-[12px] text-primary/65">
+                      <div className="flex items-center gap-2 text-[12px] text-foreground/65">
                         <Note className="size-3.5" />
                         {onOpenCompany ? (
                           <Button
                             aria-label={noteCompanyLabel(note.relationshipName)}
-                            className="h-auto rounded-none px-0 py-0 text-[12px] font-normal text-primary/65 underline hover:bg-transparent hover:text-primary"
+                            className="h-auto rounded-none px-0 py-0 text-[12px] font-normal text-foreground/65 underline hover:bg-transparent hover:text-foreground"
                             onClick={(event) => {
                               event.stopPropagation();
                               onOpenCompany(note.relationshipId);
@@ -2025,14 +2028,14 @@ export function NotesView({
                           </Badge>
                         ) : null}
                       </div>
-                      <CardTitle className="mt-3 text-[15px] text-primary">
+                      <CardTitle className="mt-3 text-[15px] text-foreground">
                         {noteTitleLabel(note.title)}
                       </CardTitle>
                       <CardDescription className="line-clamp-2 text-[13px]">
                         {noteBodyPreview(note.body)}
                       </CardDescription>
                     </CardHeader>
-                    <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-primary/50">
+                    <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-foreground/50">
                       <div className="flex items-center gap-2">
                         <Avatar className="size-4 rounded-none" size="sm">
                           <AvatarFallback
@@ -2383,8 +2386,8 @@ function NoteDialog({
       >
         <DialogTitle className="sr-only">{title || "Untitled note"}</DialogTitle>
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-5">
-          <div className="flex min-w-0 items-center gap-2 text-[12px] text-primary/80">
-            <Note className="size-3.5 text-primary/45" />
+          <div className="flex min-w-0 items-center gap-2 text-[12px] text-foreground/80">
+            <Note className="size-3.5 text-foreground/45" />
             <Select
               disabled={!canLinkCompany}
               value={relationshipId || undefined}
@@ -2393,7 +2396,7 @@ function NoteDialog({
               <SelectTrigger
                 id="note-relationship"
                 aria-label={linkedCompanyName(companyMenuLabel)}
-                className="h-auto max-w-56 border-0 bg-transparent p-0 text-[12px] text-primary underline shadow-none focus:ring-0"
+                className="h-auto max-w-56 border-0 bg-transparent p-0 text-[12px] text-foreground underline shadow-none focus:ring-0"
               >
                 <SelectValue placeholder={companyMenuLabel} />
               </SelectTrigger>
@@ -2425,11 +2428,11 @@ function NoteDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-2 text-primary/45">
+          <div className="flex items-center gap-2 text-foreground/45">
             <Button
               aria-label="Minimize note"
               type="button"
-              className="size-7 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
+              className="size-7 rounded-none text-foreground/45 hover:bg-background-100 hover:text-foreground"
               disabled={!maximized}
               size="icon-xs"
               title={maximized ? "Leave full screen" : "The note is already in a window"}
@@ -2441,7 +2444,7 @@ function NoteDialog({
             <Button
               aria-label={maximized ? "Restore note" : "Maximize note"}
               type="button"
-              className="size-7 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
+              className="size-7 rounded-none text-foreground/45 hover:bg-background-100 hover:text-foreground"
               size="icon-xs"
               variant="ghost"
               onClick={() => setMaximized((value) => !value)}
@@ -2451,7 +2454,7 @@ function NoteDialog({
             <Button
               aria-label="Close note"
               type="button"
-              className="size-7 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
+              className="size-7 rounded-none text-foreground/45 hover:bg-background-100 hover:text-foreground"
               size="icon-xs"
               variant="ghost"
               onClick={() => void closeEditor()}
@@ -2460,12 +2463,12 @@ function NoteDialog({
             </Button>
           </div>
         </div>
-        <div className="relative min-h-0 flex-1 overflow-auto px-[52px] pb-14 pt-[57px] text-primary/80">
-          <div className="absolute right-[18px] top-1 flex items-center gap-3 text-[13px] text-primary/55">
+        <div className="relative min-h-0 flex-1 overflow-auto px-[52px] pb-14 pt-[57px] text-foreground/80">
+          <div className="absolute right-[18px] top-1 flex items-center gap-3 text-[13px] text-foreground/55">
             <Avatar className="size-5 rounded-none">
               <AvatarFallback
                 aria-label={`Note author ${author.label}`}
-                className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/70"
+                className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-foreground/70"
                 data-slot="note-author"
               >
                 {author.mark}
@@ -2473,7 +2476,7 @@ function NoteDialog({
             </Avatar>
             <Button
               type="button"
-              className="h-auto rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+              className="h-auto rounded-none px-0 py-0 text-[13px] text-foreground/55 hover:bg-transparent hover:text-foreground"
               variant="ghost"
               onClick={async () => {
                 // The id exists before the first save, but the notes list only
@@ -2497,7 +2500,7 @@ function NoteDialog({
               <Button
                 aria-label="Note actions"
                 type="button"
-                className="size-7 rounded-none text-primary/55 hover:bg-background-100 hover:text-primary"
+                className="size-7 rounded-none text-foreground/55 hover:bg-background-100 hover:text-foreground"
                 size="icon-xs"
                 variant="ghost"
                 onClick={() => setMenuOpen((value) => !value)}
@@ -2527,15 +2530,15 @@ function NoteDialog({
           </div>
           <Input
             aria-label="Note title"
-            className="mt-8 h-auto rounded-none border-0 bg-transparent px-0 text-[32px] font-semibold leading-tight tracking-[-0.03em] text-primary shadow-none placeholder:text-primary/45 focus-visible:ring-0"
+            className="mt-8 h-auto rounded-none border-0 bg-transparent px-0 text-[32px] font-semibold leading-tight tracking-[-0.03em] text-foreground shadow-none placeholder:text-foreground/45 focus-visible:ring-0"
             placeholder="Untitled note"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
           />
-          <div className="mt-3 flex items-center gap-4 text-[13px] text-primary/55">
+          <div className="mt-3 flex items-center gap-4 text-[13px] text-foreground/55">
             {relationships.length === 0 && !hasMoreCompanies && onAddCompany ? (
               <Button
-                className="h-auto rounded-none px-0 py-0 text-[13px] font-normal text-primary/55 hover:bg-transparent hover:text-primary"
+                className="h-auto rounded-none px-0 py-0 text-[13px] font-normal text-foreground/55 hover:bg-transparent hover:text-foreground"
                 type="button"
                 variant="ghost"
                 onClick={onAddCompany}
@@ -2545,8 +2548,8 @@ function NoteDialog({
             ) : (
               <Label
                 className={cn(
-                  "flex items-center gap-2 font-normal text-primary/55",
-                  selectedRelationship && "text-primary underline",
+                  "flex items-center gap-2 font-normal text-foreground/55",
+                  selectedRelationship && "text-foreground underline",
                 )}
               >
                 <Note className="size-3.5" />
@@ -2556,7 +2559,7 @@ function NoteDialog({
             <Button
               aria-pressed={meetingLinked}
               type="button"
-              className="h-auto rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+              className="h-auto rounded-none px-0 py-0 text-[13px] text-foreground/55 hover:bg-transparent hover:text-foreground"
               variant="ghost"
               onClick={() => setMeetingLinked((value) => !value)}
             >
@@ -2579,7 +2582,7 @@ function NoteDialog({
             ].map(({ label, icon: Icon, run }) => (
               <Button
                 aria-label={label}
-                className="size-8 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
+                className="size-8 rounded-none text-foreground/45 hover:bg-background-100 hover:text-foreground"
                 key={label}
                 onMouseDown={(event) => {
                   event.preventDefault();
@@ -2596,19 +2599,19 @@ function NoteDialog({
           <Plate editor={editor} onChange={({ value }) => setContent(value)}>
             <PlateContent
               aria-label="Note content"
-              className="mt-6 min-h-24 text-[14px] leading-6 text-primary/80 outline-none [&_.slate-blockquote]:my-3 [&_.slate-blockquote]:border-l-2 [&_.slate-blockquote]:border-primary/25 [&_.slate-blockquote]:pl-3 [&_.slate-blockquote]:text-primary/60 [&_.slate-h2]:my-3 [&_.slate-h2]:text-xl [&_.slate-h2]:font-semibold [&_[data-slate-placeholder]]:text-primary/45"
+              className="mt-6 min-h-24 text-[14px] leading-6 text-foreground/80 outline-none [&_.slate-blockquote]:my-3 [&_.slate-blockquote]:border-l-2 [&_.slate-blockquote]:border-foreground/25 [&_.slate-blockquote]:pl-3 [&_.slate-blockquote]:text-foreground/60 [&_.slate-h2]:my-3 [&_.slate-h2]:text-xl [&_.slate-h2]:font-semibold [&_[data-slate-placeholder]]:text-foreground/45"
               placeholder="Start typing your note"
             />
           </Plate>
           {bodyEmpty ? (
-            <div className="mt-6 space-y-3 text-[13px] text-primary/55">
+            <div className="mt-6 space-y-3 text-[13px] text-foreground/55">
               {/* Templates cannot be favorited. The heading names the two links below. */}
-              <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-foreground/45">
                 Templates
               </p>
               <Button
                 type="button"
-                className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+                className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-foreground/55 hover:bg-transparent hover:text-foreground"
                 variant="ghost"
                 onClick={() => void leaveFor(onViewTemplates)}
               >
@@ -2616,7 +2619,7 @@ function NoteDialog({
               </Button>
               <Button
                 type="button"
-                className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+                className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-foreground/55 hover:bg-transparent hover:text-foreground"
                 variant="ghost"
                 onClick={() => void leaveFor(onCreateTemplate)}
               >
@@ -2633,7 +2636,7 @@ function NoteDialog({
             </p>
           ) : saveState !== "saved" ? (
             <Label
-              className={`absolute right-5 bottom-3 text-[11px] font-normal ${saveState === "error" ? "text-destructive" : "text-primary/55"}`}
+              className={`absolute right-5 bottom-3 text-[11px] font-normal ${saveState === "error" ? "text-destructive" : "text-foreground/55"}`}
             >
               {saveState === "saving" ? "Saving…" : saveError || "Could not save the note."}
             </Label>
@@ -2664,7 +2667,7 @@ function NoteDialog({
           <Button
             aria-expanded={insertOpen}
             aria-label="Insert content"
-            className="size-5 rounded-none border border-border p-0 text-primary/55 hover:bg-background-100 hover:text-primary"
+            className="size-5 rounded-none border border-border p-0 text-foreground/55 hover:bg-background-100 hover:text-foreground"
             onClick={() => setInsertOpen((open) => !open)}
             size="icon-xs"
             type="button"
@@ -2936,13 +2939,13 @@ export function TasksView({
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
         <div className="flex items-center gap-2">
           <Button
-            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
+            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-foreground/60 hover:bg-background-100"
             onClick={() => chooseDueOrder(!soonestFirst)}
             type="button"
             variant="ghost"
           >
             <List className="size-4" /> Sorted by{" "}
-            <Label className="font-normal text-primary">
+            <Label className="font-normal text-foreground">
               {soonestFirst ? "Soonest due" : "Latest due"}
             </Label>
             <CaretDown
@@ -2953,7 +2956,7 @@ export function TasksView({
             <SelectTrigger
               id="task-filter"
               aria-label={taskFilterName(filter)}
-              className="h-8 w-auto gap-2 rounded-none border border-border bg-background px-3 text-[13px] text-primary/55 shadow-none hover:bg-background-100"
+              className="h-8 w-auto gap-2 rounded-none border border-border bg-background px-3 text-[13px] text-foreground/55 shadow-none hover:bg-background-100"
               size="sm"
             >
               <Funnel className="size-4" />
@@ -2968,12 +2971,12 @@ export function TasksView({
         </div>
         <div className="flex items-center gap-2">
           <details className="relative">
-            <summary className="flex h-8 cursor-pointer list-none items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100">
+            <summary className="flex h-8 cursor-pointer list-none items-center gap-2 border border-border bg-background px-3 text-[13px] text-foreground hover:bg-background-100">
               <SlidersHorizontal className="size-4" /> View settings
             </summary>
             <div className="absolute right-0 z-20 mt-1 w-56 border border-border bg-background p-3 shadow-xl">
               <label
-                className="flex cursor-pointer items-center justify-between gap-4 text-[13px] text-primary/70"
+                className="flex cursor-pointer items-center justify-between gap-4 text-[13px] text-foreground/70"
                 htmlFor="tasks-soonest-due"
               >
                 Soonest due first
@@ -2997,7 +3000,7 @@ export function TasksView({
       </div>
       {relationshipsQuery.isError && !listNeverLoaded(actionsQuery.isError, actionsQuery.data) ? (
         <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
-          <p className="text-[13px] text-primary/70">{taskCompaniesFailureCopy()}</p>
+          <p className="text-[13px] text-foreground/70">{taskCompaniesFailureCopy()}</p>
           <Button
             onClick={() => void refetchClearingBanner(() => relationshipsQuery.refetch(), onError)}
             size="sm"
@@ -3095,7 +3098,7 @@ export function TasksView({
                 >
                   <Button
                     aria-label={`Complete ${task.reason}`}
-                    className="size-5 rounded-none border border-border p-0 text-primary/40 hover:border-primary hover:bg-transparent hover:text-primary"
+                    className="size-5 rounded-none border border-border p-0 text-foreground/40 hover:border-foreground hover:bg-transparent hover:text-foreground"
                     disabled={busy === task.id}
                     onClick={() => void complete(task)}
                     size="icon-xs"
@@ -3104,13 +3107,13 @@ export function TasksView({
                   >
                     {busy === task.id ? <Spinner className="size-3" /> : null}
                   </Button>
-                  <Label className="truncate text-[13px] font-medium text-primary">
+                  <Label className="truncate text-[13px] font-medium text-foreground">
                     {task.reason}
                   </Label>
                   {companyName && onOpenCompany && task.relationshipId ? (
                     <Button
                       aria-label={noteCompanyLabel(companyName)}
-                      className="h-auto max-w-full justify-start truncate rounded-none px-0 py-0 text-[12px] font-normal text-primary/55 underline hover:bg-transparent hover:text-primary"
+                      className="h-auto max-w-full justify-start truncate rounded-none px-0 py-0 text-[12px] font-normal text-foreground/55 underline hover:bg-transparent hover:text-foreground"
                       onClick={() => {
                         if (task.relationshipId) onOpenCompany(task.relationshipId);
                       }}
@@ -3127,7 +3130,7 @@ export function TasksView({
                   <Badge
                     className={cn(
                       "ml-auto justify-end text-[12px] font-normal",
-                      overdue ? "text-red-500" : "text-primary/45",
+                      overdue ? "text-red-500" : "text-foreground/45",
                     )}
                     variant="secondary"
                   >

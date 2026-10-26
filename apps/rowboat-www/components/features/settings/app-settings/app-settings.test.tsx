@@ -203,7 +203,7 @@ describe("SettingsView", () => {
     expect(source).toContain("billingStatusLabel(billing.status)");
     expect(source).toContain("planLabel(billing?.plan)");
     expect(source).not.toContain('{billing?.plan || "Free"}');
-    expect(source).not.toContain('className="text-xs font-normal capitalize text-primary/60"');
+    expect(source).not.toContain('className="text-xs font-normal capitalize text-foreground/60"');
     expect(source).not.toContain("{billing.status}");
     expect(source).toContain("usageSectionCopy(usage)");
     expect(source).not.toContain("Activity counted in the current billing period.");

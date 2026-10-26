@@ -139,7 +139,7 @@ function MarketingIcon({
       variant="icon"
       className={cn(
         "marketing-icon-frame",
-        compact ? "size-7 rounded-none" : "size-9 rounded-[8px]",
+        compact ? "size-7 rounded-none" : "size-9 rounded-md",
         iconToneClasses[tone],
         className,
       )}
@@ -296,7 +296,7 @@ function EyebrowPill({
         className,
       )}
     >
-      <MarketingIcon className="size-5 rounded-[3px]" compact icon={icon} tone={tone} />
+      <MarketingIcon className="size-5 rounded-xs" compact icon={icon} tone={tone} />
       <MarketingSpan className="min-w-0 truncate font-normal">{children}</MarketingSpan>
     </p>
   );
@@ -1372,7 +1372,7 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
             <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
               {story.description}
             </p>
-            <div className="mt-auto flex items-center justify-between border-primary/10 border-t pt-4 font-mono text-xs text-foreground/60 uppercase tracking-wider">
+            <div className="mt-auto flex items-center justify-between border-foreground/10 border-t pt-4 font-mono text-xs text-foreground/60 uppercase tracking-wider">
               <MarketingSpan className="font-normal">Open story</MarketingSpan>
               <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
             </div>
@@ -1448,7 +1448,7 @@ export function NotFoundMarketingPage() {
 
 export function RouteMapSummary() {
   return (
-    <section className="border-t border-primary/10 px-4 py-12 md:px-8">
+    <section className="border-t border-foreground/10 px-4 py-12 md:px-8">
       <div className="grid gap-8 md:grid-cols-3">
         <LinearFooterGroup items={toolLinks} title="Tools" />
         <LinearFooterGroup items={alternativeLinks} title="Alternatives" />

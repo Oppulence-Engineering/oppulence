@@ -262,7 +262,7 @@ export function CodeRunPermissionRequest({
   const btn =
     "rounded-full px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50";
   return (
-    <div className="mb-4 rounded-[20px] border border-amber-500/40 bg-amber-500/5 p-4">
+    <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
         <ShieldQuestion className="size-4 shrink-0 text-amber-600" />
         Permission needed

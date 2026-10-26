@@ -110,7 +110,7 @@ const HEALTH_TONE: Record<string, string> = {
   healthy: "border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
   needs_attention: "border-amber-500/30 text-amber-600 dark:text-amber-400",
   critical: "border-red-500/30 text-red-600 dark:text-red-400",
-  unknown: "text-primary/45",
+  unknown: "text-foreground/45",
 };
 
 const DETECTOR_LABELS: Record<string, string> = {
@@ -330,18 +330,18 @@ export function RelationshipsView({
   return (
     <div className="app-shell min-h-0 flex-1 overflow-y-auto bg-background">
       <div className="mx-auto flex w-full max-w-none flex-col gap-4 px-6 py-6">
-        <section className="rounded-[2px] border border-border bg-background-50 p-4 dark:bg-background-100/30">
+        <section className="rounded-xs border border-border bg-background-50 p-4 dark:bg-background-100/30">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
                 {section === "attention" ? "Attention queue" : "Account mission control"}
               </p>
-              <h1 className="mt-1 text-base font-semibold text-primary">
+              <h1 className="mt-1 text-base font-semibold text-foreground">
                 {section === "attention"
                   ? "What needs attention now?"
                   : "Which relationship needs action now?"}
               </h1>
-              <p className="mt-1 max-w-2xl text-xs text-primary/55">
+              <p className="mt-1 max-w-2xl text-xs text-foreground/55">
                 {section === "attention"
                   ? "Review risks, commitments, and next actions with the evidence and decision controls beside each item."
                   : "One living state across email, meetings, Slack, CRM, and revenue evidence. Every recommendation explains what changed and waits for approval."}
@@ -353,7 +353,7 @@ export function RelationshipsView({
                 <button
                   type="button"
                   onClick={() => setSurface("list")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs ${surface === "list" ? "bg-primary text-background" : "text-primary/55 hover:bg-primary/5"}`}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs ${surface === "list" ? "bg-primary text-background" : "text-foreground/55 hover:bg-primary/5"}`}
                 >
                   <ListBullets /> {section === "attention" ? "Attention" : "Accounts"}
                 </button>
@@ -361,7 +361,7 @@ export function RelationshipsView({
                   type="button"
                   data-capability="relationship-graph graph-query graph-saved-views graph-governed-actions"
                   onClick={() => setSurface("graph")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs ${surface === "graph" ? "bg-primary text-background" : "text-primary/55 hover:bg-primary/5"}`}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs ${surface === "graph" ? "bg-primary text-background" : "text-foreground/55 hover:bg-primary/5"}`}
                 >
                   <Graph /> Graph
                 </button>
@@ -408,13 +408,16 @@ export function RelationshipsView({
                 <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
                   Accounts
                 </p>
-                <h2 id="relationship-accounts-heading" className="text-sm font-medium text-primary">
+                <h2
+                  id="relationship-accounts-heading"
+                  className="text-sm font-medium text-foreground"
+                >
                   Start with the customer
                 </h2>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="relative min-w-0 flex-1">
-                  <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-primary/40" />
+                  <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-foreground/40" />
                   <Input
                     aria-label="Filter relationships"
                     value={query}
@@ -427,7 +430,7 @@ export function RelationshipsView({
                   <SelectTrigger className="w-full sm:w-44" size="sm">
                     <SelectValue placeholder="Health" />
                   </SelectTrigger>
-                  <SelectContent className="app-shell rounded-[2px]">
+                  <SelectContent className="app-shell rounded-xs">
                     <SelectItem value="all">All health</SelectItem>
                     {HEALTH_OPTIONS.map((value) => (
                       <SelectItem key={value} value={value}>
@@ -440,7 +443,7 @@ export function RelationshipsView({
                   <SelectTrigger className="w-full sm:w-44" size="sm">
                     <SelectValue placeholder="Lifecycle" />
                   </SelectTrigger>
-                  <SelectContent className="app-shell rounded-[2px]">
+                  <SelectContent className="app-shell rounded-xs">
                     <SelectItem value="all">All lifecycle</SelectItem>
                     {LIFECYCLE_OPTIONS.map((value) => (
                       <SelectItem key={value} value={value}>
@@ -455,14 +458,14 @@ export function RelationshipsView({
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-xs text-primary/45">{rows.length} relationships</span>
+                <span className="text-xs text-foreground/45">{rows.length} relationships</span>
                 <Button variant="ghost" size="sm" onClick={() => void load()} disabled={loading}>
                   <ArrowClockwise className={loading ? "animate-spin" : ""} /> Refresh
                 </Button>
               </div>
 
               {error ? (
-                <div className="flex gap-2 rounded-[2px] border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+                <div className="flex gap-2 rounded-xs border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
                   <Warning className="mt-0.5 size-4 shrink-0" />
                   {error}
                 </div>
@@ -481,7 +484,7 @@ export function RelationshipsView({
                   </Button>
                 </EmptyBlock>
               ) : (
-                <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
+                <ul className="flex flex-col divide-y divide-foreground/10 rounded-xs border border-border">
                   {rows.map((relationship) => (
                     <li key={relationship.id}>
                       <button
@@ -491,13 +494,10 @@ export function RelationshipsView({
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="truncate text-sm font-medium text-primary">
+                            <span className="truncate text-sm font-medium text-foreground">
                               {relationship.displayName}
                             </span>
-                            <Badge
-                              variant="outline"
-                              className="rounded-[2px] font-normal capitalize"
-                            >
+                            <Badge variant="outline" className="rounded-xs font-normal capitalize">
                               {humanize(relationship.lifecycle)}
                             </Badge>
                             <span
@@ -508,7 +508,7 @@ export function RelationshipsView({
                               {humanize(relationship.health)}
                             </span>
                           </div>
-                          <p className="mt-1 truncate text-xs text-primary/55">
+                          <p className="mt-1 truncate text-xs text-foreground/55">
                             {relationship.nextAction ||
                               relationship.stateReason ||
                               relationship.summary ||
@@ -516,10 +516,10 @@ export function RelationshipsView({
                           </p>
                         </div>
                         <div className="hidden shrink-0 text-right md:block">
-                          <p className="text-xs capitalize text-primary/55">
+                          <p className="text-xs capitalize text-foreground/55">
                             {humanize(relationship.engagement)}
                           </p>
-                          <p className="text-[11px] text-primary/35">
+                          <p className="text-[11px] text-foreground/35">
                             {relationship.lastChangedAt
                               ? `changed ${relativeTime(relationship.lastChangedAt)}`
                               : relationship.lastTouchAt
@@ -620,10 +620,10 @@ function PortfolioAttentionQueue({
         <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
           Portfolio attention
         </p>
-        <h2 id="portfolio-attention-heading" className="text-sm font-medium text-primary">
+        <h2 id="portfolio-attention-heading" className="text-sm font-medium text-foreground">
           Nothing needs review right now
         </h2>
-        <p className="text-xs text-primary/55">
+        <p className="text-xs text-foreground/55">
           New risks, commitments, and next actions will appear here when relationship evidence
           changes.
         </p>
@@ -677,15 +677,15 @@ function PortfolioAttentionQueue({
           <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
             Portfolio attention
           </p>
-          <h2 id="portfolio-attention-heading" className="text-sm font-medium text-primary">
+          <h2 id="portfolio-attention-heading" className="text-sm font-medium text-foreground">
             {customerItems.length} customer action{customerItems.length === 1 ? "" : "s"} to review
           </h2>
         </div>
-        <span className="text-[11px] text-primary/40">Most urgent first</span>
+        <span className="text-[11px] text-foreground/40">Most urgent first</span>
       </div>
       <ol className="space-y-2">
         {customerItems.slice(0, showAll ? 10 : 3).map((item) => (
-          <li key={item.id} className="rounded-[2px] border border-border p-3">
+          <li key={item.id} className="rounded-xs border border-border p-3">
             <div className="flex flex-wrap items-start gap-3">
               <button
                 type="button"
@@ -693,10 +693,12 @@ function PortfolioAttentionQueue({
                 onClick={() => onOpenRelationship(item.relationshipId)}
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-primary">{item.relationshipName}</span>
+                  <span className="text-sm font-medium text-foreground">
+                    {item.relationshipName}
+                  </span>
                   <Badge
                     variant="outline"
-                    className={`rounded-[2px] capitalize ${
+                    className={`rounded-xs capitalize ${
                       item.urgencyBand === "critical"
                         ? "border-red-500/40 text-red-600"
                         : item.urgencyBand === "high"
@@ -707,7 +709,7 @@ function PortfolioAttentionQueue({
                     {relationshipLabel(item.reasonCode)}
                   </Badge>
                 </div>
-                <p className="mt-1 text-xs text-primary/60">{item.explanation}</p>
+                <p className="mt-1 text-xs text-foreground/60">{item.explanation}</p>
               </button>
               <div className="flex flex-wrap gap-1">
                 <Button
@@ -755,7 +757,7 @@ function PortfolioAttentionQueue({
                 </DropdownMenu>
               </div>
             </div>
-            <details className="mt-2 text-[11px] text-primary/50">
+            <details className="mt-2 text-[11px] text-foreground/50">
               <summary className="cursor-pointer">Why this matters</summary>
               <ul className="mt-1 list-disc space-y-1 pl-4">
                 {Object.entries(item.rankFactors).map(([factor, contribution]) => (
@@ -783,20 +785,20 @@ function PortfolioAttentionQueue({
         </Button>
       ) : null}
       {maintenanceItems.length > 0 ? (
-        <details className="rounded-[2px] border border-border p-3 text-xs">
-          <summary className="cursor-pointer font-medium text-primary">
+        <details className="rounded-xs border border-border p-3 text-xs">
+          <summary className="cursor-pointer font-medium text-foreground">
             Data maintenance · {maintenanceItems.length} source issue
             {maintenanceItems.length === 1 ? "" : "s"}
           </summary>
-          <div className="mt-2 space-y-2 text-primary/60">
+          <div className="mt-2 space-y-2 text-foreground/60">
             {maintenanceItems.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                className="block w-full rounded-[2px] border border-border p-2 text-left hover:bg-primary/5"
+                className="block w-full rounded-xs border border-border p-2 text-left hover:bg-primary/5"
                 onClick={() => onOpenRelationship(item.relationshipId)}
               >
-                <span className="font-medium text-primary">{item.relationshipName}</span>
+                <span className="font-medium text-foreground">{item.relationshipName}</span>
                 <span className="mt-0.5 block">{item.explanation}</span>
               </button>
             ))}
@@ -810,7 +812,7 @@ function PortfolioAttentionQueue({
 function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
   if (statuses.length === 0) {
     return (
-      <Badge variant="outline" className="w-fit rounded-[2px] font-normal text-primary/45">
+      <Badge variant="outline" className="w-fit rounded-xs font-normal text-foreground/45">
         No evidence sources yet
       </Badge>
     );
@@ -823,7 +825,7 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
           key={`${source.source}:${source.sourceAccountId}`}
           variant="outline"
           title={source.lastError || source.lastObservationAt}
-          className={`rounded-[2px] font-normal capitalize ${
+          className={`rounded-xs font-normal capitalize ${
             relationshipSourceHealth(source) === "healthy"
               ? "border-emerald-500/30"
               : relationshipSourceHealth(source) === "syncing"
@@ -957,10 +959,10 @@ function SourceConnectionCards({
       data-capability="source-lifecycle"
     >
       <div>
-        <h2 id="source-connections-heading" className="text-sm font-medium text-primary">
+        <h2 id="source-connections-heading" className="text-sm font-medium text-foreground">
           Evidence sources
         </h2>
-        <p className="mt-0.5 text-xs text-primary/55">{sourceConnectionGuidance(inventory)}</p>
+        <p className="mt-0.5 text-xs text-foreground/55">{sourceConnectionGuidance(inventory)}</p>
       </div>
       <div className="grid gap-2 md:grid-cols-3">
         {needsAttention.map((item) => {
@@ -970,15 +972,15 @@ function SourceConnectionCards({
               ? Math.round((account.backfillCompleted / account.backfillTotal) * 100)
               : null;
           return (
-            <article key={item.source} className="space-y-3 rounded-[2px] border border-border p-3">
+            <article key={item.source} className="space-y-3 rounded-xs border border-border p-3">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-sm font-medium text-primary">{item.displayName}</h3>
-                <Badge variant="outline" className="rounded-[2px] capitalize">
+                <h3 className="text-sm font-medium text-foreground">{item.displayName}</h3>
+                <Badge variant="outline" className="rounded-xs capitalize">
                   {humanize(account?.status || "not_connected")}
                 </Badge>
               </div>
-              <p className="text-xs text-primary/55">{item.scopeExplanation}</p>
-              <details className="text-[11px] text-primary/55">
+              <p className="text-xs text-foreground/55">{item.scopeExplanation}</p>
+              <details className="text-[11px] text-foreground/55">
                 <summary className="cursor-pointer">Permissions and capabilities</summary>
                 <p className="mt-1">
                   <span className="font-medium">Read:</span> {item.readScopes.join(", ")}
@@ -988,7 +990,7 @@ function SourceConnectionCards({
                 </p>
               </details>
               {account ? (
-                <div className="space-y-1 text-[11px] text-primary/50">
+                <div className="space-y-1 text-[11px] text-foreground/50">
                   <p>
                     {humanize(account.completeness)}
                     {progress !== null ? ` · backfill ${progress}%` : ""}
@@ -1113,20 +1115,20 @@ function IdentityReviewInbox({
   return (
     <section
       aria-labelledby="identity-review-heading"
-      className="space-y-2 rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      className="space-y-2 rounded-xs border border-amber-500/30 bg-amber-500/5 p-3"
       data-capability="identity-review"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 id="identity-review-heading" className="text-sm font-medium text-primary">
+          <h2 id="identity-review-heading" className="text-sm font-medium text-foreground">
             Identity review
           </h2>
-          <p className="mt-0.5 text-xs text-primary/55">
+          <p className="mt-0.5 text-xs text-foreground/55">
             {candidates.length} ambiguous relationship{candidates.length === 1 ? "" : "s"} cannot
             receive actions until reviewed.
           </p>
         </div>
-        <Badge variant="outline" className="rounded-[2px] border-amber-500/40">
+        <Badge variant="outline" className="rounded-xs border-amber-500/40">
           Human decision required
         </Badge>
       </div>
@@ -1134,22 +1136,22 @@ function IdentityReviewInbox({
         <article key={candidate.id} className="space-y-3 border-t border-amber-500/20 pt-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-primary">
+              <p className="text-sm font-medium text-foreground">
                 {candidate.proposedRelationship.displayName} may match{" "}
                 {candidate.existingRelationship.displayName}
               </p>
-              <p className="mt-0.5 text-xs text-primary/55">
+              <p className="mt-0.5 text-xs text-foreground/55">
                 Exact {humanize(candidate.anchorKind)} anchor
                 {candidate.anchorProvider ? ` from ${candidate.anchorProvider}` : ""}:{" "}
                 {candidate.anchorPreview || "preview withheld"}
               </p>
             </div>
-            <span className="text-xs text-primary/45">
+            <span className="text-xs text-foreground/45">
               {candidate.evidenceCount} evidence item{candidate.evidenceCount === 1 ? "" : "s"} ·{" "}
               {Math.round(candidate.recommendationConfidence * 100)}% recommendation confidence
             </span>
           </div>
-          <div className="flex flex-wrap gap-1.5 text-[11px] text-primary/55">
+          <div className="flex flex-wrap gap-1.5 text-[11px] text-foreground/55">
             {Object.entries(candidate.impact).map(([kind, count]) => (
               <span key={kind} className="border border-border px-2 py-1">
                 {count} {humanize(kind)}
@@ -1235,21 +1237,21 @@ function SemanticSearch({ onError }: { onError: (message: string | null) => void
       </div>
       {matches !== null ? (
         matches.length === 0 ? (
-          <p className="text-xs text-primary/45">No evidence matched that question.</p>
+          <p className="text-xs text-foreground/45">No evidence matched that question.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
+          <ul className="flex flex-col divide-y divide-foreground/10 rounded-xs border border-border">
             {matches.map((match) => (
               <li key={match.threadId} className="flex items-center gap-3 px-3 py-2">
-                <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
+                <Badge variant="outline" className="rounded-xs font-normal capitalize">
                   {match.classification}
                 </Badge>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm text-primary/80">
+                  <div className="truncate text-sm text-foreground/80">
                     {match.subject || match.counterparty}
                   </div>
-                  <div className="truncate text-xs text-primary/45">{match.summary}</div>
+                  <div className="truncate text-xs text-foreground/45">{match.summary}</div>
                 </div>
-                <span className="text-xs tabular-nums text-primary/40">
+                <span className="text-xs tabular-nums text-foreground/40">
                   {Math.round(match.score * 100)}%
                 </span>
               </li>
@@ -1286,13 +1288,13 @@ function MissionControlOverview({
       >
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h3 id="mission-control-heading" className="text-sm font-medium text-primary">
+            <h3 id="mission-control-heading" className="text-sm font-medium text-foreground">
               {COMPLETENESS_LABELS[model.completeness.status] ??
                 relationshipLabel(model.completeness.status)}
             </h3>
-            <p className="mt-1 text-xs text-primary/60">{model.completeness.explanation}</p>
+            <p className="mt-1 text-xs text-foreground/60">{model.completeness.explanation}</p>
           </div>
-          <Badge variant="outline" className="rounded-[2px] font-normal">
+          <Badge variant="outline" className="rounded-xs font-normal">
             {supported}/{total} state dimensions sourced
           </Badge>
         </div>
@@ -1325,16 +1327,16 @@ function MissionControlOverview({
             answer = model.activeRecommendation?.reason || "No action is currently recommended.";
           return (
             <div key={question.key} className="border border-border p-3">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-primary/45">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-foreground/45">
                 {question.label}
               </p>
-              <p className="mt-1 text-xs text-primary/75">{answer}</p>
+              <p className="mt-1 text-xs text-foreground/75">{answer}</p>
             </div>
           );
         })}
       </div>
       <details className="border border-border p-3 text-xs">
-        <summary className="cursor-pointer font-medium text-primary">
+        <summary className="cursor-pointer font-medium text-foreground">
           Inspect dimension evidence
         </summary>
         <ul className="mt-3 space-y-2">
@@ -1345,23 +1347,23 @@ function MissionControlOverview({
                   {RELATIONSHIP_DIMENSION_LABELS[item.dimension] ??
                     relationshipLabel(item.dimension)}
                 </span>
-                <Badge variant="outline" className="rounded-[2px] font-normal">
+                <Badge variant="outline" className="rounded-xs font-normal">
                   {item.supported
                     ? (AUTHORITY_LABELS[item.authority ?? ""] ?? relationshipLabel(item.authority))
                     : "Explicitly incomplete"}
                 </Badge>
                 {!item.fresh ? <span className="text-amber-600">stale</span> : null}
               </div>
-              <p className="mt-1 text-primary/55">{item.reason || item.missingReason}</p>
+              <p className="mt-1 text-foreground/55">{item.reason || item.missingReason}</p>
               {item.supported && item.authorityRank ? (
-                <p className="mt-1 text-primary/40">
+                <p className="mt-1 text-foreground/40">
                   {relationshipLabel(item.status)} · authority rank {item.authorityRank} · value
                   schema v{item.valueSchemaVersion ?? 1} ·{" "}
                   {item.extractorVersion || "unknown extractor"}
                 </p>
               ) : null}
               {item.evidence.length ? (
-                <p className="mt-1 text-primary/40">
+                <p className="mt-1 text-foreground/40">
                   {item.evidence
                     .map(
                       (ref) => `${relationshipLabel(ref.source)} · ${relativeTime(ref.observedAt)}`,
@@ -1385,7 +1387,7 @@ function MissionControlOverview({
           <Check /> Mark state v{model.stateVersion} reviewed
         </Button>
       ) : (
-        <p className="text-[11px] text-primary/40">
+        <p className="text-[11px] text-foreground/40">
           Reviewed through state v{model.previousReviewedStateVersion} · as of{" "}
           {new Date(model.asOf).toLocaleString()}
         </p>
@@ -1475,7 +1477,7 @@ function ImportedTranscriptPublisher({
       data-capability="transcript-publication"
     >
       <SectionTitle title="Publish an imported transcript" />
-      <p className="text-xs text-primary/55">
+      <p className="text-xs text-foreground/55">
         Paste reviewed transcript text. Prefix lines with a speaker name and colon when known.
         Imported text is preserved as evidence and does not become a trusted claim automatically.
       </p>
@@ -1498,7 +1500,7 @@ function ImportedTranscriptPublisher({
         aria-label="Imported transcript text"
         className="min-h-40"
       />
-      <label htmlFor={disclosureId} className="flex items-start gap-2 text-xs text-primary/60">
+      <label htmlFor={disclosureId} className="flex items-start gap-2 text-xs text-foreground/60">
         <Checkbox
           id={disclosureId}
           className="mt-0.5 size-4 accent-current"
@@ -1676,17 +1678,17 @@ function RelationshipSheet({
           </SheetDescription>
         </SheetHeader>
         {!data ? (
-          <p className="px-4 py-6 text-sm text-primary/50">Loading living state…</p>
+          <p className="px-4 py-6 text-sm text-foreground/50">Loading living state…</p>
         ) : (
           <div className="flex flex-col gap-6 px-4 py-5">
             <section>
               <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="rounded-[2px] capitalize">
+                <Badge variant="outline" className="rounded-xs capitalize">
                   {humanize(data.relationship.lifecycle)}
                 </Badge>
                 <Badge
                   variant="outline"
-                  className={`rounded-[2px] capitalize ${HEALTH_TONE[data.relationship.health]}`}
+                  className={`rounded-xs capitalize ${HEALTH_TONE[data.relationship.health]}`}
                 >
                   {humanize(data.relationship.health)}
                 </Badge>
@@ -1697,12 +1699,12 @@ function RelationshipSheet({
                   {humanize(data.relationship.sentiment)}
                 </Badge>
               </div>
-              <p className="mt-3 text-sm text-primary/75">
+              <p className="mt-3 text-sm text-foreground/75">
                 {data.relationship.stateReason ||
                   data.relationship.summary ||
                   "The state engine is waiting for more evidence."}
               </p>
-              <p className="mt-1 text-[11px] text-primary/40">
+              <p className="mt-1 text-[11px] text-foreground/40">
                 {data.relationship.lastChangedAt
                   ? `Updated ${relativeTime(data.relationship.lastChangedAt)}`
                   : "Waiting for the first verified update"}
@@ -1744,7 +1746,7 @@ function RelationshipSheet({
                         session.relationshipTarget.relationshipId === target.relationshipId),
                   ) ? (
                     <details className="w-full border border-border p-3 text-xs">
-                      <summary className="cursor-pointer font-medium text-primary">
+                      <summary className="cursor-pointer font-medium text-foreground">
                         Attach a completed recording
                       </summary>
                       <ul className="mt-3 space-y-2">
@@ -1766,10 +1768,10 @@ function RelationshipSheet({
                                 className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2 last:border-0 last:pb-0"
                               >
                                 <div>
-                                  <p className="font-medium text-primary">
+                                  <p className="font-medium text-foreground">
                                     {new Date(session.startedAt).toLocaleString()}
                                   </p>
-                                  <p className="text-primary/45">
+                                  <p className="text-foreground/45">
                                     {session.segmentCount ?? 0} transcript segments
                                     {session.warnings.length
                                       ? ` · ${session.warnings.length} capture warning${session.warnings.length === 1 ? "" : "s"}`
@@ -1840,11 +1842,11 @@ function RelationshipSheet({
               }
             />
 
-            <details className="rounded-[2px] border border-border p-3">
-              <summary className="cursor-pointer text-sm font-medium text-primary">
+            <details className="rounded-xs border border-border p-3">
+              <summary className="cursor-pointer text-sm font-medium text-foreground">
                 Review model and evidence
               </summary>
-              <p className="mt-1 text-xs text-primary/50">
+              <p className="mt-1 text-xs text-foreground/50">
                 Identity decisions, manual corrections, imported transcripts, and live cues.
               </p>
               <div className="mt-4 flex flex-col gap-5">
@@ -1921,10 +1923,10 @@ function RelationshipSheet({
                       {data.intelligence.liveCues.map((cue) => (
                         <li
                           key={cue.id}
-                          className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+                          className="rounded-xs border border-amber-500/30 bg-amber-500/5 p-3"
                         >
-                          <p className="text-xs font-medium text-primary">{cue.title}</p>
-                          <p className="mt-1 text-xs text-primary/60">{cue.detail}</p>
+                          <p className="text-xs font-medium text-foreground">{cue.title}</p>
+                          <p className="mt-1 text-xs text-foreground/60">{cue.detail}</p>
                         </li>
                       ))}
                     </ul>
@@ -1942,11 +1944,11 @@ function RelationshipSheet({
 
             {data.intelligence?.effectivePolicy ? (
               <div
-                className="border border-border p-3 text-xs text-primary/60"
+                className="border border-border p-3 text-xs text-foreground/60"
                 data-capability="privacy-deletion"
               >
                 <details>
-                  <summary className="cursor-pointer font-medium text-primary">
+                  <summary className="cursor-pointer font-medium text-foreground">
                     Privacy policy · {humanize(data.intelligence.effectivePolicy.modelRoute)}
                   </summary>
                   <div className="mt-2 grid gap-1 sm:grid-cols-2">
@@ -2021,10 +2023,10 @@ function RelationshipSheet({
                 <ul className="space-y-2">
                   {data.intelligence.recoveryEvaluations.map((evaluation) => (
                     <li key={evaluation.evaluationId} className="border border-border p-3 text-xs">
-                      <p className="font-medium capitalize text-primary">
+                      <p className="font-medium capitalize text-foreground">
                         {humanize(evaluation.classification)}
                       </p>
-                      <p className="mt-1 text-primary/60">{evaluation.explanation}</p>
+                      <p className="mt-1 text-foreground/60">{evaluation.explanation}</p>
                     </li>
                   ))}
                 </ul>
@@ -2032,7 +2034,7 @@ function RelationshipSheet({
                 <EmptyText>No due commitment has been reconciled yet.</EmptyText>
               )}
               {data.intelligence?.recommendationEvaluations.length ? (
-                <details className="mt-2 text-xs text-primary/55">
+                <details className="mt-2 text-xs text-foreground/55">
                   <summary className="cursor-pointer">Inspect ranking factors</summary>
                   {data.intelligence.recommendationEvaluations.map((evaluation) => (
                     <ul key={evaluation.evaluationId} className="mt-2 border-l border-border pl-3">
@@ -2067,11 +2069,11 @@ function RelationshipSheet({
             </section>
 
             {historicalActions.length ? (
-              <details className="rounded-[2px] border border-border p-3">
-                <summary className="cursor-pointer text-sm font-medium text-primary">
+              <details className="rounded-xs border border-border p-3">
+                <summary className="cursor-pointer text-sm font-medium text-foreground">
                   Action history ({historicalActions.length})
                 </summary>
-                <p className="mb-2 text-xs text-primary/50">
+                <p className="mb-2 text-xs text-foreground/50">
                   Inspect revisions, policy decisions, provider receipts, original evidence, and
                   observed outcomes after an action leaves the active queue.
                 </p>
@@ -2102,7 +2104,7 @@ function RelationshipSheet({
                           key={participant.id}
                           className="flex items-start justify-between gap-2 border border-border p-2 text-xs"
                         >
-                          <span className={departed ? "text-primary/50" : undefined}>
+                          <span className={departed ? "text-foreground/50" : undefined}>
                             {[participant.displayName, participant.role, participant.title]
                               .filter(Boolean)
                               .join(" · ")}
@@ -2255,7 +2257,7 @@ function RelationshipSheet({
                 <ul className="space-y-2">
                   {data.intelligence.mutualActionPlans.map((plan) => (
                     <li key={plan.planId} className="border border-border p-3 text-xs">
-                      <p className="font-medium capitalize text-primary">
+                      <p className="font-medium capitalize text-foreground">
                         {humanize(plan.status)} · revision {plan.currentRevision.version}
                       </p>
                       <PlanItemEditor
@@ -2321,32 +2323,32 @@ function RelationshipSheet({
               {data.intelligence?.delta.changes.length ? (
                 <ul className="mb-3 flex flex-col gap-2">
                   {data.intelligence.delta.changes.map((change) => (
-                    <li key={change.dimension} className="rounded-[2px] border border-border p-3">
-                      <p className="text-xs font-medium capitalize text-primary">
+                    <li key={change.dimension} className="rounded-xs border border-border p-3">
+                      <p className="text-xs font-medium capitalize text-foreground">
                         {humanize(change.dimension)}
                       </p>
-                      <p className="mt-1 text-xs text-primary/60">
+                      <p className="mt-1 text-xs text-foreground/60">
                         Changed from {formatRelationshipChangeValue(change.before)} to{" "}
                         {formatRelationshipChangeValue(change.after)}.
                       </p>
                       {change.reason ? (
-                        <p className="mt-1 text-[11px] text-primary/40">{change.reason}</p>
+                        <p className="mt-1 text-[11px] text-foreground/40">{change.reason}</p>
                       ) : null}
                     </li>
                   ))}
                 </ul>
               ) : null}
               {data.intelligence?.contradictionCases.length ? (
-                <ul className="mb-3 space-y-2 rounded-[2px] border border-amber-500/30 p-3 text-xs text-primary/60">
+                <ul className="mb-3 space-y-2 rounded-xs border border-amber-500/30 p-3 text-xs text-foreground/60">
                   {data.intelligence.contradictionCases.map((item) => (
                     <li key={item.caseId}>
-                      <span className="font-medium capitalize text-primary">
+                      <span className="font-medium capitalize text-foreground">
                         {humanize(item.dimension)}:
                       </span>{" "}
                       {item.status === "open"
                         ? `Choose the current value from ${item.sides.length} evidence-backed options.`
                         : item.reason}
-                      <span className="ml-1 text-primary/40">
+                      <span className="ml-1 text-foreground/40">
                         ({item.sides.map((side) => side.source).join(" vs ")})
                       </span>
                       {item.status === "open" ? (
@@ -2379,7 +2381,7 @@ function RelationshipSheet({
                 </ul>
               ) : null}
               {data.intelligence?.delta.uncertainClaimIds.length ? (
-                <p className="mb-3 text-xs text-primary/50">
+                <p className="mb-3 text-xs text-foreground/50">
                   {data.intelligence.delta.uncertainClaimIds.length} material claim
                   {data.intelligence.delta.uncertainClaimIds.length === 1
                     ? " remains"
@@ -2388,8 +2390,10 @@ function RelationshipSheet({
                 </p>
               ) : null}
               {data.intelligence?.delta.recommendationReason ? (
-                <p className="mb-3 rounded-[2px] border border-border p-3 text-xs text-primary/60">
-                  <span className="font-medium text-primary">Why the recommendation changed:</span>{" "}
+                <p className="mb-3 rounded-xs border border-border p-3 text-xs text-foreground/60">
+                  <span className="font-medium text-foreground">
+                    Why the recommendation changed:
+                  </span>{" "}
                   {data.intelligence.delta.recommendationReason}
                 </p>
               ) : null}
@@ -2399,15 +2403,15 @@ function RelationshipSheet({
                 <ul className="flex flex-col gap-2">
                   {changes.map((snapshot) => (
                     <li key={snapshot.id} className="flex gap-3 border-l border-border pl-3">
-                      <ClockCounterClockwise className="mt-0.5 size-4 shrink-0 text-primary/35" />
+                      <ClockCounterClockwise className="mt-0.5 size-4 shrink-0 text-foreground/35" />
                       <div>
-                        <p className="text-xs text-primary/70">
+                        <p className="text-xs text-foreground/70">
                           {snapshot.changedDimensions.map(humanize).join(", ")}
                         </p>
-                        <p className="text-[11px] text-primary/35">
+                        <p className="text-[11px] text-foreground/35">
                           Changed {relativeTime(snapshot.createdAt)}
                         </p>
-                        <details className="mt-1 text-[11px] text-primary/35">
+                        <details className="mt-1 text-[11px] text-foreground/35">
                           <summary className="cursor-pointer">Audit details</summary>
                           State version {snapshot.version}
                         </details>
@@ -2425,17 +2429,17 @@ function RelationshipSheet({
                   {data.intelligence.governanceReceipts.slice(0, 5).map((receipt) => (
                     <li
                       key={receipt.receiptId}
-                      className="rounded-[2px] border border-border p-3 text-xs text-primary/60"
+                      className="rounded-xs border border-border p-3 text-xs text-foreground/60"
                     >
                       <p>
                         {humanize(receipt.capturePolicy)} · {humanize(receipt.routing)}
                       </p>
-                      <p className="mt-1 text-[11px] text-primary/40">
+                      <p className="mt-1 text-[11px] text-foreground/40">
                         {receipt.region} · retention {receipt.retention} · disclosure{" "}
                         {humanize(receipt.participantDisclosure)} ·{" "}
                         {humanize(receipt.deletionOutcome)}
                       </p>
-                      <p className="mt-1 text-[11px] text-primary/40">
+                      <p className="mt-1 text-[11px] text-foreground/40">
                         legal hold {receipt.legalHold ? "active" : "off"} · evidence clip{" "}
                         {humanize(receipt.evidenceClip)}
                       </p>
@@ -2450,7 +2454,7 @@ function RelationshipSheet({
               {timeline.length === 0 ? (
                 <EmptyText>No observations yet.</EmptyText>
               ) : (
-                <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
+                <ul className="flex flex-col divide-y divide-foreground/10 rounded-xs border border-border">
                   {timeline.map((observation) => (
                     <li key={observation.id} className="p-3">
                       <button
@@ -2459,19 +2463,19 @@ function RelationshipSheet({
                         className="w-full text-left"
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-medium capitalize text-primary">
+                          <span className="text-xs font-medium capitalize text-foreground">
                             {observation.source} · {humanize(observation.eventType)}
                           </span>
-                          <span className="text-[11px] text-primary/35">
+                          <span className="text-[11px] text-foreground/35">
                             {relativeTime(observation.occurredAt)}
                           </span>
                         </div>
-                        <p className="mt-1 text-xs text-primary/55">
+                        <p className="mt-1 text-xs text-foreground/55">
                           {observation.summary || "Open the source evidence"}
                         </p>
                       </button>
                       {observation.id in evidence ? (
-                        <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-[2px] bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
+                        <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-xs bg-background-100 p-2 text-[11px] text-foreground/60 dark:bg-background-200">
                           {JSON.stringify(evidence[observation.id], null, 2)}
                         </pre>
                       ) : null}
@@ -2512,22 +2516,22 @@ function RecommendationReviewCard({
   const canEditContent = action.executionStatus === "pending" && action.queueStatus === "open";
 
   return (
-    <li className="rounded-[2px] border border-border p-3">
+    <li className="rounded-xs border border-border p-3">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-medium text-primary">
+          <p className="text-sm font-medium text-foreground">
             {ACTION_TYPE_LABELS[action.actionType] ?? action.actionType}
           </p>
-          <p className="mt-1 text-xs text-primary/60">{action.reason}</p>
+          <p className="mt-1 text-xs text-foreground/60">{action.reason}</p>
         </div>
         <ModeChip mode={action.executionMode} />
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-primary/40">
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-foreground/40">
         <span>{DETECTOR_LABELS[action.detector] ?? action.detector}</span>
         <span>{humanize(action.channel)}</span>
         {action.policyStatus === "review_required" ? <span>Policy review required</span> : null}
       </div>
-      <details className="mt-2 text-[11px] text-primary/45">
+      <details className="mt-2 text-[11px] text-foreground/45">
         <summary className="cursor-pointer">Audit details</summary>
         <p className="mt-1">
           Priority score {action.priorityScore} · revision {action.revision} · policy{" "}
@@ -2563,7 +2567,7 @@ function RecommendationReviewCard({
       ) : null}
 
       {action.evidence.length > 0 ? (
-        <details className="mt-2 text-xs text-primary/55">
+        <details className="mt-2 text-xs text-foreground/55">
           <summary className="cursor-pointer">Inspect supporting words</summary>
           <ul className="mt-2 space-y-1 border-l border-border pl-3">
             {action.evidence.map((item) => (
@@ -2578,7 +2582,7 @@ function RecommendationReviewCard({
       action.channel === "email" ||
       action.channel === "slack" ? (
         <details className="mt-3" open={action.approvalStatus === "pending"}>
-          <summary className="cursor-pointer text-xs font-medium text-primary">
+          <summary className="cursor-pointer text-xs font-medium text-foreground">
             Review exact content and destination
           </summary>
           <div className="mt-2 space-y-2">
@@ -2787,16 +2791,16 @@ function ActionAuditPanel({
         if (event.currentTarget.open && !audit && !loading) void loadAudit();
       }}
     >
-      <summary className="cursor-pointer font-medium text-primary">
+      <summary className="cursor-pointer font-medium text-foreground">
         Audit history and outcomes
       </summary>
-      {loading && !audit ? <p className="mt-2 text-primary/45">Loading history…</p> : null}
+      {loading && !audit ? <p className="mt-2 text-foreground/45">Loading history…</p> : null}
       {loadError ? <p className="mt-2 text-destructive">{loadError}</p> : null}
       {audit ? (
         <div className="mt-3 space-y-4">
           <div>
-            <p className="font-medium text-primary">Lifecycle</p>
-            <p className="mt-1 text-primary/55">
+            <p className="font-medium text-foreground">Lifecycle</p>
+            <p className="mt-1 text-foreground/55">
               Created {relativeTime(audit.action.createdAt)} · policy{" "}
               {humanize(audit.action.policyStatus)}
               {audit.action.approvedAt
@@ -2808,8 +2812,8 @@ function ActionAuditPanel({
             </p>
           </div>
           <div>
-            <p className="font-medium text-primary">Revisions ({audit.revisions.length})</p>
-            <ul className="mt-1 space-y-1 text-primary/55">
+            <p className="font-medium text-foreground">Revisions ({audit.revisions.length})</p>
+            <ul className="mt-1 space-y-1 text-foreground/55">
               {audit.revisions.map((revision) => (
                 <li key={revision.revision} className="border-l border-border pl-2">
                   Rev {revision.revision} · {humanize(revision.actionType)} ·{" "}
@@ -2819,9 +2823,11 @@ function ActionAuditPanel({
             </ul>
           </div>
           <div>
-            <p className="font-medium text-primary">Policy decisions ({audit.decisions.length})</p>
+            <p className="font-medium text-foreground">
+              Policy decisions ({audit.decisions.length})
+            </p>
             {audit.decisions.length ? (
-              <ul className="mt-1 space-y-1 text-primary/55">
+              <ul className="mt-1 space-y-1 text-foreground/55">
                 {audit.decisions.map((decision) => (
                   <li key={decision.id} className="border-l border-border pl-2">
                     Rev {decision.revision} · {humanize(decision.status)} ·{" "}
@@ -2831,13 +2837,13 @@ function ActionAuditPanel({
                 ))}
               </ul>
             ) : (
-              <p className="mt-1 text-primary/45">No preflight has run yet.</p>
+              <p className="mt-1 text-foreground/45">No preflight has run yet.</p>
             )}
           </div>
           <div>
-            <p className="font-medium text-primary">Outcomes ({audit.outcomes.length})</p>
+            <p className="font-medium text-foreground">Outcomes ({audit.outcomes.length})</p>
             {audit.outcomes.length ? (
-              <ul className="mt-1 space-y-1 text-primary/55">
+              <ul className="mt-1 space-y-1 text-foreground/55">
                 {audit.outcomes.map((item) => (
                   <li key={item.id} className="border-l border-border pl-2">
                     {titleize(item.kind)} · {item.source} · {relativeTime(item.occurredAt)}
@@ -2845,7 +2851,7 @@ function ActionAuditPanel({
                 ))}
               </ul>
             ) : (
-              <p className="mt-1 text-primary/45">No outcomes recorded yet.</p>
+              <p className="mt-1 text-foreground/45">No outcomes recorded yet.</p>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Select
@@ -2855,7 +2861,7 @@ function ActionAuditPanel({
                 <SelectTrigger size="sm" className="w-48">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="app-shell rounded-[2px]">
+                <SelectContent className="app-shell rounded-xs">
                   {MANUAL_OUTCOME_OPTIONS.map((item) => (
                     <SelectItem key={item.value} value={item.value}>
                       {item.label}
@@ -2901,7 +2907,7 @@ function ActionAuditPanel({
               View original source body
             </Button>
             {sourceBody !== null ? (
-              <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
+              <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap bg-background-100 p-2 text-[11px] text-foreground/60 dark:bg-background-200">
                 {sourceBody}
               </pre>
             ) : null}
@@ -2932,26 +2938,26 @@ function CorrectionReview({
   if (items.length === 0) return null;
   return (
     <section
-      className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      className="rounded-xs border border-amber-500/30 bg-amber-500/5 p-3"
       data-capability="conversation-review"
     >
       <SectionTitle title={`Focused evidence review (${items.length})`} />
-      <p className="mb-3 text-xs text-primary/55">
+      <p className="mb-3 text-xs text-foreground/55">
         Approve, correct, reject, or defer each proposed material change before it affects state.
       </p>
       <ul className="flex flex-col gap-3">
         {items.map((item) => {
           const draft = drafts[item.id] ?? item.currentValue;
           return (
-            <li key={item.id} className="rounded-[2px] border border-border bg-background p-3">
+            <li key={item.id} className="rounded-xs border border-border bg-background p-3">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-primary">{item.label}</p>
-                <span className="text-[11px] text-primary/40">
+                <p className="text-xs font-medium text-foreground">{item.label}</p>
+                <span className="text-[11px] text-foreground/40">
                   {Math.round(item.confidence * 100)}% · {item.kind}
                 </span>
               </div>
               {item.exactQuote ? (
-                <blockquote className="my-2 border-l border-border pl-2 text-xs text-primary/55">
+                <blockquote className="my-2 border-l border-border pl-2 text-xs text-foreground/55">
                   “{item.exactQuote}”
                 </blockquote>
               ) : null}
@@ -3047,7 +3053,7 @@ function StateCorrection({
 
   return (
     <section
-      className="rounded-[2px] border border-dashed border-border p-3"
+      className="rounded-xs border border-dashed border-border p-3"
       data-capability="state-correction"
     >
       <SectionTitle title="Correct the model" />
@@ -3063,7 +3069,7 @@ function StateCorrection({
           <SelectTrigger size="sm">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
+          <SelectContent className="app-shell rounded-xs">
             {["health", "lifecycle", "engagement", "sentiment"].map((item) => (
               <SelectItem key={item} value={item}>
                 {humanize(item)}
@@ -3075,7 +3081,7 @@ function StateCorrection({
           <SelectTrigger size="sm">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
+          <SelectContent className="app-shell rounded-xs">
             {options.map((item) => (
               <SelectItem key={item} value={item}>
                 {humanize(item)}
@@ -3103,12 +3109,12 @@ function StateCorrection({
 
 function SectionTitle({ title }: { title: string }) {
   return (
-    <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-primary/45">{title}</h3>
+    <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground/45">{title}</h3>
   );
 }
 
 function EmptyText({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs text-primary/45">{children}</p>;
+  return <p className="text-xs text-foreground/45">{children}</p>;
 }
 
 function TwoColumnList({
@@ -3137,7 +3143,7 @@ function TwoColumnList({
               {(items as string[]).map((item, index) => (
                 <li
                   key={`${item}:${index}`}
-                  className="flex gap-1.5 text-xs text-primary/65"
+                  className="flex gap-1.5 text-xs text-foreground/65"
                   aria-label={item}
                 >
                   <span aria-hidden="true">•</span>
@@ -3154,7 +3160,7 @@ function TwoColumnList({
 
 function ModeChip({ mode }: { mode: string }) {
   return (
-    <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
+    <Badge variant="outline" className="rounded-xs font-normal capitalize">
       {humanize(mode)}
     </Badge>
   );
@@ -3162,7 +3168,7 @@ function ModeChip({ mode }: { mode: string }) {
 
 function ListSkeleton() {
   return (
-    <div className="flex items-center gap-2 rounded-[2px] border border-border p-4 text-sm text-primary/45">
+    <div className="flex items-center gap-2 rounded-xs border border-border p-4 text-sm text-foreground/45">
       <CircleNotch className="size-4 animate-spin" />
       Loading relationship state…
     </div>
@@ -3181,13 +3187,13 @@ function EmptyBlock({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-[2px] border border-dashed border-border py-16 text-center">
-      <div className="flex size-12 items-center justify-center rounded-full bg-background-200 text-primary/50 dark:bg-background-100">
+    <div className="flex flex-col items-center gap-4 rounded-xs border border-dashed border-border py-16 text-center">
+      <div className="flex size-12 items-center justify-center rounded-full bg-background-200 text-foreground/50 dark:bg-background-100">
         {icon}
       </div>
       <div>
-        <h2 className="text-base font-medium text-primary">{title}</h2>
-        <p className="mx-auto mt-1 max-w-sm text-sm text-primary/60">{body}</p>
+        <h2 className="text-base font-medium text-foreground">{title}</h2>
+        <p className="mx-auto mt-1 max-w-sm text-sm text-foreground/60">{body}</p>
       </div>
       {children}
     </div>
@@ -3244,7 +3250,7 @@ function CreateRelationshipDialog({
             <SelectTrigger size="sm">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="app-shell rounded-[2px]">
+            <SelectContent className="app-shell rounded-xs">
               {KIND_OPTIONS.map((item) => (
                 <SelectItem key={item} value={item}>
                   {titleize(item)}
@@ -3348,7 +3354,7 @@ function PlanItemEditor({
   if (!editable || draft === null) {
     return (
       <>
-        <ul className="mt-1 list-disc pl-4 text-primary/60">
+        <ul className="mt-1 list-disc pl-4 text-foreground/60">
           {items.map((item) => (
             <li key={item.itemId}>
               {item.title} · {item.ownerParticipantRef}
@@ -3359,7 +3365,7 @@ function PlanItemEditor({
         {editable ? (
           <button
             type="button"
-            className="mt-1 text-[11px] underline underline-offset-2 text-primary/60 hover:text-primary"
+            className="mt-1 text-[11px] underline underline-offset-2 text-foreground/60 hover:text-foreground"
             onClick={() => setDraft(items)}
           >
             Revise items
@@ -3411,7 +3417,7 @@ function PlanItemEditor({
             />
             <button
               type="button"
-              className="text-[11px] text-primary/50 underline underline-offset-2 hover:text-destructive disabled:opacity-40"
+              className="text-[11px] text-foreground/50 underline underline-offset-2 hover:text-destructive disabled:opacity-40"
               disabled={draft.length === 1}
               title={draft.length === 1 ? "A plan needs at least one item" : "Remove this item"}
               onClick={() => drop(index)}

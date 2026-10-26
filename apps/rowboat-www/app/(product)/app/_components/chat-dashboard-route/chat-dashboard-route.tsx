@@ -234,7 +234,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
         {chat.processing ? (
           <Badge
-            className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 gap-2 px-3 py-1.5 text-xs font-medium text-primary/70 shadow-sm"
+            className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 gap-2 px-3 py-1.5 text-xs font-medium text-foreground/70 shadow-sm"
             variant="secondary"
           >
             <Spinner className="size-3.5" />
@@ -317,10 +317,10 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                 }
                 return (
                   <Alert className="border-amber-500/30 bg-amber-500/5" key={item.id}>
-                    <AlertTitle className="text-sm text-primary">
+                    <AlertTitle className="text-sm text-foreground">
                       Approval required: {agentToolLabel(item.name)}
                     </AlertTitle>
-                    <AlertDescription className="text-xs text-primary/55">
+                    <AlertDescription className="text-xs text-foreground/55">
                       {approvalTrustCopy(item.trustTier)}
                     </AlertDescription>
                     <div className="col-start-2 mt-3">
@@ -343,7 +343,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                         </Button>
                       </div>
                     ) : (
-                      <AlertDescription className="col-start-2 mt-3 text-xs text-primary/60">
+                      <AlertDescription className="col-start-2 mt-3 text-xs text-foreground/60">
                         {approvalDecisionCopy(item.status)}
                       </AlertDescription>
                     )}

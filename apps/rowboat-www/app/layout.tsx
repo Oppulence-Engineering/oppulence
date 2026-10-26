@@ -9,7 +9,7 @@ import { createMetadata } from "@/lib/metadata";
 import { cn } from "@/lib/utils";
 
 import "./globals.css";
-import "./product-theme.css";
+import "@oppulence/ui/product-theme.css";
 
 export const metadata: Metadata = createMetadata({
   title: {
@@ -24,8 +24,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#111111" },
+    { media: "(prefers-color-scheme: light)", color: "#f9fafb" },
+    { media: "(prefers-color-scheme: dark)", color: "#181818" },
   ],
 };
 
@@ -60,7 +60,7 @@ try {
       localStorage.theme === "dark" ||
       ((!('theme' in localStorage) || localStorage.theme === "system") &&
         window.matchMedia("(prefers-color-scheme: dark)").matches);
-    meta.setAttribute("content", prefersDark ? "#111111" : "#ffffff");
+    meta.setAttribute("content", prefersDark ? "#181818" : "#f9fafb");
   }
 } catch (_) {}
 `;

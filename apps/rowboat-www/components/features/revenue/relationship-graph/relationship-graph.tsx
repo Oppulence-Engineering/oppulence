@@ -198,7 +198,7 @@ const nodeShape = (kind: RelationshipGraphNode["kind"]) => {
   if (kind === "risk") return "rounded-none";
   if (kind === "milestone") return "rounded-none";
   if (kind === "source") return "rounded-none";
-  return "rounded-[2px]";
+  return "rounded-xs";
 };
 
 const NodeIcon = ({
@@ -256,16 +256,16 @@ function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
     >
       <div className="flex items-start gap-2">
         <ItemMedia
-          className="mt-0.5 size-7 shrink-0 rounded-none bg-primary/7 text-primary/70"
+          className="mt-0.5 size-7 shrink-0 rounded-none bg-primary/7 text-foreground/70"
           variant="icon"
         >
           <NodeIcon kind={node.kind} />
         </ItemMedia>
         <div className="min-w-0 flex-1">
-          <Label className="block font-mono text-[9px] uppercase tracking-wider text-primary/40">
+          <Label className="block font-mono text-[9px] uppercase tracking-wider text-foreground/40">
             {KIND_LABEL[node.kind]}
           </Label>
-          <Label className="mt-0.5 block line-clamp-2 text-xs font-medium leading-4 text-primary">
+          <Label className="mt-0.5 block line-clamp-2 text-xs font-medium leading-4 text-foreground">
             {node.label}
           </Label>
         </div>
@@ -282,7 +282,7 @@ function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
           {badges.slice(0, 2).map((badge) => (
             <Badge
               key={badge}
-              className="rounded-none bg-primary/6 px-1.5 py-0.5 text-[9px] font-normal text-primary/55"
+              className="rounded-none bg-primary/6 px-1.5 py-0.5 text-[9px] font-normal text-foreground/55"
               variant="outline"
             >
               {badge}
@@ -323,7 +323,7 @@ function TypedGraphEdge(props: EdgeProps<FlowEdge>) {
       {showLabel ? (
         <EdgeLabelRenderer>
           <div
-            className="pointer-events-none absolute rounded-[2px] border border-border bg-background px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-primary/65 shadow-sm"
+            className="pointer-events-none absolute rounded-xs border border-border bg-background px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-foreground/65 shadow-sm"
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >
             {graphEdgeLabel(props.data?.graphEdge.label || "")}
@@ -623,7 +623,7 @@ function GraphCanvas({
       <Controls showInteractive={false} className="!border-border !bg-background" />
       <Panel
         position="top-right"
-        className="rounded-[2px] border border-border bg-background/90 px-2 py-1 text-[10px] text-primary/50 backdrop-blur"
+        className="rounded-xs border border-border bg-background/90 px-2 py-1 text-[10px] text-foreground/50 backdrop-blur"
       >
         {graphCountLabel(graphNodes.length, "item", "items")} ·{" "}
         {graphCountLabel(graphEdges.length, "connection", "connections")}
@@ -668,9 +668,9 @@ function Inspector({
     const prompt = graphInspectorPrompt(graph.nodes.length, visibleCount);
     return (
       <aside className="flex min-h-56 flex-col items-center justify-center border-l border-border p-6 text-center">
-        <Graph className="size-7 text-primary/25" />
-        <p className="mt-3 text-sm font-medium text-primary">{prompt.title}</p>
-        <p className="mt-1 max-w-56 text-xs text-primary/45">{prompt.body}</p>
+        <Graph className="size-7 text-foreground/25" />
+        <p className="mt-3 text-sm font-medium text-foreground">{prompt.title}</p>
+        <p className="mt-1 max-w-56 text-xs text-foreground/45">{prompt.body}</p>
       </aside>
     );
   }
@@ -714,18 +714,18 @@ function Inspector({
           <NodeIcon kind={node.kind} className="size-5" />
         </ItemMedia>
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-primary/40">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-foreground/40">
             {KIND_LABEL[node.kind]}
           </p>
-          <h3 className="mt-1 text-sm font-semibold text-primary">{node.label}</h3>
+          <h3 className="mt-1 text-sm font-semibold text-foreground">{node.label}</h3>
         </div>
       </div>
 
       {inspectorSummary ? (
-        <p className="mt-3 text-xs leading-5 text-primary/60">{inspectorSummary}</p>
+        <p className="mt-3 text-xs leading-5 text-foreground/60">{inspectorSummary}</p>
       ) : null}
       <div className="mt-4 border border-border bg-background px-2 py-2">
-        <p className="font-mono text-[9px] uppercase tracking-wide text-primary/35">
+        <p className="font-mono text-[9px] uppercase tracking-wide text-foreground/35">
           How far to look
         </p>
         <ToggleGroup
@@ -748,12 +748,12 @@ function Inspector({
           ))}
           <ToggleGroupItem
             value="0"
-            className="w-full text-xs data-[state=on]:border-primary/40 data-[state=on]:bg-primary/5"
+            className="w-full text-xs data-[state=on]:border-foreground/40 data-[state=on]:bg-primary/5"
           >
             Full graph
           </ToggleGroupItem>
         </ToggleGroup>
-        <p className="mt-1.5 text-[9px] leading-4 text-primary/35">
+        <p className="mt-1.5 text-[9px] leading-4 text-foreground/35">
           This follows what you select, one step at a time.
         </p>
       </div>
@@ -792,10 +792,10 @@ function Inspector({
           .filter((entry) => entry[2])
           .map(([label, field, value]) => (
             <div key={label} className="border border-border bg-background px-2 py-2">
-              <dt className="font-mono text-[9px] uppercase tracking-wide text-primary/35">
+              <dt className="font-mono text-[9px] uppercase tracking-wide text-foreground/35">
                 {label}
               </dt>
-              <dd className="mt-0.5 text-primary/70">
+              <dd className="mt-0.5 text-foreground/70">
                 {field === "other" || field === "execution"
                   ? value
                   : graphNodeFieldLabel(node.kind, field, String(value))}
@@ -805,14 +805,16 @@ function Inspector({
       </dl>
 
       {node.changedSinceReview ? (
-        <div className="mt-3 border border-oppulence-orange/25 bg-oppulence-orange/5 p-2 text-xs text-primary/65">
+        <div className="mt-3 border border-oppulence-orange/25 bg-oppulence-orange/5 p-2 text-xs text-foreground/65">
           <ClockCounterClockwise className="mr-1 inline size-4 text-oppulence-orange" />
           {graphChangedDetail(node.changedDimensions)}
         </div>
       ) : null}
 
       <div className="mt-4">
-        <p className="font-mono text-[10px] uppercase tracking-wide text-primary/40">Connections</p>
+        <p className="font-mono text-[10px] uppercase tracking-wide text-foreground/40">
+          Connections
+        </p>
         <ul className="mt-2 space-y-1">
           {shownConnections.map(({ edge, other }) => (
             <li key={edge.id}>
@@ -825,7 +827,7 @@ function Inspector({
                 <NodeIcon kind={other.kind} />
                 <Label className="min-w-0 flex-1 truncate font-normal">{other.label}</Label>
                 <Label
-                  className="font-mono text-[9px] font-normal text-primary/35"
+                  className="font-mono text-[9px] font-normal text-foreground/35"
                   aria-label={`${edge.source === node.id ? "Outgoing" : "Incoming"}: ${graphEdgeLabel(edge.label)}`}
                 >
                   {edge.source === node.id ? "→" : "←"} {graphEdgeLabel(edge.label)}
@@ -834,7 +836,7 @@ function Inspector({
             </li>
           ))}
           {!connected.length ? (
-            <li className="text-xs text-primary/35">No visible connections.</li>
+            <li className="text-xs text-foreground/35">No visible connections.</li>
           ) : null}
         </ul>
         {hiddenConnections > 0 ? (
@@ -852,7 +854,7 @@ function Inspector({
 
       {node.evidenceRefs.length ? (
         <div className="mt-4">
-          <p className="font-mono text-[10px] uppercase tracking-wide text-primary/40">
+          <p className="font-mono text-[10px] uppercase tracking-wide text-foreground/40">
             Details · {node.evidenceRefs.length}
           </p>
           <div className="mt-2 flex flex-wrap gap-1">
@@ -862,14 +864,14 @@ function Inspector({
                 variant="outline"
                 size="xs"
                 onClick={() => onSelectNode(evidence.id)}
-                className="max-w-full truncate text-primary/55"
+                className="max-w-full truncate text-foreground/55"
                 title={graphEvidenceChipLabel(evidence)}
               >
                 {graphEvidenceChipLabel(evidence)}
               </Button>
             ))}
             {!evidenceNodes.length ? (
-              <Label className="text-[10px] font-normal text-primary/40">
+              <Label className="text-[10px] font-normal text-foreground/40">
                 Details kept on this record.
               </Label>
             ) : null}
@@ -940,13 +942,13 @@ function Inspector({
         ) : null}
       </div>
       {actionId ? (
-        <p className="mt-2 text-[10px] leading-4 text-primary/40">
+        <p className="mt-2 text-[10px] leading-4 text-foreground/40">
           Approval changes authorization only. Execution remains a separate explicit action in the
           full record.
         </p>
       ) : null}
       {node.kind !== "action" && relationshipRecords.length > 1 ? (
-        <p className="mt-2 text-[10px] leading-4 text-primary/40">
+        <p className="mt-2 text-[10px] leading-4 text-foreground/40">
           This node is shared across companies. Open one company before proposing an action so the
           approval is scoped correctly.
         </p>
@@ -980,7 +982,7 @@ function GraphTable({
     >
       <Table className="border-collapse text-left text-xs">
         <TableHeader className="sticky top-0 z-10 bg-background">
-          <TableRow className="border-border font-mono text-xs uppercase text-primary/40">
+          <TableRow className="border-border font-mono text-xs uppercase text-foreground/40">
             <TableHead className="px-3 py-2 font-normal">Name</TableHead>
             <TableHead className="px-3 py-2 font-normal">Type</TableHead>
             <TableHead className="px-3 py-2 font-normal">State</TableHead>
@@ -991,7 +993,7 @@ function GraphTable({
         <TableBody>
           {nodes.length === 0 && empty ? (
             <TableRow>
-              <TableCell className="px-3 py-16 text-center text-sm text-primary/55" colSpan={5}>
+              <TableCell className="px-3 py-16 text-center text-sm text-foreground/55" colSpan={5}>
                 {empty.message}
                 {empty.offerReset && onReset ? (
                   <div>
@@ -1019,20 +1021,22 @@ function GraphTable({
                   variant="ghost"
                   size="xs"
                   onClick={() => onSelectNode(node.id)}
-                  className="max-w-80 justify-start px-0 text-left text-primary hover:bg-transparent hover:underline"
+                  className="max-w-80 justify-start px-0 text-left text-foreground hover:bg-transparent hover:underline"
                 >
                   <NodeIcon kind={node.kind} />{" "}
                   <Label className="truncate font-normal">{node.label}</Label>
                 </Button>
               </TableCell>
-              <TableCell className="px-3 py-2 text-primary/55">{KIND_LABEL[node.kind]}</TableCell>
-              <TableCell className="px-3 py-2 text-primary/55">
+              <TableCell className="px-3 py-2 text-foreground/55">
+                {KIND_LABEL[node.kind]}
+              </TableCell>
+              <TableCell className="px-3 py-2 text-foreground/55">
                 {graphNodeSummaryLabel(node)}
               </TableCell>
-              <TableCell className="px-3 py-2 text-primary/45">
+              <TableCell className="px-3 py-2 text-foreground/45">
                 {edges.filter((edge) => edge.source === node.id || edge.target === node.id).length}
               </TableCell>
-              <TableCell className="px-3 py-2 text-primary/45">
+              <TableCell className="px-3 py-2 text-foreground/45">
                 {node.evidenceRefs.length}
               </TableCell>
             </TableRow>
@@ -1677,8 +1681,8 @@ function GraphCanvasEmpty({ totalNodes, onReset }: { totalNodes: number; onReset
   const state = graphCanvasEmptyState(totalNodes);
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-      <Graph className="size-7 text-primary/25" />
-      <p className="mt-2 text-sm text-primary/55">{state.message}</p>
+      <Graph className="size-7 text-foreground/25" />
+      <p className="mt-2 text-sm text-foreground/55">{state.message}</p>
       {state.offerReset ? (
         <Button type="button" variant="link" size="sm" onClick={onReset} className="mt-2">
           Reset filters
@@ -2139,7 +2143,7 @@ export function RelationshipGraphWorkspace({
 
   return (
     <section
-      className="overflow-hidden rounded-[2px] border border-border bg-background"
+      className="overflow-hidden rounded-xs border border-border bg-background"
       data-capability={GRAPH_CAPABILITIES}
       data-slot="relationship-graph"
     >
@@ -2153,8 +2157,8 @@ export function RelationshipGraphWorkspace({
               <ShareNetwork className="size-4" weight="duotone" />
             </ItemMedia>
             <div>
-              <h2 className="text-sm font-semibold text-primary">Company graph</h2>
-              <p className="text-[10px] text-primary/40">
+              <h2 className="text-sm font-semibold text-foreground">Company graph</h2>
+              <p className="text-[10px] text-foreground/40">
                 Companies, people, and the promises between them
               </p>
             </div>
@@ -2214,7 +2218,7 @@ export function RelationshipGraphWorkspace({
               >
                 <SelectValue placeholder="Choose a company" />
               </SelectTrigger>
-              <SelectContent className="app-shell rounded-[2px]">
+              <SelectContent className="app-shell rounded-xs">
                 {relationships.map((relationship) => (
                   <SelectItem key={relationship.id} value={relationship.id}>
                     {companyName(relationship)}
@@ -2324,7 +2328,7 @@ export function RelationshipGraphWorkspace({
 
         {queryResult ? (
           <div
-            className="mt-2 flex flex-wrap items-center gap-2 border border-oppulence-orange/20 bg-oppulence-orange/5 px-3 py-2 text-xs text-primary/65"
+            className="mt-2 flex flex-wrap items-center gap-2 border border-oppulence-orange/20 bg-oppulence-orange/5 px-3 py-2 text-xs text-foreground/65"
             aria-live="polite"
           >
             <Sparkle className="size-4 shrink-0 text-oppulence-orange" />
@@ -2340,7 +2344,7 @@ export function RelationshipGraphWorkspace({
                 ))}
             {relationships.length === 0 ? null : (
               <Badge
-                className="rounded-none font-mono text-[10px] font-normal text-primary/45"
+                className="rounded-none font-mono text-[10px] font-normal text-foreground/45"
                 variant="outline"
               >
                 {graphCountLabel(queryResult.evidenceRefs.length, "detail", "details")}
@@ -2382,14 +2386,14 @@ export function RelationshipGraphWorkspace({
               >
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="app-shell rounded-[2px]">
+              <SelectContent className="app-shell rounded-xs">
                 <SelectItem value="force">{graphLayoutLabel("force")}</SelectItem>
                 <SelectItem value="radial">{graphLayoutLabel("radial")}</SelectItem>
                 <SelectItem value="timeline">{graphLayoutLabel("timeline")}</SelectItem>
               </SelectContent>
             </Select>
           ) : null}
-          <label className="flex items-center gap-2 text-xs text-primary/50">
+          <label className="flex items-center gap-2 text-xs text-foreground/50">
             How many to show
             <Slider
               min={0.25}
@@ -2401,14 +2405,14 @@ export function RelationshipGraphWorkspace({
               aria-label="How many to show"
             />
           </label>
-          <label className="flex items-center gap-1.5 text-xs text-primary/55">
+          <label className="flex items-center gap-1.5 text-xs text-foreground/55">
             <Checkbox
               checked={viewState.hideIsolated}
               onCheckedChange={(checked) => updateState({ hideIsolated: checked === true })}
             />
             Hide unconnected
           </label>
-          <label className="flex items-center gap-1.5 text-xs text-primary/55">
+          <label className="flex items-center gap-1.5 text-xs text-foreground/55">
             <Checkbox
               checked={viewState.changedSinceReview}
               onCheckedChange={(checked) => updateState({ changedSinceReview: checked === true })}
@@ -2458,7 +2462,7 @@ export function RelationshipGraphWorkspace({
                 >
                   <SelectValue placeholder="Saved views" />
                 </SelectTrigger>
-                <SelectContent className="app-shell rounded-[2px]">
+                <SelectContent className="app-shell rounded-xs">
                   {savedViews.map((view) => (
                     <SelectItem key={view.id} value={view.id}>
                       {view.label}
@@ -2527,13 +2531,13 @@ export function RelationshipGraphWorkspace({
       >
         <div className="relative min-h-[500px] bg-background">
           {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-primary/45">
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-foreground/45">
               <CircleNotch className="mr-2 size-4 animate-spin" /> Building the company graph…
             </div>
           ) : loadError ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
               <WarningDiamond className="size-7 text-destructive" />
-              <p className="mt-2 max-w-lg text-sm text-primary/65">{loadError}</p>
+              <p className="mt-2 max-w-lg text-sm text-foreground/65">{loadError}</p>
               <Button
                 type="button"
                 size="sm"
@@ -2545,7 +2549,7 @@ export function RelationshipGraphWorkspace({
               </Button>
             </div>
           ) : !graph ? (
-            <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-primary/45">
+            <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-foreground/45">
               {accountGraphPrompt(relationships.length)}
             </div>
           ) : mode === "table" ? (
@@ -2580,7 +2584,7 @@ export function RelationshipGraphWorkspace({
             </div>
           ) : null}
           {graph && viewState.focusDepth && viewState.selectedNodeId ? (
-            <div className="absolute bottom-3 right-3 border border-oppulence-orange/25 bg-background/90 px-2 py-1 text-[10px] text-primary/55 backdrop-blur">
+            <div className="absolute bottom-3 right-3 border border-oppulence-orange/25 bg-background/90 px-2 py-1 text-[10px] text-foreground/55 backdrop-blur">
               Focused · {viewState.focusDepth === 1 ? "Nearby" : "Wider"} ·{" "}
               {graphCountLabel(visible.nodes.length, "item", "items")}
               <Button
@@ -2593,7 +2597,7 @@ export function RelationshipGraphWorkspace({
               </Button>
             </div>
           ) : graph && visible.capped ? (
-            <div className="absolute bottom-3 right-3 border border-border bg-background/90 px-2 py-1 text-[10px] text-primary/45">
+            <div className="absolute bottom-3 right-3 border border-border bg-background/90 px-2 py-1 text-[10px] text-foreground/45">
               {graphCanvasCapLabel(visible.nodes.length, visible.matchedCount)}
             </div>
           ) : null}

@@ -5,6 +5,7 @@ import { noContainerResolve } from "./no-container-resolve.js";
 import { noDangerousElectronOptions } from "./no-dangerous-electron-options.js";
 import { noDeepDistImports } from "./no-deep-dist-imports.js";
 import { noElectronInCore } from "./no-electron-in-core.js";
+import { noRawDesignValues } from "./no-raw-design-values.js";
 import { noRawIpc } from "./no-raw-ipc.js";
 import { noUnsafeFsWrite } from "./no-unsafe-fs-write.js";
 import { typedRendererEvents } from "./typed-renderer-events.js";
@@ -78,6 +79,27 @@ tester.run("typed-renderer-events", typedRendererEvents, {
     {
       code: 'window.addEventListener("rowboat:open-note", handler);',
       errors: [{ messageId: "forbidden" }],
+    },
+  ],
+});
+
+tester.run("no-raw-design-values", noRawDesignValues, {
+  valid: [
+    {
+      filename: "/repo/apps/renderer/src/card.tsx",
+      code: 'const c = "rounded-md bg-background font-[510] bg-[oklch(from_var(--primary)_0.9_c_h)]";',
+    },
+    {
+      filename: "/repo/apps/renderer/src/brand.tsx",
+      code: 'const c = "bg-[#5865F2]";',
+      options: [{ baseline: { "apps/renderer/src/brand.tsx": 1 } }],
+    },
+  ],
+  invalid: [
+    {
+      filename: "/repo/apps/renderer/src/card.tsx",
+      code: "const c = `bg-[#fff] rounded-[8px] font-['Inter']`;",
+      errors: [{ messageId: "raw" }, { messageId: "raw" }, { messageId: "raw" }],
     },
   ],
 });

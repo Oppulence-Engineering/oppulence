@@ -12,7 +12,7 @@ import {
   Tooltip,
   Trash,
 } from "@sim/emcn";
-import { Circle, Square, Unlock } from "@sim/emcn/icons";
+import { Circle, LockSimpleOpen as Unlock, Square } from "@/lib/icons";
 import {
   BLOCK_DIMENSIONS,
   CanvasSentenceView,
@@ -403,7 +403,7 @@ export function StageBlockCard({
             )}
 
             {showErrorRow ? (
-              <div className="flex h-[24px] shrink-0 items-center justify-between rounded-[6px] bg-[var(--surface-5)] pr-1 pl-2 dark:bg-[var(--surface-4)]">
+              <div className="flex h-[24px] shrink-0 items-center justify-between rounded-sm bg-[var(--surface-5)] pr-1 pl-2 dark:bg-[var(--surface-4)]">
                 <span className="text-[var(--text-secondary)] text-caption">On error</span>
                 <Switch
                   checked={false}

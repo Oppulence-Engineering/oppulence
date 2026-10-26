@@ -1,0 +1,362 @@
+/*
+ * Relationship intelligence homepage. The overview and alternating product
+ * cards use the same Observe → Model → Prioritize → Act structure as the
+ * product itself, while keeping the existing neutral Oppulence design system.
+ */
+
+.relationship-system {
+  border-top: 1px dashed var(--linear-border-strong);
+}
+
+.relationship-system-overview {
+  padding-block: clamp(88px, 10vw, 132px);
+}
+
+.relationship-system-intro {
+  display: grid;
+  align-items: end;
+  gap: 28px 72px;
+  grid-template-columns: minmax(0, 0.82fr) minmax(320px, 0.48fr);
+  margin-bottom: clamp(52px, 7vw, 88px);
+}
+
+.relationship-system-intro .linear-eyebrow {
+  grid-column: 1 / -1;
+  margin-bottom: -8px;
+}
+
+.relationship-system-intro h2 {
+  max-width: 580px;
+  font-size: clamp(2rem, 3.5vw, 3.25rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+
+.relationship-system-intro > p:last-child {
+  max-width: 500px;
+  color: var(--linear-text-secondary);
+  font-size: 15px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.relationship-pillar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.relationship-pillar {
+  position: relative;
+  min-width: 0;
+  border-top: 1px dashed var(--linear-border-strong);
+  border-right: 1px dashed var(--linear-border-strong);
+  padding: 18px 24px 26px;
+}
+
+.relationship-pillar:first-child {
+  border-left: 1px dashed var(--linear-border-strong);
+}
+
+.relationship-pillar-index {
+  color: var(--linear-text-quaternary);
+  font-family: var(--typeface-mono);
+  font-size: 11px;
+}
+
+.relationship-pillar img {
+  display: block;
+  width: 100%;
+  height: 236px;
+  margin-block: 8px 4px;
+  object-fit: contain;
+}
+
+.relationship-pillar h3 {
+  color: var(--foreground);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.relationship-pillar p {
+  max-width: 270px;
+  margin-top: 9px;
+  color: var(--linear-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.relationship-system-deep-dives {
+  display: grid;
+  gap: clamp(44px, 7vw, 84px);
+  padding-bottom: clamp(96px, 12vw, 156px);
+}
+
+.relationship-deep-dive {
+  display: grid;
+  min-height: 620px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  grid-template-columns: minmax(0, 1fr) 386px;
+}
+
+.relationship-deep-dive.is-reversed {
+  grid-template-columns: 386px minmax(0, 1fr);
+}
+
+.relationship-deep-dive.is-reversed .relationship-deep-dive-media {
+  order: 2;
+  border-right: 0;
+  border-left: 1px solid var(--border);
+}
+
+.relationship-deep-dive.is-reversed .relationship-deep-dive-copy {
+  order: 1;
+}
+
+.relationship-deep-dive-media {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  background: radial-gradient(circle at 50% 42%, rgb(255 255 255 / 86%), transparent 52%), #f2f2ef;
+}
+
+.relationship-deep-dive-media > .relationship-product-window {
+  width: 116%;
+  min-width: 850px;
+  margin-left: 5%;
+  box-shadow:
+    0 26px 70px rgb(27 26 23 / 12%),
+    0 6px 18px rgb(27 26 23 / 7%);
+}
+
+.relationship-deep-dive.is-reversed .relationship-deep-dive-media > .relationship-product-window {
+  margin-right: 5%;
+  margin-left: auto;
+}
+
+.relationship-deep-dive-copy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 54px 44px;
+}
+
+.relationship-deep-dive-number {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  color: var(--linear-text-quaternary);
+  font-family: var(--typeface-mono);
+  font-size: 11px;
+}
+
+.relationship-deep-dive-copy h3 {
+  max-width: 310px;
+  color: var(--foreground);
+  font-size: clamp(1.55rem, 2.2vw, 2rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.relationship-deep-dive-copy > p:not(.linear-eyebrow) {
+  margin-top: 20px;
+  color: var(--linear-text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.relationship-deep-dive-copy ul {
+  display: grid;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.relationship-deep-dive-copy li {
+  border-left: 1px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  padding-left: 10px;
+  color: var(--linear-text-secondary);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.relationship-deep-dive-copy > a {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  margin-top: 34px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.relationship-deep-dive-copy > a span {
+  transition: transform 180ms ease;
+}
+
+.relationship-deep-dive-copy > a:hover span {
+  transform: translateX(3px);
+}
+
+.relationship-product-window {
+  overflow: hidden;
+  border: 1px solid #dededb;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #292929;
+  box-shadow:
+    0 18px 50px rgb(27 26 23 / 10%),
+    0 3px 10px rgb(27 26 23 / 5%);
+  font-family: var(--typeface-sans);
+  font-size: 11px;
+  letter-spacing: -0.1px;
+}
+
+.relationship-source {
+  display: inline-flex;
+  height: 25px;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #e6e6e2;
+  border-radius: 999px;
+  background: #ffffff;
+  padding-inline: 8px;
+  color: #6f6f69;
+  font-size: 8px;
+}
+
+.relationship-source svg {
+  width: 11px;
+  height: 11px;
+}
+
+.relationship-source i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #5a965f;
+}
+
+.relationship-product-window.is-capture {
+  aspect-ratio: 3 / 2;
+  background: #f7f7f5;
+  font-size: 0;
+}
+
+.relationship-product-window.is-capture img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+@media (max-width: 1100px) {
+  .relationship-pillar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .relationship-pillar:nth-child(3) {
+    border-left: 1px dashed var(--linear-border-strong);
+  }
+
+  .relationship-deep-dive,
+  .relationship-deep-dive.is-reversed {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+
+  .relationship-deep-dive.is-reversed {
+    grid-template-columns: 340px minmax(0, 1fr);
+  }
+
+  .relationship-deep-dive-copy {
+    padding-inline: 36px;
+  }
+}
+
+@media (max-width: 860px) {
+  .relationship-system-intro {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .relationship-deep-dive,
+  .relationship-deep-dive.is-reversed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .relationship-deep-dive.is-reversed .relationship-deep-dive-media,
+  .relationship-deep-dive.is-reversed .relationship-deep-dive-copy {
+    order: initial;
+  }
+
+  .relationship-deep-dive-media,
+  .relationship-deep-dive.is-reversed .relationship-deep-dive-media {
+    min-height: 470px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .relationship-deep-dive-copy {
+    min-height: 440px;
+  }
+}
+
+@media (max-width: 640px) {
+  .relationship-pillar-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .relationship-pillar,
+  .relationship-pillar:nth-child(3) {
+    border-left: 1px dashed var(--linear-border-strong);
+  }
+
+  .relationship-pillar img {
+    height: 250px;
+  }
+
+  .relationship-deep-dive-media,
+  .relationship-deep-dive.is-reversed .relationship-deep-dive-media {
+    min-height: 360px;
+  }
+
+  .relationship-deep-dive-media > .relationship-product-window,
+  .relationship-deep-dive.is-reversed .relationship-deep-dive-media > .relationship-product-window {
+    min-width: 690px;
+    margin-right: auto;
+    margin-left: 5%;
+  }
+
+  .relationship-deep-dive-copy {
+    min-height: 0;
+    padding: 54px 24px 38px;
+  }
+}
+
+.dark .relationship-pillar img {
+  filter: invert(1) brightness(0.88);
+}
+
+.dark .relationship-pillar:nth-child(3) img {
+  filter: none;
+}
+
+.dark .relationship-deep-dive {
+  background: var(--background-50);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .relationship-deep-dive-copy > a svg {
+    transition: none;
+  }
+}

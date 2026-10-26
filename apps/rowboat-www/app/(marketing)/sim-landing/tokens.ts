@@ -10,8 +10,8 @@ export const HOME_SECTION_RHYTHM = "gap-36 max-sm:gap-20 max-lg:gap-24";
 export const HOME_INSET = "w-full lg:mx-auto lg:w-[83.333%]";
 export const LANDING_WINDOW_SHADOW =
   "shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_2px_6px_0_rgba(0,0,0,0.05),0_4px_42px_0_rgba(0,0,0,0.06)]";
-export const LANDING_STAGE_RADIUS = "rounded-[12px]";
-export const LANDING_STAGE_WINDOW_RADIUS = "rounded-[8px]";
+export const LANDING_STAGE_RADIUS = "rounded-xl";
+export const LANDING_STAGE_WINDOW_RADIUS = "rounded-md";
 export const LANDING_HERO_CTA_GAP = "mt-3";
 
 export const LANDING_TYPE = {

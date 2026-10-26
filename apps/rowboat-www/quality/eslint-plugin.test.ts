@@ -108,6 +108,11 @@ const violations = [
     filename: "app/api/widgets/route.ts",
     code: "export async function GET() { return Response.json({ ok: true }); }",
   },
+  {
+    rule: "no-raw-design-values",
+    filename: "components/features/agents/agent-card/agent-card.tsx",
+    code: 'export const card = <div className="bg-[#f5f5f5] p-4" />;',
+  },
 ] as const;
 
 describe("eslint-plugin-oppulence-web", () => {
@@ -124,6 +129,24 @@ describe("eslint-plugin-oppulence-web", () => {
       "quality/fixtures/app/(product)/app/page.tsx",
     );
     expect(messages).toHaveLength(0);
+  });
+
+  it("accepts token classes, font weights, and var() values", () => {
+    const messages = lint(
+      "no-raw-design-values",
+      'export const card = <div className="rounded-md bg-background font-[510] text-[var(--text-muted)]" />;',
+      "components/features/agents/agent-card/agent-card.tsx",
+    );
+    expect(messages).toHaveLength(0);
+  });
+
+  it("flags raw radius and font values", () => {
+    const messages = lint(
+      "no-raw-design-values",
+      "export const card = <div className={`rounded-[8px] font-['Inter']`} />;",
+      "components/features/agents/agent-card/agent-card.tsx",
+    );
+    expect(messages).toHaveLength(2);
   });
 
   it("accepts a component in the standardized feature root", () => {

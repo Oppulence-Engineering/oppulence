@@ -3,9 +3,8 @@
 import "client-only";
 
 import { Badge } from "@sim/emcn";
-import { Layout, TagIcon, TypeText } from "@sim/emcn/icons";
 import * as React from "react";
-import { Check } from "@/lib/icons";
+import { Check, Layout, Tag as TagIcon, TextT as TypeText } from "@/lib/icons";
 
 import { Button } from "@oppulence/ui/components/button";
 import { Input } from "@oppulence/ui/components/input";
