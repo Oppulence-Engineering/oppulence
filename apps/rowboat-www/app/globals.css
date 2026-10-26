@@ -8,16 +8,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-:root {
-  /* Marketing/legal inherit the root Inter file instead of loading a second one. */
-  --font-marketing-sans: var(--font-inter);
-}
-
 @theme inline {
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-f37-stout);
-  --font-mono: var(--font-geist-mono);
-  --font-f37-stout: var(--font-f37-stout);
   --color-background: var(--background);
   --color-background-50: var(--background-50);
   --color-background-100: var(--background-100);

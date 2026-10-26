@@ -557,7 +557,7 @@ export function FooterWordmarkLoop({ className }: { className?: string }) {
           <g data-stage="wm" fill={`url(#${wordmarkInkId})`} opacity={1}>
             <text
               dominantBaseline="middle"
-              fontFamily="var(--font-marketing-sans), Inter, ui-sans-serif, system-ui, sans-serif"
+              fontFamily="var(--typeface-sans)"
               fontSize="11"
               fontWeight="600"
               letterSpacing="-0.08em"

@@ -99,9 +99,9 @@ describe("Better Auth–style app shell", () => {
     expect(marketing).not.toContain('from "next/font/google"');
     expect(legal).not.toContain('from "next/font/google"');
     expect(auth).not.toContain('from "next/font/google"');
-    expect(auth).toContain("marketingFontVariables");
+    // One sans (Inter) and one mono (Geist Mono) for every surface.
+    expect(fonts).not.toMatch(/DM_Mono|F37Stout|localFont|Geist\(/);
     expect(auth).toContain("sim-landing-root");
-    expect(marketing).toContain("marketingFontVariables");
   });
 
   it("caches public marketing and legal leaves with use cache", () => {
