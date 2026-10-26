@@ -80,7 +80,7 @@ export const ListCommitments200Response = zod
             status: zod
               .enum(["open", "fulfilled", "missed", "waived", "cancelled", "superseded"])
               .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
               ),
             text: zod.string().describe("Commitment text."),
             userConfirmed: zod.boolean().describe("Whether a human confirmed it."),
@@ -390,7 +390,7 @@ export const ListRelationshipAttention200Response = zod
             status: zod
               .enum(["open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"])
               .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
               ),
             triggeringObjectRef: zod.string().describe("Triggering object."),
             updatedAt: zod.iso.datetime({ offset: true }).describe("Updated time."),
@@ -485,7 +485,7 @@ export const DecideRelationshipAttention200Response = zod
     status: zod
       .enum(["open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"])
       .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
       ),
     triggeringObjectRef: zod.string().describe("Triggering object."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Updated time."),
@@ -841,7 +841,7 @@ export const ListRelationshipIdentityCandidates200Response = zod
                 status: zod
                   .enum(["active", "dormant", "closed", "archived"])
                   .describe(
-                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
                   ),
                 summary: zod.string().optional().describe("Bounded relationship summary."),
               })
@@ -991,7 +991,7 @@ export const ListRelationshipIdentityCandidates200Response = zod
                 status: zod
                   .enum(["active", "dormant", "closed", "archived"])
                   .describe(
-                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
                   ),
                 summary: zod.string().optional().describe("Bounded relationship summary."),
               })
@@ -1003,7 +1003,7 @@ export const ListRelationshipIdentityCandidates200Response = zod
             status: zod
               .enum(["pending", "deferred", "resolving", "resolved", "undone"])
               .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
               ),
             version: zod.int().describe("Optimistic version."),
           })
@@ -1177,7 +1177,7 @@ export const GetRelationshipIdentityCandidate200Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -1308,7 +1308,7 @@ export const GetRelationshipIdentityCandidate200Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -1320,7 +1320,7 @@ export const GetRelationshipIdentityCandidate200Response = zod
     status: zod
       .enum(["pending", "deferred", "resolving", "resolved", "undone"])
       .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
       ),
     version: zod.int().describe("Optimistic version."),
   })
@@ -1500,7 +1500,7 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -1631,7 +1631,7 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -1643,7 +1643,7 @@ export const DecideRelationshipIdentityCandidate200Response = zod
     status: zod
       .enum(["pending", "deferred", "resolving", "resolved", "undone"])
       .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
       ),
     version: zod.int().describe("Optimistic version."),
   })
@@ -2201,7 +2201,7 @@ export const GetRelationshipPersonAttributes404Response = zod
  * @summary Approve
  */
 export const ApproveRelationshipRecommendationParams = zod.object({
-  actionId: zod.uuid().describe("Recommendation\/action id."),
+  actionId: zod.uuid().describe("Recommendation/action id."),
 });
 
 export const ApproveRelationshipRecommendationBody = zod
@@ -2368,7 +2368,7 @@ export const ApproveRelationshipRecommendation409Response = zod
  * @summary Reject
  */
 export const RejectRelationshipRecommendationParams = zod.object({
-  actionId: zod.uuid().describe("Recommendation\/action id."),
+  actionId: zod.uuid().describe("Recommendation/action id."),
 });
 
 export const RejectRelationshipRecommendationBody = zod
@@ -2681,7 +2681,7 @@ export const GetRelationshipSourceInventory200Response = zod
               .describe("Progressive action scopes."),
           })
           .describe(
-            "Guided source card with consent explanation, supported evidence\/actions, and every connected account.",
+            "Guided source card with consent explanation, supported evidence/actions, and every connected account.",
           ),
       )
       .describe("Source cards."),
@@ -3366,7 +3366,7 @@ export const ListRelationships200Response = zod
             status: zod
               .enum(["active", "dormant", "closed", "archived"])
               .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
               ),
             summary: zod.string().optional().describe("Bounded relationship summary."),
           })
@@ -3500,7 +3500,7 @@ export const CreateRelationship201Response = zod
     status: zod
       .enum(["active", "dormant", "closed", "archived"])
       .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
       ),
     summary: zod.string().optional().describe("Bounded relationship summary."),
   })
@@ -3724,7 +3724,7 @@ export const GetRelationshipGraph200Response = zod
               .string()
               .optional()
               .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
               ),
             summary: zod.string().optional().describe("Evidence-backed summary."),
             updatedAt: zod.iso
@@ -3993,7 +3993,7 @@ export const GetRelationship200Response = zod
             status: zod
               .enum(["open", "fulfilled", "missed", "waived", "cancelled", "superseded"])
               .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
               ),
             text: zod.string().describe("Commitment text."),
             userConfirmed: zod.boolean().describe("Whether a human confirmed it."),
@@ -4088,7 +4088,7 @@ export const GetRelationship200Response = zod
                 status: zod
                   .enum(["pending", "blocked", "partial", "verified"])
                   .describe(
-                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
                   ),
                 targets: zod
                   .array(
@@ -4127,7 +4127,7 @@ export const GetRelationship200Response = zod
         delta: zod
           .record(zod.string(), zod.unknown())
           .describe(
-            "Exact before\/after values, uncertain claim ids, contradictions, and recommendation reason.",
+            "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason.",
           ),
         effectivePolicy: zod
           .strictObject({
@@ -4243,7 +4243,7 @@ export const GetRelationship200Response = zod
                   .enum(["pending_review", "accepted", "corrected", "rejected", "deferred"])
                   .optional()
                   .describe(
-                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
                   ),
               })
               .describe(
@@ -4371,8 +4371,9 @@ export const GetRelationship200Response = zod
                     zod
                       .array(zod.string().describe("Projected list item."))
                       .describe("Collection projected value."),
+                    zod.null(),
                   ])
-                  .nullish()
+                  .optional()
                   .describe(
                     "Typed projected value. Scalar dimensions return a string; risk and milestone return string arrays.",
                   ),
@@ -4677,7 +4678,7 @@ export const GetRelationship200Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -4910,7 +4911,7 @@ export const RetractRelationshipAssertion200Response = zod
     status: zod
       .enum(["active", "dormant", "closed", "archived"])
       .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
       ),
     summary: zod.string().optional().describe("Bounded relationship summary."),
   })
@@ -5428,7 +5429,7 @@ export const AppendCommitmentTransition201Response = zod
     status: zod
       .enum(["open", "fulfilled", "missed", "waived", "cancelled", "superseded"])
       .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
       ),
     text: zod.string().describe("Commitment text."),
     userConfirmed: zod.boolean().describe("Whether a human confirmed it."),
@@ -5699,7 +5700,7 @@ export const ResolveRelationshipContradiction201Response = zod
                 status: zod
                   .enum(["pending", "blocked", "partial", "verified"])
                   .describe(
-                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
                   ),
                 targets: zod
                   .array(
@@ -5738,7 +5739,7 @@ export const ResolveRelationshipContradiction201Response = zod
         delta: zod
           .record(zod.string(), zod.unknown())
           .describe(
-            "Exact before\/after values, uncertain claim ids, contradictions, and recommendation reason.",
+            "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason.",
           ),
         effectivePolicy: zod
           .strictObject({
@@ -5854,7 +5855,7 @@ export const ResolveRelationshipContradiction201Response = zod
                   .enum(["pending_review", "accepted", "corrected", "rejected", "deferred"])
                   .optional()
                   .describe(
-                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
                   ),
               })
               .describe(
@@ -5957,7 +5958,7 @@ export const ResolveRelationshipContradiction201Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -6109,7 +6110,7 @@ export const CorrectConversationEvidence201Response = zod
                 status: zod
                   .enum(["pending", "blocked", "partial", "verified"])
                   .describe(
-                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
                   ),
                 targets: zod
                   .array(
@@ -6148,7 +6149,7 @@ export const CorrectConversationEvidence201Response = zod
         delta: zod
           .record(zod.string(), zod.unknown())
           .describe(
-            "Exact before\/after values, uncertain claim ids, contradictions, and recommendation reason.",
+            "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason.",
           ),
         effectivePolicy: zod
           .strictObject({
@@ -6264,7 +6265,7 @@ export const CorrectConversationEvidence201Response = zod
                   .enum(["pending_review", "accepted", "corrected", "rejected", "deferred"])
                   .optional()
                   .describe(
-                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
                   ),
               })
               .describe(
@@ -6367,7 +6368,7 @@ export const CorrectConversationEvidence201Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -6507,7 +6508,7 @@ export const DecideConversationChange201Response = zod
                 status: zod
                   .enum(["pending", "blocked", "partial", "verified"])
                   .describe(
-                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
                   ),
                 targets: zod
                   .array(
@@ -6546,7 +6547,7 @@ export const DecideConversationChange201Response = zod
         delta: zod
           .record(zod.string(), zod.unknown())
           .describe(
-            "Exact before\/after values, uncertain claim ids, contradictions, and recommendation reason.",
+            "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason.",
           ),
         effectivePolicy: zod
           .strictObject({
@@ -6662,7 +6663,7 @@ export const DecideConversationChange201Response = zod
                   .enum(["pending_review", "accepted", "corrected", "rejected", "deferred"])
                   .optional()
                   .describe(
-                    "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
                   ),
               })
               .describe(
@@ -6765,7 +6766,7 @@ export const DecideConversationChange201Response = zod
         status: zod
           .enum(["active", "dormant", "closed", "archived"])
           .describe(
-            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
           ),
         summary: zod.string().optional().describe("Bounded relationship summary."),
       })
@@ -6864,7 +6865,7 @@ export const RequestConversationDeletion202Response = zod
     status: zod
       .enum(["pending", "blocked", "partial", "verified"])
       .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
       ),
     targets: zod
       .array(
@@ -7149,7 +7150,7 @@ export const GetRelationshipConversationReview200Response = zod
               .enum(["pending_review", "accepted", "corrected", "rejected", "deferred"])
               .optional()
               .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+                "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
               ),
           })
           .describe(
@@ -7331,7 +7332,7 @@ export const CorrectRelationship201Response = zod
     status: zod
       .enum(["active", "dormant", "closed", "archived"])
       .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
       ),
     summary: zod.string().optional().describe("Bounded relationship summary."),
   })

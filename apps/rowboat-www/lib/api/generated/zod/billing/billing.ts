@@ -78,11 +78,11 @@ export const DeleteMeBody = zod
     stepUpToken: zod
       .string()
       .describe(
-        "Single-use proof from POST \/v1\/me\/deletion-challenges\/{id}\/verify. Typing DELETE does not satisfy this.",
+        "Single-use proof from POST /v1/me/deletion-challenges/{id}/verify. Typing DELETE does not satisfy this.",
       ),
   })
   .describe(
-    "Request body for DELETE \/v1\/me. confirm is intent. stepUpToken is the fresh authentication proof.",
+    "Request body for DELETE /v1/me. confirm is intent. stepUpToken is the fresh authentication proof.",
   );
 
 export const DeleteMe200Response = zod
@@ -98,7 +98,7 @@ export const DeleteMe200Response = zod
     workspacesDeleted: zod.int().describe("Workspaces deleted with the account."),
     workspacesTransferred: zod.int().describe("Shared workspaces given to another member."),
   })
-  .describe("Response for DELETE \/v1\/me. Holds no personal data.");
+  .describe("Response for DELETE /v1/me. Holds no personal data.");
 
 export const DeleteMe400Response = zod
   .strictObject({
@@ -199,11 +199,23 @@ export const GetMe200Response = zod
     billing: zod
       .strictObject({
         plan: zod
-          .enum(["free", "starter", "pro", "intelligence"])
+          .union([
+            zod.literal("free"),
+            zod.literal("starter"),
+            zod.literal("pro"),
+            zod.literal("intelligence"),
+            zod.literal(null),
+          ])
           .nullable()
           .describe("Billing plan slug."),
         status: zod
-          .enum(["active", "trialing", "past_due", "canceled"])
+          .union([
+            zod.literal("active"),
+            zod.literal("trialing"),
+            zod.literal("past_due"),
+            zod.literal("canceled"),
+            zod.literal(null),
+          ])
           .nullable()
           .describe("Trial means this plan is still in its trial."),
         trialExpiresAt: zod
@@ -247,7 +259,7 @@ export const GetMe200Response = zod
       })
       .describe("User that owns this row."),
   })
-  .describe("Response for GET \/v1\/me.");
+  .describe("Response for GET /v1/me.");
 
 export const GetMe401Response = zod
   .strictObject({
@@ -397,7 +409,7 @@ export const VerifyAccountDeletionChallenge200Response = zod
     stepUpToken: zod
       .string()
       .describe(
-        "Single-use proof from POST \/v1\/me\/deletion-challenges\/{id}\/verify. Typing DELETE does not satisfy this.",
+        "Single-use proof from POST /v1/me/deletion-challenges/{id}/verify. Typing DELETE does not satisfy this.",
       ),
   })
   .describe("Single-use deletion proof. It expires quickly and cannot be reused.");

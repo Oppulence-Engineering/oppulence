@@ -47,7 +47,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     go build -trimpath -ldflags="-s -w" -o /out/rowboat-api-migrate ./cmd/migrate; \
     go build -trimpath -o /out/devstack ./cmd/devstack
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/static-debian13:nonroot
 WORKDIR /
 COPY --from=build /out/rowboat-api /rowboat-api
 COPY --from=build /out/rowboat-api-worker /rowboat-api-worker

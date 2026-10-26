@@ -6,7 +6,7 @@ complete_workflow := {
 		"quality": {"steps": [
 			{"run": "make fmt-check architecture mod-verify"},
 			{"run": "go test ./... -race -count=1"},
-			{"uses": "golangci/golangci-lint-action@v8"},
+			{"uses": "golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9"},
 			{"run": "go install golang.org/x/vuln/cmd/govulncheck@v1.7.0"},
 			{"run": "docker run gitleaks:v8.30.1"},
 			{"run": "make policy"},

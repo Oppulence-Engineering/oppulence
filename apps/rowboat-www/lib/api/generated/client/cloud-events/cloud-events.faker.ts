@@ -21,20 +21,20 @@ export const getListCloudEventsResponseMock = (
     () => ({
       dedupeKey: faker.string.alpha({ length: { min: 10, max: 20 } }),
       eventType: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       id: faker.string.alpha({ length: { min: 10, max: 20 } }),
       matchedTaskCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
       occurredAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       payload: faker.helpers.arrayElement([{}, undefined]),
       receivedAt: faker.string.alpha({ length: { min: 10, max: 20 } }),
       routedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       routing: faker.helpers.arrayElement([{}, undefined]),
       routingStatus: faker.helpers.arrayElement([
@@ -56,26 +56,26 @@ export const getListCloudEventsResponseMock = (
         "internal",
       ] as const),
       sourceAccountId: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       sourceEventId: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       subject: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       text: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
     }),
   ),
   nextCursor: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
   ]),
   ...overrideResponse,
 });
@@ -115,20 +115,20 @@ export const getGetCloudEventResponseMock = (
 ): CloudEvent => ({
   dedupeKey: faker.string.alpha({ length: { min: 10, max: 20 } }),
   eventType: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
   ]),
   id: faker.string.alpha({ length: { min: 10, max: 20 } }),
   matchedTaskCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
   occurredAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
   ]),
   payload: faker.helpers.arrayElement([{}, undefined]),
   receivedAt: faker.string.alpha({ length: { min: 10, max: 20 } }),
   routedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
   ]),
   routing: faker.helpers.arrayElement([{}, undefined]),
   routingStatus: faker.helpers.arrayElement(["pending", "routed", "skipped", "failed"] as const),
@@ -145,21 +145,15 @@ export const getGetCloudEventResponseMock = (
     "internal",
   ] as const),
   sourceAccountId: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
   ]),
   sourceEventId: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
   ]),
-  subject: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
-  ]),
-  text: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
-  ]),
+  subject: faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+  text: faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
   ...overrideResponse,
 });
 
@@ -168,16 +162,16 @@ export const getListCloudEventRunsResponseMock = (
 ): CloudEventRunsResponse => ({
   runs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
     completedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-      undefined,
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      null,
     ]),
     createdAt: faker.string.alpha({ length: { min: 10, max: 20 } }),
     executor: faker.helpers.arrayElement(["api"] as const),
     runId: faker.string.alpha({ length: { min: 10, max: 20 } }),
     status: faker.string.alpha({ length: { min: 10, max: 20 } }),
     taskSlug: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-      undefined,
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      null,
     ]),
     trigger: faker.helpers.arrayElement(["event"] as const),
   })),
