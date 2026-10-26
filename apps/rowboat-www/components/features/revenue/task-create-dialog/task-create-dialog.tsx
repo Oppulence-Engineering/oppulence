@@ -220,7 +220,7 @@ export function TaskCreateDialog({
                 : undefined,
           label: "Save",
           leftAdornment: busy ? (
-            <Loader animate className="size-[14px] text-[var(--text-tertiary)]" />
+            <Loader className="size-[14px] animate-spin text-[var(--text-tertiary)]" />
           ) : undefined,
           onClick: () => void submit(),
         }}
