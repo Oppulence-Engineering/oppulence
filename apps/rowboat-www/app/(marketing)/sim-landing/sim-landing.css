@@ -23,71 +23,51 @@
     --text-base: 15px;
     --text-md: 16px;
 
-    /* Light tokens — apps/sim/app/_styles/globals.css :root */
-    --bg: #fefefe;
-    --surface-1: #fbfbfb;
-    --surface-2: #ffffff;
-    --surface-3: #f7f7f7;
-    --surface-4: #f5f5f5;
-    --surface-5: #f3f3f3;
-    --surface-6: #e5e5e5;
-    --surface-7: #d9d9d9;
-    --surface-hover: #f2f2f2;
-    --surface-active: #ececec;
-    --workflow-edge: #e0e0e0;
-    --text-primary: #1a1a1a;
-    --text-secondary: #525252;
-    --text-tertiary: #5c5c5c;
-    --text-muted: #626262;
-    --text-subtle: #8c8c8c;
-    --text-body: #434343;
-    --text-icon: #5a5a5a;
-    --text-icon-muted: #5c5c5c;
+    /*
+     * Sim token names → shared tokens (@oppulence/ui tokens.css, Polar base).
+     * The same map runs in the web app shell, so the landing page and the app
+     * use one palette. Light and dark come from the shared layer.
+     */
+    --bg: var(--background);
+    --surface-1: var(--background-50);
+    --surface-2: var(--card);
+    --surface-3: var(--background-100);
+    --surface-4: var(--background-200);
+    --surface-5: var(--background-300);
+    --surface-6: var(--background-400);
+    --surface-7: var(--background-500);
+    --surface-hover: var(--background-100);
+    --surface-active: var(--accent);
+    --workflow-edge: var(--background-300);
+    --text-primary: var(--foreground);
+    --text-body: var(--foreground);
+    --text-secondary: var(--muted-foreground);
+    --text-tertiary: var(--muted-foreground);
+    --text-muted: var(--muted-foreground);
+    --text-icon: var(--muted-foreground);
+    --text-subtle: var(--subtle-foreground);
+    --text-icon-muted: var(--subtle-foreground);
+    /* Text on a --text-primary or --text-secondary fill. */
+    --text-inverse: var(--background);
+    --text-muted-inverse: #a0a0a0;
     --thinking-ink-current: #2c2c2c;
     --thinking-ink-inner: #2c2c2c;
     --thinking-ink-outer: #5f5f5f;
     --thinking-ink-glow: rgba(255, 255, 255, 0.6);
-    --text-inverse: #ffffff;
-    --text-muted-inverse: #a0a0a0;
-    --border: #d8d8d8;
-    --scrollbar-thumb-color: #c0c0c0;
-    --scrollbar-thumb-hover-color: #a8a8a8;
-    --selection-muted: #1a5cf647;
+    --scrollbar-thumb-color: var(--background-500);
+    --scrollbar-thumb-hover-color: var(--background-600);
+    --selection-muted: color-mix(in oklab, var(--primary) 28%, transparent);
     color: var(--text-primary);
     background-color: var(--bg);
   }
 
   .dark .sim-landing-root {
-    /* Dark tokens — apps/sim/app/_styles/globals.css .dark */
-    --bg: #1b1b1b;
-    --surface-1: #1e1e1e;
-    --surface-2: #232323;
-    --surface-3: #242424;
-    --surface-4: #292929;
-    --surface-5: #363636;
-    --surface-6: #454545;
-    --surface-7: #505050;
-    --surface-hover: #262626;
-    --surface-active: #2c2c2c;
-    --workflow-edge: #454545;
-    --text-primary: #e6e6e6;
-    --text-secondary: #cccccc;
-    --text-tertiary: #b3b3b3;
-    --text-muted: #a3a3a3;
-    --text-subtle: #7d7d7d;
-    --text-body: #c1c1c1;
-    --text-icon: #969696;
-    --text-icon-muted: #949494;
+    /* Animation ink and inverse muted text have no shared token; keep the Sim dark values. */
     --thinking-ink-current: #d6d6d6;
     --thinking-ink-inner: #a7a7a7;
     --thinking-ink-outer: #d6d6d6;
     --thinking-ink-glow: rgba(255, 255, 255, 0.9);
-    --text-inverse: #1b1b1b;
     --text-muted-inverse: #b3b3b3;
-    --border: #444444;
-    --scrollbar-thumb-color: #505050;
-    --scrollbar-thumb-hover-color: #6e6e6e;
-    --selection-muted: #4b83f759;
   }
 
   .sim-landing-root ::selection {
@@ -98,9 +78,6 @@
     overflow: hidden;
     background: var(--bg);
     color: var(--text-primary);
-    --sm-line: var(--border);
-    --sm-ink: var(--text-primary);
-    --sm-muted: var(--text-secondary);
   }
 
   .sm-site.sim-marketing-site:has(.sim-landing-root) {
@@ -176,16 +153,9 @@
   body:has(.sim-marketing-site) {
     --app-zoom: 1;
     --app-vh: 100dvh;
-    background: #fefefe;
-    color-scheme: light;
+    background: var(--background);
     height: var(--app-vh);
     overflow: hidden;
-  }
-
-  html.dark:has(.sim-marketing-site),
-  html.dark body:has(.sim-marketing-site) {
-    background: #1b1b1b;
-    color-scheme: dark;
   }
 
   .sm-site.sim-marketing-site {
@@ -195,28 +165,8 @@
     max-height: var(--app-vh);
   }
 
-  .sm-site.sim-marketing-site.marketing-polar {
-    --background: #fefefe;
-    --foreground: #1a1a1a;
-    --border: #d8d8d8;
-    --card: #ffffff;
-    --card-foreground: #1a1a1a;
-    --muted-foreground: #525252;
-    background: transparent;
-    color: inherit;
-  }
-
-  html.dark .sm-site.sim-marketing-site.marketing-polar {
-    --background: #1b1b1b;
-    --foreground: #e6e6e6;
-    --border: #444444;
-    --card: #232323;
-    --card-foreground: #e6e6e6;
-    --muted-foreground: #cccccc;
-  }
-
   .sm-site.sim-marketing-site ::selection {
-    background-color: var(--selection-muted, #1a5cf647);
+    background-color: var(--selection-muted);
     color: inherit;
   }
 

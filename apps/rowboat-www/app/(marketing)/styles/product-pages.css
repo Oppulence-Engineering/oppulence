@@ -7,7 +7,7 @@
 
   .sm-platform-eyebrow {
     color: var(--sm-blue);
-    font-family: var(--font-marketing-mono), monospace;
+    font-family: var(--typeface-mono);
     font-size: 12px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -15,7 +15,7 @@
 
   .sm-platform-hero h1 {
     margin-top: 18px;
-    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-family: var(--typeface-sans);
     font-size: clamp(2.4rem, 5vw, 3.6rem);
     font-weight: 500;
     line-height: 1.05;
@@ -69,13 +69,13 @@
 
   .sm-platform-index {
     color: var(--sm-muted);
-    font-family: var(--font-marketing-mono), monospace;
+    font-family: var(--typeface-mono);
     font-size: 12px;
   }
 
   .sm-platform-section-copy h2 {
     margin-top: 14px;
-    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-family: var(--typeface-sans);
     font-size: clamp(1.5rem, 2.6vw, 2rem);
     font-weight: 500;
     line-height: 1.15;
@@ -135,7 +135,7 @@
 
   .sm-platform-specs h2,
   .sm-platform-siblings h2 {
-    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-family: var(--typeface-sans);
     font-size: clamp(1.5rem, 2.6vw, 2rem);
     font-weight: 500;
     letter-spacing: -0.03em;
@@ -159,7 +159,7 @@
 
   .sm-platform-specs dt {
     color: var(--sm-muted);
-    font-family: var(--font-marketing-mono), monospace;
+    font-family: var(--typeface-mono);
     font-size: 12px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -200,7 +200,7 @@
   }
 
   .sm-platform-siblings strong {
-    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-family: var(--typeface-sans);
     font-size: 19px;
     font-weight: 500;
     letter-spacing: -0.02em;

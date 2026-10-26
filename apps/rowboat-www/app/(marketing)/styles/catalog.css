@@ -48,9 +48,7 @@
   .sm-site .mk-download-apps h2,
   .sm-site .mk-changelog h2 {
     color: var(--sm-ink);
-    font-family:
-      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
-      sans-serif;
+    font-family: var(--typeface-sans);
     font-size: clamp(1.25rem, 2vw, 1.4rem);
     font-weight: 600;
     letter-spacing: -0.022em;
@@ -187,14 +185,6 @@
     padding: 12px 16px 16px;
     color: var(--sm-muted);
     font-size: 13px;
-  }
-
-  .sm-site .mk-compare-table {
-    display: grid;
-    overflow: hidden;
-    border: 1px solid var(--sm-line);
-    border-radius: 12px;
-    background: #ffffff;
   }
 
   .sm-site .mk-capability-split {
@@ -341,12 +331,7 @@
    * Product frames stay white; only the SEO catch-alls pick up the paper.
    */
   .sm-site .mk-seo-lander {
-    --sm-ink: #1c1b19;
-    --sm-muted: #5c5854;
-    --sm-line: #ddd8cf;
-    --sm-soft: #efece6;
     color: var(--sm-ink);
-    background: #f6f4ef;
   }
 
   .sm-site .mk-seo-lander .linear-subpage-title {
@@ -422,10 +407,6 @@
     .sm-site .mk-seo-audience {
       grid-template-columns: 1fr;
     }
-
-    .sm-site .mk-compare-table {
-      overflow-x: auto;
-    }
   }
 
   /*
@@ -456,13 +437,13 @@
   .sm-site .marketing-cta-primary {
     border: 0;
     background: var(--sm-blue);
-    color: #ffffff;
+    color: var(--primary-foreground);
   }
 
   .sm-site .marketing-cta-primary:hover {
     border: 0;
-    background: var(--sm-blue-dark);
-    color: #ffffff;
+    background: color-mix(in oklab, var(--primary) 90%, transparent);
+    color: var(--primary-foreground);
     filter: none;
   }
 

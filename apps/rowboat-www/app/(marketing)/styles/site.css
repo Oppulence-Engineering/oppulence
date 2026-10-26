@@ -1,57 +1,22 @@
 @layer utilities {
   /* Linear-aligned dark marketing theme. */
   .marketing-polar {
-    --background: #000000;
-    --background-50: #050505;
-    --background-100: #0a0a0a;
-    --background-200: #101010;
-    --background-300: #171717;
-    --foreground: #f7f8f8;
-    --card: #050505;
-    --card-foreground: #f7f8f8;
-    --popover: #0a0a0a;
-    --popover-foreground: #f7f8f8;
-    --primary: #f7f8f8;
-    --primary-foreground: #000000;
-    --secondary: #0a0a0a;
-    --secondary-foreground: #d0d6e0;
-    --muted: #0a0a0a;
-    --muted-foreground: #8a8f98;
-    --accent: #171717;
-    --accent-foreground: #f7f8f8;
-    --border: #171717;
-    --input: #34343a;
-    --ring: #828fff;
-    --radius: 0;
-    --linear-violet: #5e6ad2;
-    --linear-text-secondary: #d0d6e0;
-    --linear-text-tertiary: #8a8f98;
-    --linear-text-quaternary: #62666d;
-    --linear-border: rgb(255 255 255 / 8%);
-    --linear-border-strong: rgb(255 255 255 / 12%);
+    /* Legacy aliases. Every color comes from the shared tokens in @oppulence/ui. */
+    --linear-border: var(--border);
+    --linear-border-strong: var(--background-400);
+    --linear-text-secondary: var(--muted-foreground);
+    --linear-text-tertiary: var(--muted-foreground);
+    --linear-text-quaternary: var(--subtle-foreground);
     --linear-page-max: 1436px;
     --linear-inset: 32px;
     --linear-outer: 46px;
-    background: #000000;
-    color: var(--foreground);
-    color-scheme: dark;
-    font-family: var(--font-linear-sans), "Inter", ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--typeface-sans);
     font-feature-settings: "cv01", "ss03";
   }
 
-  html:has(.marketing-polar),
-  body:has(.marketing-polar) {
-    background: #000000;
-    color-scheme: dark;
-  }
-
-  .marketing-polar ::selection {
-    background: color-mix(in lch, #5e6ad2, black 10%);
-    color: #ffffff;
-  }
 
   .marketing-polar .font-display {
-    font-family: var(--font-linear-sans), "Inter", ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--typeface-sans);
   }
 
   .linear-shell {
@@ -357,7 +322,7 @@
   .linear-proof p:last-child {
     margin-top: 28px;
     color: var(--linear-text-quaternary);
-    font-family: var(--font-geist-mono);
+    font-family: var(--typeface-mono);
     font-size: 11px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -946,52 +911,10 @@
    * styles above by cascade; the layout skeleton and the scroll-reveal
    * choreography stay unchanged.
    */
-  .marketing-polar {
-    --background: #faf9f7;
-    --background-50: #f5f4f1;
-    --background-100: #efede9;
-    --background-200: #e7e4df;
-    --background-300: #dbd8d1;
-    --foreground: #1b1a17;
-    --card: #ffffff;
-    --card-foreground: #1b1a17;
-    --popover: #ffffff;
-    --popover-foreground: #1b1a17;
-    --primary: #1b1a17;
-    --primary-foreground: #faf9f7;
-    --secondary: #efede9;
-    --secondary-foreground: #1b1a17;
-    --muted: #efede9;
-    --muted-foreground: #6f6b63;
-    --accent: #e7e4df;
-    --accent-foreground: #1b1a17;
-    --border: rgb(27 26 23 / 10%);
-    --input: rgb(27 26 23 / 16%);
-    --ring: var(--oppulence-orange);
-    --linear-violet: var(--oppulence-orange);
-    --linear-text-secondary: #43413c;
-    --linear-text-tertiary: #6f6b63;
-    --linear-text-quaternary: #9a958b;
-    --linear-border: rgb(27 26 23 / 8%);
-    --linear-border-strong: rgb(27 26 23 / 12%);
-    background: #faf9f7;
-    color: var(--foreground);
-    color-scheme: light;
-  }
 
-  html:has(.marketing-polar),
-  body:has(.marketing-polar) {
-    background: #faf9f7;
-    color-scheme: light;
-  }
-
-  .marketing-polar ::selection {
-    background: var(--oppulence-orange);
-    color: #ffffff;
-  }
 
   .marketing-polar .font-display {
-    font-family: var(--font-f37-stout), var(--font-geist-sans), ui-sans-serif, sans-serif;
+    font-family: var(--typeface-sans);
   }
 
   .linear-header {
@@ -1037,7 +960,7 @@
     .linear-mobile-summary,
     .linear-faq summary
   ):focus-visible {
-    outline: 2px solid var(--oppulence-orange);
+    outline: 2px solid var(--ring);
   }
 
   .linear-mobile-panel {
@@ -1048,7 +971,7 @@
   .linear-hero-title,
   .linear-subpage-title,
   .linear-final-cta h2 {
-    font-family: var(--font-f37-stout), var(--font-geist-sans), ui-sans-serif, sans-serif;
+    font-family: var(--typeface-sans);
     font-weight: 400;
     letter-spacing: -0.005em;
     background: linear-gradient(180deg, #1b1a17 58%, rgb(27 26 23 / 70%));
@@ -1065,7 +988,7 @@
   .linear-final-cta::before {
     background: radial-gradient(
       50% 50% at 50% 50%,
-      color-mix(in oklab, var(--oppulence-orange) 7%, transparent),
+      color-mix(in oklab, var(--primary) 7%, transparent),
       transparent 70%
     );
   }
@@ -1105,7 +1028,7 @@
   }
 
   .linear-mobile-panel > a {
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-family: var(--typeface-mono);
     font-size: 17px;
     font-weight: 400;
     letter-spacing: 0;
@@ -1132,10 +1055,6 @@
    * texture, window chrome on the hero app frame, red micro-labels, and
    * sharper hover details.
    */
-  .marketing-polar {
-    --marketing-red: hsla(4, 76%, 49%, 1);
-    --oppulence-orange: var(--marketing-red);
-  }
 
   .linear-guides::before,
   .linear-guides::after {
@@ -1148,7 +1067,7 @@
 
   .linear-faq details[open] summary span,
   .linear-faq summary:hover span {
-    color: var(--marketing-red);
+    color: var(--primary);
   }
 
   /*
@@ -1158,8 +1077,8 @@
    */
   .linear-eyebrow {
     margin-bottom: 18px;
-    color: var(--marketing-red);
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    color: var(--primary);
+    font-family: var(--typeface-mono);
     font-size: 12px;
     letter-spacing: 0.01em;
   }
@@ -1178,7 +1097,7 @@
    */
 
   .linear-proof p:last-child {
-    color: var(--marketing-red);
+    color: var(--primary);
   }
 
   @keyframes linear-pulse {
@@ -1247,7 +1166,7 @@
   }
 
   .linear-mobile-panel > a {
-    font-family: var(--font-geist-sans), ui-sans-serif, sans-serif;
+    font-family: var(--typeface-sans);
     font-size: 18px;
     font-weight: 500;
   }
@@ -1259,7 +1178,7 @@
   .linear-manifesto h2,
   .linear-statement-title {
     max-width: 880px;
-    font-family: var(--font-f37-stout), var(--font-geist-sans), ui-sans-serif, sans-serif;
+    font-family: var(--typeface-sans);
     font-weight: 400;
     font-size: clamp(1.7rem, 2.6vw, 2.125rem);
     letter-spacing: -0.005em;
@@ -1288,12 +1207,12 @@
   }
 
   .linear-footer-column h3 {
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-family: var(--typeface-mono);
     font-size: 13px;
   }
 
   .linear-footer-column a {
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-family: var(--typeface-mono);
     font-size: 12px;
   }
 
@@ -1307,39 +1226,6 @@
    * primary buttons, flat headlines, no ambient glow. Our red keeps the
    * role their orange plays.
    */
-  .marketing-polar {
-    --background: oklch(99% 0 0);
-    --background-50: oklch(98.5% 0 0);
-    --background-100: oklch(98% 0 0);
-    --background-200: oklch(97% 0 0);
-    --background-300: oklch(96% 0 0);
-    --foreground: oklch(14.5% 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(14.5% 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(14.5% 0 0);
-    --primary: oklch(20.5% 0 0);
-    --primary-foreground: oklch(98.5% 0 0);
-    --secondary: oklch(97% 0 0);
-    --secondary-foreground: oklch(20.5% 0 0);
-    --muted: oklch(97% 0 0);
-    --muted-foreground: oklch(55.6% 0 0);
-    --accent: oklch(97% 0 0);
-    --accent-foreground: oklch(20.5% 0 0);
-    --border: oklch(92.2% 0 0);
-    --input: oklch(92.2% 0 0);
-    --linear-border: oklch(92.2% 0 0);
-    --linear-border-strong: oklch(89% 0 0);
-    --linear-text-secondary: oklch(30% 0 0);
-    --linear-text-tertiary: oklch(55.6% 0 0);
-    --linear-text-quaternary: oklch(70.8% 0 0);
-    background: var(--background);
-  }
-
-  html:has(.marketing-polar),
-  body:has(.marketing-polar) {
-    background: oklch(99% 0 0);
-  }
 
   .linear-hero-title,
   .linear-subpage-title,
@@ -1381,51 +1267,6 @@
    * accent brightens on dark (orange 44% -> 50%), so the red does too.
    */
 
-  @media (prefers-color-scheme: dark) {
-    .marketing-polar {
-      --background: oklch(14.5% 0 0);
-      --background-50: oklch(15.5% 0 0);
-      --background-100: oklch(16.5% 0 0);
-      --background-200: oklch(18.5% 0 0);
-      --background-300: oklch(20.5% 0 0);
-      --foreground: oklch(98.5% 0 0);
-      --card: oklch(16.5% 0 0);
-      --card-foreground: oklch(98.5% 0 0);
-      --popover: oklch(14.5% 0 0);
-      --popover-foreground: oklch(98.5% 0 0);
-      --primary: oklch(98.5% 0 0);
-      --primary-foreground: oklch(20.5% 0 0);
-      --secondary: oklch(26.9% 0 0);
-      --secondary-foreground: oklch(98.5% 0 0);
-      --muted: oklch(26.9% 0 0);
-      --muted-foreground: oklch(70.8% 0 0);
-      --accent: oklch(26.9% 0 0);
-      --accent-foreground: oklch(98.5% 0 0);
-      --border: oklch(26.9% 0 0);
-      --input: oklch(26.9% 0 0);
-      --linear-border: oklch(26.9% 0 0);
-      --linear-border-strong: oklch(30% 0 0);
-      --linear-text-secondary: oklch(85% 0 0);
-      --linear-text-tertiary: oklch(70.8% 0 0);
-      --linear-text-quaternary: oklch(55% 0 0);
-      --marketing-red: hsla(4, 85%, 60%, 1);
-      background: var(--background);
-      color-scheme: dark;
-    }
-
-    html:has(.marketing-polar),
-    body:has(.marketing-polar) {
-      background: oklch(14.5% 0 0);
-      color-scheme: dark;
-    }
-
-    .marketing-polar ::selection {
-      background: var(--marketing-red);
-      color: #ffffff;
-    }
-
-    /* Brand mark is now a full-color asset; inverting it would wreck the palette. */
-  }
 
   /*
    * Polish round 1 — fluid rhythm and type detailing. Fixed section
@@ -1554,14 +1395,14 @@
   }
 
   .linear-eyebrow-red {
-    color: var(--marketing-red);
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    color: var(--primary);
+    font-family: var(--typeface-mono);
     font-size: 12px;
   }
 
   .linear-page-title {
     max-width: 760px;
-    font-family: var(--font-f37-stout), var(--font-geist-sans), ui-sans-serif, sans-serif;
+    font-family: var(--typeface-sans);
     font-weight: 400;
     font-size: clamp(2.1rem, 4vw, 2.75rem);
     letter-spacing: -0.005em;
@@ -1577,7 +1418,7 @@
     background: var(--background-100);
     padding: 2px 8px;
     color: var(--linear-text-tertiary);
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-family: var(--typeface-mono);
     font-size: 10.5px;
   }
 
@@ -1598,7 +1439,7 @@
 
   .linear-blog-featured h2 {
     max-width: 720px;
-    font-family: var(--font-f37-stout), var(--font-geist-sans), ui-sans-serif, sans-serif;
+    font-family: var(--typeface-sans);
     font-weight: 400;
     font-size: clamp(1.4rem, 2.6vw, 1.9rem);
     letter-spacing: -0.005em;
@@ -1608,7 +1449,7 @@
 
   .linear-blog-read {
     color: var(--linear-text-quaternary);
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-family: var(--typeface-mono);
     font-size: 11px;
   }
 
@@ -1672,21 +1513,7 @@
    * large headlines, and monospace reserved for diagrams or data labels.
    */
   .marketing-polar {
-    --font-attio-sans:
-      var(--font-marketing-sans, var(--font-inter)), "Inter", -apple-system, BlinkMacSystemFont,
-      ui-sans-serif, system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-    --font-marketing-display: var(--font-attio-sans);
-    --foreground: #292929;
-    --card-foreground: #292929;
-    --popover-foreground: #292929;
-    --primary: #292929;
-    --secondary-foreground: #292929;
-    --accent-foreground: #292929;
-    --muted-foreground: #5d5d5d;
-    --linear-text-secondary: #5d5d5d;
-    --linear-text-tertiary: #9e9e9e;
-    --linear-text-quaternary: #9e9e9e;
-    font-family: var(--font-attio-sans);
+    font-family: var(--typeface-sans);
     font-feature-settings: "cv01", "ss03";
     font-optical-sizing: auto;
     font-weight: 400;
@@ -1694,7 +1521,7 @@
   }
 
   .marketing-polar .font-display {
-    font-family: var(--font-marketing-display);
+    font-family: var(--typeface-sans);
     font-weight: 500;
     letter-spacing: -0.018em;
   }
@@ -1718,7 +1545,7 @@
   .linear-faq h2,
   .linear-blog-featured h2 {
     margin-left: 0;
-    font-family: var(--font-marketing-sans);
+    font-family: var(--typeface-sans);
     font-size: 24px;
     font-weight: 500;
     letter-spacing: -0.15px;
@@ -1729,7 +1556,7 @@
   .linear-statement-title {
     max-width: 760px;
     margin-left: 0;
-    font-family: var(--font-marketing-sans);
+    font-family: var(--typeface-sans);
     font-size: 24px;
     font-weight: 400;
     letter-spacing: -0.15px;
@@ -1820,7 +1647,7 @@
   }
 
   .linear-mobile-panel > a {
-    font-family: var(--font-marketing-sans);
+    font-family: var(--typeface-sans);
     font-size: 24px;
     font-weight: 500;
     letter-spacing: -0.15px;
@@ -1887,8 +1714,8 @@
 
   .desktop-download-eyebrow {
     margin-bottom: 8px;
-    color: var(--oppulence-orange);
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    color: var(--primary);
+    font-family: var(--typeface-mono);
     font-size: 10px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -1968,7 +1795,7 @@
 
   .desktop-download-tab:focus-visible {
     z-index: 1;
-    outline: 2px solid var(--oppulence-orange);
+    outline: 2px solid var(--ring);
     outline-offset: -2px;
   }
 
@@ -1991,7 +1818,7 @@
     border-radius: 2px;
     padding: 3px 5px;
     color: var(--linear-text-tertiary);
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-family: var(--typeface-mono);
     font-size: 9px;
     font-style: normal;
     text-overflow: ellipsis;
@@ -2013,7 +1840,7 @@
   }
 
   .desktop-download-platform-heading > span {
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-family: var(--typeface-mono);
     text-transform: uppercase;
   }
 
@@ -2054,7 +1881,7 @@
   }
 
   .desktop-download-option:focus-visible {
-    outline: 2px solid var(--oppulence-orange);
+    outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
 
@@ -2085,14 +1912,14 @@
   .desktop-download-option-copy small {
     overflow: hidden;
     color: var(--linear-text-tertiary);
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-family: var(--typeface-mono);
     font-size: 9px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .desktop-download-option.is-recommended {
-    border-left: 2px solid var(--oppulence-orange);
+    border-left: 2px solid var(--primary);
     background: var(--secondary);
   }
 
@@ -2102,7 +1929,7 @@
     border-radius: 2px;
     padding: 3px 5px;
     color: var(--linear-text-secondary);
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-family: var(--typeface-mono);
     font-size: 9px;
     line-height: 1;
   }
@@ -2159,29 +1986,13 @@
   }
 
   /* Dark keeps the oklch ramp the hex ink values would otherwise clobber. */
-  @media (prefers-color-scheme: dark) {
-    .marketing-polar {
-      --foreground: oklch(98.5% 0 0);
-      --card-foreground: oklch(98.5% 0 0);
-      --popover-foreground: oklch(98.5% 0 0);
-      --primary: oklch(98.5% 0 0);
-      --secondary-foreground: oklch(98.5% 0 0);
-      --accent-foreground: oklch(98.5% 0 0);
-      --muted-foreground: oklch(70.8% 0 0);
-      --linear-text-secondary: oklch(85% 0 0);
-      --linear-text-tertiary: oklch(70.8% 0 0);
-      --linear-text-quaternary: oklch(55% 0 0);
-    }
-  }
-
   /* Reference-informed public shell, grounded in Oppulence product truth. */
   .sm-site {
-    --sm-blue: #0562ef;
-    --sm-blue-dark: #002b73;
-    --sm-ink: #0b1015;
-    --sm-muted: #66717d;
-    --sm-line: #dce3ea;
-    --sm-soft: #f5f9ff;
+    --sm-blue: var(--primary);
+    --sm-ink: var(--foreground);
+    --sm-muted: var(--muted-foreground);
+    --sm-line: var(--border);
+    --sm-soft: var(--muted);
     /* Homepage rail styles read --mem-*. Inner pages sit on .sm-site, not
        .sm-memory-home, so alias here or pricing borders resolve to nothing. */
     --mem-blue: var(--sm-blue);
@@ -2189,20 +2000,7 @@
     --mem-muted: var(--sm-muted);
     --mem-line: var(--sm-line);
     --mem-soft: var(--sm-soft);
-    --background: #ffffff;
-    --foreground: var(--sm-ink);
-    --primary: var(--sm-ink);
-    --primary-foreground: #ffffff;
-    --muted-foreground: var(--sm-muted);
-    --linear-border: var(--sm-line);
-    --linear-border-strong: #cbd6e1;
-    --linear-text-secondary: #39434d;
-    --linear-text-tertiary: var(--sm-muted);
-    --linear-text-quaternary: #8b96a1;
-    background: #ffffff;
-    color: var(--sm-ink);
-    color-scheme: light;
-    font-family: var(--font-attio-sans, var(--font-marketing-sans)), "Inter", sans-serif;
+    font-family: var(--typeface-sans);
     letter-spacing: -0.01em;
   }
 
@@ -2213,9 +2011,7 @@
   .sm-site .linear-subpage-title,
   .sm-site .linear-page-title {
     color: var(--sm-ink);
-    font-family:
-      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
-      sans-serif;
+    font-family: var(--typeface-sans);
     font-size: clamp(2.2rem, 4vw, 3.4rem);
     font-weight: 600;
     letter-spacing: -0.03em;
@@ -2232,16 +2028,6 @@
     line-height: 1.55;
   }
 
-  html:has(.sm-site),
-  body:has(.sm-site) {
-    background: #ffffff;
-    color-scheme: light;
-  }
-
-  .sm-site ::selection {
-    background: var(--sm-blue);
-    color: #ffffff;
-  }
 
   .sm-site .linear-shell {
     width: min(100%, 1440px);
@@ -2308,7 +2094,7 @@
   }
 
   .sm-header .oppulence-compact-lockup__wordmark {
-    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-family: var(--typeface-sans);
     font-size: 16px;
     font-weight: 500;
     letter-spacing: -0.03em;
@@ -2331,7 +2117,7 @@
     background: transparent;
     padding-inline: 11px;
     color: #5c6670;
-    font-family: var(--font-attio-sans, var(--font-marketing-sans)), "Inter", sans-serif;
+    font-family: var(--typeface-sans);
     font-size: 13px;
     font-weight: 500;
     letter-spacing: -0.012em;
@@ -2508,7 +2294,7 @@
   .sm-home h2,
   .sm-home h3,
   .sm-footer h2 {
-    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-family: var(--typeface-sans);
     font-weight: 500;
     letter-spacing: -0.025em;
   }
@@ -2540,7 +2326,7 @@
   .sm-final-cta > p {
     margin-top: 84px;
     color: #88949f;
-    font-family: var(--font-marketing-mono), "DM Mono", monospace;
+    font-family: var(--typeface-mono);
     font-size: 9px;
     letter-spacing: 0.12em;
   }
@@ -2604,7 +2390,7 @@
   .sm-footer .linear-footer-column h3 {
     margin-bottom: 14px;
     color: var(--sm-ink);
-    font-family: var(--font-marketing-mono), "DM Mono", monospace;
+    font-family: var(--typeface-mono);
     font-size: 9px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -2625,7 +2411,7 @@
     justify-content: space-between;
     padding: 20px 32px 0;
     color: #5f6b76;
-    font-family: var(--font-marketing-mono), "DM Mono", monospace;
+    font-family: var(--typeface-mono);
     font-size: 9px;
     text-transform: uppercase;
   }
@@ -2651,9 +2437,7 @@
 
   .sm-products-hero h1,
   .sm-products-card h2 {
-    font-family:
-      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
-      sans-serif;
+    font-family: var(--typeface-sans);
     font-weight: 500;
     letter-spacing: -0.022em;
   }
@@ -2716,7 +2500,7 @@
     align-items: center;
     justify-content: space-between;
     color: var(--sm-blue);
-    font-family: var(--font-marketing-display), var(--font-marketing-sans), sans-serif;
+    font-family: var(--typeface-sans);
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.1em;
@@ -2766,7 +2550,7 @@
   .sm-products-card strong {
     margin-top: 20px;
     color: var(--sm-ink);
-    font-family: var(--font-marketing-display), var(--font-marketing-sans), sans-serif;
+    font-family: var(--typeface-sans);
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.08em;
@@ -2841,7 +2625,7 @@
       min-height: 42px;
       padding: 9px 0;
       color: var(--sm-ink);
-      font-family: var(--font-attio-sans, var(--font-marketing-sans)), "Inter", sans-serif;
+      font-family: var(--typeface-sans);
       font-size: 16px;
       font-weight: 500;
       letter-spacing: -0.01em;
@@ -2863,7 +2647,7 @@
       padding-top: 17px;
       border-top: 1px solid var(--sm-line);
       color: #8a96a0;
-      font-family: var(--font-marketing-mono), "DM Mono", monospace;
+      font-family: var(--typeface-mono);
       font-size: 9px;
       text-transform: uppercase;
     }

@@ -325,7 +325,8 @@ describe("public marketing information architecture", () => {
         "utf8",
       ),
     ).toContain("--preview-scale");
-    expect(simLandingStyles).toContain("--surface-3: #242424");
+    // Sim token names read the shared tokens, so the landing and the app share one palette.
+    expect(simLandingStyles).toContain("--surface-3: var(--background-100)");
     expect(simLandingStyles).not.toContain("letter-spacing: 0.28px");
     expect(simLandingStyles).not.toMatch(/font-family:/);
     expect(layout).toContain("HOME_TYPE");

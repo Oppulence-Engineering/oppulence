@@ -1,22 +1,18 @@
 /* Attio-inspired main landing page: centered thesis, product window, sparse platform proof. */
 @layer utilities {
   .sm-attio-home {
-    --attio-blue: #245bc2;
-    --attio-ink: #1c1d1f;
-    /* #6f7988 measured 4.22:1 on the soft band, under the 4.5:1 AA floor.
-       #5a6473 keeps the same cool hue at 5.74:1. */
-    --attio-muted: #5a6473;
-    --attio-faint: #8b96a1;
-    --attio-line: #e4e7ec;
-    --attio-chip: #e8f0ff;
-    --attio-soft: #fafafb;
+    --attio-blue: var(--primary);
+    --attio-ink: var(--foreground);
+    --attio-muted: var(--muted-foreground);
+    --attio-faint: var(--subtle-foreground);
+    --attio-line: var(--border);
+    --attio-chip: color-mix(in oklab, var(--primary) 12%, transparent);
+    --attio-soft: var(--muted);
     --sim-window-shadow:
       0 0 0 1px rgb(0 0 0 / 8%), 0 2px 6px 0 rgb(0 0 0 / 5%), 0 4px 42px 0 rgb(0 0 0 / 6%);
     background: #ffffff;
     color: var(--attio-ink);
-    font-family:
-      var(--font-attio-sans, var(--font-marketing-sans)), "Inter", ui-sans-serif, system-ui,
-      sans-serif;
+    font-family: var(--typeface-sans);
     letter-spacing: -0.011em;
   }
 

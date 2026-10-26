@@ -58,7 +58,7 @@
 
   .sm-site.sim-marketing-site .linear-eyebrow {
     color: var(--text-muted);
-    font-family: var(--font-marketing-mono), ui-monospace, monospace;
+    font-family: var(--typeface-mono);
     font-size: 12px;
     letter-spacing: 0.02em;
     text-transform: lowercase;
@@ -90,7 +90,6 @@
   .sm-site.sim-marketing-site.marketing-polar:not(:has(.sim-landing-root)) {
     background: var(--bg);
     color: var(--text-primary);
-    color-scheme: light dark;
   }
 
   html.dark .sm-site.sim-marketing-site.marketing-polar:not(:has(.sim-landing-root)) {
@@ -115,7 +114,7 @@
   .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-eyebrow {
     margin-bottom: 8px;
     color: var(--text-muted);
-    font-family: var(--font-marketing-mono), ui-monospace, monospace;
+    font-family: var(--typeface-mono);
     font-size: 10px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
