@@ -21,6 +21,7 @@ Solomon AI should feel like an ElevenLabs-style developer console for people who
 
 ## Tokens
 
+- Palette: the color variables live in `packages/ui/src/styles/tokens.css` (`@oppulence/ui/tokens.css`). Change colors there, not in `App.css`. Oppulence Voice carries a pinned copy of this file.
 - Radius: square corners throughout (`0`) — no rounded borders on panels, cards, buttons, inputs, dialogs, or tabs. The only exceptions are genuinely circular elements (avatars, status dots, spinners, and anything `rounded-full`).
 - Backgrounds: white and very light neutral surfaces in light mode; graphite equivalents in dark mode.
 - Borders: one-step darker than surfaces, quiet enough to separate panels without tinting them.

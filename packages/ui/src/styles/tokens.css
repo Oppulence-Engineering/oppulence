@@ -1,0 +1,120 @@
+/*
+ * Oppulence color palette
+ *
+ * Framework-neutral custom properties shared by the Oppulence product
+ * surfaces. The desktop renderer imports this file, and Oppulence Voice
+ * carries a pinned copy. Each app maps these names into its own theme.
+ * The web console is the visual source of truth for both product surfaces.
+ */
+:root {
+  --polar-50: #d7d8da;
+  --polar-100: #c7c8cc;
+  --polar-200: #aaabb1;
+  --polar-300: #9a9ba2;
+  --polar-400: #808189;
+  --polar-500: #71727a;
+  --polar-600: #27282a;
+  --polar-700: #1d1e20;
+  --polar-800: #171719;
+  --polar-900: #101011;
+  --polar-950: #090909;
+  --background: var(--bg-color, #f9fafb);
+  --background-50: #f7f8f9;
+  --background-100: #f3f4f6;
+  --background-200: #edeef1;
+  --background-300: #e5e7eb;
+  --background-400: #d7d8da;
+  --background-500: #c7c8cc;
+  --background-600: #aaabb1;
+  --background-700: #9a9ba2;
+  --foreground: var(--text-color, oklch(14.5% 0 0));
+  --card: oklch(1 0 0);
+  --card-foreground: var(--text-color, oklch(14.5% 0 0));
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--text-color, oklch(14.5% 0 0));
+  --primary: var(--main-color, oklch(20.5% 0 0));
+  --primary-foreground: oklch(98.5% 0 0);
+  --secondary: var(--background-100);
+  --secondary-foreground: var(--text-color, oklch(20.5% 0 0));
+  --muted: var(--background-100);
+  --muted-foreground: var(--sub-color, #6a7282);
+  --accent: var(--background-200);
+  --accent-foreground: var(--text-color, oklch(20.5% 0 0));
+  --destructive: var(--error-color, oklch(80% 0.22 31));
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: var(--main-color, oklch(70.8% 0 0));
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --oppulence-pink: hsla(314, 100%, 80%, 1);
+  --oppulence-yellow: hsla(38, 92%, 50%, 1);
+  --oppulence-yellow-100: hsla(45, 70%, 88%, 1);
+  --oppulence-yellow-600: hsla(40, 90%, 28%, 1);
+  --oppulence-blue: hsla(214, 72%, 51%, 1);
+  --oppulence-orange: hsla(19, 90%, 48%, 1);
+  --oppulence-green: hsla(96, 48%, 38%, 1);
+  --brand: hsla(96, 48%, 38%, 1);
+  --brand-bar: hsla(86, 52%, 64%, 1);
+}
+
+.dark {
+  --background: var(--bg-color, var(--polar-950));
+  --background-50: var(--polar-900);
+  --background-100: var(--polar-800);
+  --background-200: var(--polar-700);
+  --background-300: var(--polar-600);
+  --background-400: #303134;
+  --background-500: #3c3d41;
+  --background-600: #4c4d53;
+  --background-700: #606168;
+  --foreground: var(--text-color, #f7f7f8);
+  --card: var(--polar-900);
+  --card-foreground: var(--polar-50);
+  --popover: var(--polar-900);
+  --popover-foreground: var(--polar-50);
+  --primary: #ffffff;
+  --primary-foreground: var(--polar-950);
+  --secondary: var(--polar-800);
+  --secondary-foreground: var(--polar-50);
+  --muted: var(--polar-800);
+  --muted-foreground: var(--polar-300);
+  --accent: var(--polar-700);
+  --accent-foreground: var(--polar-50);
+  --destructive: var(--error-color, oklch(80% 0.22 31));
+  --border: var(--polar-700);
+  --input: var(--polar-700);
+  --ring: var(--polar-500);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: var(--polar-950);
+  --sidebar-foreground: var(--polar-50);
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: var(--polar-950);
+  --sidebar-accent: var(--polar-800);
+  --sidebar-accent-foreground: var(--polar-50);
+  --sidebar-border: var(--polar-700);
+  --sidebar-ring: var(--polar-500);
+  --oppulence-pink: hsla(314, 100%, 85%, 1);
+  --oppulence-yellow: hsla(58, 92%, 79%, 1);
+  --oppulence-yellow-100: hsla(58, 70%, 20%, 1);
+  --oppulence-yellow-600: hsla(58, 92%, 79%, 1);
+  --oppulence-blue: hsla(214, 72%, 58%, 1);
+  --oppulence-orange: hsla(19, 90%, 55%, 1);
+  --oppulence-green: hsla(96, 48%, 58%, 1);
+  --brand: hsla(96, 48%, 58%, 1);
+  --brand-bar: hsla(86, 52%, 44%, 1);
+}
