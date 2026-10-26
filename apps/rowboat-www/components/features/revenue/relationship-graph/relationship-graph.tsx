@@ -3,6 +3,7 @@
 import "client-only";
 
 import * as React from "react";
+import { useAuthSession } from "@/components/auth/auth-gate";
 import {
   queryRelationshipGraph,
   RELATIONSHIP_DIMENSION_LABELS,
@@ -125,10 +126,8 @@ import {
 } from "@/lib/revenue/revenue";
 import { createConsoleResource, deleteConsoleResource } from "@/lib/console/console";
 import {
-  GRAPH_VIEWS_MIGRATED_KEY,
-  LEGACY_GRAPH_VIEWS_KEY,
   graphSavedViews,
-  migrateLegacyGraphViews,
+  graphViewsStorageKey,
   readLegacyGraphViews,
   type GraphSavedViewResource,
 } from "@/lib/console/console-resources";
@@ -1073,14 +1072,14 @@ export function graphCanvasCapState(
 }
 
 /** One graph response is the same page as the company directory. */
-export const GRAPH_COMPANY_PAGE = 200;
+const GRAPH_COMPANY_PAGE = 200;
 
 export function graphNextCompaniesLabel(): string {
   return "Show the next companies";
 }
 
-export const GRAPH_ACCOUNT_EVIDENCE_PAGE = 100;
-export const GRAPH_PORTFOLIO_EVIDENCE_PAGE = 500;
+const GRAPH_ACCOUNT_EVIDENCE_PAGE = 100;
+const GRAPH_PORTFOLIO_EVIDENCE_PAGE = 500;
 
 export function graphEvidencePage(scope: "portfolio" | "relationship"): number {
   return scope === "relationship" ? GRAPH_ACCOUNT_EVIDENCE_PAGE : GRAPH_PORTFOLIO_EVIDENCE_PAGE;
@@ -1095,8 +1094,8 @@ export function graphCountLabel(count: number, singular: string, plural: string)
 }
 
 /** First screen of the inspector lists. The rest stay one click away. */
-export const GRAPH_CONNECTION_PAGE = 12;
-export const GRAPH_DETAIL_PAGE = 6;
+const GRAPH_CONNECTION_PAGE = 12;
+const GRAPH_DETAIL_PAGE = 6;
 
 /** The rows past the first screen, in the same words as the graph counts. */
 export function graphListRemainderLabel(hidden: number, singular: string, plural: string): string {
@@ -1708,6 +1707,8 @@ export function RelationshipGraphWorkspace({
   onNotice: (message: string) => void;
 }) {
   const queryClient = useQueryClient();
+  const session = useAuthSession();
+  const savedViewsStorageKey = graphViewsStorageKey(session.user.id ?? session.user.workosUserId);
   const [viewState, setViewState] = React.useState<RelationshipGraphSavedViewState>(readURLState);
   const [busy, setBusy] = React.useState(false);
   const [mode, setMode] = React.useState<"canvas" | "table">("canvas");
@@ -1718,7 +1719,6 @@ export function RelationshipGraphWorkspace({
   const [viewError, setViewError] = React.useState<string | null>(null);
   const [actionError, setActionError] = React.useState<string | null>(null);
   const [resetSignal, setResetSignal] = React.useState(0);
-  const migrationStartedRef = React.useRef(false);
   const graphEnabled = !(viewState.scope === "relationship" && !viewState.relationshipId);
   const graphQuery = useRelationshipGraph(
     {
@@ -1868,8 +1868,11 @@ export function RelationshipGraphWorkspace({
     }
   };
   const legacyViews = React.useMemo(
-    () => (typeof window === "undefined" ? [] : readLegacyGraphViews(window.localStorage)),
-    [],
+    () =>
+      typeof window === "undefined"
+        ? []
+        : readLegacyGraphViews(window.localStorage, savedViewsStorageKey),
+    [savedViewsStorageKey],
   );
   const savedViews: RelationshipGraphSavedView[] =
     savedViewsQuery.isError && savedViewResources.length === 0
@@ -1913,54 +1916,8 @@ export function RelationshipGraphWorkspace({
     },
     onError: (error) => onError(errMessage(error, "Could not delete this graph view.")),
   });
-  const [migrationSettled, setMigrationSettled] = React.useState(false);
-  const { mutate: migrateLegacyViews, isPending: migrationPending } = useMutation({
-    mutationFn: ({
-      remote,
-      legacy,
-    }: {
-      remote: ReturnType<typeof graphSavedViews>;
-      legacy: RelationshipGraphSavedView[];
-    }) =>
-      migrateLegacyGraphViews({
-        storage: window.localStorage,
-        remote,
-        legacy,
-        create: (view) =>
-          createConsoleResource({
-            kind: "graph_saved_view",
-            name: view.label,
-            payload: { state: view.state },
-          }),
-      }),
-    onSuccess: (changed) => {
-      if (changed) {
-        void queryClient.invalidateQueries({
-          queryKey: consoleKeys.resourceKind("graph_saved_view"),
-        });
-      }
-    },
-    onError: (error) => onError(errMessage(error, "Could not import local saved graph views.")),
-    onSettled: () => setMigrationSettled(true),
-  });
-
   React.useEffect(() => {
-    if (!savedViewsQuery.data || migrationStartedRef.current) return;
-    migrationStartedRef.current = true;
-    // Read before the snapshot effect replaces this key with the server list.
-    // Otherwise the import treats views that already exist as new local views.
-    if (window.localStorage.getItem(GRAPH_VIEWS_MIGRATED_KEY) === "true") {
-      setMigrationSettled(true);
-      return;
-    }
-    migrateLegacyViews({
-      remote: savedViewsQuery.data.items,
-      legacy: readLegacyGraphViews(window.localStorage),
-    });
-  }, [migrateLegacyViews, savedViewsQuery.data]);
-
-  React.useEffect(() => {
-    if (!savedViewsQuery.data || !migrationSettled || migrationPending) return;
+    if (!savedViewsQuery.data || !savedViewsStorageKey) return;
     const snapshot = savedViewResources.map((resource) => ({
       id: resource.id,
       label: resource.name,
@@ -1969,11 +1926,11 @@ export function RelationshipGraphWorkspace({
       state: resource.payload.state,
     }));
     try {
-      window.localStorage.setItem(LEGACY_GRAPH_VIEWS_KEY, JSON.stringify(snapshot));
+      window.localStorage.setItem(savedViewsStorageKey, JSON.stringify(snapshot));
     } catch {
       // The durable API remains authoritative when browser storage is unavailable.
     }
-  }, [migrationPending, migrationSettled, savedViewResources, savedViewsQuery.data]);
+  }, [savedViewResources, savedViewsQuery.data, savedViewsStorageKey]);
 
   const load = React.useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: relationshipKeys.graphs() });

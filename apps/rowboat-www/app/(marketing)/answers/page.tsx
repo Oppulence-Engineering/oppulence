@@ -6,7 +6,7 @@ import { seoAlternativeList, seoLanderList } from "../seo-theme";
 
 const TITLE = "Answers";
 const DESCRIPTION =
-  "Definitions for leftover search URLs. Help-center queries stay answered; the product they describe is a commitment ledger, not a /help host.";
+  "Definitions and guides to help you understand knowledge tools, relationship context, and the Oppulence assistant.";
 
 export const metadata = marketingMetadata({
   title: TITLE,

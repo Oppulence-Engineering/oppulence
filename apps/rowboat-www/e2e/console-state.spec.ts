@@ -6,7 +6,7 @@ test("note templates survive a browser reload through console persistence", asyn
   await expect(page.locator("main > header")).toHaveText("Notes");
 
   await page.getByRole("tab", { name: /Templates/ }).click();
-  await page.getByRole("button", { name: "Create template", exact: true }).click();
+  await page.getByRole("button", { name: "New template", exact: true }).click();
   await page.getByRole("textbox", { name: "Template title" }).fill("Renewal review");
   await page
     .getByRole("textbox", { name: "Template body" })

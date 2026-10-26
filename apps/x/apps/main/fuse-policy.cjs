@@ -16,4 +16,7 @@ module.exports = {
   // browser_v8_context_snapshot.bin. Enabling this fuse makes the app unbootable.
   [FuseV1Options.LoadBrowserProcessSpecificV8Snapshot]: false,
   [FuseV1Options.GrantFileProtocolExtraPrivileges]: false,
+  // Electron 42 added this fuse. Enabled is the default and the pre-42 behavior;
+  // disabling it puts explicit bounds checks into every WebAssembly (ONNX) memory access.
+  [FuseV1Options.WasmTrapHandlers]: true,
 };

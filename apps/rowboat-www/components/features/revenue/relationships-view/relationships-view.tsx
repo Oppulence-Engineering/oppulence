@@ -1234,7 +1234,7 @@ export function RelationshipsView({
             </ToggleGroupItem>
           </ToggleGroup>
           <Button
-            className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
             size="sm"
             onClick={() => setCreating(true)}
           >
@@ -1451,7 +1451,7 @@ export function RelationshipsView({
                 </Button>
               ) : (
                 <Button
-                  className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={() => setCreating(true)}
                   size="sm"
                 >

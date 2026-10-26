@@ -101,7 +101,7 @@ export function privacyLoadNotice(input: {
   return null;
 }
 
-export async function retryPrivacyLoad(
+async function retryPrivacyLoad(
   policy: { isError: boolean; refetch: () => Promise<unknown> },
   rules: { isError: boolean; refetch: () => Promise<unknown> },
 ): Promise<void> {

@@ -1,21 +1,17 @@
-import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
+
+import { marketingMetadata } from "../metadata";
 
 import { SimProductsPage } from "../sim-landing/subpages/sim-products-page";
 
 const DESCRIPTION =
-  "The Oppulence product suite: the commitment ledger, web app, desktop app, voice app, and integrations that keep business promises visible.";
+  "One email-first assistant across Web, Desktop, and Voice. Start in your browser and add local tools or voice capture when you need them.";
 
-export const metadata: Metadata = {
-  title: "Products — Oppulence",
+export const metadata = marketingMetadata({
+  title: "Products",
   description: DESCRIPTION,
-  alternates: { canonical: "https://oppulence.io/products" },
-  openGraph: {
-    title: "Products — Oppulence",
-    description: DESCRIPTION,
-    url: "https://oppulence.io/products",
-  },
-};
+  path: "/products",
+});
 
 export default async function ProductsRoute() {
   "use cache";

@@ -27,12 +27,14 @@ describe("authentication and BFF boundaries", () => {
     expect(isSessionUsable(session(1_001), 1_000)).toBe(true);
   });
 
-  it.each(["https://evil.example/path", "//evil.example/path", "javascript:alert(1)"])(
-    "rejects unsafe return target %s",
-    (target) => {
-      expect(safeReturnTo(target)).toBe("/app");
-    },
-  );
+  it.each([
+    "https://evil.example/path",
+    "//evil.example/path",
+    "/x/..//evil.example/path",
+    "javascript:alert(1)",
+  ])("rejects unsafe return target %s", (target) => {
+    expect(safeReturnTo(target)).toBe("/app");
+  });
 
   it("preserves safe relative paths including query and fragment", () => {
     expect(safeReturnTo("/app/agents?view=active#agent-1")).toBe("/app/agents?view=active#agent-1");

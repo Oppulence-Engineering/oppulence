@@ -59,19 +59,7 @@ func (h *Handler) ListWorkspaceNotes(w http.ResponseWriter, r *http.Request) {
 	}
 	notes := make([]workspaceNoteDTO, 0, len(page.Notes))
 	for _, note := range page.Notes {
-		notes = append(notes, workspaceNoteDTO{
-			ExternalID:       note.ExternalID,
-			Title:            note.Title,
-			Body:             note.Body,
-			Content:          note.Content,
-			MeetingLinked:    note.MeetingLinked,
-			LiveLinked:       note.LiveLinked,
-			RelationshipID:   note.RelationshipID,
-			RelationshipName: note.RelationshipName,
-			OccurredAt:       note.OccurredAt,
-			CreatedAt:        note.CreatedAt,
-			EventType:        note.EventType,
-		})
+		notes = append(notes, workspaceNoteDTO(note))
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"notes": notes, "hasMore": page.HasMore})
 }

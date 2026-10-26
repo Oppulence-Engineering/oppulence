@@ -66,12 +66,12 @@ test("client navigation preserves the document, product shell, and session boots
   });
 
   const sidebar = page.locator("nav").filter({ hasText: "Open promises" });
-  await sidebar.getByRole("button", { name: "Commitments", exact: true }).click();
+  await sidebar.getByRole("button", { name: "Promises", exact: true }).click();
   await expect(page).toHaveURL(/\/app\/revenue$/);
-  await expect(page.locator("main > header")).toHaveText("Commitments");
+  await expect(page.locator("main > header")).toHaveText("Promises");
 
   await sidebar.getByRole("button", { name: "Home", exact: true }).click();
-  await page.getByRole("link", { name: /Open promises The commitments/ }).click();
+  await sidebar.getByRole("button", { name: "Open promises", exact: true }).click();
   await expect(page).toHaveURL(/\/app\/report$/);
   await expect(page.locator("main > header")).toHaveText("Open promises");
 
@@ -94,7 +94,7 @@ test("views keep their address through Back, Forward, and reload", async ({ page
   await authenticate(page, "/app/revenue");
   const title = page.locator("main > header");
   const sidebar = page.locator("nav").filter({ hasText: "Open promises" });
-  await expect(title).toHaveText("Commitments");
+  await expect(title).toHaveText("Promises");
 
   await sidebar.getByRole("button", { name: "People", exact: true }).click();
   await expect(page).toHaveURL(/\/app\/revenue\?tab=people$/);
@@ -102,7 +102,7 @@ test("views keep their address through Back, Forward, and reload", async ({ page
 
   await page.goBack();
   await expect(page).toHaveURL(/\/app\/revenue$/);
-  await expect(title).toHaveText("Commitments");
+  await expect(title).toHaveText("Promises");
 
   await page.goForward();
   await expect(title).toHaveText("People");
@@ -118,7 +118,7 @@ test("views keep their address through Back, Forward, and reload", async ({ page
   await expect(title).toHaveText("Runs");
 });
 
-test("an unknown tab opens Commitments instead of an empty view", async ({ page }) => {
+test("an unknown tab opens Promises instead of an empty view", async ({ page }) => {
   await authenticate(page, "/app/revenue?tab=bogus");
-  await expect(page.locator("main > header")).toHaveText("Commitments");
+  await expect(page.locator("main > header")).toHaveText("Promises");
 });

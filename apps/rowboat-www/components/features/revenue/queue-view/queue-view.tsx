@@ -270,7 +270,7 @@ export function newActionIntro(hasCompany: boolean): string {
     : "Add a company before a follow-up can be created.";
 }
 
-export function recoveryNextCompaniesLabel(): string {
+function recoveryNextCompaniesLabel(): string {
   return "Show the next companies";
 }
 
@@ -484,7 +484,7 @@ export function QueueView({
             <WorkspaceEmptyState
               action={
                 <Button
-                  className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                   disabled={scanning}
                   onClick={onScan}
                   size="sm"

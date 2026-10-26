@@ -1025,7 +1025,6 @@ describe("durable note templates and favorites", () => {
     expect(notesTimelineUnread(2, 1)).toBe(false);
   });
 });
-import { describe, expect, it } from "vitest";
 
 describe("people directory labels", () => {
   it("names the full list and a search", () => {

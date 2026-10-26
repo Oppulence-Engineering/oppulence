@@ -6,11 +6,9 @@ import { Chip } from "@sim/emcn";
 
 import { SimCtaLink } from "../../primitives";
 import { EdgeFade } from "../../edge-fade";
-import type { ProductPreviewKey } from "./product-previews";
 import { ProductStagePreview } from "./product-stage-preview";
 
 const PRODUCTS = [
-  { id: "register" as const, label: "Register", href: "/features/commitment-register" },
   { id: "web" as const, label: "Web", href: "/web" },
   { id: "desktop" as const, label: "Desktop", href: "/desktop" },
   { id: "voice" as const, label: "Voice", href: "/voice-app" },
@@ -18,13 +16,11 @@ const PRODUCTS = [
 
 type ExplorerProductId = (typeof PRODUCTS)[number]["id"];
 
-/** Switchable product stage — interactive register + animated module previews. */
+/** Switch between the three illustrative application previews. */
 export function PlatformExplorer() {
   const previewId = useId();
-  const [selectedId, setSelectedId] = useState<ExplorerProductId>("register");
+  const [selectedId, setSelectedId] = useState<ExplorerProductId>("web");
   const selected = PRODUCTS.find((product) => product.id === selectedId) ?? PRODUCTS[0];
-  const stageProduct: ProductPreviewKey | "register-interactive" =
-    selected.id === "register" ? "register-interactive" : selected.id;
 
   return (
     <div
@@ -43,6 +39,7 @@ export function PlatformExplorer() {
               active={selectedId === product.id}
               aria-controls={previewId}
               aria-pressed={selectedId === product.id}
+              className="min-h-11 px-4"
               key={product.id}
               onClick={() => setSelectedId(product.id)}
             >
@@ -57,11 +54,7 @@ export function PlatformExplorer() {
         id={previewId}
         role="region"
       >
-        <ProductStagePreview
-          interactive={selected.id === "register"}
-          key={selected.id}
-          product={stageProduct}
-        />
+        <ProductStagePreview key={selected.id} product={selected.id} />
         <EdgeFade depth="stage" edges={["bottom"]} ground="canvas" />
       </div>
       <div className="pointer-events-auto absolute inset-x-7 bottom-6 z-20 flex justify-center max-sm:bottom-3">

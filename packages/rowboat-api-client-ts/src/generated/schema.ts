@@ -195,7 +195,7 @@ export interface paths {
     put?: never;
     /**
      * Resolve strict connector consent context
-     * @description HMAC-signed oauth-consent hook. It binds the Hydra challenge, WorkOS subject, desktop client, one connector audience, exact scope catalog, and current entitlement to one pending flow.
+     * @description HMAC-signed oauth-consent hook. It binds the original OAuth state and Hydra challenge to the WorkOS subject, desktop client, connector audience, exact scope catalog, and current entitlement. Revalidation may omit state only after this exact binding exists.
      */
     post: operations["preConsent"];
     delete?: never;
@@ -10075,7 +10075,7 @@ export interface components {
       verification_json?: string;
       workspace: components["schemas"]["RevenueWorkspace"];
     };
-    /** @description Strict oauth-consent context request bound to one Hydra challenge and pending connector flow. */
+    /** @description Strict oauth-consent context request bound to the original OAuth state and one Hydra challenge. */
     PreConsentRequest: {
       /**
        * @description Hydra consent challenge.
@@ -10091,6 +10091,11 @@ export interface components {
       requested_audience: string[];
       /** @description Exact non-empty connector scope set requested from the catalog. */
       requested_scopes: string[];
+      /**
+       * @description Original OAuth state from Hydra request_url. Omitted only when revalidating a challenge already bound to that state.
+       * @example state_01HABCDEF
+       */
+      state?: string;
       /**
        * @description Hook contract version. Only version 1 is accepted.
        * @example 1
@@ -12052,10 +12057,6 @@ export interface components {
       id: string;
       proposed_message?: string;
       proposed_subject?: string;
-      /**
-       * @description Why this action was proposed.
-       * @example Follow up on the open promise.
-       */
       reason?: string;
       recipient_email?: string;
       revision: number;
@@ -14305,6 +14306,7 @@ export interface operations {
          *       "requested_scopes": [
          *         "canvas:invoices.read"
          *       ],
+         *       "state": "state_01HABCDEF",
          *       "version": 1,
          *       "workos_user_id": "user_01HABCDEF"
          *     }
@@ -15499,15 +15501,7 @@ export interface operations {
            *             "current_time",
            *             "slack.read_thread",
            *             "slack.post_message",
-           *             "connector.read.gmail",
-           *             "connector.read.calendar",
-           *             "connector.write.gmail_draft",
-           *             "web.search",
-           *             "conduit.read",
-           *             "eigen.simulate",
-           *             "connector.read.composio_tool_search",
-           *             "connector.read.composio_tool_describe",
-           *             "connector.write.composio_tool_execute"
+           *             "web.search"
            *           ],
            *           "instructions": "You are Rowboat's Slack concierge. A teammate has tagged you (@-mentioned) in a\nSlack thread to do work on their behalf. You run as a durable cloud agent.\n\n- Read the thread first when the request refers to \"this\", \"the above\", or the\n  conversation: call slack.read_thread to load the messages, then act.\n- Answer the request directly and concisely. Your final message each turn is\n  posted back into the Slack thread automatically — write it as the reply the\n  teammate should see, not as a status note to yourself.\n- Use slack.post_message only for an EXTRA message or to post into a DIFFERENT\n  channel; do not use it to repeat your final answer (that is delivered for you).\n  Posting requires human approval.\n- Only use the tools advertised to you. If a capability you need is not available\n  (e.g. a connector is not connected, or a scope is missing), say so plainly and\n  tell the teammate what to connect or grant.\n- Never fabricate data or claim to have used a tool you did not call.\n- Keep replies short and skimmable — Slack is a chat surface. Lead with the\n  answer; add detail only if it helps.",
            *           "name": "Slack Concierge",

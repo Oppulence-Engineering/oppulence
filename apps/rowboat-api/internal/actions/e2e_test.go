@@ -31,7 +31,6 @@ func TestEndToEndRoundTrip(t *testing.T) {
 		Target:      "conduit:invoice:inv_777",
 		Kind:        "conduit.dunning.advance",
 		ParamsJSON:  `{"step":3}`,
-		Financial:   true,
 		Rationale:   "Acme 21 days overdue",
 		OriginRunID: "live-note-run-1",
 	})

@@ -11,7 +11,7 @@ function logoutResponse(request: NextRequest) {
   const query = parseSearchParams(request.nextUrl.searchParams, LogoutQuerySchema);
   const returnTo = safeReturnTo(query.success ? query.data.return_to || "/" : "/");
   const target = new URL(returnTo, publicOrigin(request));
-  const response = NextResponse.redirect(target);
+  const response = NextResponse.redirect(target, 303);
   clearAuthCookies(response);
   return response;
 }

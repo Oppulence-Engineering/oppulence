@@ -17,12 +17,16 @@ export function SimSolutionsProductPage({ config }: SimSolutionsProductPageProps
   const [showcase, ...features] = config.features;
 
   return (
-    <main className={LANDING_CONTENT_WIDTH} id="main-content">
+    <div className={LANDING_CONTENT_WIDTH}>
       <section
         aria-labelledby="product-heading"
         className="border-[var(--border)] border-b pb-24 max-sm:pb-14 max-lg:pb-20"
       >
         <div className="px-3 max-sm:px-0">{config.hero.visual}</div>
+        <p className="px-6 text-center text-[13px] leading-5 text-[var(--text-secondary)]">
+          Illustrative product previews. Planned capabilities are identified in the descriptions
+          below.
+        </p>
         <div className={LANDING_GUTTER}>
           <div className={cn(HOME_INSET, "pt-5 text-center max-sm:pt-0")}>
             <p className="sr-only">{config.hero.summary}</p>
@@ -30,7 +34,7 @@ export function SimSolutionsProductPage({ config }: SimSolutionsProductPageProps
               Oppulence / {config.module}
             </p>
             <h1
-              className="mx-auto max-w-[20ch] text-balance font-normal text-[80px] text-[var(--text-primary)] leading-[1.02] tracking-[-0.035em] max-sm:text-[44px] max-lg:text-[64px]"
+              className="mx-auto max-w-[20ch] text-balance font-normal text-[80px] text-[var(--text-primary)] leading-[1.02] tracking-[-0.035em] max-sm:text-[clamp(2rem,10vw,2.75rem)] max-lg:text-[64px]"
               id="product-heading"
             >
               {config.hero.heading}
@@ -53,6 +57,6 @@ export function SimSolutionsProductPage({ config }: SimSolutionsProductPageProps
           ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

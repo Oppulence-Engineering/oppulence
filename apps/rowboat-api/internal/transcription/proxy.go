@@ -150,6 +150,8 @@ func (h *Handler) Listen(w http.ResponseWriter, r *http.Request) {
 			_ = downstream.WriteControl(websocket.CloseMessage,
 				websocket.FormatCloseMessage(websocket.ClosePolicyViolation, "cloud transcription allowance exhausted"),
 				time.Now().Add(time.Second))
+			_ = downstream.Close()
+			_ = upstream.Close()
 		})
 		defer quotaTimer.Stop()
 	}

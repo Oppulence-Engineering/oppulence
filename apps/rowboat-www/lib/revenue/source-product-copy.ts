@@ -240,7 +240,7 @@ const ACTION_OUTCOME_LABELS: Record<string, string> = {
 };
 
 /** An outcome kind is stored on the activity. The timeline names the result. */
-export function actionOutcomeLabel(kind: string): string {
+function actionOutcomeLabel(kind: string): string {
   const key = kind.trim().toLowerCase().replaceAll(" ", "_");
   return ACTION_OUTCOME_LABELS[key] ?? enumLabel(key);
 }
@@ -256,7 +256,7 @@ export function activityOutcomeSummary(summary: string): string | null {
 }
 
 /** A stored event type becomes a short activity name. Dots are not words. */
-export function activityEventLabel(eventType: string): string {
+function activityEventLabel(eventType: string): string {
   const key = eventType.trim().toLowerCase();
   const outcome = /^action\.outcome\.(.+)$/.exec(key);
   if (outcome) return actionOutcomeLabel(outcome[1]);
@@ -478,7 +478,7 @@ export function activityPromiseUpdateSummary(summary: string): string | null {
  * Attendance stores "2 external participant(s) on \"Q3 review\"". The row
  * uses the same people sentence as the opened activity.
  */
-export function activityAttendanceSummary(summary: string): string | null {
+function activityAttendanceSummary(summary: string): string | null {
   const match = /^(\d+) external participant\(s\) on "(.+)"$/.exec(summary.trim());
   if (!match?.[1] || !match[2]) return null;
   const count = Number(match[1]);
@@ -497,7 +497,7 @@ export function activityAttendanceSummary(summary: string): string | null {
  * A reviewed conversation stores "Q3 review · 12 segments · 3 material claims".
  * The row uses the same line count as the opened transcript.
  */
-export function activityConversationSummary(summary: string): string | null {
+function activityConversationSummary(summary: string): string | null {
   const match = /^(.+) · (\d+) segments · (\d+) material claims$/.exec(summary.trim());
   if (!match?.[1] || !match[2] || !match[3]) return null;
   const title = match[1].trim();
@@ -515,7 +515,7 @@ export function activityConversationSummary(summary: string): string | null {
  * Gmail stores "4-message thread with acme.com". The row says how many
  * messages and who they were with. A missing company stays a person.
  */
-export function activityMailThreadSummary(summary: string): string | null {
+function activityMailThreadSummary(summary: string): string | null {
   const match = /^(\d+)-message thread with (.+)$/.exec(summary.trim());
   if (!match?.[1] || !match[2]) return null;
   const count = Number(match[1]);
@@ -531,7 +531,7 @@ export function activityMailThreadSummary(summary: string): string | null {
  * uses the same promise sentence as the opened activity. A named guest keeps
  * their name. A speaker id does not.
  */
-export function activityCommitmentSummary(summary: string): string | null {
+function activityCommitmentSummary(summary: string): string | null {
   const match = /^(.+?) committed to: (.+)$/.exec(summary.trim());
   if (!match?.[1] || !match[2]) return null;
   const who = match[1].trim();
@@ -578,7 +578,7 @@ export function activityRowSummary(summary: string): string {
  * Adding a person stores "{name} added by the user". The row says you added
  * them. The request summary stays so the API sample still matches.
  */
-export function activityPersonAddedSummary(summary: string): string | null {
+function activityPersonAddedSummary(summary: string): string | null {
   const match = /^(.*) added by the user\.?$/.exec(summary.trim());
   if (!match) return null;
   const name = (match[1] ?? "").trim();
@@ -604,7 +604,7 @@ const ACTIVITY_DECISION_SUMMARIES: Record<string, string> = {
  * A review, a contradiction, and a shared-plan reply store a model sentence.
  * The activity row says what the person did. The stored summary stays put.
  */
-export function activityDecisionSummary(summary: string): string | null {
+function activityDecisionSummary(summary: string): string | null {
   return ACTIVITY_DECISION_SUMMARIES[summary.trim()] ?? null;
 }
 
@@ -614,7 +614,7 @@ export function activityDecisionSummary(summary: string): string | null {
  * observed in #…". The activity row names the mail, the meeting, or the
  * record. A placeholder name and a speaker id stay off the row.
  */
-export function activitySourceSnapshotSummary(summary: string): string | null {
+function activitySourceSnapshotSummary(summary: string): string | null {
   const gmail = /^Gmail thread observed: ?(.*)$/.exec(summary.trim());
   if (gmail) {
     const subject = (gmail[1] ?? "").trim();

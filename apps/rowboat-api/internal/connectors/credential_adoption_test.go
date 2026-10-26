@@ -87,6 +87,20 @@ func runAmbiguousCommitScenario(t *testing.T, database *db.DB) {
 		t.Fatal(err)
 	}
 	state := authorizeURL.Query().Get("state")
+	consentBody, err := json.Marshal(preConsentRequest{
+		Version: 1, Challenge: "challenge-ambiguous-callback", State: state,
+		WorkOSUserID: owner.WorkosUserID, HydraClientID: "broker",
+		RequestedAudience: []string{"mcp:canvas"},
+		RequestedScopes:   []string{"canvas:invoices.read", "canvas:customers.read"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	consentRecorder := httptest.NewRecorder()
+	h.PreConsent(consentRecorder, httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(string(consentBody))).WithContext(auth.WithInternal(context.Background())))
+	if consentRecorder.Code != http.StatusOK {
+		t.Fatalf("pre-consent binding: %d %s", consentRecorder.Code, consentRecorder.Body.String())
+	}
 
 	h.commitCallbackForTest = func(tx *ent.Tx) error {
 		if err := tx.Commit(); err != nil {

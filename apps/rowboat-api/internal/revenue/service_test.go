@@ -1007,8 +1007,8 @@ func TestListActionsTiedPriorityUsesID(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(second.Actions) != 1 || second.Actions[0].Reason != "Tied Task Last" || second.HasMore {
-		t.Fatalf("later id page = %d hasMore=%v %q", len(second.Actions), second != nil && second.HasMore, func() string {
-			if second == nil || len(second.Actions) == 0 {
+		t.Fatalf("later id page = %d hasMore=%v %q", len(second.Actions), second.HasMore, func() string {
+			if len(second.Actions) == 0 {
 				return ""
 			}
 			return second.Actions[0].Reason

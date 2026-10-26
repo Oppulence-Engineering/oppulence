@@ -48,34 +48,44 @@ const screenshot = {
 
 export const homepageFaqs: MarketingFaqItem[] = [
   {
-    question: "What does Oppulence actually keep?",
+    question: "What is Oppulence?",
     answer:
-      "A two-sided register of commitments: what your team promised and what the other side promised, each tied to the email, meeting, or CRM record it came from. It is not a second CRM and it is not a pile of transcripts.",
+      "Oppulence is an email-first personal assistant built around your relationships. It brings together conversations, meetings, and notes to help you understand the context, prepare a reply, and follow through. We are connecting Web, Desktop, and Voice around one assistant and one history of actions.",
   },
   {
-    question: "Does anything leave my machine?",
+    question: "Do I need to install Desktop or Voice?",
     answer:
-      "It depends how you run it. Local notes, meeting audio, and on-device transcription can stay on the desktop. When you sign in, relationship state syncs to Oppulence so web and desktop share the same ledger, and model calls may go to your own provider or to the credit-gated gateway. PostHog analytics is opt-in.",
+      "No. Start with Oppulence Web in your browser. Desktop adds local files and native tools. Voice is an optional companion for dictation, thought capture, and meetings. Desktop and Voice have separate installers today.",
   },
   {
-    question: "Will it send email or write to my CRM on its own?",
+    question: "What is available today, and what is planned?",
     answer:
-      "No. External actions are drafted and held for approval. Gmail, Slack, and HubSpot writes are gated that way in the current connector set.",
+      "Desktop includes email, local notes, meeting capture, live notes, background tasks, and an embedded browser. Web and the shared API provide relationship views, assistant work, and approval flows, subject to rollout. Common Today, Inbox, People, Library, and Activity navigation, the full web inbox experience, Ask Oppulence in Voice, and the complete Voice-to-relationship handoff are planned improvements.",
   },
   {
-    question: "What can I connect today?",
+    question: "Can I keep using my existing email app?",
     answer:
-      "First-party relationship sources are Gmail and Google Calendar, Slack, and HubSpot. The desktop app also syncs Granola and Fireflies into a local Markdown vault, and you can attach MCP servers you already run.",
+      "You can keep using Gmail alongside the connected assistant. Desktop also has an email view. Voice can dictate into other apps, including Outlook, but dictation does not connect that app as a relationship data source. Outlook is not in the current first-party relationship connector set.",
   },
   {
-    question: "Which computers does the desktop app run on?",
+    question: "Will it send a reply without my approval?",
     answer:
-      "Signed installers ship for macOS (Apple silicon and Intel), Windows, and Linux. Native meeting capture uses a sidecar on macOS 14.2 and later; other platforms fall back to a renderer path.",
+      "The governed action flow holds external sends and writes for your review. Check the proposed content and sources before approving. A prepared draft, an attempted action, and a verified result are different states.",
   },
   {
-    question: "Is this generally available?",
+    question: "Are private notes treated as facts?",
     answer:
-      "The desktop coworker stack (vault, live notes, meeting capture, agents) ships today. The commitment ledger and connector writes are in a design-partner rollout. Sign up to get the report and the live register as they open.",
+      "A private note is your perspective, not evidence that a customer said something. The shared experience is being built to distinguish source evidence, private notes, and assistant inferences, with uncertain identities and interpretations open to correction.",
+  },
+  {
+    question: "What leaves my device?",
+    answer:
+      "It depends on the capability and provider you select. Local transcription can keep audio on your device; a cloud model receives content needed for its request. The connected experience must preserve explicit artifact sharing. Signing in is not consent to upload every private note. See the privacy and local-data guides for current behavior.",
+  },
+  {
+    question: "What can I connect?",
+    answer:
+      "The public relationship connector catalog covers Gmail, Google Calendar, Slack, and HubSpot. Desktop also supports local notes, meeting imports, and MCP tools. Availability and permitted actions depend on the connector and rollout stage.",
   },
 ];
 
@@ -84,11 +94,11 @@ export const featurePages: CapabilityPage[] = [
     kind: "feature",
     slug: "commitment-register",
     path: "/features/commitment-register",
-    eyebrow: "Commitment register",
-    title: "A ledger of promises, not a second CRM.",
+    eyebrow: "Follow-ups and commitments",
+    title: "Keep track of what still needs to happen.",
     description:
-      "Oppulence keeps a two-sided register of what you owe and what they owe, each row linked to the source that created it.",
-    lede: "CRMs store deals. Inboxes store threads. Neither stores the delivery date you conceded on a Friday call. The register is that missing record.",
+      "Keep your promises and outstanding requests visible, with the original conversation attached.",
+    lede: "A meeting ends, a reply arrives, and the next step can get lost. The commitment register is one way the assistant helps you keep unfinished work in view.",
     screenshot: screenshot.webDetail,
     screenshotAlt:
       "An Oppulence account record showing a promised security review, its evidence timeline, and what changed",
@@ -168,11 +178,11 @@ export const featurePages: CapabilityPage[] = [
     kind: "feature",
     slug: "account-mission-control",
     path: "/features/account-mission-control",
-    eyebrow: "Account mission control",
-    title: "Open an account. See the receipts.",
+    eyebrow: "Relationship context",
+    title: "Remember the person behind the conversation.",
     description:
-      "One account view for state, changes, participants, commitments, evidence, and the recommended next move.",
-    lede: "Most tools give you a company record and a pile of activities. Mission control gives you why this account needs you today, with the sources still attached.",
+      "Bring emails, meetings, participants, and open questions into one relationship history, with the sources available to inspect.",
+    lede: "Before you prepare a reply, find what was last discussed and what remains unresolved. The existing relationship views are the foundation for the planned People experience.",
     screenshot: screenshot.desktopDetail,
     screenshotAlt:
       "Oppulence account detail with a drafted follow-up held at an approve or reject gate",
@@ -181,8 +191,8 @@ export const featurePages: CapabilityPage[] = [
       body: "Email has the concession. The CRM has the stage. The calendar has the QBR. Slack has the escalation. Nobody is paid to assemble that into one picture before a renewal call.",
     },
     howItWorks: {
-      title: "One timeline, scored by what moved.",
-      body: "Mission control joins the register, the people on the thread, and the recent changes. The recommended next move is a draft, not a send.",
+      title: "The history behind the next reply.",
+      body: "Review correspondence, people, and recent changes together. Open the original evidence before using it in a response, and keep your private interpretation distinct from what the source says.",
     },
     workflow: [
       "Pick an account from the ranked list or search.",
@@ -250,11 +260,11 @@ export const featurePages: CapabilityPage[] = [
     kind: "feature",
     slug: "attention-queue",
     path: "/features/attention-queue",
-    eyebrow: "Attention queue",
-    title: "The few relationships that need a person this week.",
+    eyebrow: "Work that needs you",
+    title: "Know which conversation needs your attention.",
     description:
-      "A ranked queue of accounts where silence, a missed commitment, or a money-state change makes the next move worth attention.",
-    lede: "A full book of business is not a to-do list. The queue is the short list: why now, what is at stake, and what to do next.",
+      "Review open requests, missed dates, and conversations waiting on a response, with a reason for each proposed next step.",
+    lede: "The existing attention queue helps identify unfinished work. The planned Today view will bring that work together with prepared replies, approvals, and upcoming meetings.",
     screenshot: screenshot.webList,
     screenshotAlt:
       "Oppulence account mission control ranking accounts by what changed and what is owed",
@@ -321,8 +331,8 @@ export const featurePages: CapabilityPage[] = [
     kind: "feature",
     slug: "governed-actions",
     path: "/features/governed-actions",
-    eyebrow: "Governed actions",
-    title: "It can draft. It cannot send without you.",
+    eyebrow: "Review and approve",
+    title: "Review the reply before it leaves.",
     description:
       "Email, Slack, calendar, and CRM writes are proposed, checked, and held until a person approves them.",
     lede: "The useful assistant is the one that waits. Oppulence will draft a follow-up from the account history. It will not mail it under your name until you say so.",
@@ -396,19 +406,19 @@ export const featurePages: CapabilityPage[] = [
     slug: "meeting-capture",
     path: "/features/meeting-capture",
     eyebrow: "Meeting capture",
-    title: "No bot in the call. Audio stays on the machine until you transcribe it.",
+    title: "Carry the conversation into the next step.",
     description:
-      "Oppulence Desktop records microphone and system audio locally, transcribes with a bundled Whisper path, and turns agreements into ledger evidence.",
-    lede: "Most meeting tools join as a participant. This one records the room you are already in. The file lives on your disk. Transcription can run without uploading the audio.",
+      "Capture meetings, review transcripts and notes, and prepare follow-ups. Voice owns the floating capture experience; the complete relationship handoff is in development.",
+    lede: "Record with appropriate consent, then check the transcript and speaker labels. Local transcription is available. Sharing a recording or note with Oppulence is a separate decision.",
     screenshot: screenshot.meetings,
     screenshotAlt: "Oppulence Desktop meeting capture and notes on the local machine",
     problem: {
-      title: "A transcript is not a commitment.",
-      body: "Otter and Granola are good at writing down what was said. They are not a longitudinal register of what was promised. The useful part of a meeting is the date someone agreed to, three weeks later.",
+      title: "The value continues after the call.",
+      body: "The next email may depend on a decision, an open question, or a promised date from the meeting. Keep those points linked to what was actually said.",
     },
     howItWorks: {
       title: "Capture locally. Keep the agreement.",
-      body: "On macOS 14.2 and later, a native sidecar records mic and system audio. Other platforms use a renderer fallback. Whisper runs on the machine. Notes land in the vault. When you are signed in, evidence can be queued to the ledger.",
+      body: "On macOS 14.2 and later, a native sidecar records mic and system audio. Other platforms use a renderer fallback. Whisper runs on the machine. Notes land in the vault. Capture delivery and relationship history are separate steps; review and projection of Voice artifacts remain integration work.",
     },
     workflow: [
       "Start capture from the desktop app. Nothing joins the Zoom or Meet call as a bot.",
@@ -427,7 +437,7 @@ export const featurePages: CapabilityPage[] = [
       },
       {
         title: "Pairs with Voice",
-        body: "Oppulence Voice is the standalone dictation and meeting app. Desktop is the ledger sitting next to it. They are not the same binary.",
+        body: "Voice is the optional companion for global dictation and capture. Desktop is the full workspace. The planned connection brings reviewed Voice artifacts into the same relationship history.",
       },
     ],
     examples: [
@@ -534,7 +544,7 @@ export const featurePages: CapabilityPage[] = [
     title: "Plain Markdown. Your directory. Your editor if you want it.",
     description:
       "Oppulence Desktop keeps an Obsidian-compatible Markdown vault for notes, meeting output, and synced traces you choose to pull in.",
-    lede: "The ledger is a shared record. The vault is yours. Files sit in a folder you picked. The app watches it. Nothing about that requires a browser tab.",
+    lede: "Your notes live in a folder you choose. Inspect, edit, and back them up as Markdown. A private note records your perspective; it must remain distinct from customer statements and shared evidence.",
     screenshot: screenshot.knowledge,
     screenshotAlt: "Local Markdown knowledge in Oppulence Desktop",
     problem: {
@@ -894,15 +904,15 @@ export const integrationPages: CapabilityPage[] = [
     slug: "gmail",
     path: "/integrations/gmail",
     eyebrow: "Gmail",
-    title: "Start with the inbox. That is where the promises are.",
+    title: "Start with the conversations you already have.",
     description:
-      "Gmail is the first relationship source: read threads for commitments, then draft or send only after approval.",
-    lede: "If you connect one thing, connect Gmail. The register is mostly made of sentences people already wrote.",
+      "Connect Gmail so the assistant can use authorized conversations as context and prepare replies for your review.",
+    lede: "Start with Gmail and keep working in your familiar email app if you prefer. Add meetings, notes, and other sources when they help explain the conversation.",
     screenshot: screenshot.email,
     screenshotAlt: "Customer threads in Oppulence Desktop next to the assistant",
     problem: {
-      title: "The sent folder is the real ledger, and nobody reads it.",
-      body: "You already wrote the promise. It is sitting in a thread with a date and a name. The work is getting it out of there.",
+      title: "The answer is often in an earlier thread.",
+      body: "An open question, a decision, or a useful introduction may be buried in earlier correspondence. Bring that history into view before preparing the next reply.",
     },
     howItWorks: {
       title: "OAuth, a recent window, a draft you can refuse.",
@@ -917,7 +927,7 @@ export const integrationPages: CapabilityPage[] = [
     capabilities: [
       {
         title: "Read-only to start",
-        body: "The first connection is for the register, not for sending.",
+        body: "Begin with source review. Grant write access only when you want to use approved actions.",
       },
       {
         title: "Same Google account as calendar",
@@ -1144,33 +1154,33 @@ export const guidePages: CapabilityPage[] = [
     slug: "desktop-vs-web",
     path: "/guides/desktop-vs-web",
     eyebrow: "Guide",
-    title: "When to use the web app, and when to install the desktop.",
+    title: "Choose Web, Desktop, or Voice for the work at hand.",
     description:
-      "Web and desktop share the same relationship model when you are signed in. They are not the same computer.",
-    lede: "Use web for the shared queue and for days the laptop is shut. Use desktop when the work is happening next to you, or when the file should never leave the disk.",
+      "Start in your browser, add Desktop for local work, and use the optional Voice companion for capture.",
+    lede: "Web is the everyday home. Desktop adds local files and native tools. Voice handles global dictation and meeting capture. Shared navigation and the complete Voice handoff are in development.",
     screenshot: screenshot.desktopHome,
     screenshotAlt: "Oppulence Desktop home view",
     problem: {
-      title: "A browser tab cannot record the room.",
-      body: "It also cannot watch a local Markdown folder or run Whisper on a file that must stay put.",
+      title: "Start with the work in front of you.",
+      body: "Choose Web for browser access, Desktop for local files and native tools, and Voice for dictation or capture. You can start with one app and add another when you need it.",
     },
     howItWorks: {
-      title: "Equal clients, different nodes.",
-      body: "Both talk to the same API. Desktop is also a local observation node: vault, live notes, meeting capture, in-app browser, MCP.",
+      title: "One assistant, distinct roles.",
+      body: "Web and Desktop use the shared Oppulence service. Desktop adds your local vault, embedded browser, and native tools. Voice remains independently useful, with a planned connection to the same assistant runtime.",
     },
     workflow: [
-      "Sign up and use web if you want the ledger without installing anything.",
-      "Install desktop if you want local notes, capture, or the assistant beside the inbox.",
-      "Sign in on desktop if you want the same accounts as the browser.",
-      "Stay local on desktop if you would rather bring your own model keys and skip the cloud ledger.",
+      "Start on the web without installing a native application.",
+      "Add Desktop when you need local notes, an embedded browser, or native tools.",
+      "Add Voice when you want dictation or meeting capture without opening the full workspace.",
+      "Check the sharing and provider settings before making local material available to a cloud service.",
     ],
     capabilities: [],
     examples: [],
     faqs: [
       {
-        question: "Do I need both?",
+        question: "Do I need all three apps?",
         answer:
-          "No. Plenty of people will only use web. Desktop is there for the jobs a tab cannot do.",
+          "No. Start on the web. Desktop and Voice are optional, separate downloads. The complete shared navigation and Voice-to-relationship handoff are still in development.",
       },
     ],
     related: [
@@ -1186,7 +1196,7 @@ export const guidePages: CapabilityPage[] = [
     eyebrow: "Guide",
     title: "What stays on the machine, and what does not.",
     description:
-      "A precise map of local vault, meeting audio, cloud ledger, model providers, and analytics.",
+      "Understand local notes, meeting audio, shared relationship data, model providers, and analytics.",
     lede: "We will not say 'nothing leaves your computer.' That is only true for some setups. Here is the actual split.",
     screenshot: screenshot.knowledge,
     screenshotAlt: "Local knowledge staying on the desktop",
@@ -1311,14 +1321,14 @@ export function getCapabilityPage(kind: CapabilityPage["kind"], slug: string) {
 
 export const indexCopy = {
   features: {
-    title: "The capabilities the ledger is made of.",
+    title: "The context and tools behind the assistant.",
     description:
-      "Each of these pages is a real surface in the product: a register, a queue, a gate, or a desktop-only node.",
+      "Explore relationship memory, follow-ups, source review, approvals, and the native tools that support everyday work.",
   },
   useCases: {
     title: "The jobs people actually run.",
     description:
-      "Not personas. Workflows: recover a promise, run an account, keep a meeting, check a contact.",
+      "Prepare for meetings, review replies, keep relationships in context, and follow through on unfinished work.",
   },
   integrations: {
     title: "Sources we actually connect.",

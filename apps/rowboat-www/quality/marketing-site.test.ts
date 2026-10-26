@@ -75,7 +75,10 @@ describe("public marketing information architecture", () => {
       new URL("../app/(marketing)/marketing-components.tsx", import.meta.url),
       "utf8",
     );
-    const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+    const styles = readFileSync(
+      new URL("../app/(marketing)/marketing-styles.css", import.meta.url),
+      "utf8",
+    );
     expect(source).toContain("sm-nav-item");
     expect(source).toContain("sm-nav-panel");
     expect(source).not.toContain("data-marketing-dropdown");
@@ -95,7 +98,7 @@ describe("public marketing information architecture", () => {
     expect(source).toContain("sm-suite-public");
     expect(source).not.toContain("sm-memory-home sm-suite-shell");
     expect(source).not.toContain("export function HomePage");
-    expect(hero).toContain('href="/use-cases/account-management"');
+    expect(hero).toContain('href="/products"');
     expect(source).not.toContain("/use-cases/sales-to-delivery-handoff");
     expect(source).not.toContain("/features/handoff-report");
     expect(source).not.toContain("/features/watch-after-kickoff");
@@ -103,7 +106,10 @@ describe("public marketing information architecture", () => {
   });
 
   it("styles catalog and compare pages instead of shipping class names with no CSS", () => {
-    const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+    const styles = readFileSync(
+      new URL("../app/(marketing)/marketing-styles.css", import.meta.url),
+      "utf8",
+    );
     const simLandingStyles = readFileSync(
       new URL("../app/(marketing)/sim-landing/sim-landing.css", import.meta.url),
       "utf8",
@@ -193,7 +199,7 @@ describe("public marketing information architecture", () => {
         new URL("../app/(marketing)/sim-landing/hero-platform-stage.tsx", import.meta.url),
         "utf8",
       ),
-    ).toContain("HeroPlatformLoopMount");
+    ).toContain("PlatformExplorer");
     expect(
       readFileSync(
         new URL("../app/(marketing)/sim-landing/hero-platform-stage.tsx", import.meta.url),
@@ -201,7 +207,7 @@ describe("public marketing information architecture", () => {
       ),
     ).toContain("SimMobileHeroPreview");
     expect(productDemo).toContain("ProductDemoCaption");
-    expect(hero).toContain("A two-sided register of business promises");
+    expect(hero).toContain("email-first personal assistant");
     expect(
       readFileSync(
         new URL("../app/(marketing)/sim-landing/platform-suite.tsx", import.meta.url),
@@ -251,7 +257,7 @@ describe("public marketing information architecture", () => {
         new URL("../app/(marketing)/sim-landing/mobile-hero-preview.tsx", import.meta.url),
         "utf8",
       ),
-    ).toContain("EdgeFade");
+    ).toContain("Planned workflow: meeting context, reviewed reply, tracked follow-up");
     expect(
       readFileSync(
         new URL("../app/(marketing)/sim-landing/workspace-controls.tsx", import.meta.url),
@@ -265,8 +271,10 @@ describe("public marketing information architecture", () => {
       ),
     ).toContain("ComposerWorkflowStage");
     expect(landing).not.toMatch(/<main[\s>]/);
-    expect(editorial).toContain("Oppulence is not a CRM, and it is not your inbox.");
-    expect(editorial).toContain("Commitment ledger");
+    expect(editorial.replace(/\s+/g, " ")).toContain(
+      "one assistant that keeps the people, context, and next steps connected",
+    );
+    expect(editorial).toContain("The next email should remember the last meeting.");
     expect(editorial).toContain("SimAgentMomentum");
     expect(footer).toContain("SimThemeToggle");
     expect(footerWordmark).toContain("FooterWordmarkLoop");
@@ -351,7 +359,10 @@ describe("public marketing information architecture", () => {
       new URL("../app/(marketing)/seo-lander.tsx", import.meta.url),
       "utf8",
     );
-    const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+    const styles = readFileSync(
+      new URL("../app/(marketing)/marketing-styles.css", import.meta.url),
+      "utf8",
+    );
 
     expect(page?.title).toMatch(/Help center software/i);
     expect(lander?.faqs.length).toBeGreaterThan(0);
@@ -379,7 +390,10 @@ describe("public marketing information architecture", () => {
       new URL("../app/(marketing)/marketing-sim-theme.css", import.meta.url),
       "utf8",
     );
-    const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+    const styles = readFileSync(
+      new URL("../app/(marketing)/marketing-styles.css", import.meta.url),
+      "utf8",
+    );
 
     expect(layoutClient).toContain("SimLandingShell");
     expect(layoutClient).not.toContain("TopBar");
@@ -428,12 +442,12 @@ describe("public marketing information architecture", () => {
       {
         route: "../app/(marketing)/contact/page.tsx",
         body: "../app/(marketing)/sim-landing/subpages/sim-contact-page.tsx",
-        markers: ["SimContactPage", "Plain widget", "TrustedBy"],
+        markers: ["SimContactPage", "support chat", "TrustedBy"],
       },
       {
         route: "../app/(marketing)/compare/page.tsx",
         body: "../app/(marketing)/sim-landing/subpages/sim-compare-hub.tsx",
-        markers: ["SimCompareHub", "Category seams", "how to read these"],
+        markers: ["SimCompareHub", "Find the right fit", "how to read these"],
       },
       {
         route: "../app/(marketing)/features/page.tsx",
@@ -460,24 +474,24 @@ describe("public marketing information architecture", () => {
       {
         route: "../app/(marketing)/products/page.tsx",
         body: "../app/(marketing)/sim-landing/subpages/sim-products-page.tsx",
-        markers: ["SimProductsPage", "SimSolutionsProductPage", "productsSuiteToSolutionsConfig"],
+        markers: ["SimProductsPage", "SimProductNav", "Choose your Oppulence product"],
         extra: "../app/(marketing)/sim-landing/subpages/solutions-product/platform-explorer.tsx",
         extraMarkers: ["PlatformExplorer"],
       },
       {
         route: "../app/(marketing)/web/page.tsx",
         body: "../app/(marketing)/sim-landing/subpages/sim-platform-page.tsx",
-        markers: ["SimPlatformPage", "SimSolutionsProductPage", "platformToSolutionsConfig"],
+        markers: ["SimPlatformPage", "SimProductNav", "SimSubpageFaqSection"],
       },
       {
         route: "../app/(marketing)/desktop/page.tsx",
         body: "../app/(marketing)/sim-landing/subpages/sim-platform-page.tsx",
-        markers: ["SimPlatformPage", "SimSolutionsProductPage"],
+        markers: ["SimPlatformPage", "page.sections", "page.setup"],
       },
       {
         route: "../app/(marketing)/voice-app/page.tsx",
         body: "../app/(marketing)/sim-landing/subpages/sim-platform-page.tsx",
-        markers: ["SimPlatformPage", "SimSolutionsProductPage"],
+        markers: ["SimPlatformPage", "page.sections", "page.setup"],
       },
       {
         route: "../app/(marketing)/blog/page.tsx",

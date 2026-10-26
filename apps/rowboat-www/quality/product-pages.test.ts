@@ -1,6 +1,10 @@
+// @vitest-environment jsdom
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { getPlatformPage, platformPages, productLinks } from "@/app/(marketing)/marketing-data";
+import { SimPlatformPage } from "@/app/(marketing)/sim-landing/subpages/sim-platform-page";
 
 describe("Oppulence product surfaces", () => {
   it("publishes one page per way of running Oppulence, linked from the product nav", () => {
@@ -31,6 +35,36 @@ describe("Oppulence product surfaces", () => {
         expect(section.bullets.length).toBeGreaterThan(0);
         expect(section.screenshot).toMatch(/^\/marketing\//);
         expect(section.alt.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("renders the complete product story, availability, and the right next step", () => {
+    for (const page of platformPages) {
+      const document = new DOMParser().parseFromString(
+        renderToStaticMarkup(createElement(SimPlatformPage, { page })),
+        "text/html",
+      );
+      expect(document.querySelectorAll("h1")).toHaveLength(1);
+      expect(document.querySelector("h1")?.textContent).toBe(page.title);
+      expect(
+        document
+          .querySelector('[aria-label="Products"] [aria-current="page"]')
+          ?.getAttribute("href"),
+      ).toBe(`/${page.slug}`);
+      expect(document.querySelector("section a")?.getAttribute("href")).toBe(page.cta.href);
+      const text = document.body.textContent;
+      for (const section of page.sections) {
+        expect(text).toContain(section.title);
+        for (const bullet of section.bullets) expect(text).toContain(bullet);
+      }
+      for (const spec of page.specs) expect(text).toContain(spec.detail);
+      for (const step of page.setup) expect(text).toContain(step.body);
+      for (const faq of page.faqs) expect(text).toContain(faq.question);
+      expect(text).toContain(page.availability.current);
+      expect(text).toContain(page.availability.planned);
+      for (const product of platformPages) {
+        expect(document.querySelector(`nav a[href="/${product.slug}"]`)).not.toBeNull();
       }
     }
   });

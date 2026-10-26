@@ -20,7 +20,7 @@ function serializeTemplates(templates: any[]) {
 
 const ListTemplatesSchema = z.object({
     category: z.string().optional(),
-    search: z.string().optional(),
+    search: z.string().max(200).optional(),
     featured: z.boolean().optional(),
     source: z.enum(['library','community']).optional(),
     cursor: z.string().optional(),

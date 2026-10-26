@@ -518,7 +518,7 @@ func (s *Service) UpsertWorkspaceMember(
 		).
 		Only(ctx)
 	if err == nil {
-		if existing.Role == "owner" {
+		if existing.Role == "owner" || (existing.Role == "admin" && actorRole != "owner") {
 			return nil, ErrForbidden
 		}
 		return existing.Update().SetRole(role).SetStatus("active").Save(ctx)
@@ -1381,7 +1381,7 @@ func hiddenGraphConnectionCount(needle string) (int, bool) {
 	return 0, false
 }
 
-func countedPhrase(needle, prefix, suffix string, min int) (int, bool) {
+func countedPhrase(needle, prefix, suffix string, minimum int) (int, bool) {
 	rest := needle
 	for rest != "" {
 		index := strings.Index(rest, prefix)
@@ -1394,7 +1394,7 @@ func countedPhrase(needle, prefix, suffix string, min int) (int, bool) {
 		}
 		body := rest[index+len(prefix):]
 		number, suffixAt := leadingCount(body)
-		if suffixAt < 0 || number < min || !strings.HasPrefix(body[suffixAt:], suffix) {
+		if suffixAt < 0 || number < minimum || !strings.HasPrefix(body[suffixAt:], suffix) {
 			rest = rest[index+len(prefix):]
 			continue
 		}
@@ -8551,6 +8551,43 @@ func relationshipMailAccess(actor uuid.UUID, now time.Time, reason string) predi
 	})
 }
 
+func communicationMetadataVisibleTo(actorID uuid.UUID) predicate.CommunicationInteraction {
+	return predicate.CommunicationInteraction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeCommunicationMetadataVisible(
+				b,
+				s.C(communicationinteraction.WorkspaceColumn),
+				s.C(communicationinteraction.OwnerColumn),
+				s.C(communicationinteraction.FieldID),
+				s.C(communicationinteraction.FieldSourceAccountID),
+				actorID,
+			)
+		}))
+	})
+}
+
+func writeCommunicationMetadataVisible(
+	b *sql.Builder,
+	workspaceColumn, ownerColumn, interactionIDColumn, sourceAccountColumn string,
+	actorID uuid.UUID,
+) {
+	b.WriteString("(")
+	b.WriteString(ownerColumn)
+	b.WriteString(" = ")
+	b.Arg(actorID.String())
+	b.WriteString(" OR (")
+	b.WriteString(ownerColumn)
+	b.WriteString(" <> ")
+	b.Arg(actorID.String())
+	b.WriteString(" AND NOT ")
+	writeMailRuleMatchFor(b, workspaceColumn, ownerColumn, interactionIDColumn, "protected_address", "protected_domain")
+	b.WriteString(" AND NOT (")
+	writeMailRuleMatchFor(b, workspaceColumn, ownerColumn, interactionIDColumn, "blocked_address", "blocked_domain")
+	b.WriteString(" OR ")
+	writeMailPrivatePolicyFor(b, workspaceColumn, ownerColumn, sourceAccountColumn)
+	b.WriteString(")))")
+}
+
 func writeMailAccessReason(b *sql.Builder, s *sql.Selector, actor uuid.UUID, now time.Time, reason string) {
 	switch reason {
 	case "mailbox_owner":
@@ -8610,7 +8647,21 @@ func writeMailKeptPrivate(b *sql.Builder, s *sql.Selector) {
 	b.WriteString(")")
 }
 
-func writeMailRuleMatch(b *sql.Builder, s *sql.Selector, addressKind, domainKind string) {
+func writeMailRuleMatch(b *sql.Builder, _ *sql.Selector, addressKind, domainKind string) {
+	writeMailRuleMatchFor(
+		b,
+		"mail."+communicationinteraction.WorkspaceColumn,
+		"mail."+communicationinteraction.OwnerColumn,
+		"mail."+communicationinteraction.FieldID,
+		addressKind,
+		domainKind,
+	)
+}
+
+func writeMailRuleMatchFor(
+	b *sql.Builder,
+	workspaceColumn, ownerColumn, interactionIDColumn, addressKind, domainKind string,
+) {
 	email := "lower(trim(person." + communicationparticipant.FieldEmail + "))"
 	value := "rule." + communicationprivacyrule.FieldValue
 	b.WriteString("EXISTS (SELECT 1 FROM ")
@@ -8623,16 +8674,16 @@ func writeMailRuleMatch(b *sql.Builder, s *sql.Selector, addressKind, domainKind
 	b.Arg(true)
 	b.WriteString(" AND rule.")
 	b.WriteString(communicationprivacyrule.WorkspaceColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(workspaceColumn)
 	b.WriteString(" AND rule.")
 	b.WriteString(communicationprivacyrule.OwnerColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.OwnerColumn)
+	b.WriteString(" = ")
+	b.WriteString(ownerColumn)
 	b.WriteString(" AND person.")
 	b.WriteString(communicationparticipant.InteractionColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.FieldID)
+	b.WriteString(" = ")
+	b.WriteString(interactionIDColumn)
 	b.WriteString(" AND ((rule.")
 	b.WriteString(communicationprivacyrule.FieldKind)
 	b.WriteString(" = ")
@@ -8666,31 +8717,40 @@ func writeMailRuleMatch(b *sql.Builder, s *sql.Selector, addressKind, domainKind
 	b.WriteString(")))")
 }
 
-func writeMailPrivatePolicy(b *sql.Builder, s *sql.Selector) {
+func writeMailPrivatePolicy(b *sql.Builder, _ *sql.Selector) {
+	writeMailPrivatePolicyFor(
+		b,
+		"mail."+communicationinteraction.WorkspaceColumn,
+		"mail."+communicationinteraction.OwnerColumn,
+		"mail."+communicationinteraction.FieldSourceAccountID,
+	)
+}
+
+func writeMailPrivatePolicyFor(b *sql.Builder, workspaceColumn, ownerColumn, sourceAccountColumn string) {
 	b.WriteString("COALESCE((SELECT policy.")
 	b.WriteString(communicationprivacypolicy.FieldMetadataVisibility)
 	b.WriteString(" FROM ")
 	b.WriteString(communicationprivacypolicy.Table)
 	b.WriteString(" AS policy WHERE policy.")
 	b.WriteString(communicationprivacypolicy.WorkspaceColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(workspaceColumn)
 	b.WriteString(" AND policy.")
 	b.WriteString(communicationprivacypolicy.OwnerColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.OwnerColumn)
+	b.WriteString(" = ")
+	b.WriteString(ownerColumn)
 	b.WriteString(" AND policy.")
 	b.WriteString(communicationprivacypolicy.FieldSourceAccountID)
-	b.WriteString(" = lower(trim(mail.")
-	b.WriteString(communicationinteraction.FieldSourceAccountID)
+	b.WriteString(" = lower(trim(")
+	b.WriteString(sourceAccountColumn)
 	b.WriteString(")) LIMIT 1), (SELECT policy.")
 	b.WriteString(communicationprivacypolicy.FieldMetadataVisibility)
 	b.WriteString(" FROM ")
 	b.WriteString(communicationprivacypolicy.Table)
 	b.WriteString(" AS policy WHERE policy.")
 	b.WriteString(communicationprivacypolicy.WorkspaceColumn)
-	b.WriteString(" = mail.")
-	b.WriteString(communicationinteraction.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(workspaceColumn)
 	b.WriteString(" AND policy.")
 	b.WriteString(communicationprivacypolicy.FieldSourceAccountID)
 	b.WriteString(" = ")
@@ -13343,75 +13403,4 @@ func relationshipSheetActivityCountMatch(needle string) predicate.Relationship {
 		{"message sent from this mailbox", "messages sent from this mailbox", "outbound_count"},
 		{"message received from them", "messages received from them", "inbound_count"},
 	})
-}
-
-func observationFactSubject(subject string) predicate.RelationshipObservation {
-	return predicate.RelationshipObservation(func(s *sql.Selector) {
-		s.Where(sql.P(func(b *sql.Builder) {
-			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
-			summary := s.C(relationshipobservation.FieldSummary)
-			b.WriteString("(")
-			writeSubjectTrim(b, s, facts)
-			b.WriteString(" <> '' AND ")
-			writeSubjectTrim(b, s, facts)
-			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
-			writeNormalizedSubject(b, s, facts)
-			b.WriteString(" = ")
-			b.Arg(subject)
-			b.WriteString(" AND (")
-			writeSubjectToken(b, s, facts)
-			b.WriteString(" OR ")
-			writeSubjectTrim(b, s, facts)
-			b.WriteString(" <> ")
-			if s.Dialect() == dialect.Postgres {
-				b.WriteString("btrim(coalesce(")
-			} else {
-				b.WriteString("trim(coalesce(")
-			}
-			b.WriteString(summary)
-			b.WriteString(", ''))))")
-		}))
-	})
-}
-
-func writeSubjectTrim(b *sql.Builder, s *sql.Selector, facts string) {
-	if s.Dialect() == dialect.Postgres {
-		b.WriteString("btrim(coalesce(")
-		b.WriteString(facts)
-		b.WriteString("::jsonb->>'subject', ''))")
-		return
-	}
-	b.WriteString("trim(coalesce(json_extract(")
-	b.WriteString(facts)
-	b.WriteString(", '$.subject'), ''))")
-}
-
-func writeNormalizedSubject(b *sql.Builder, s *sql.Selector, facts string) {
-	if s.Dialect() == dialect.Postgres {
-		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
-		writeSubjectTrim(b, s, facts)
-		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
-		return
-	}
-	b.WriteString("trim(")
-	for range 4 {
-		b.WriteString("replace(")
-	}
-	b.WriteString("replace(replace(replace(lower(")
-	writeSubjectTrim(b, s, facts)
-	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
-	for range 4 {
-		b.WriteString(", '  ', ' ')")
-	}
-	b.WriteString(")")
-}
-
-func writeSubjectToken(b *sql.Builder, s *sql.Selector, facts string) {
-	if s.Dialect() == dialect.Postgres {
-		writeSubjectTrim(b, s, facts)
-		b.WriteString(" ~ '^[a-z0-9_]*_[a-z0-9_]*$'")
-		return
-	}
-	writeSubjectTrim(b, s, facts)
-	b.WriteString(" GLOB '[a-z0-9_]*_[a-z0-9_]*'")
 }

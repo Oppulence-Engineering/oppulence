@@ -848,8 +848,11 @@ func TestRelationshipSearchFindsNextFollowUps(t *testing.T) {
 	page, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{
 		QueueStatus: QueueOpen, Limit: recoveryQueuePage, Surface: "recovery",
 	})
-	if err != nil || page == nil || len(page.Actions) != recoveryQueuePage || !page.HasMore {
-		t.Fatalf("recovery page = %d hasMore=%v err=%v", len(page.Actions), page != nil && page.HasMore, err)
+	if err != nil || page == nil {
+		t.Fatalf("recovery page = %v err=%v", page, err)
+	}
+	if len(page.Actions) != recoveryQueuePage || !page.HasMore {
+		t.Fatalf("recovery page = %d hasMore=%v", len(page.Actions), page.HasMore)
 	}
 	for _, action := range page.Actions {
 		if action.Reason == "Zed Hidden" {
@@ -944,8 +947,11 @@ func TestRelationshipSearchFindsNextTasks(t *testing.T) {
 	page, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{
 		QueueStatus: QueueOpen, Limit: taskQueuePage, Surface: "task", DueOrder: "asc",
 	})
-	if err != nil || page == nil || len(page.Actions) != taskQueuePage || !page.HasMore {
-		t.Fatalf("task page = %d hasMore=%v err=%v", len(page.Actions), page != nil && page.HasMore, err)
+	if err != nil || page == nil {
+		t.Fatalf("task page = %v err=%v", page, err)
+	}
+	if len(page.Actions) != taskQueuePage || !page.HasMore {
+		t.Fatalf("task page = %d hasMore=%v", len(page.Actions), page.HasMore)
 	}
 	for _, action := range page.Actions {
 		if action.Reason == "Zed Hidden" {
@@ -1042,8 +1048,11 @@ func TestRelationshipSearchFindsNextPromises(t *testing.T) {
 		States:    []string{RegisterOpen, RegisterAtRisk},
 		Limit:     promiseRegisterPage,
 	})
-	if err != nil || page == nil || len(page.Commitments) != promiseRegisterPage || !page.HasMore {
-		t.Fatalf("promise page = %d hasMore=%v err=%v", len(page.Commitments), page != nil && page.HasMore, err)
+	if err != nil || page == nil {
+		t.Fatalf("promise page = %v err=%v", page, err)
+	}
+	if len(page.Commitments) != promiseRegisterPage || !page.HasMore {
+		t.Fatalf("promise page = %d hasMore=%v", len(page.Commitments), page.HasMore)
 	}
 	for _, row := range page.Commitments {
 		if row.Text == "Zed Hidden" {
@@ -11469,6 +11478,14 @@ func TestRelationshipSearchFindsMailBodyBadges(t *testing.T) {
 		}
 		return false
 	}
+	hidden := func(rel *ent.Relationship) bool {
+		t.Helper()
+		page, err := f.svc.RelationshipCommunicationTimeline(f.ctx, f.user, rel.ID, nil, nil, communicationTimelinePage)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return len(page.Items) == 0
+	}
 	if !shared(quill) || locked(quill) {
 		t.Fatal("owner mail should be shared")
 	}
@@ -11478,8 +11495,8 @@ func TestRelationshipSearchFindsMailBodyBadges(t *testing.T) {
 	if !shared(aspen) || locked(aspen) {
 		t.Fatal("a shared body should be shared")
 	}
-	if !locked(birch) || shared(birch) {
-		t.Fatal("a protected recipient should be locked")
+	if !hidden(birch) {
+		t.Fatal("a protected recipient's metadata was exposed")
 	}
 	if locked(maple) || shared(maple) {
 		t.Fatal("deleted mail should not show a badge")

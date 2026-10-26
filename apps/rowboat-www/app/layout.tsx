@@ -14,10 +14,10 @@ import "./product-theme.css";
 export const metadata: Metadata = createMetadata({
   title: {
     template: "%s | Oppulence",
-    default: "Oppulence — The Commitment Ledger",
+    default: "Oppulence — One assistant, wherever you work",
   },
   description:
-    "Oppulence is the independent record of business promises: what you owe, what they owe, what changed, and the proof behind it.",
+    "An email-first personal assistant built around your relationships, meetings, and notes. Explore Web, Desktop, and the optional Voice companion.",
 });
 
 export const viewport: Viewport = {

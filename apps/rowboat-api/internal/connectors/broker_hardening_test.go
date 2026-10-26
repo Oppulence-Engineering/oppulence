@@ -81,6 +81,9 @@ func TestCallbackRejectsScopeEscalationAndReplay(t *testing.T) {
 	_ = json.Unmarshal(start.Body.Bytes(), &response)
 	u2, _ := url.Parse(response.AuthorizeURL)
 	state := u2.Query().Get("state")
+	if rec := bindConsentForTest(t, h, state, "challenge-scope-escalation", u.WorkosUserID, []string{"canvas:invoices.read", "canvas:customers.read"}); rec.Code != http.StatusOK {
+		t.Fatalf("pre-consent binding: %d %s", rec.Code, rec.Body.String())
+	}
 
 	callback := func() *httptest.ResponseRecorder {
 		rec := httptest.NewRecorder()
@@ -134,10 +137,8 @@ func TestConsentContextAndAuditUseDurablePendingMetadata(t *testing.T) {
 	}
 	_ = json.Unmarshal(start.Body.Bytes(), &response)
 	internal := auth.WithInternal(context.Background())
-
-	contextBody := `{"version":1,"challenge":"hydra-consent-challenge","workos_user_id":"user_1","hydra_client_id":"broker","requested_audience":["mcp:canvas"],"requested_scopes":["canvas:invoices.read","canvas:customers.read"]}`
-	contextRec := httptest.NewRecorder()
-	h.PreConsent(contextRec, httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(contextBody)).WithContext(internal))
+	state := authorizationState(t, start)
+	contextRec := bindConsentForTest(t, h, state, "hydra-consent-challenge", "user_1", []string{"canvas:invoices.read", "canvas:customers.read"})
 	if contextRec.Code != http.StatusOK || !strings.Contains(contextRec.Body.String(), `"display_name":"Rowboat Desktop"`) || !strings.Contains(contextRec.Body.String(), `"tier":"low"`) {
 		t.Fatalf("consent context = %d %s", contextRec.Code, contextRec.Body.String())
 	}

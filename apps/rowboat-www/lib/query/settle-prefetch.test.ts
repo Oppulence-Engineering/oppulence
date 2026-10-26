@@ -1,7 +1,7 @@
 import { hydrate, QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
-import { pendingPrefetchQueries } from "@/lib/query/settle-prefetch";
+import { pendingPrefetchQueries } from "@/components/providers/settle-prefetch";
 
 const sourceKey = ["relationship-source", "list", "statuses"] as const;
 const scansKey = ["report", "scans"] as const;

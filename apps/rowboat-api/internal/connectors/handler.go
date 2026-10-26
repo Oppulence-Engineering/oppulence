@@ -652,6 +652,11 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "invalid or expired state", "bad_request")
 		return
 	}
+	if pending.ConsentChallenge == "" || pending.ContextRequestID != consentContextRequestID(pending.ConsentChallenge, state) ||
+		pending.HydraClientID != h.cfg.OryBrokerClientID {
+		httpx.Error(w, http.StatusBadRequest, "consent transaction does not match connector state", "consent_context_unavailable")
+		return
+	}
 	plain, err := h.sealer.Open(pending.PayloadEncrypted)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "could not read state", "internal_error")

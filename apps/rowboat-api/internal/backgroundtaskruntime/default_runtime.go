@@ -2,6 +2,8 @@ package backgroundtaskruntime
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -350,8 +352,8 @@ type runtimeApprovalDecision struct {
 	Approved   bool
 }
 
-func (r *DefaultRuntime) awaitToolApproval(ctx context.Context, in RunInput, toolName string, callIndex int, audit ToolAudit, _ json.RawMessage) (runtimeApprovalDecision, error) {
-	approvalID := toolApprovalID(in.RunID, callIndex)
+func (r *DefaultRuntime) awaitToolApproval(ctx context.Context, in RunInput, toolName string, callIndex int, audit ToolAudit, arguments json.RawMessage) (runtimeApprovalDecision, error) {
+	approvalID := toolApprovalID(in.RunID, callIndex, toolName, arguments)
 	requestPayload := toolEventPayload(toolName, callIndex, audit, approvalID, map[string]any{
 		"approvalRequired": true,
 	})
@@ -527,6 +529,8 @@ func toolEventPayload(toolName string, callIndex int, audit ToolAudit, approvalI
 	return payload
 }
 
-func toolApprovalID(runID string, callIndex int) string {
-	return fmt.Sprintf("%s/tool/%d", runID, callIndex)
+func toolApprovalID(runID string, callIndex int, toolName string, arguments json.RawMessage) string {
+	boundInput := append([]byte(toolName+"\x00"), arguments...)
+	fingerprint := sha256.Sum256(boundInput)
+	return fmt.Sprintf("%s/tool/%d/%s", runID, callIndex, hex.EncodeToString(fingerprint[:]))
 }

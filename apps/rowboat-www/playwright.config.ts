@@ -1,7 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const port = 4317;
-const authFile = "e2e/.auth/session.json";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -18,13 +17,19 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
-      testIgnore: [/auth\.setup\.ts/, /smoke\.spec\.ts/],
+      testIgnore: [
+        /auth\.setup\.ts/,
+        /(?:connectors|console-state|navigation|search|smoke)\.spec\.ts/,
+      ],
     },
     {
       name: "chromium-authenticated",
-      use: { ...devices["Desktop Chrome"], storageState: authFile },
-      testMatch: /smoke\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /(?:connectors|console-state|navigation|search|smoke)\.spec\.ts/,
       dependencies: ["setup"],
+      // These tests share the fake API's mutable account and connection state.
+      fullyParallel: false,
+      workers: 1,
     },
   ],
   webServer: [

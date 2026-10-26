@@ -299,6 +299,19 @@ describe("Open Promises report hardening", () => {
     });
   });
 
+  it("clears the claiming indicator when the callback URL settles before its event arrives", async () => {
+    navigation.params = new URLSearchParams("google_session=fixture-ticket&google_status=success");
+    mocks.listRelationshipSourceStatuses.mockResolvedValue([sourceStatus("live")]);
+    const view = renderWithQuery(<OpenPromisesReportClient />);
+
+    expect(await screen.findByText("Saving your Google connection")).toBeInTheDocument();
+    navigation.params = new URLSearchParams("google_connected=1");
+    view.rerender(wrapWithQuery(<OpenPromisesReportClient />, view.client));
+
+    expect(await screen.findByText("Google is up to date")).toBeInTheDocument();
+    expect(screen.queryByText("Saving your Google connection")).not.toBeInTheDocument();
+  });
+
   it("names a connected Google account whose first read has not started", async () => {
     mocks.listRelationshipSourceStatuses.mockResolvedValue([sourceStatus("stale")]);
 

@@ -105,7 +105,10 @@ export function SeoAlternativeSections({ alternative }: { alternative: SeoAltern
           <p>{alternative.whatTheyAre}</p>
         </div>
         <div>
-          <SectionHeading eyebrow="[what we are]" title="Oppulence is a commitment ledger." />
+          <SectionHeading
+            eyebrow="[what we are]"
+            title="Oppulence is an email-first personal assistant."
+          />
           <p>{alternative.whatWeAre}</p>
         </div>
       </section>

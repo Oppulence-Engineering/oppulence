@@ -179,18 +179,19 @@
     "yaml": "^2.9.1"
   },
   "overrides": {
-    "postcss": "8.5.31",
-    "sharp": "0.35.4",
-    "undici": "6.28.0",
-    "hono": "4.13.5",
-    "js-yaml": "4.3.2",
     "handlebars": "4.7.10",
+    "hono": "4.13.11",
+    "js-yaml": "4.3.2",
+    "postcss": "8.5.31",
+    "sharp": "0.35.5",
+    "undici": "6.29.1",
     "uuid": "11.1.1"
   },
   "pnpm": {
     "overrides": {
       "handlebars": "4.7.10",
-      "uuid": "11.1.1"
+      "uuid": "11.1.1",
+      "js-yaml": "4.3.2"
     }
   },
   "msw": {

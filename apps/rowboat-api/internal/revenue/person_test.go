@@ -687,8 +687,11 @@ func TestPersonSearchFindsNextPeople(t *testing.T) {
 	}
 	create("Merged Quiet", "merged")
 	exact, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Show the next people", Limit: personDirectoryPage})
-	if err != nil || exact == nil || exact.HasMore || len(exact.Persons) != 0 {
-		t.Fatalf("full page = %d hasMore=%v err=%v", len(exact.Persons), exact != nil && exact.HasMore, err)
+	if err != nil || exact == nil {
+		t.Fatalf("full page = %v err=%v", exact, err)
+	}
+	if exact.HasMore || len(exact.Persons) != 0 {
+		t.Fatalf("full page = %d hasMore=%v", len(exact.Persons), exact.HasMore)
 	}
 	for _, query := range []string{"show", "next", "people", "person", "show the next"} {
 		miss, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query, Limit: personDirectoryPage})
@@ -702,8 +705,11 @@ func TestPersonSearchFindsNextPeople(t *testing.T) {
 	}
 	create("Zed Hidden", "active")
 	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Show the next people", Limit: personDirectoryPage})
-	if err != nil || found == nil || !found.HasMore || len(found.Persons) != personDirectoryPage {
-		t.Fatalf("next people = %d hasMore=%v err=%v", len(found.Persons), found != nil && found.HasMore, err)
+	if err != nil || found == nil {
+		t.Fatalf("next people = %v err=%v", found, err)
+	}
+	if !found.HasMore || len(found.Persons) != personDirectoryPage {
+		t.Fatalf("next people = %d hasMore=%v", len(found.Persons), found.HasMore)
 	}
 	for _, row := range found.Persons {
 		if row.DisplayName == "Zed Hidden" {

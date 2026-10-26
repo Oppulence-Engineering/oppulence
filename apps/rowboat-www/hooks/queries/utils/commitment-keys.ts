@@ -10,8 +10,8 @@ export type CommitmentRegisterScope = {
 export const commitmentKeys = {
   all: ["commitment"] as const,
   lists: () => [...commitmentKeys.all, "list"] as const,
-  knownForAudit: () => [...commitmentKeys.lists(), "audit-known"] as const,
-  knownForReport: () => [...commitmentKeys.lists(), "report-known"] as const,
+  auditKnown: () => [...commitmentKeys.lists(), "audit-known"] as const,
+  reportKnown: () => [...commitmentKeys.lists(), "report-known"] as const,
   register: (scope: CommitmentRegisterScope) =>
     [...commitmentKeys.lists(), "register", scope] as const,
 };

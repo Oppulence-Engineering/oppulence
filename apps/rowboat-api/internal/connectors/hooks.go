@@ -33,6 +33,7 @@ var planRank = map[string]int{"free": 0, "starter": 1, "pro": 2, "intelligence":
 type preConsentRequest struct {
 	Version           int      `json:"version"`
 	Challenge         string   `json:"challenge"`
+	State             string   `json:"state"`
 	WorkOSUserID      string   `json:"workos_user_id"`
 	HydraClientID     string   `json:"hydra_client_id"`
 	RequestedAudience []string `json:"requested_audience"`
@@ -137,7 +138,7 @@ func (h *Handler) PreConsent(w http.ResponseWriter, r *http.Request) {
 	if !decodeStrictHookJSON(w, r, &req) {
 		return
 	}
-	if req.Version != 1 || !boundedValue(req.Challenge, 512) || !boundedValue(req.WorkOSUserID, 256) ||
+	if req.Version != 1 || !boundedValue(req.Challenge, 512) || (req.State != "" && !boundedValue(req.State, 512)) || !boundedValue(req.WorkOSUserID, 256) ||
 		!boundedValue(req.HydraClientID, 256) || len(req.RequestedAudience) != 1 ||
 		!boundedValue(req.RequestedAudience[0], 256) || len(req.RequestedScopes) == 0 || len(req.RequestedScopes) > 100 {
 		httpx.Error(w, http.StatusBadRequest, "invalid consent context request", "bad_request")
@@ -168,8 +169,16 @@ func (h *Handler) PreConsent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	requestID := pending.ContextRequestID
-	if requestID == "" {
-		requestID = consentContextRequestID(req.Challenge)
+	if req.State != "" {
+		expectedRequestID := consentContextRequestID(req.Challenge, req.State)
+		if requestID != "" && requestID != expectedRequestID {
+			httpx.Error(w, http.StatusConflict, "consent context state mismatch", "consent_context_unavailable")
+			return
+		}
+		requestID = expectedRequestID
+	} else if requestID == "" {
+		httpx.Error(w, http.StatusConflict, "consent context state missing", "consent_context_unavailable")
+		return
 	}
 	requestID, err = h.bindConsentPending(r.Context(), pending, req, requestID)
 	if err != nil {
@@ -214,6 +223,23 @@ func (h *Handler) PreConsent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) pendingForConsentContext(ctx context.Context, req preConsentRequest, conn Connector) (*ent.OAuthPending, error) {
+	internal := auth.WithInternal(ctx)
+	if req.State != "" {
+		pending, err := h.client.OAuthPending.Query().Where(pendingStatePredicate(req.State)).Only(internal)
+		if err != nil {
+			return nil, err
+		}
+		if pending.OwnerWorkosUserID != req.WorkOSUserID || pending.Provider != conn.Name ||
+			!pending.ExpiresAt.After(time.Now()) ||
+			(pending.LifecycleStatus != "" && pending.LifecycleStatus != "started") ||
+			(pending.HydraClientID != "" && pending.HydraClientID != req.HydraClientID) ||
+			!sameUniqueStringSet(pending.RequestedScopes, req.RequestedScopes) ||
+			(pending.ConsentChallenge != "" && pending.ConsentChallenge != req.Challenge) {
+			return nil, fmt.Errorf("pending state identity mismatch")
+		}
+		return pending, nil
+	}
+
 	candidates, err := h.client.OAuthPending.Query().Where(
 		oauthpending.OwnerWorkosUserIDEQ(req.WorkOSUserID),
 		oauthpending.ProviderEQ(conn.Name),
@@ -223,7 +249,6 @@ func (h *Handler) pendingForConsentContext(ctx context.Context, req preConsentRe
 		return nil, err
 	}
 	bound := make([]*ent.OAuthPending, 0, 1)
-	unbound := make([]*ent.OAuthPending, 0, 1)
 	for _, pending := range candidates {
 		if pending.LifecycleStatus != "" && pending.LifecycleStatus != "started" {
 			continue
@@ -234,24 +259,18 @@ func (h *Handler) pendingForConsentContext(ctx context.Context, req preConsentRe
 		if !sameUniqueStringSet(pending.RequestedScopes, req.RequestedScopes) {
 			continue
 		}
-		switch pending.ConsentChallenge {
-		case req.Challenge:
+		if pending.ConsentChallenge == req.Challenge {
 			bound = append(bound, pending)
-		case "":
-			unbound = append(unbound, pending)
 		}
 	}
 	if len(bound) == 1 {
 		return bound[0], nil
 	}
-	if len(bound) == 0 && len(unbound) == 1 {
-		return unbound[0], nil
-	}
-	return nil, fmt.Errorf("expected one pending consent context, got %d bound and %d unbound", len(bound), len(unbound))
+	return nil, fmt.Errorf("expected one state-bound pending consent context, got %d", len(bound))
 }
 
-func consentContextRequestID(challenge string) string {
-	sum := sha256.Sum256([]byte(challenge))
+func consentContextRequestID(challenge, state string) string {
+	sum := sha256.Sum256([]byte(challenge + "\x00" + state))
 	return "ctx_" + base64.RawURLEncoding.EncodeToString(sum[:18])
 }
 
@@ -269,13 +288,16 @@ func (h *Handler) bindConsentPending(ctx context.Context, pending *ent.OAuthPend
 			return requestID, nil
 		}
 		current, loadErr := h.client.OAuthPending.Get(internal, pending.ID)
-		if loadErr != nil || current.ConsentChallenge != req.Challenge || current.HydraClientID != req.HydraClientID || current.ContextRequestID == "" {
+		if loadErr != nil || current.ConsentChallenge != req.Challenge || current.HydraClientID != req.HydraClientID || current.ContextRequestID != requestID {
 			return "", fmt.Errorf("pending challenge binding conflict")
 		}
 		return current.ContextRequestID, nil
 	}
 	if pending.ConsentChallenge != req.Challenge || (pending.HydraClientID != "" && pending.HydraClientID != req.HydraClientID) {
 		return "", fmt.Errorf("pending challenge identity mismatch")
+	}
+	if pending.ContextRequestID != "" && pending.ContextRequestID != requestID {
+		return "", fmt.Errorf("pending request state mismatch")
 	}
 	update := pending.Update()
 	changed := false

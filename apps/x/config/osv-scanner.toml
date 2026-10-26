@@ -22,9 +22,9 @@ ignoreUntil = 2026-11-21
 reason = "Transitive image-size advisory has no upstream fixed release."
 
 [[IgnoredVulns]]
-id = "GHSA-vwc7-r8mq-g2x9"
+id = "GHSA-ch52-4w7c-c8xp"
 ignoreUntil = 2026-11-21
-reason = "Transitive adm-zip advisory has no upstream fixed release; 0.6.0 is already the latest."
+reason = "Dev-only http-cache-semantics (Electron Forge packaging via got) has no upstream fixed release."
 
 [[IgnoredVulns]]
 id = "GHSA-7pqw-9j4j-h8q3"

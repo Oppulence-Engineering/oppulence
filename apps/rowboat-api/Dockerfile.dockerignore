@@ -8,4 +8,5 @@
 apps/rowboat-api/bin
 apps/rowboat-api/*.db
 **/node_modules
+**/.env*
 .git

@@ -772,7 +772,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         }}
         action={
           <Button
-            className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
             size="sm"
             onClick={() => setCreating(true)}
           >
@@ -844,7 +844,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
             </Button>
           ) : (
             <Button
-              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={() => setCreating(true)}
               size="sm"
             >
@@ -1713,7 +1713,7 @@ export function NotesView({
               </div>
             </details>
             <Button
-              className="h-8 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
+              className="h-8 bg-primary px-3 text-primary-foreground hover:bg-primary/90"
               size="sm"
               onClick={() => setEditing({})}
             >
@@ -1862,7 +1862,7 @@ export function NotesView({
               </Button>
             ) : (
               <Button
-                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={() => setEditing({})}
                 size="sm"
               >
@@ -2737,7 +2737,7 @@ export function taskFilterName(filter: "all" | "today" | "overdue"): string {
   return comboboxFilterName("Tasks", TASK_FILTER_LABEL[filter]);
 }
 
-export function taskRemainderLabel(): string {
+function taskRemainderLabel(): string {
   return "Show the next tasks";
 }
 
@@ -2987,7 +2987,7 @@ export function TasksView({
             </div>
           </details>
           <Button
-            className="h-8 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
+            className="h-8 bg-primary px-3 text-primary-foreground hover:bg-primary/90"
             size="sm"
             onClick={() => setCreating(true)}
           >
@@ -3050,7 +3050,7 @@ export function TasksView({
               </Button>
             ) : filter === "all" ? (
               <Button
-                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={() => setCreating(true)}
                 size="sm"
               >
@@ -3095,7 +3095,7 @@ export function TasksView({
                 >
                   <Button
                     aria-label={`Complete ${task.reason}`}
-                    className="size-5 rounded-none border border-border p-0 text-primary/40 hover:border-[#3478f6] hover:bg-transparent hover:text-[#3478f6]"
+                    className="size-5 rounded-none border border-border p-0 text-primary/40 hover:border-primary hover:bg-transparent hover:text-primary"
                     disabled={busy === task.id}
                     onClick={() => void complete(task)}
                     size="icon-xs"

@@ -98,6 +98,7 @@ type hydraConsent struct {
 	challenge   string
 	clientID    string
 	redirectURI string
+	requestURL  string
 	audience    []string
 	scopes      []string
 	state       string
@@ -303,6 +304,16 @@ func handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Path == "/oauth2/auth" && strings.TrimSpace(os.Getenv("HYDRA_CONSENT_URL")) != "" {
 		challenge, _ := randomToken(24)
+		requestURL := *r.URL
+		if requestURL.Scheme == "" {
+			requestURL.Scheme = "http"
+			if r.TLS != nil {
+				requestURL.Scheme = "https"
+			}
+		}
+		if requestURL.Host == "" {
+			requestURL.Host = r.Host
+		}
 		scope := strings.Fields(def(q.Get("scope"), "openid email profile"))
 		aud := strings.Fields(q.Get("audience"))
 		if len(aud) == 0 {
@@ -310,7 +321,8 @@ func handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		}
 		hydraDB.Store(challenge, hydraConsent{
 			challenge: challenge, clientID: q.Get("client_id"), redirectURI: redirectURI,
-			audience: aud, scopes: scope, state: q.Get("state"),
+			requestURL: requestURL.String(),
+			audience:   aud, scopes: scope, state: q.Get("state"),
 			subject: getenv("FIXTURE_SUBJECT", "user_rfc012_a"), email: getenv("FIXTURE_EMAIL", "a@example.test"),
 			pkce: q.Get("code_challenge"), expires: time.Now().Add(5 * time.Minute),
 		})
@@ -393,6 +405,7 @@ func handleHydraConsentRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	h := v.(hydraConsent)
 	writeJSON(w, map[string]any{"skip": false, "subject": h.subject, "challenge": h.challenge,
+		"request_url":     h.requestURL,
 		"requested_scope": h.scopes, "requested_access_token_audience": h.audience,
 		"client": map[string]string{"client_id": h.clientID}})
 }

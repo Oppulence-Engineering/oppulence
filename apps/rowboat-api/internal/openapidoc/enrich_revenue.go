@@ -1397,16 +1397,6 @@ func documentedRejectedRecommendation() obj {
 	}
 }
 
-const (
-	documentedSavedNoteRelationshipID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
-	documentedSavedNoteObservationID  = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
-	documentedSavedNoteExternalID     = "c18dfa9b-a7b2-46ea-982c-622a914c00e5"
-	documentedSavedNoteProjectionJob  = "d18dfa9b-a7b2-46ea-982c-622a914c00e5"
-	documentedSavedNoteOccurredAt     = "2026-09-01T12:00:00Z"
-	documentedSavedNoteContentHash    = "cb2c6d9de0a502140de524129b786b3c768a4fe3f4c59a7aba3eef7724474d47"
-	documentedSavedNoteStateHash      = "sha256:e42c0202f5034a1965e117a1a6c7065bcd09e1439493cea57074fa06572905c9"
-)
-
 const documentedApprovedRecommendationID = "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"
 
 func documentedApprovedRecommendation() obj {
@@ -1697,9 +1687,6 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 		"409": responseRef("409"),
 	})}
-	caseParam := make([]any, len(relationshipParam), len(relationshipParam)+1)
-	copy(caseParam, relationshipParam)
-	caseParam = append(caseParam, obj{"name": "caseId", "in": "path", "required": true, "description": "Contradiction case id.", "schema": obj{"type": "string"}})
 	paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"] = obj{"post": useThisValueOperation()}
 	const reconcileCommitmentID = "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
 	const reconcileEvaluationID = "recovery:7cb1669953b1015129545ab3"
@@ -2736,8 +2723,6 @@ func companyDirectoryPage() obj {
 		}},
 	}
 }
-
-const recoveryQueueDescription = "Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty."
 
 const impactCountsDescription = "Impact loads the home counts. The request sends no filter. Overdue promises, open recovery, and companies at risk are zero, and there is no reply rate or meeting rate yet."
 

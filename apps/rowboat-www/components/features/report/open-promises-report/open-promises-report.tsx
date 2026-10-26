@@ -119,7 +119,7 @@ function ReportBody() {
   const health = relationshipSourceHealth(sourcesQuery.data ?? []);
   const connectGate = health === "not_connected" || health === "needs_reconnect";
   const knownPromises = useQuery({
-    queryKey: commitmentKeys.knownForReport(),
+    queryKey: commitmentKeys.reportKnown(),
     queryFn: ({ signal }) =>
       fetchCommitments({ state: ["open", "at_risk"], limit: REGISTER_PAGE_SIZE }, signal),
     enabled: connectGate,
@@ -286,7 +286,10 @@ function ReportBody() {
         </p>
       ) : null}
 
-      <GoogleEvidenceSyncState claiming={googleClaimState === "claiming"} source={googleSource} />
+      <GoogleEvidenceSyncState
+        claiming={hasGoogleCallback && !googleConnectedInURL && googleClaimState === "claiming"}
+        source={googleSource}
+      />
 
       {/*
         isLoading is true only after a fetch has started. SSR starts that
@@ -439,7 +442,7 @@ function GoogleEvidenceSyncState({
           className="mt-3 h-1.5 overflow-hidden bg-primary/10"
           role="progressbar"
         >
-          <div className="h-full bg-[#3478f6]" style={{ width: `${String(progress)}%` }} />
+          <div className="h-full bg-primary" style={{ width: `${String(progress)}%` }} />
         </div>
       ) : null}
     </section>
@@ -461,7 +464,7 @@ function GoogleConnectionStep({
     <WorkspaceEmptyState
       action={
         <Button
-          className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
           disabled={busy}
           onClick={onConnect}
           size="sm"
@@ -487,7 +490,7 @@ function StartStep({ onRun, busy }: { onRun: () => void; busy: boolean }) {
     <WorkspaceEmptyState
       action={
         <Button
-          className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
           disabled={busy}
           onClick={() => {
             onRun();

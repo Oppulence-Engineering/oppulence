@@ -46,9 +46,6 @@ export class RunCopilotCachedTurnUseCase implements IRunCopilotCachedTurnUseCase
             throw new NotFoundError('Cached turn not found');
         }
 
-        // delete from cache
-        await this.cacheService.delete(lookupKey);
-
         // parse cached turn
         const cachedTurn = CopilotAPIRequest.parse(JSON.parse(payload));
 
@@ -78,6 +75,9 @@ export class RunCopilotCachedTurnUseCase implements IRunCopilotCachedTurnUseCase
                 throw new BillingError(result.error || 'Billing error');
             }
         }
+
+        // Keep the pending turn available when authorization, quota, or billing rejects it.
+        await this.cacheService.delete(lookupKey);
 
         // init usage tracking
         const usageTracker = new UsageTracker();

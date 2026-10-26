@@ -157,9 +157,11 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       if (consent.challenge !== challenge || !consent.subject) throw badRequest('consent_identity_missing');
       const hydraClientId = consent.client?.client_id;
       if (!hydraClientId) throw badRequest('consent_client_missing');
+      const state = authorizationRequestState(consent.request_url);
       const requestedProductScopes = consent.requested_scope.filter((scope) => scope !== 'offline_access');
       const context = await hooks.context({
         challenge,
+        state,
         workosUserId: consent.subject,
         hydraClientId,
         requestedAudience: consent.requested_access_token_audience,
@@ -253,15 +255,12 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       const requiresStepUp = selectedDefinitions.some((scope) => scope.requires_step_up);
       if (requiresStepUp) {
         await revalidateApproval(session, selected, hooks);
-      }
-      await store.setSelectedScopes(session.id, selected);
-      if (requiresStepUp) {
-        await store.transition(session.id, 'shown', 'step_up_pending');
+        await store.beginStepUp(session.id, selected);
         const flow = await store.createStepUpFlow(session.id);
         setSignedCookie(res, STEP_UP_COOKIE, flow.cookieBinding, cfg.cookieSecret, cookieOptions);
         return res.redirect(await workos.authorizeStepUpURL(flow.state, flow.nonce));
       }
-      return finishApproval(res, session, selected, store, hooks, ory, cookieOptions, cfg.decisionLeaseMs);
+      return finishApproval(res, session, selected, store, hooks, ory, cookieOptions, cfg.decisionLeaseMs, false);
     }),
   );
 
@@ -299,6 +298,7 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
         ory,
         cookieOptions,
         cfg.decisionLeaseMs,
+        true,
       );
     }),
   );
@@ -337,9 +337,10 @@ async function finishApproval(
     path: string;
   },
   decisionLeaseMs: number,
+  stepUpVerified: boolean,
 ): Promise<void> {
   const audit = finalAudit(session, 'consent.granted', scopes, 'approved');
-  const claim = await store.prepareDecision(session.id, 'approve', audit, decisionLeaseMs);
+  const claim = await store.prepareDecision(session.id, 'approve', audit, decisionLeaseMs, scopes, stepUpVerified);
   const redirectTo = await executeDecision(claim, store, hooks, ory);
   await drainAuditOutbox(store, hooks);
   res.clearCookie(CONSENT_COOKIE, { ...cookieOptions, maxAge: undefined });
@@ -698,6 +699,16 @@ function parseChallenge(value: unknown, name: string): string {
   const result = ChallengeSchema.safeParse(value);
   if (!result.success) throw badRequest(`${name}_invalid`);
   return result.data;
+}
+
+function authorizationRequestState(requestUrl: string | undefined): string {
+  try {
+    const state = new URL(requestUrl ?? '').searchParams.get('state');
+    if (state && state.length <= 512) return state;
+  } catch {
+    // The Hydra request URL is trusted input, but a missing or malformed state must fail closed.
+  }
+  throw badRequest('consent_state_missing');
 }
 
 function setSignedCookie(

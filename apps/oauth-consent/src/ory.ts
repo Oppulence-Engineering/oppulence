@@ -15,6 +15,7 @@ const ConsentRequestSchema = z.object({
   challenge: z.string(),
   requested_scope: z.array(z.string()),
   requested_access_token_audience: z.array(z.string()),
+  request_url: z.string().url().optional(),
   client: z.object({ client_id: z.string().optional() }).optional(),
 });
 export type ConsentRequest = z.infer<typeof ConsentRequestSchema>;

@@ -1,5 +1,5 @@
 import { Badge, Chip } from "@sim/emcn";
-import { ChevronDown, Layout, ListFilter, TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
+import { ChevronDown, Layout, ListFilter, TagIcon, TypeText } from "@sim/emcn/icons";
 
 import { cn } from "@/lib/sim/cn";
 
@@ -13,18 +13,33 @@ interface WebMenuPreviewProps {
   layout?: "menu" | "hero" | "stage";
 }
 
-const ACCOUNTS = [
-  { name: "Beta Corp", health: "At risk", value: "$48k", signal: "Reply missing" },
-  { name: "Acme Industries", health: "Watch", value: "$112k", signal: "Date slipped" },
-  { name: "Northstar Labs", health: "Stable", value: "$36k", signal: "New thread" },
-  { name: "Meridian Health", health: "Watch", value: "$89k", signal: "Owner quiet" },
+const ITEMS = [
+  {
+    name: "Customer reply",
+    status: "Review",
+    source: "2 emails",
+    next: "Check the prepared draft",
+  },
+  {
+    name: "Meeting follow-up",
+    status: "Approve",
+    source: "Meeting",
+    next: "Review two next steps",
+  },
+  {
+    name: "Relationship match",
+    status: "Confirm",
+    source: "Voice note",
+    next: "Choose the right person",
+  },
+  { name: "Rollout schedule", status: "Waiting", source: "Email", next: "Awaiting a response" },
 ] as const;
 
 const COLUMNS = [
-  { name: "Account", icon: TypeText },
-  { name: "Health", icon: TagIcon },
-  { name: "Value", icon: TypeNumber },
-  { name: "Why now", icon: TypeText },
+  { name: "Needs you", icon: TypeText },
+  { name: "State", icon: TagIcon },
+  { name: "Source", icon: TypeText },
+  { name: "Next step", icon: TypeText },
 ] as const;
 
 /** Oppulence Web account list — production-style ruled table in a menu preview frame. */
@@ -32,9 +47,9 @@ export function WebMenuPreview({ layout = "menu" }: WebMenuPreviewProps) {
   return (
     <MenuPreviewFrame kind="web" layout={layout}>
       <div className="w-[620px] overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
-        <MenuPreviewHeader icon={Layout} title="Attention queue" actions="4 accounts" />
+        <MenuPreviewHeader icon={Layout} title="Today" actions="Concept preview" />
         <MenuPreviewToolbar>
-          <Chip rightIcon={ChevronDown}>Your patch</Chip>
+          <Chip rightIcon={ChevronDown}>Your day</Chip>
           <Chip leftIcon={ListFilter}>Filter</Chip>
         </MenuPreviewToolbar>
         <table className="w-full table-fixed border-collapse text-left">
@@ -60,34 +75,24 @@ export function WebMenuPreview({ layout = "menu" }: WebMenuPreviewProps) {
             </tr>
           </thead>
           <tbody>
-            {ACCOUNTS.map((account, index) => (
+            {ITEMS.map((item, index) => (
               <tr
                 className={cn(
                   "h-[37px] border-[var(--border)] border-b",
                   index === 0 && "bg-[var(--surface-3)]",
                 )}
-                key={account.name}
+                key={item.name}
               >
                 <td className="border-[var(--border)] border-r px-2.5 font-medium text-[var(--text-primary)]">
-                  {account.name}
+                  {item.name}
                 </td>
                 <td className="border-[var(--border)] border-r px-2.5">
-                  <Badge
-                    variant={
-                      account.health === "Stable"
-                        ? "green"
-                        : account.health === "At risk"
-                          ? "red"
-                          : "amber"
-                    }
-                  >
-                    {account.health}
-                  </Badge>
+                  <Badge>{item.status}</Badge>
                 </td>
                 <td className="border-[var(--border)] border-r px-2.5 tabular-nums">
-                  {account.value}
+                  {item.source}
                 </td>
-                <td className="px-2.5 text-[var(--text-secondary)]">{account.signal}</td>
+                <td className="px-2.5 text-[var(--text-secondary)]">{item.next}</td>
               </tr>
             ))}
           </tbody>

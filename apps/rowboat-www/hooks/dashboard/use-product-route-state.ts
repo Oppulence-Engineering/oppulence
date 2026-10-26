@@ -68,7 +68,7 @@ export function useProductRouteState(): ProductRouteState {
   const openRevenueTab = useCallback(
     (tab: RevenueTab) => {
       if (view === "revenue") {
-        void setRevenue(revenueSelection(tab));
+        void setRevenue(revenueSelection(tab), { history: "push" });
         return;
       }
       router.push(`${PRODUCT_VIEW_PATHS.revenue}${revenueTabSearch(tab)}`, { scroll: false });
@@ -81,7 +81,7 @@ export function useProductRouteState(): ProductRouteState {
       const next = revenueSelection("relationships", companyId);
       if (!next.company) return;
       if (view === "revenue") {
-        void setRevenue(next);
+        void setRevenue(next, { history: "push" });
         return;
       }
       router.push(`${PRODUCT_VIEW_PATHS.revenue}${companyRecordSearch(next.company)}`, {
@@ -94,7 +94,7 @@ export function useProductRouteState(): ProductRouteState {
   const openSettings = useCallback(
     (section: SettingsSection) => {
       if (view === "settings") {
-        void setSettings({ settings: section });
+        void setSettings({ settings: section }, { history: "push" });
         return;
       }
       router.push(`${PRODUCT_VIEW_PATHS.settings}${settingsSearch(section)}`, { scroll: false });
@@ -105,7 +105,7 @@ export function useProductRouteState(): ProductRouteState {
   const openWorkflows = useCallback(
     (focus: WorkflowFocus) => {
       if (view === "workflows") {
-        void setWorkflows({ focus });
+        void setWorkflows({ focus }, { history: "push" });
         // Focus is already "scheduled" while a workflow is open, so the query
         // write does not remount the canvas. Ask it to show the list.
         if (focus === "scheduled") requestWorkflowLibrary();
