@@ -1,0 +1,95 @@
+/*
+ * Polar design primitives
+ *
+ * Copied from Polar (https://github.com/polarsource/polar), file
+ * clients/apps/web/src/styles/globals.css at commit
+ * b116f66b91dd135a4554623c08018ea933cc1234.
+ * Copyright Polar Software Inc. Licensed under the Apache License 2.0.
+ * See THIRD_PARTY_NOTICES at the repository root.
+ *
+ * Changes from the original:
+ * - Use `@theme static` so the scales always reach the CSS output; the
+ *   semantic tokens read them through var().
+ * - Keep only the @theme primitives: shadows, the xxs text size, the color
+ *   scales (blue, green, red, gray, polar), and the radius scale.
+ * - Leave out the PP Neue Montreal, InterDisplay, and GeistMono @font-face
+ *   rules. PP Neue Montreal is a licensed font. Our apps load Inter and
+ *   Geist Mono themselves (see tokens.css).
+ * - Leave out the Tailwind plugins (forms, radix, typography), @stylex, the
+ *   @source paths, the shadcn semantic block (tokens.css maps it), and the
+ *   embed, shiki, Stripe, and keyframe rules.
+ */
+@theme static {
+  --shadow-md: 0 0px 15px rgba(0 0 0 / 0.04), 0 0px 2px rgba(0 0 0 / 0.06);
+  --shadow-lg: 0 0px 20px rgba(0 0 0 / 0.04), 0 0px 5px rgba(0 0 0 / 0.06);
+  --shadow-xl: 0 0px 30px rgba(0 0 0 / 0.04), 0 0px 10px rgba(0 0 0 / 0.06);
+  --shadow-3xl: 0 0 50px rgba(0 0 0 / 0.02), 0 0 50px rgba(0 0 0 / 0.04);
+
+  --text-xxs: 0.65rem;
+
+  --color-blue-50: oklch(0.97 0.014 254.604);
+  --color-blue-100: oklch(0.932 0.032 255.585);
+  --color-blue-200: oklch(0.882 0.059 254.128);
+  --color-blue-300: oklch(0.809 0.105 251.813);
+  --color-blue-400: oklch(0.707 0.165 254.624);
+  --color-blue-500: oklch(0.623 0.214 259.815);
+  --color-blue-600: oklch(0.546 0.245 262.881);
+  --color-blue-700: oklch(0.488 0.243 264.376);
+  --color-blue-800: oklch(0.424 0.199 265.638);
+  --color-blue-900: oklch(0.379 0.146 265.522);
+  --color-blue-950: oklch(0.282 0.091 267.935);
+  --color-blue: var(--color-blue-600);
+
+  --color-green-50: oklch(0.979 0.021 166.113);
+  --color-green-100: oklch(0.95 0.052 163.051);
+  --color-green-200: oklch(0.905 0.093 164.15);
+  --color-green-300: oklch(0.845 0.143 164.978);
+  --color-green-400: oklch(0.765 0.177 163.223);
+  --color-green-500: oklch(0.696 0.17 162.48);
+  --color-green-600: oklch(0.596 0.145 163.225);
+  --color-green-700: oklch(0.508 0.118 165.612);
+  --color-green-800: oklch(0.432 0.095 166.913);
+  --color-green-900: oklch(0.378 0.077 168.94);
+  --color-green-950: oklch(0.262 0.051 172.552);
+
+  --color-red-50: oklch(0.971 0.013 17.38);
+  --color-red-100: oklch(0.936 0.032 17.717);
+  --color-red-200: oklch(0.885 0.062 18.334);
+  --color-red-300: oklch(0.808 0.114 19.571);
+  --color-red-400: oklch(0.704 0.191 22.216);
+  --color-red-500: oklch(0.637 0.237 25.331);
+  --color-red-600: oklch(0.577 0.245 27.325);
+  --color-red-700: oklch(0.505 0.213 27.518);
+  --color-red-800: oklch(0.444 0.177 26.899);
+  --color-red-900: oklch(0.396 0.141 25.723);
+  --color-red-950: oklch(0.258 0.092 26.042);
+
+  --color-gray-50: oklch(0.985 0.002 247.839);
+  --color-gray-100: oklch(0.967 0.003 264.542);
+  --color-gray-200: oklch(0.928 0.006 264.531);
+  --color-gray-300: oklch(0.872 0.01 258.338);
+  --color-gray-400: oklch(0.707 0.022 261.325);
+  --color-gray-500: oklch(0.551 0.027 264.364);
+  --color-gray-600: oklch(0.446 0.03 256.802);
+  --color-gray-700: oklch(0.373 0.034 259.733);
+  --color-gray-800: oklch(0.278 0.033 256.848);
+  --color-gray-900: oklch(0.21 0.034 264.665);
+  --color-gray-950: oklch(0.13 0.028 261.692);
+
+  --color-polar-50: hsl(0, 0%, 85%);
+  --color-polar-100: hsl(0, 0%, 79%);
+  --color-polar-200: hsl(0, 0%, 68%);
+  --color-polar-300: hsl(0, 0%, 62%);
+  --color-polar-400: hsl(0, 0%, 52%);
+  --color-polar-500: hsl(0, 0%, 46%);
+  --color-polar-600: hsl(0, 0%, 16%);
+  --color-polar-700: hsl(0, 0%, 13%);
+  --color-polar-800: hsl(0, 0%, 9.5%);
+  --color-polar-900: hsl(0, 0%, 6.5%);
+  --color-polar-950: hsl(0, 0%, 3.5%);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-4xl: 2rem;
+}

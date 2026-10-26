@@ -235,8 +235,8 @@ function ReportBody() {
       data-slot="open-promises-report"
     >
       <header>
-        <h1 className="text-[28px] font-medium leading-tight text-primary">Open promises</h1>
-        <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-primary/60">
+        <h1 className="text-[28px] font-medium leading-tight text-foreground">Open promises</h1>
+        <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-foreground/60">
           Promises from the last {REVENUE_EVIDENCE_LOOKBACK_LABEL} that still look open, and the
           message each one came from.
         </p>
@@ -244,10 +244,10 @@ function ReportBody() {
 
       {(scansQuery.data?.length ?? 0) > 1 ? (
         <div className="flex flex-col gap-2">
-          <Label className="flex items-center gap-3 text-xs text-primary/55">
+          <Label className="flex items-center gap-3 text-xs text-foreground/55">
             Audit
             <select
-              className="h-8 min-w-56 border border-border bg-background px-2 text-xs text-primary"
+              className="h-8 min-w-56 border border-border bg-background px-2 text-xs text-foreground"
               onChange={(event) => {
                 setScanId(event.target.value || null);
               }}
@@ -300,7 +300,7 @@ function ReportBody() {
       {sourcesQuery.isPending ||
       (!scanId && scansQuery.isPending) ||
       (connectGate && knownPromises.isPending) ? (
-        <p className="flex items-center gap-2 text-[13px] text-primary/55">
+        <p className="flex items-center gap-2 text-[13px] text-foreground/55">
           <CircleNotchIcon className="size-4 animate-spin" /> Loading your report.
         </p>
       ) : health === "not_connected" ? (
@@ -341,7 +341,7 @@ function ReportBody() {
       ) : reportQuery.isError ? (
         <section className="border border-destructive/40 bg-destructive/5 p-5" role="alert">
           <h2 className="text-[15px] font-medium text-destructive">The report could not load</h2>
-          <p className="mt-1.5 text-[13px] text-primary/70">
+          <p className="mt-1.5 text-[13px] text-foreground/70">
             {shownRequestError(reportQuery.error, "The report could not load. Try again.")}
           </p>
           <Button
@@ -354,7 +354,7 @@ function ReportBody() {
           </Button>
         </section>
       ) : (
-        <p className="flex items-center gap-2 text-[13px] text-primary/55">
+        <p className="flex items-center gap-2 text-[13px] text-foreground/55">
           <CircleNotchIcon className="size-4 animate-spin" /> Building the report.
         </p>
       )}
@@ -382,10 +382,10 @@ function GoogleEvidenceSyncState({
   if (claiming) {
     return (
       <section className="border border-border bg-background-50 p-4" role="status">
-        <p className="flex items-center gap-2 text-[13px] font-medium text-primary">
+        <p className="flex items-center gap-2 text-[13px] font-medium text-foreground">
           <CircleNotchIcon className="size-4 animate-spin" /> Saving your Google connection
         </p>
-        <p className="mt-1 text-[12px] text-primary/55">
+        <p className="mt-1 text-[12px] text-foreground/55">
           Oppulence is securely claiming the authorization returned by Google.
         </p>
       </section>
@@ -417,11 +417,11 @@ function GoogleEvidenceSyncState({
       }
       role={failed ? "alert" : "status"}
     >
-      <p className="flex items-center gap-2 text-[13px] font-medium text-primary">
+      <p className="flex items-center gap-2 text-[13px] font-medium text-foreground">
         {active ? <CircleNotchIcon className="size-4 animate-spin" /> : null}
         {title}
       </p>
-      <p className="mt-1 text-[12px] text-primary/55">
+      <p className="mt-1 text-[12px] text-foreground/55">
         {failed
           ? sourceLastErrorCopy(source.lastError) ||
             "Reading stopped. Reconnect Google or try again."
@@ -528,7 +528,7 @@ function ScanningStep({
     return (
       <section className="border border-destructive/40 bg-destructive/5 p-5">
         <h2 className="text-[15px] font-medium text-destructive">The scan did not finish</h2>
-        <p className="mt-1.5 text-[13px] text-primary/70">
+        <p className="mt-1.5 text-[13px] text-foreground/70">
           {reason ? auditFailureCopy(reason) : "No reason was recorded."}
         </p>
         <Button className="mt-4" onClick={onRetry} type="button" variant="outline">
@@ -539,11 +539,11 @@ function ScanningStep({
   }
   return (
     <section className="border border-border bg-background-50 p-5">
-      <h2 className="flex items-center gap-2 text-[15px] font-medium text-primary">
+      <h2 className="flex items-center gap-2 text-[15px] font-medium text-foreground">
         <CircleNotchIcon className="size-4 animate-spin" /> Reading your last{" "}
         {REVENUE_EVIDENCE_LOOKBACK_LABEL}
       </h2>
-      <p className="mt-1.5 text-[13px] text-primary/60">
+      <p className="mt-1.5 text-[13px] text-foreground/60">
         {threads > 0 ? `${String(threads)} conversations read so far.` : "Starting up."}
       </p>
     </section>
@@ -614,8 +614,8 @@ export function Report({ report, scanId }: { report: OpenPromisesReport; scanId:
   if (report.items.length === 0) {
     return (
       <section className="border border-border bg-background-50 p-5">
-        <h2 className="text-[15px] font-medium text-primary">No open promises found</h2>
-        <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-primary/60">
+        <h2 className="text-[15px] font-medium text-foreground">No open promises found</h2>
+        <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-foreground/60">
           We read {report.threadsSeen} conversations and found nothing outstanding. That is either
           good news, or a sign that more sources need connecting.
         </p>
@@ -660,7 +660,7 @@ export function Report({ report, scanId }: { report: OpenPromisesReport; scanId:
 
       {downloadError ? <p className="text-[13px] text-destructive">{downloadError}</p> : null}
       {report.truncated ? (
-        <p className="border border-amber-500/40 bg-amber-500/5 p-3 text-[13px] text-primary/70">
+        <p className="border border-amber-500/40 bg-amber-500/5 p-3 text-[13px] text-foreground/70">
           This report shows the first 200 open promises. Open promises to see the rest.
         </p>
       ) : null}
@@ -671,8 +671,8 @@ export function Report({ report, scanId }: { report: OpenPromisesReport; scanId:
           return (
             <li key={item.commitmentId} className="border border-border bg-background p-4">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <Label className="text-[13px] font-medium text-primary">{item.account}</Label>
-                <Label className="text-[12px] font-normal text-primary/45">
+                <Label className="text-[13px] font-medium text-foreground">{item.account}</Label>
+                <Label className="text-[12px] font-normal text-foreground/45">
                   {promiseDirectionLabel(item.direction)}
                 </Label>
                 {badge ? (
@@ -683,19 +683,19 @@ export function Report({ report, scanId }: { report: OpenPromisesReport; scanId:
                     {badge}
                   </Badge>
                 ) : null}
-                <Label className="ml-auto text-[12px] font-normal text-primary/45">
+                <Label className="ml-auto text-[12px] font-normal text-foreground/45">
                   {promiseDueLabel(item.dueAt)}
                 </Label>
               </div>
-              <p className="mt-1.5 text-[14px] leading-snug text-primary">{item.text}</p>
+              <p className="mt-1.5 text-[14px] leading-snug text-foreground">{item.text}</p>
               {/* Every claim carries its citation, or it is not made. */}
               {reportSourceQuote(item.sourceQuote) ? (
-                <blockquote className="mt-2.5 border-l-2 border-border pl-3 text-[13px] italic leading-relaxed text-primary/55">
+                <blockquote className="mt-2.5 border-l-2 border-border pl-3 text-[13px] italic leading-relaxed text-foreground/55">
                   {reportSourceQuote(item.sourceQuote)}
                 </blockquote>
               ) : null}
               {item.occurredAt || safeResearchCitationURL(item.sourceUri ?? "") ? (
-                <p className="mt-2 text-[12px] text-primary/45">
+                <p className="mt-2 text-[12px] text-foreground/45">
                   {item.occurredAt
                     ? `Source observed ${localMomentLabel(item.occurredAt)}`
                     : "Source"}
@@ -703,7 +703,7 @@ export function Report({ report, scanId }: { report: OpenPromisesReport; scanId:
                     <>
                       {" · "}
                       <a
-                        className="underline underline-offset-2 hover:text-primary"
+                        className="underline underline-offset-2 hover:text-foreground"
                         href={safeResearchCitationURL(item.sourceUri ?? "") as string}
                         rel="noreferrer"
                         target="_blank"
@@ -725,8 +725,8 @@ export function Report({ report, scanId }: { report: OpenPromisesReport; scanId:
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="border border-border bg-background-50 p-3">
-      <div className="text-[24px] font-medium leading-none text-primary">{value}</div>
-      <div className="mt-1.5 text-[12px] text-primary/50">{label}</div>
+      <div className="text-[24px] font-medium leading-none text-foreground">{value}</div>
+      <div className="mt-1.5 text-[12px] text-foreground/50">{label}</div>
     </div>
   );
 }

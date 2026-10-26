@@ -76,7 +76,9 @@ describe("ChatDashboardRoute", () => {
     expect(source).not.toContain("title={item.name}");
     expect(source).not.toContain("Approval required: {item.name}");
     expect(source).toContain("approvalDecisionCopy(item.status)");
-    expect(source).not.toContain('className="col-start-2 mt-3 text-xs capitalize text-primary/60"');
+    expect(source).not.toContain(
+      'className="col-start-2 mt-3 text-xs capitalize text-foreground/60"',
+    );
     expect(source).not.toContain(
       'item.status === "resolving" ? "Submitting decision…" : item.status',
     );

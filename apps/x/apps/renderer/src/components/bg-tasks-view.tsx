@@ -3386,7 +3386,7 @@ function FilterChip({
       onClick={onClick}
       className={`rounded-none border px-2 py-0.5 text-[11px] transition-colors ${
         active
-          ? "border-primary bg-primary/10 text-foreground"
+          ? "border-foreground bg-primary/10 text-foreground"
           : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
       }`}
     >
@@ -3834,7 +3834,7 @@ export function BgTasksView({
       <div className="shrink-0 border-b border-border px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <ListChecks className="size-5 text-primary" />
+            <ListChecks className="size-5 text-foreground" />
             <h2 className="text-base font-semibold text-foreground">Background tasks</h2>
           </div>
           <div className="flex items-center gap-2">
@@ -3963,7 +3963,7 @@ export function BgTasksView({
                               <button
                                 type="button"
                                 onClick={() => setSelectedSlug(task.slug)}
-                                className="truncate text-left text-sm font-medium text-foreground hover:text-primary"
+                                className="truncate text-left text-sm font-medium text-foreground hover:text-foreground"
                                 title={task.name}
                               >
                                 {task.name}

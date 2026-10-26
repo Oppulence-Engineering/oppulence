@@ -17,7 +17,7 @@ describe("ScansView", () => {
     expect(source).toContain("export function ScansView");
     expect(source).toContain(">Companies</TableHead>");
     expect(source).not.toContain(">Relationships</TableHead>");
-    expect(source).toContain(">Conversations</TableHead>");
+    expect(source).toMatch(/>\s*Conversations\s*<\/TableHead>/);
     expect(source).toMatch(/>\s*Follow-up signals\s*<\/TableHead>/);
     expect(source).toContain("examinedConversationCount(scan)");
     expect(source).not.toContain(">Threads</TableHead>");

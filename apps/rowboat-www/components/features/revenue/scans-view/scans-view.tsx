@@ -130,7 +130,7 @@ export function ScansView({
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col" data-slot="scans-view">
       <div className="flex min-h-12 items-center justify-between gap-4 border-b border-border px-3 py-2">
-        <p className="min-w-0 flex-1 truncate text-[13px] text-primary/55">
+        <p className="min-w-0 flex-1 truncate text-[13px] text-foreground/55">
           A Promise Leak Audit reads the last {REVENUE_EVIDENCE_LOOKBACK_LABEL} of Gmail for
           promises and follow-ups that have gone quiet. Nothing is sent without your approval.
         </p>
@@ -197,15 +197,17 @@ export function ScansView({
         <div className="min-w-0 flex-1 overflow-auto">
           <Table className="min-w-[760px]">
             <TableHeader>
-              <TableRow className="h-10 border-border px-3 text-[12px] text-primary/45 hover:bg-transparent">
-                <TableHead className="h-10 min-w-[220px] px-3 text-primary/45">Audit</TableHead>
-                <TableHead className="h-10 w-[70px] px-3 text-primary/45">Window</TableHead>
-                <TableHead className="h-10 w-[120px] px-3 text-primary/45">Conversations</TableHead>
-                <TableHead className="h-10 w-[140px] px-3 text-primary/45">
+              <TableRow className="h-10 border-border px-3 text-[12px] text-foreground/45 hover:bg-transparent">
+                <TableHead className="h-10 min-w-[220px] px-3 text-foreground/45">Audit</TableHead>
+                <TableHead className="h-10 w-[70px] px-3 text-foreground/45">Window</TableHead>
+                <TableHead className="h-10 w-[120px] px-3 text-foreground/45">
+                  Conversations
+                </TableHead>
+                <TableHead className="h-10 w-[140px] px-3 text-foreground/45">
                   Follow-up signals
                 </TableHead>
-                <TableHead className="h-10 w-[100px] px-3 text-primary/45">Drafts</TableHead>
-                <TableHead className="h-10 w-[100px] px-3 text-primary/45">Companies</TableHead>
+                <TableHead className="h-10 w-[100px] px-3 text-foreground/45">Drafts</TableHead>
+                <TableHead className="h-10 w-[100px] px-3 text-foreground/45">Companies</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -249,7 +251,7 @@ function ScanRow({ scan }: { scan: RevenueLeakScan }) {
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             {running ? (
-              <Spinner className="size-4 text-primary/60" />
+              <Spinner className="size-4 text-foreground/60" />
             ) : scan.status === "completed" ? (
               <CheckCircle weight="fill" className="size-4 text-emerald-500" />
             ) : (
@@ -257,24 +259,24 @@ function ScanRow({ scan }: { scan: RevenueLeakScan }) {
             )}
             {scan.status === "completed" ? (
               <Link
-                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
                 href={`/app/report?scan=${encodeURIComponent(scan.id)}`}
               >
                 {title}
               </Link>
             ) : (
-              <Label className="text-sm font-medium text-primary">{title}</Label>
+              <Label className="text-sm font-medium text-foreground">{title}</Label>
             )}
             <Badge
               variant="secondary"
-              className="ml-auto hidden font-normal text-primary/40 sm:inline-flex"
+              className="ml-auto hidden font-normal text-foreground/40 sm:inline-flex"
             >
               {relativeTime(scan.completedAt ?? scan.startedAt)}
             </Badge>
           </div>
           {scan.error ? (
             <p
-              className="mt-1 truncate text-[12px] text-primary/45"
+              className="mt-1 truncate text-[12px] text-foreground/45"
               title={auditFailureCopy(scan.error)}
             >
               {auditFailureCopy(scan.error)}
@@ -288,7 +290,7 @@ function ScanRow({ scan }: { scan: RevenueLeakScan }) {
         </Badge>
       </TableCell>
       <TableCell
-        className="w-[120px] px-3 tabular-nums text-primary/65"
+        className="w-[120px] px-3 tabular-nums text-foreground/65"
         title={
           (scan.threadsSkipped ?? 0) > 0
             ? `${scan.threadsSkipped} were not conversations`
@@ -297,13 +299,13 @@ function ScanRow({ scan }: { scan: RevenueLeakScan }) {
       >
         {examinedConversationCount(scan)}
       </TableCell>
-      <TableCell className="w-[140px] px-3 tabular-nums text-primary/65">
+      <TableCell className="w-[140px] px-3 tabular-nums text-foreground/65">
         {scan.candidatesSeen ?? 0}
       </TableCell>
-      <TableCell className="w-[100px] px-3 tabular-nums text-primary/65">
+      <TableCell className="w-[100px] px-3 tabular-nums text-foreground/65">
         {scan.actionsCreated ?? 0}
       </TableCell>
-      <TableCell className="w-[100px] px-3 tabular-nums text-primary/65">
+      <TableCell className="w-[100px] px-3 tabular-nums text-foreground/65">
         {scan.relationshipsCreated ?? 0}
       </TableCell>
     </TableRow>

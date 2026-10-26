@@ -195,7 +195,7 @@ function OptionalConnectorScope({ scope }: { scope: ConnectorScope }) {
       />
       {checked ? <input name="requested_scope" type="hidden" value={scope.name} /> : null}
       <div>
-        <Label className="font-normal text-primary/80">
+        <Label className="font-normal text-foreground/80">
           {scopeProductLabel(scope.name, scope.displayName)} · Optional
           {scope.requiredPlan ? ` · ${planLabel(scope.requiredPlan)} plan` : ""}
         </Label>
@@ -218,10 +218,10 @@ function ConnectorScopeList({
 }) {
   if (scopes.length === 0) return null;
   return (
-    <details className="rounded-[3px] border border-primary/10 bg-primary/[0.02] px-3 py-2">
+    <details className="rounded-[3px] border border-foreground/10 bg-primary/[0.02] px-3 py-2">
       <summary
         aria-label={`Permissions for ${productName}`}
-        className="cursor-pointer text-xs font-medium text-primary/70"
+        className="cursor-pointer text-xs font-medium text-foreground/70"
       >
         Permissions
       </summary>
@@ -236,7 +236,7 @@ function ConnectorScopeList({
                 value={scope.name}
               />
               <div>
-                <Label className="font-normal text-primary/80">
+                <Label className="font-normal text-foreground/80">
                   {scopeProductLabel(scope.name, scope.displayName)} · Required
                   {scope.requiredPlan ? ` · ${planLabel(scope.requiredPlan)} plan` : ""}
                 </Label>
@@ -318,7 +318,7 @@ function GoogleConnectionSettings() {
   return (
     <div className="settings-panel mb-3 flex items-start justify-between gap-4 px-4 py-3">
       <div>
-        <Label className="flex items-center gap-2 text-sm font-medium text-primary">
+        <Label className="flex items-center gap-2 text-sm font-medium text-foreground">
           Gmail &amp; Google Calendar
           <Badge
             className={cn(
@@ -348,7 +348,7 @@ function GoogleConnectionSettings() {
           </p>
         ) : null}
         {status?.accounts.map((account) => (
-          <p className="mt-1 font-mono text-[11px] text-primary/50" key={account.accountId}>
+          <p className="mt-1 font-mono text-[11px] text-foreground/50" key={account.accountId}>
             {account.accountId}
           </p>
         ))}
@@ -365,7 +365,7 @@ function GoogleConnectionSettings() {
       </div>
       {confirming ? (
         <div className="flex max-w-xs flex-col items-end gap-2">
-          <p className="text-right text-xs text-primary/70">
+          <p className="text-right text-xs text-foreground/70">
             {googleAccessConfirmCopy(health.tone)}
           </p>
           <div className="flex gap-2">
@@ -506,7 +506,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Label className="truncate text-sm font-medium text-primary">
+            <Label className="truncate text-sm font-medium text-foreground">
               {connector.displayName}
             </Label>
             {connector.connected ? (
@@ -514,7 +514,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
                 Active
               </Badge>
             ) : (
-              <Badge className="shrink-0 rounded-[2px] text-primary/50" variant="outline">
+              <Badge className="shrink-0 rounded-[2px] text-foreground/50" variant="outline">
                 Not connected
               </Badge>
             )}
@@ -529,7 +529,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
           </CardDescription>
           {activity ? (
             <Badge
-              className="mt-1 block font-mono text-[11px] font-normal text-primary/45"
+              className="mt-1 block font-mono text-[11px] font-normal text-foreground/45"
               variant="secondary"
             >
               {activity}
@@ -643,7 +643,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
       ) : null}
 
       {connector.connected && connector.grantedScopes?.length ? (
-        <p className="font-mono text-[11px] text-primary/50">
+        <p className="font-mono text-[11px] text-foreground/50">
           Permissions:{" "}
           {connector.grantedScopes
             .map((scope) => scopeProductLabel(scope.name, scope.displayName?.trim() || scope.name))
@@ -751,7 +751,7 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
             {connectorsQuery.isError ? (
               <div
                 className={
-                  "flex items-center justify-between gap-3 border-b border-primary/10 px-4 py-3"
+                  "flex items-center justify-between gap-3 border-b border-foreground/10 px-4 py-3"
                 }
               >
                 <p className="text-sm text-muted-foreground">
@@ -767,7 +767,7 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
                 </Button>
               </div>
             ) : null}
-            <div className="flex flex-col divide-y divide-primary/10">
+            <div className="flex flex-col divide-y divide-foreground/10">
               {visibleConnectors.map((connector) => (
                 <ConnectorRow
                   connector={connector}

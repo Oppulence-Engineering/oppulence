@@ -207,13 +207,13 @@ function GraphTable({
           placeholder="Filter nodes"
           className="max-w-xs"
         />
-        <span className="text-[11px] text-primary/45">
+        <span className="text-[11px] text-foreground/45">
           {filteredNodes.length} of {nodes.length} nodes
         </span>
       </div>
       <table className="w-full border-collapse text-left text-xs">
         <thead className="sticky top-0 z-10 bg-background">
-          <tr className="border-b border-border font-mono text-[10px] uppercase tracking-wide text-primary/40">
+          <tr className="border-b border-border font-mono text-[10px] uppercase tracking-wide text-foreground/40">
             <th className="px-3 py-2 font-normal">Node</th>
             <th className="px-3 py-2 font-normal">Type</th>
             <th className="px-3 py-2 font-normal">State</th>
@@ -231,19 +231,19 @@ function GraphTable({
                 <button
                   type="button"
                   onClick={() => onSelect(node.id)}
-                  className="flex max-w-80 items-center gap-2 text-left font-medium text-primary hover:underline"
+                  className="flex max-w-80 items-center gap-2 text-left font-medium text-foreground hover:underline"
                 >
                   <NodeIcon kind={node.kind} /> <span className="truncate">{node.label}</span>
                 </button>
               </td>
-              <td className="px-3 py-2 text-primary/55">{KIND_LABEL[node.kind]}</td>
-              <td className="px-3 py-2 capitalize text-primary/55">
+              <td className="px-3 py-2 text-foreground/55">{KIND_LABEL[node.kind]}</td>
+              <td className="px-3 py-2 capitalize text-foreground/55">
                 {(stateBadge(node) || "—").replaceAll("_", " ")}
               </td>
-              <td className="px-3 py-2 text-primary/45">
+              <td className="px-3 py-2 text-foreground/45">
                 {edges.filter((edge) => edge.source === node.id || edge.target === node.id).length}
               </td>
-              <td className="px-3 py-2 text-primary/45">{node.evidenceRefs.length}</td>
+              <td className="px-3 py-2 text-foreground/45">{node.evidenceRefs.length}</td>
             </tr>
           ))}
         </tbody>
@@ -276,9 +276,9 @@ function Inspector({
   if (!node) {
     return (
       <aside className="flex min-h-56 flex-col items-center justify-center border-l border-border p-6 text-center">
-        <Graph className="size-7 text-primary/25" />
-        <p className="mt-3 text-sm font-medium text-primary">Inspect the graph</p>
-        <p className="mt-1 max-w-56 text-xs text-primary/45">
+        <Graph className="size-7 text-foreground/25" />
+        <p className="mt-3 text-sm font-medium text-foreground">Inspect the graph</p>
+        <p className="mt-1 max-w-56 text-xs text-foreground/45">
           Select a node to inspect its state, evidence, connections, and governed actions.
         </p>
       </aside>
@@ -310,17 +310,17 @@ function Inspector({
           <NodeIcon kind={node.kind} className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-primary/40">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-foreground/40">
             {KIND_LABEL[node.kind]}
           </p>
-          <h3 className="mt-1 text-sm font-semibold text-primary">{node.label}</h3>
+          <h3 className="mt-1 text-sm font-semibold text-foreground">{node.label}</h3>
         </div>
       </div>
       {node.summary ? (
-        <p className="mt-3 text-xs leading-5 text-primary/60">{node.summary}</p>
+        <p className="mt-3 text-xs leading-5 text-foreground/60">{node.summary}</p>
       ) : null}
       <div className="mt-4 border border-border bg-background px-2 py-2">
-        <p className="font-mono text-[9px] uppercase tracking-wide text-primary/35">
+        <p className="font-mono text-[9px] uppercase tracking-wide text-foreground/35">
           Explore this node
         </p>
         <div className="mt-2 grid grid-cols-3 gap-1" aria-label="Graph neighborhood focus">
@@ -332,8 +332,8 @@ function Inspector({
               aria-pressed={focusDepth === depth}
               className={`border px-2 py-1.5 text-[10px] ${
                 focusDepth === depth
-                  ? "border-oppulence-orange bg-oppulence-orange/10 text-primary"
-                  : "border-border text-primary/55 hover:bg-primary/5"
+                  ? "border-oppulence-orange bg-oppulence-orange/10 text-foreground"
+                  : "border-border text-foreground/55 hover:bg-primary/5"
               }`}
             >
               {depth} hop{depth === 1 ? "" : "s"}
@@ -345,14 +345,14 @@ function Inspector({
             aria-pressed={focusDepth === 0}
             className={`border px-2 py-1.5 text-[10px] ${
               focusDepth === 0
-                ? "border-primary/40 bg-primary/5 text-primary"
-                : "border-border text-primary/55 hover:bg-primary/5"
+                ? "border-foreground/40 bg-primary/5 text-foreground"
+                : "border-border text-foreground/55 hover:bg-primary/5"
             }`}
           >
             Full graph
           </button>
         </div>
-        <p className="mt-1.5 text-[9px] leading-4 text-primary/35">
+        <p className="mt-1.5 text-[9px] leading-4 text-foreground/35">
           Focus follows your selection, so you can walk the relationship one node at a time.
         </p>
       </div>
@@ -373,10 +373,10 @@ function Inspector({
           .filter((entry) => entry[1])
           .map(([label, value]) => (
             <div key={label} className="border border-border bg-background px-2 py-2">
-              <dt className="font-mono text-[9px] uppercase tracking-wide text-primary/35">
+              <dt className="font-mono text-[9px] uppercase tracking-wide text-foreground/35">
                 {label}
               </dt>
-              <dd className="mt-0.5 capitalize text-primary/70">
+              <dd className="mt-0.5 capitalize text-foreground/70">
                 {String(value).replaceAll("_", " ")}
               </dd>
             </div>
@@ -384,14 +384,16 @@ function Inspector({
       </dl>
 
       {node.changedSinceReview ? (
-        <p className="mt-3 border border-oppulence-orange/25 bg-oppulence-orange/5 p-2 text-xs text-primary/65">
+        <p className="mt-3 border border-oppulence-orange/25 bg-oppulence-orange/5 p-2 text-xs text-foreground/65">
           Changed since your last review
           {node.changedDimensions.length ? `: ${node.changedDimensions.join(", ")}` : "."}
         </p>
       ) : null}
 
       <div className="mt-4">
-        <p className="font-mono text-[10px] uppercase tracking-wide text-primary/40">Connections</p>
+        <p className="font-mono text-[10px] uppercase tracking-wide text-foreground/40">
+          Connections
+        </p>
         <ul className="mt-2 space-y-1">
           {connections.slice(0, 12).map((edge) => {
             const otherId = edge.source === node.id ? edge.target : edge.source;
@@ -406,7 +408,7 @@ function Inspector({
                   <NodeIcon kind={other.kind} />
                   <span className="min-w-0 flex-1 truncate">{other.label}</span>
                   <span
-                    className="font-mono text-[9px] text-primary/35"
+                    className="font-mono text-[9px] text-foreground/35"
                     aria-label={`${edge.source === node.id ? "Outgoing" : "Incoming"}: ${edge.label}`}
                   >
                     {edge.source === node.id ? "→" : "←"} {edge.label}
@@ -416,13 +418,13 @@ function Inspector({
             ) : null;
           })}
           {!connections.length ? (
-            <li className="text-xs text-primary/35">No visible connections.</li>
+            <li className="text-xs text-foreground/35">No visible connections.</li>
           ) : null}
         </ul>
       </div>
 
       {node.evidenceRefs.length ? (
-        <p className="mt-4 border border-border px-2 py-2 text-[10px] text-primary/45">
+        <p className="mt-4 border border-border px-2 py-2 text-[10px] text-foreground/45">
           <FileText className="mr-1 inline size-3" /> {node.evidenceRefs.length} retained evidence
           reference{node.evidenceRefs.length === 1 ? "" : "s"}
         </p>
@@ -475,12 +477,12 @@ function Inspector({
         ) : null}
       </div>
       {actionId ? (
-        <p className="mt-2 text-[10px] leading-4 text-primary/40">
+        <p className="mt-2 text-[10px] leading-4 text-foreground/40">
           Execution remains a separate explicit step in the complete action record.
         </p>
       ) : null}
       {node.kind !== "action" && relationshipRecords.length > 1 ? (
-        <p className="mt-2 text-[10px] leading-4 text-primary/40">
+        <p className="mt-2 text-[10px] leading-4 text-foreground/40">
           This node is shared across accounts. Open one account before proposing an action so the
           approval is scoped correctly.
         </p>
@@ -796,8 +798,8 @@ export function RelationshipGraphWorkspace({
             <ShareNetwork weight="duotone" />
           </span>
           <div className="mr-auto">
-            <h2 className="text-sm font-semibold text-primary">Relationship graph</h2>
-            <p className="text-[10px] text-primary/40">
+            <h2 className="text-sm font-semibold text-foreground">Relationship graph</h2>
+            <p className="text-[10px] text-foreground/40">
               Versioned state, evidence, and governed action
             </p>
           </div>
@@ -817,7 +819,7 @@ export function RelationshipGraphWorkspace({
                     focusDepth: 0,
                   })
                 }
-                className={`px-3 py-1.5 text-xs ${viewState.scope === scope ? "bg-primary text-background" : "text-primary/55"}`}
+                className={`px-3 py-1.5 text-xs ${viewState.scope === scope ? "bg-primary text-background" : "text-foreground/55"}`}
               >
                 {scope === "portfolio" ? "Portfolio graph" : "Account graph"}
               </button>
@@ -879,7 +881,7 @@ export function RelationshipGraphWorkspace({
         </form>
         {queryResult ? (
           <div
-            className="mt-2 flex flex-wrap items-center gap-2 border border-oppulence-orange/20 bg-oppulence-orange/5 px-3 py-2 text-xs text-primary/65"
+            className="mt-2 flex flex-wrap items-center gap-2 border border-oppulence-orange/20 bg-oppulence-orange/5 px-3 py-2 text-xs text-foreground/65"
             aria-live="polite"
           >
             <Sparkle className="size-4 text-oppulence-orange" />
@@ -901,14 +903,14 @@ export function RelationshipGraphWorkspace({
           <button
             type="button"
             onClick={() => setMode("canvas")}
-            className={`flex items-center gap-1 px-2 py-1 text-xs ${mode === "canvas" ? "bg-primary/10" : "text-primary/45"}`}
+            className={`flex items-center gap-1 px-2 py-1 text-xs ${mode === "canvas" ? "bg-primary/10" : "text-foreground/45"}`}
           >
             <Graph /> Canvas
           </button>
           <button
             type="button"
             onClick={() => setMode("table")}
-            className={`flex items-center gap-1 px-2 py-1 text-xs ${mode === "table" ? "bg-primary/10" : "text-primary/45"}`}
+            className={`flex items-center gap-1 px-2 py-1 text-xs ${mode === "table" ? "bg-primary/10" : "text-foreground/45"}`}
           >
             <ListBullets /> Table
           </button>
@@ -928,7 +930,7 @@ export function RelationshipGraphWorkspace({
             <SelectItem value="timeline">Timeline layout</SelectItem>
           </SelectContent>
         </Select>
-        <label className="flex items-center gap-2 text-[11px] text-primary/50">
+        <label className="flex items-center gap-2 text-[11px] text-foreground/50">
           Density{" "}
           <Slider
             min={0.25}
@@ -940,14 +942,14 @@ export function RelationshipGraphWorkspace({
             aria-label="Graph density"
           />
         </label>
-        <label className="flex items-center gap-1 text-[11px] text-primary/55">
+        <label className="flex items-center gap-1 text-[11px] text-foreground/55">
           <Checkbox
             checked={viewState.hideIsolated}
             onCheckedChange={(checked) => updateState({ hideIsolated: checked === true })}
           />{" "}
           Hide isolated
         </label>
-        <label className="flex items-center gap-1 text-[11px] text-primary/55">
+        <label className="flex items-center gap-1 text-[11px] text-foreground/55">
           <Checkbox
             checked={viewState.changedSinceReview}
             onCheckedChange={(checked) => updateState({ changedSinceReview: checked === true })}
@@ -1020,23 +1022,23 @@ export function RelationshipGraphWorkspace({
       <div className="relationship-graph-stage grid min-h-[600px] grid-cols-[minmax(0,1fr)_310px]">
         <div className="relative min-h-[520px]">
           {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-primary/45">
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-foreground/45">
               <CircleNotch className="mr-2 animate-spin" /> Building authorized graph…
             </div>
           ) : loadError ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
               <WarningDiamond className="size-7 text-destructive" />
-              <p className="mt-2 max-w-lg text-sm text-primary/65">{loadError}</p>
+              <p className="mt-2 max-w-lg text-sm text-foreground/65">{loadError}</p>
               <Button size="sm" variant="outline" className="mt-3" onClick={() => void load()}>
                 Retry
               </Button>
             </div>
           ) : !graph ? (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-primary/45">
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-foreground/45">
               Choose an account to build its graph.
             </div>
           ) : !visible.nodes.length ? (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-primary/45">
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-foreground/45">
               No nodes match this view.
             </div>
           ) : mode === "table" ? (
@@ -1062,7 +1064,7 @@ export function RelationshipGraphWorkspace({
             </div>
           ) : null}
           {graph && viewState.focusDepth && viewState.selectedNodeId ? (
-            <div className="absolute bottom-3 right-3 border border-oppulence-orange/25 bg-background/90 px-2 py-1 text-[10px] text-primary/55 backdrop-blur">
+            <div className="absolute bottom-3 right-3 border border-oppulence-orange/25 bg-background/90 px-2 py-1 text-[10px] text-foreground/55 backdrop-blur">
               Focused · {viewState.focusDepth} hop{viewState.focusDepth === 1 ? "" : "s"} ·{" "}
               {visible.nodes.length} nodes
               <button
@@ -1074,13 +1076,13 @@ export function RelationshipGraphWorkspace({
               </button>
             </div>
           ) : queryResult ? (
-            <div className="absolute bottom-3 right-3 border border-border bg-background/90 px-2 py-1 text-[10px] text-primary/45">
+            <div className="absolute bottom-3 right-3 border border-border bg-background/90 px-2 py-1 text-[10px] text-foreground/45">
               Query view · {visible.nodes.length} node{visible.nodes.length === 1 ? "" : "s"} ·{" "}
               {queryResult.evidenceRefs.length} evidence reference
               {queryResult.evidenceRefs.length === 1 ? "" : "s"}
             </div>
           ) : graph && graph.nodes.length > visible.nodes.length ? (
-            <div className="absolute bottom-3 right-3 border border-border bg-background/90 px-2 py-1 text-[10px] text-primary/45">
+            <div className="absolute bottom-3 right-3 border border-border bg-background/90 px-2 py-1 text-[10px] text-foreground/45">
               Showing {visible.nodes.length} of {graph.nodes.length} nodes · raise density for more
             </div>
           ) : null}

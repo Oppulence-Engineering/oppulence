@@ -235,7 +235,7 @@ export function ChatEmptyState({
               <button
                 type="button"
                 onClick={onOpenChatHistory}
-                className="inline-flex items-center gap-0.5 text-[11px] font-medium normal-case tracking-normal text-primary hover:underline"
+                className="inline-flex items-center gap-0.5 text-[11px] font-medium normal-case tracking-normal text-foreground hover:underline"
               >
                 View all
                 <ArrowUpRight className="size-3" />

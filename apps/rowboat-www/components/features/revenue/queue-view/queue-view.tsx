@@ -849,7 +849,7 @@ function CreateActionDialog({
         {relationships.length === 0 && !hasMoreCompanies ? (
           <Empty className="gap-3 py-4">
             <EmptyHeader>
-              <EmptyDescription className="text-sm text-primary/55">
+              <EmptyDescription className="text-sm text-foreground/55">
                 {recoveryNoCompaniesCopy({
                   hasMoreCompanies: false,
                   needsConnect,

@@ -334,9 +334,9 @@ function HelpSettings({ onStartTour }: { onStartTour?: () => void }) {
             <button
               type="button"
               onClick={onStartTour}
-              className="group flex w-full items-center gap-3 rounded-none border bg-card px-3.5 py-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40"
+              className="group flex w-full items-center gap-3 rounded-none border bg-card px-3.5 py-3 text-left transition-colors hover:border-foreground/40 hover:bg-muted/40"
             >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-none bg-primary/10 text-primary">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-none bg-primary/10 text-foreground">
                 <HelpCircle className="size-4" />
               </span>
               <span className="min-w-0 flex-1">
@@ -352,9 +352,9 @@ function HelpSettings({ onStartTour }: { onStartTour?: () => void }) {
             type="button"
             disabled={!signedIn}
             onClick={() => setFeedbackOpen(true)}
-            className="group flex w-full items-center gap-3 rounded-none border bg-card px-3.5 py-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
+            className="group flex w-full items-center gap-3 rounded-none border bg-card px-3.5 py-3 text-left transition-colors hover:border-foreground/40 hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-none bg-primary/10 text-primary">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-none bg-primary/10 text-foreground">
               <MessageSquare className="size-4" />
             </span>
             <span className="min-w-0 flex-1">
@@ -373,7 +373,7 @@ function HelpSettings({ onStartTour }: { onStartTour?: () => void }) {
               key={l.title}
               type="button"
               onClick={() => window.open(l.href, "_blank")}
-              className="group flex w-full items-center gap-3 rounded-none border bg-card px-3.5 py-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40"
+              className="group flex w-full items-center gap-3 rounded-none border bg-card px-3.5 py-3 text-left transition-colors hover:border-foreground/40 hover:bg-muted/40"
             >
               <span
                 className={cn(
@@ -718,7 +718,7 @@ function TagGroupTable({
         <button
           onClick={onAdd}
           aria-label={`Add ${group.label.toLowerCase()} tag`}
-          className="flex w-full items-center justify-center gap-1.5 rounded-none border border-dashed py-3 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+          className="flex w-full items-center justify-center gap-1.5 rounded-none border border-dashed py-3 text-xs text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
         >
           <Plus className="size-3.5" />
           Add tag
@@ -1008,7 +1008,7 @@ function AgentStatusRow({
           href={installLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
+          className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-foreground hover:underline"
         >
           Install
           <ExternalLink className="size-3" />
@@ -1217,14 +1217,14 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   className={cn(
                     "flex w-full items-start gap-3 rounded-none border px-3.5 py-3 text-left transition-all",
                     active
-                      ? "border-primary bg-primary/[0.03] ring-2 ring-primary/20"
-                      : "border-border hover:border-primary/40 hover:bg-muted/40",
+                      ? "border-foreground bg-primary/[0.03] ring-2 ring-foreground/20"
+                      : "border-border hover:border-foreground/40 hover:bg-muted/40",
                   )}
                 >
                   <span
                     className={cn(
                       "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
-                      active ? "border-primary" : "border-muted-foreground/40",
+                      active ? "border-foreground" : "border-muted-foreground/40",
                     )}
                   >
                     {active && <span className="size-1.5 rounded-full bg-primary" />}

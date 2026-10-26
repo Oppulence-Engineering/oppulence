@@ -576,7 +576,7 @@ export function WorkspaceView({
         )}
 
         {dropEnabled && isDraggingOver && (
-          <div className="pointer-events-none absolute inset-3 z-10 flex flex-col items-center justify-center gap-2 rounded-none border-2 border-dashed border-primary/60 bg-primary/5 text-primary">
+          <div className="pointer-events-none absolute inset-3 z-10 flex flex-col items-center justify-center gap-2 rounded-none border-2 border-dashed border-foreground/60 bg-primary/5 text-foreground">
             <UploadCloud className="size-8" />
             <span className="text-sm font-medium">Drop files to add to this folder</span>
           </div>

@@ -1387,7 +1387,7 @@ it("does not offer a meeting import that opens the company directory", () => {
   expect(promiseDueFromEditor("2026-10-20T03:00")).toBe("2026-10-20T03:00:00.000Z");
   expect(promiseDueFromEditor("")).toBeUndefined();
   expect(source).toContain(
-    "data-[state=active]:bg-background-200 data-[state=active]:text-primary",
+    "data-[state=active]:bg-background-200 data-[state=active]:text-foreground",
   );
   expect(source).not.toContain(
     'className="rounded-none bg-background-200 px-3 py-1.5 text-[13px] data-[state=active]:bg-background-200"',

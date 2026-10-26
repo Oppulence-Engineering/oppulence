@@ -191,7 +191,7 @@ export function digestLoopCopy(action: {
 function DigestLoadNotice({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-      <p className="text-[13px] text-primary/70">{digestFailureCopy()}</p>
+      <p className="text-[13px] text-foreground/70">{digestFailureCopy()}</p>
       <Button onClick={onRetry} size="sm" type="button" variant="outline">
         Try again
       </Button>
@@ -349,15 +349,15 @@ export function ImpactView({
             <Badge className="font-mono text-[10px] uppercase tracking-wider" variant="outline">
               Company exposure
             </Badge>
-            <CardTitle className="mt-1 text-base text-primary">
+            <CardTitle className="mt-1 text-base text-foreground">
               {impactExposureTitle(data.overdueCommitments)}
             </CardTitle>
-            <CardDescription className="mt-1 max-w-3xl text-xs text-primary/50">
+            <CardDescription className="mt-1 max-w-3xl text-xs text-foreground/50">
               The score is deterministic: each company contributes its highest open risk rank,
               divided across the active portfolio. No invented contract or pipeline value.
             </CardDescription>
           </div>
-          <Badge className="gap-2 font-normal text-primary/50" variant="secondary">
+          <Badge className="gap-2 font-normal text-foreground/50" variant="secondary">
             <WarningDiamond className="size-4 text-amber-500" /> Updated from live company state
           </Badge>
         </CardHeader>
@@ -369,10 +369,10 @@ export function ImpactView({
         {sourceDegradationDominates ? (
           <Alert className="rounded-none border-x-0 border-t border-amber-500/40 bg-amber-500/[0.06]">
             <WarningDiamond className="size-4 text-amber-500" />
-            <AlertTitle className="text-[13px] text-primary">
+            <AlertTitle className="text-[13px] text-foreground">
               This score reflects missing data, not company behaviour.
             </AlertTitle>
-            <AlertDescription className="text-[13px] text-primary/60">
+            <AlertDescription className="text-[13px] text-foreground/60">
               {degradedCount} of {accountTotal} companies are exposed because a connected source
               stopped reporting. Reconnect it before reading these numbers as risk.
             </AlertDescription>
@@ -392,16 +392,16 @@ export function ImpactView({
             <Line label="Longest overdue" value={longestOverdueCopy(data.longestOverdueDays)} />
           </dl>
           <div className="border-t border-border p-4 md:border-t-0">
-            <p className="mb-2 text-xs font-medium text-primary/55">Why companies are exposed</p>
+            <p className="mb-2 text-xs font-medium text-foreground/55">Why companies are exposed</p>
             {riskReasons.length ? (
               <ul className="space-y-1.5 text-sm">
                 {riskReasons.map((risk) => (
                   <li className="flex items-center justify-between gap-3" key={risk.reason}>
-                    <Label className="font-normal text-primary/60">
+                    <Label className="font-normal text-foreground/60">
                       {attentionReasonLabel(risk.reason)}
                     </Label>
                     <Badge
-                      className="rounded-none tabular-nums font-normal text-primary/80"
+                      className="rounded-none tabular-nums font-normal text-foreground/80"
                       variant="outline"
                     >
                       {risk.relationships}
@@ -410,7 +410,7 @@ export function ImpactView({
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-primary/40">No active company risks.</p>
+              <p className="text-sm text-foreground/40">No active company risks.</p>
             )}
           </div>
         </div>
@@ -422,9 +422,9 @@ export function ImpactView({
         <Card className="gap-3 py-4">
           <CardHeader className="px-4 pb-0">
             <div className="flex items-center gap-2">
-              <EnvelopeSimple weight="fill" className="size-4 text-primary/55" />
-              <CardTitle className="text-sm text-primary">Your weekly digest</CardTitle>
-              <Badge className="font-normal text-primary/45" variant="secondary">
+              <EnvelopeSimple weight="fill" className="size-4 text-foreground/55" />
+              <CardTitle className="text-sm text-foreground">Your weekly digest</CardTitle>
+              <Badge className="font-normal text-foreground/45" variant="secondary">
                 {digestPreviewBadge()}
               </Badge>
             </div>
@@ -432,7 +432,7 @@ export function ImpactView({
           <CardContent className="px-4">
             {digestFailed ? (
               <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="text-[13px] text-primary/70">{digestRefreshCopy()}</p>
+                <p className="text-[13px] text-foreground/70">{digestRefreshCopy()}</p>
                 <Button onClick={reload} size="sm" type="button" variant="outline">
                   Try again
                 </Button>
@@ -443,15 +443,15 @@ export function ImpactView({
                 const signal = digestSignalLabel(a.detector ?? "");
                 return (
                   <li key={i} className="flex items-center justify-between gap-3 text-sm">
-                    <Label className="truncate font-normal text-primary/75">
+                    <Label className="truncate font-normal text-foreground/75">
                       {signal ? (
-                        <Badge className="mr-1 font-normal text-primary/45" variant="outline">
+                        <Badge className="mr-1 font-normal text-foreground/45" variant="outline">
                           {signal}
                         </Badge>
                       ) : null}
                       {digestLoopCopy(a)}
                     </Label>
-                    <Badge className="shrink-0 font-normal text-primary/40" variant="secondary">
+                    <Badge className="shrink-0 font-normal text-foreground/40" variant="secondary">
                       {priorityTone(a.priority ?? 0).label}
                     </Badge>
                   </li>
@@ -459,7 +459,7 @@ export function ImpactView({
               })}
             </ul>
             {digestOpen > digestTop.length ? (
-              <CardDescription className="mt-2 text-xs text-primary/45">
+              <CardDescription className="mt-2 text-xs text-foreground/45">
                 +{digestOpen - digestTop.length} more in your queue
               </CardDescription>
             ) : null}
@@ -478,13 +478,13 @@ export function ImpactView({
       {/* funnel */}
       <Card className="gap-3 py-4">
         <CardHeader className="px-4 pb-0">
-          <CardTitle className="text-sm text-primary">From surfaced to booked</CardTitle>
+          <CardTitle className="text-sm text-foreground">From surfaced to booked</CardTitle>
         </CardHeader>
         <CardContent className="px-4">
           <ul className="flex flex-col gap-2">
             {funnel.map((f) => (
               <li key={f.label} className="flex items-center gap-3">
-                <Label className="w-28 shrink-0 text-xs font-normal text-primary/55">
+                <Label className="w-28 shrink-0 text-xs font-normal text-foreground/55">
                   {f.label}
                 </Label>
                 <Progress
@@ -492,7 +492,7 @@ export function ImpactView({
                   value={funnelBarPercent(f.value, maxFunnel)}
                 />
                 <Badge
-                  className="w-8 shrink-0 justify-center tabular-nums font-medium text-primary"
+                  className="w-8 shrink-0 justify-center tabular-nums font-medium text-foreground"
                   variant="secondary"
                 >
                   {f.value}
@@ -507,7 +507,7 @@ export function ImpactView({
       <div className="grid gap-3 sm:grid-cols-2">
         <Card className="gap-3 py-4">
           <CardHeader className="px-4 pb-0">
-            <CardTitle className="text-sm text-primary">Triage</CardTitle>
+            <CardTitle className="text-sm text-foreground">Triage</CardTitle>
           </CardHeader>
           <CardContent className="px-4">
             <dl className="flex flex-col gap-1.5 text-sm">
@@ -520,7 +520,7 @@ export function ImpactView({
         </Card>
         <Card className="gap-3 py-4">
           <CardHeader className="px-4 pb-0">
-            <CardTitle className="text-sm text-primary">Outcomes</CardTitle>
+            <CardTitle className="text-sm text-foreground">Outcomes</CardTitle>
           </CardHeader>
           <CardContent className="px-4">
             <dl className="flex flex-col gap-1.5 text-sm">
@@ -537,12 +537,12 @@ export function ImpactView({
       {detectorsWithoutTasks(data.byDetector, taskCount).length ? (
         <Card className="gap-3 py-4">
           <CardHeader className="px-4 pb-0">
-            <CardTitle className="text-sm text-primary">Which signals pay off</CardTitle>
+            <CardTitle className="text-sm text-foreground">Which signals pay off</CardTitle>
           </CardHeader>
           <CardContent className="px-4">
             <Table>
               <TableHeader>
-                <TableRow className="text-xs text-primary/45 hover:bg-transparent">
+                <TableRow className="text-xs text-foreground/45 hover:bg-transparent">
                   <TableHead className="font-normal">Signal</TableHead>
                   <TableHead className="text-right font-normal">Surfaced</TableHead>
                   <TableHead className="text-right font-normal">Handled</TableHead>
@@ -554,16 +554,16 @@ export function ImpactView({
                   .sort((a, b) => b.surfaced - a.surfaced)
                   .map((d) => (
                     <TableRow key={d.detector}>
-                      <TableCell className="text-primary/80">
+                      <TableCell className="text-foreground/80">
                         {attentionReasonLabel(d.detector)}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums text-primary/70">
+                      <TableCell className="text-right tabular-nums text-foreground/70">
                         {d.surfaced}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums text-primary/70">
+                      <TableCell className="text-right tabular-nums text-foreground/70">
                         {d.handled}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums text-primary/55">
+                      <TableCell className="text-right tabular-nums text-foreground/55">
                         {d.surfaced > 0 ? `${Math.round((d.handled / d.surfaced) * 100)}%` : "—"}
                       </TableCell>
                     </TableRow>
@@ -592,12 +592,12 @@ function Stat({ label, value, tone }: { label: string; value: number | string; t
           "text-2xl font-semibold tabular-nums",
           tone === "good" && statReadsAsGood(value)
             ? "text-emerald-600 dark:text-emerald-400"
-            : "text-primary",
+            : "text-foreground",
         )}
       >
         {value}
       </div>
-      <Label className="mt-0.5 text-xs font-normal text-primary/55">{label}</Label>
+      <Label className="mt-0.5 text-xs font-normal text-foreground/55">{label}</Label>
     </CardContent>
   );
 }
@@ -615,7 +615,7 @@ function Line({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <Label asChild className="font-normal text-primary/55">
+      <Label asChild className="font-normal text-foreground/55">
         <dt>{label}</dt>
       </Label>
       <Badge
@@ -624,7 +624,7 @@ function Line({
           "tabular-nums font-normal",
           tone === "good" && typeof value === "number" && value > 0
             ? "text-emerald-600 dark:text-emerald-400"
-            : "text-primary/80",
+            : "text-foreground/80",
         )}
         variant="secondary"
       >

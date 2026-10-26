@@ -255,7 +255,7 @@ const HEALTH_TONE: Record<string, string> = {
   healthy: "border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
   needs_attention: "border-amber-500/30 text-amber-600 dark:text-amber-400",
   critical: "border-red-500/30 text-red-600 dark:text-red-400",
-  unknown: "text-primary/45",
+  unknown: "text-foreground/45",
 };
 
 type OptionalCompanyColumn =
@@ -498,8 +498,8 @@ function RelationshipEnrichment({
           <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
             Public research
           </p>
-          <h3 className="mt-1 text-sm font-semibold text-primary">{researchPanelTitle()}</h3>
-          <p className="mt-1 max-w-3xl text-xs text-primary/55">
+          <h3 className="mt-1 text-sm font-semibold text-foreground">{researchPanelTitle()}</h3>
+          <p className="mt-1 max-w-3xl text-xs text-foreground/55">
             Public research can fill in a company and the people who work there, and each detail
             keeps its source link. Message content, notes, and full email addresses stay in
             Oppulence.
@@ -525,7 +525,7 @@ function RelationshipEnrichment({
 
       {!status ? (
         <div className="mt-3">
-          <p className="text-xs text-primary/45">
+          <p className="text-xs text-foreground/45">
             {researchStatusPendingCopy(statusPhase === "failed")}
           </p>
           {statusPhase === "failed" ? (
@@ -542,7 +542,7 @@ function RelationshipEnrichment({
         </div>
       ) : status.allowed && status.consent.consented ? (
         <div className="mt-3 flex flex-col justify-between gap-3 border-t border-border pt-3 sm:flex-row sm:items-center">
-          <div className="text-xs text-primary/65">
+          <div className="text-xs text-foreground/65">
             {(personEstimate?.people ?? 0) + (companyEstimate?.companies ?? 0) === 0 ? (
               <p>Profiles are current. New contacts and company changes are checked daily.</p>
             ) : personEstimate && companyEstimate ? (
@@ -554,14 +554,14 @@ function RelationshipEnrichment({
             ) : (
               <p>Calculating the estimate…</p>
             )}
-            {result ? <p className="mt-1 text-primary">{result}</p> : null}
+            {result ? <p className="mt-1 text-foreground">{result}</p> : null}
           </div>
           {personEstimate &&
           companyEstimate &&
           (personEstimate.people ?? 0) + (companyEstimate.companies ?? 0) > 0 ? (
             confirming ? (
               <div className="flex max-w-sm flex-col items-end gap-2">
-                <p className="text-right text-xs text-primary/70">
+                <p className="text-right text-xs text-foreground/70">
                   {enrichConfirmCopy(
                     companyEstimate.companies ?? 0,
                     personEstimate.people ?? 0,
@@ -592,7 +592,7 @@ function RelationshipEnrichment({
           ) : null}
         </div>
       ) : (
-        <p className="mt-3 border-t border-border pt-3 text-xs text-primary/55">
+        <p className="mt-3 border-t border-border pt-3 text-xs text-foreground/55">
           {enrichmentAvailabilityCopy(status)}
         </p>
       )}
@@ -1186,23 +1186,23 @@ export function RelationshipsView({
         {directoryTitle.filtered ? (
           <Button
             aria-label="Clear company filters"
-            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-primary hover:bg-background-100"
+            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-foreground hover:bg-background-100"
             onClick={clearCompanyFilters}
             type="button"
             variant="ghost"
           >
             <Buildings /> {directoryTitle.label}{" "}
-            <Badge className="font-normal text-primary/40" variant="secondary">
+            <Badge className="font-normal text-foreground/40" variant="secondary">
               {companyCountLabel}
             </Badge>
           </Button>
         ) : (
           <Badge
-            className="h-8 gap-2 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-primary"
+            className="h-8 gap-2 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-foreground"
             variant="outline"
           >
             <Buildings /> {directoryTitle.label}{" "}
-            <Badge className="font-normal text-primary/40" variant="secondary">
+            <Badge className="font-normal text-foreground/40" variant="secondary">
               {companyCountLabel}
             </Badge>
           </Badge>
@@ -1279,7 +1279,7 @@ export function RelationshipsView({
         <>
           <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2">
             <div className="relative min-w-[220px] max-w-sm flex-1">
-              <MagnifyingGlass className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-primary/35" />
+              <MagnifyingGlass className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-foreground/35" />
               <Input
                 aria-label="Filter companies"
                 value={query}
@@ -1332,7 +1332,7 @@ export function RelationshipsView({
               <ArrowClockwise className={loading ? "animate-spin" : ""} /> Refresh
             </Button>
             <details className="group relative ml-auto">
-              <summary className="flex h-8 cursor-pointer list-none items-center gap-2 rounded-none border border-border bg-background px-3 text-[12px] text-primary/65 outline-none hover:bg-background-100 hover:text-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+              <summary className="flex h-8 cursor-pointer list-none items-center gap-2 rounded-none border border-border bg-background px-3 text-[12px] text-foreground/65 outline-none hover:bg-background-100 hover:text-foreground focus-visible:ring-1 focus-visible:ring-foreground/20">
                 <Sparkle /> Sources
                 {sourcesNeedingRepair(sources) > 0 ? (
                   <Badge variant="secondary">{sourcesNeedingRepair(sources)}</Badge>
@@ -1341,21 +1341,21 @@ export function RelationshipsView({
               <div className="absolute right-0 top-9 z-30 grid min-w-0 max-h-[70vh] w-[640px] max-w-[calc(100vw-320px)] gap-4 overflow-x-hidden overflow-y-auto rounded-none border border-border bg-background p-4 shadow-2xl">
                 <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
                   <div className="min-w-0">
-                    <p className="text-[13px] font-medium text-primary">
+                    <p className="text-[13px] font-medium text-foreground">
                       Sources and company details
                     </p>
-                    <p className="mt-0.5 text-[12px] text-primary/45">
+                    <p className="mt-0.5 text-[12px] text-foreground/45">
                       Which sources are connected, and which details still need a look.
                     </p>
                   </div>
                   <SourceHealth statuses={sources} />
                 </div>
                 {companyAttention.length > 0 ? (
-                  <p className="text-[12px] text-primary/55">
+                  <p className="text-[12px] text-foreground/55">
                     {hasMoreAttention ? `${attentionCompanies}+` : attentionCompanies}{" "}
                     {attentionCompanies === 1 ? "company" : "companies"} in the{" "}
                     <button
-                      className="underline hover:text-primary"
+                      className="underline hover:text-foreground"
                       onClick={() =>
                         document.getElementById("attention-queue")?.scrollIntoView({
                           behavior: "smooth",
@@ -1466,7 +1466,7 @@ export function RelationshipsView({
                 aria-label="Companies"
               >
                 <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-border">
-                  <TableRow className="h-10 border-b text-[13px] font-medium text-primary/55 hover:bg-transparent">
+                  <TableRow className="h-10 border-b text-[13px] font-medium text-foreground/55 hover:bg-transparent">
                     <TableHead className="sticky left-0 z-20 h-10 w-[200px] border-r bg-background px-3">
                       <div className="flex items-center justify-between gap-2">
                         <Label className="font-normal">Company</Label>
@@ -1474,7 +1474,7 @@ export function RelationshipsView({
                           <DropdownMenuTrigger asChild>
                             <Button
                               aria-label="Add column"
-                              className="size-6 rounded-none p-0 text-primary/35 hover:bg-background-100 hover:text-primary"
+                              className="size-6 rounded-none p-0 text-foreground/35 hover:bg-background-100 hover:text-foreground"
                               title="Add column"
                               type="button"
                               size="icon-xs"
@@ -1543,13 +1543,13 @@ export function RelationshipsView({
                     >
                       <TableCell className="sticky left-0 z-[5] border-r bg-background px-3 group-hover:bg-background-100">
                         <Button
-                          className="flex h-auto w-full items-center justify-start gap-2 truncate px-0 py-0 text-left text-sm font-medium text-primary hover:bg-transparent"
+                          className="flex h-auto w-full items-center justify-start gap-2 truncate px-0 py-0 text-left text-sm font-medium text-foreground hover:bg-transparent"
                           onClick={() => openDetail(relationship.id)}
                           type="button"
                           variant="ghost"
                         >
                           <Avatar className="size-6 rounded-none" size="sm">
-                            <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/60">
+                            <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-foreground/60">
                               {companyName(relationship).slice(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
@@ -1558,12 +1558,12 @@ export function RelationshipsView({
                           </Label>
                         </Button>
                       </TableCell>
-                      <TableCell className="border-r px-3 text-[13px] text-primary/50">
+                      <TableCell className="border-r px-3 text-[13px] text-foreground/50">
                         {companyLastActivityLabel(relationship.lastTouchAt)}
                       </TableCell>
                       <TableCell className="border-r px-3">
                         <Badge
-                          className="text-[13px] font-normal text-primary/55"
+                          className="text-[13px] font-normal text-foreground/55"
                           variant="secondary"
                         >
                           {interactionCountLabel(relationship.emailThreadCount)}
@@ -1571,7 +1571,7 @@ export function RelationshipsView({
                       </TableCell>
                       <TableCell className="border-r px-3">
                         <Badge
-                          className="bg-background-100 text-[11px] text-primary/60"
+                          className="bg-background-100 text-[11px] text-foreground/60"
                           variant="outline"
                         >
                           {companyCategoriesLabel(relationship.categories)}
@@ -1580,7 +1580,7 @@ export function RelationshipsView({
                       <TableCell className="truncate border-r px-3 text-[13px]">
                         {companyDomainHref(relationship.accountDomain) ? (
                           <a
-                            className="text-primary/65 underline-offset-2 hover:text-primary hover:underline"
+                            className="text-foreground/65 underline-offset-2 hover:text-foreground hover:underline"
                             href={companyDomainHref(relationship.accountDomain) ?? undefined}
                             rel="noreferrer"
                             target="_blank"
@@ -1588,18 +1588,18 @@ export function RelationshipsView({
                             {companyDomainLabel(relationship.accountDomain)}
                           </a>
                         ) : companyDomainLabel(relationship.accountDomain) === "Not filled in" ? (
-                          <Badge className="font-normal text-primary/35" variant="ghost">
+                          <Badge className="font-normal text-foreground/35" variant="ghost">
                             Not filled in
                           </Badge>
                         ) : (
-                          <span className="text-primary/65">
+                          <span className="text-foreground/65">
                             {companyDomainLabel(relationship.accountDomain)}
                           </span>
                         )}
                       </TableCell>
                       <TableCell className="border-r px-3 text-[13px]">
                         <a
-                          className="text-primary/55 underline-offset-2 hover:text-primary hover:underline"
+                          className="text-foreground/55 underline-offset-2 hover:text-foreground hover:underline"
                           href={
                             companyLinkedInAction(
                               companyName(relationship),
@@ -1620,7 +1620,7 @@ export function RelationshipsView({
                         </a>
                       </TableCell>
                       {optionalColumns.includes("people") ? (
-                        <TableCell className="border-r px-3 text-center text-[13px] text-primary/60">
+                        <TableCell className="border-r px-3 text-center text-[13px] text-foreground/60">
                           {relationship.peopleCount ?? 0}
                         </TableCell>
                       ) : null}
@@ -1638,12 +1638,12 @@ export function RelationshipsView({
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("nextAction") ? (
-                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-foreground/60">
                           {companyNextActionCopy(relationship)}
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("headquarters") ? (
-                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-foreground/60">
                           {companyEnrichmentColumnLabel(
                             relationship.companyEnrichmentData?.headquarters,
                             "No headquarters recorded",
@@ -1651,7 +1651,7 @@ export function RelationshipsView({
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("employees") ? (
-                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-foreground/60">
                           {companyEnrichmentColumnLabel(
                             relationship.companyEnrichmentData?.employee_range,
                             "No employee range recorded",
@@ -1659,7 +1659,7 @@ export function RelationshipsView({
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("funding") ? (
-                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-foreground/60">
                           {companyEnrichmentColumnLabel(
                             relationship.companyEnrichmentData?.funding_summary,
                             "No funding recorded",
@@ -1667,7 +1667,7 @@ export function RelationshipsView({
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("revenue") ? (
-                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-foreground/60">
                           {companyEnrichmentColumnLabel(
                             relationship.companyEnrichmentData?.revenue_range,
                             "No revenue recorded",
@@ -1675,7 +1675,7 @@ export function RelationshipsView({
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("signals") ? (
-                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-foreground/60">
                           {companyEnrichmentColumnLabel(
                             relationship.companyEnrichmentData?.growth_signals,
                             "No growth signals recorded",
@@ -1741,7 +1741,7 @@ export function RelationshipsView({
 function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
   if (statuses.length === 0) {
     return (
-      <Badge variant="outline" className="w-fit rounded-none font-normal text-primary/45">
+      <Badge variant="outline" className="w-fit rounded-none font-normal text-foreground/45">
         None connected
       </Badge>
     );
@@ -1928,10 +1928,10 @@ function SourceConnectionCards({
       data-capability="source-lifecycle"
     >
       <div>
-        <h3 id="source-connections-heading" className="text-sm font-medium text-primary">
+        <h3 id="source-connections-heading" className="text-sm font-medium text-foreground">
           {section.title}
         </h3>
-        <p className="mt-0.5 text-xs text-primary/55">{section.body}</p>
+        <p className="mt-0.5 text-xs text-foreground/55">{section.body}</p>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {needsAttention.map((item) => {
@@ -1949,7 +1949,7 @@ function SourceConnectionCards({
               className="min-w-0 space-y-3 rounded-none border border-border p-3"
             >
               <div className="flex items-start justify-between gap-2">
-                <h4 className="text-sm font-medium text-primary">{item.displayName}</h4>
+                <h4 className="text-sm font-medium text-foreground">{item.displayName}</h4>
                 <Badge variant="outline" className="rounded-none">
                   {sourceConnectionLabel({
                     source: item.source,
@@ -1959,8 +1959,8 @@ function SourceConnectionCards({
                   })}
                 </Badge>
               </div>
-              <p className="text-xs text-primary/55">{copy.explanation}</p>
-              <details className="text-[11px] text-primary/55">
+              <p className="text-xs text-foreground/55">{copy.explanation}</p>
+              <details className="text-[11px] text-foreground/55">
                 <summary
                   aria-label={`Permissions for ${item.displayName}`}
                   className="cursor-pointer"
@@ -1975,7 +1975,7 @@ function SourceConnectionCards({
                 </p>
               </details>
               {account ? (
-                <div className="space-y-1 text-[11px] text-primary/50">
+                <div className="space-y-1 text-[11px] text-foreground/50">
                   <p>
                     {completenessProductLabel(account.completeness)}
                     {progress !== null ? ` · ${progress}% of history synced` : ""}
@@ -2003,7 +2003,7 @@ function SourceConnectionCards({
                       Connect
                     </Button>
                   ) : (
-                    <p className="text-xs text-primary/55">
+                    <p className="text-xs text-foreground/55">
                       {item.displayName} can&apos;t be connected from this page yet.
                     </p>
                   )
@@ -2194,10 +2194,10 @@ function IdentityReviewInbox({
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 id="identity-review-heading" className="text-sm font-medium text-primary">
+          <h3 id="identity-review-heading" className="text-sm font-medium text-foreground">
             Review possible duplicates
           </h3>
-          <p className="mt-0.5 text-xs text-primary/55">
+          <p className="mt-0.5 text-xs text-foreground/55">
             {duplicateInboxLabel(candidates.length, hasMore)} cannot receive actions until reviewed.
           </p>
         </div>
@@ -2214,18 +2214,18 @@ function IdentityReviewInbox({
         <article key={candidate.id} className="space-y-3 border-t border-amber-500/20 pt-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-primary">
+              <p className="text-sm font-medium text-foreground">
                 {companyName(candidate.proposedRelationship)} may match{" "}
                 {companyName(candidate.existingRelationship)}
               </p>
-              <p className="mt-0.5 text-xs text-primary/55">{identityMatchDetail(candidate)}</p>
+              <p className="mt-0.5 text-xs text-foreground/55">{identityMatchDetail(candidate)}</p>
             </div>
-            <Badge className="text-xs font-normal text-primary/45" variant="secondary">
+            <Badge className="text-xs font-normal text-foreground/45" variant="secondary">
               {identitySupportLabel(candidate.evidenceCount)} ·{" "}
               {identityMatchLabel(candidate.recommendationConfidence)}
             </Badge>
           </div>
-          <div className="flex flex-wrap gap-1.5 text-[11px] text-primary/55">
+          <div className="flex flex-wrap gap-1.5 text-[11px] text-foreground/55">
             {Object.entries(candidate.impact)
               .filter(([, count]) => Number(count) > 0)
               .map(([kind, count]) => (
@@ -3487,10 +3487,10 @@ function MissionControlOverview({
       >
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h3 id="mission-control-heading" className="text-sm font-medium text-primary">
+            <h3 id="mission-control-heading" className="text-sm font-medium text-foreground">
               {completenessHeading(model.completeness.status, supported)}
             </h3>
-            <p className="mt-1 text-xs text-primary/60">
+            <p className="mt-1 text-xs text-foreground/60">
               {emailThreadCount > 0 && supported === 0
                 ? `${emailThreadCount} Gmail ${emailThreadCount === 1 ? "thread is" : "threads are"} linked. Health and status still need a clearer source.`
                 : missionControlGapCopy(model.completeness.explanation, supported, total)}
@@ -3523,17 +3523,17 @@ function MissionControlOverview({
           }
           return (
             <div key={question.key} className="border border-border p-3">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-primary/45">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-foreground/45">
                 {question.label}
               </p>
-              <p className="mt-1 text-xs text-primary/75">{answer}</p>
+              <p className="mt-1 text-xs text-foreground/75">{answer}</p>
             </div>
           );
         })}
       </div>
 
       <details className="border border-border p-3 text-xs">
-        <summary className="cursor-pointer font-medium text-primary">
+        <summary className="cursor-pointer font-medium text-foreground">
           See where each detail came from
         </summary>
         <ul className="mt-3 space-y-2">
@@ -3554,10 +3554,10 @@ function MissionControlOverview({
                 ) : null}
               </div>
               {detailEvidenceCopy(item) ? (
-                <p className="mt-1 text-primary/55">{detailEvidenceCopy(item)}</p>
+                <p className="mt-1 text-foreground/55">{detailEvidenceCopy(item)}</p>
               ) : null}
               {item.evidence.length ? (
-                <p className="mt-1 text-primary/40">
+                <p className="mt-1 text-foreground/40">
                   {item.evidence
                     .map(
                       (ref) =>
@@ -3583,7 +3583,7 @@ function MissionControlOverview({
           <Check /> Mark as reviewed
         </Button>
       ) : reviewCopy.footer !== reviewCopy.change ? (
-        <p className="text-[11px] text-primary/40">{reviewCopy.footer}</p>
+        <p className="text-[11px] text-foreground/40">{reviewCopy.footer}</p>
       ) : null}
     </section>
   );
@@ -3670,7 +3670,7 @@ function ImportedTranscriptPublisher({
       data-capability="transcript-publication"
     >
       <SectionTitle title="Publish an imported transcript" />
-      <p className="text-xs text-primary/55">
+      <p className="text-xs text-foreground/55">
         Paste reviewed transcript text. Prefix lines with a speaker name and colon when known. The
         text stays with this company. It is not treated as a confirmed detail until you review it.
       </p>
@@ -3690,7 +3690,7 @@ function ImportedTranscriptPublisher({
       />
       <label
         htmlFor={disclosureId}
-        className="flex cursor-pointer items-start gap-2 text-xs text-primary/60"
+        className="flex cursor-pointer items-start gap-2 text-xs text-foreground/60"
       >
         <Checkbox
           id={disclosureId}
@@ -4189,7 +4189,7 @@ export function RelationshipSheet({
         className="left-0 flex w-full flex-col gap-0 overflow-hidden border-l-0 p-0 shadow-none sm:max-w-none md:left-[var(--shell-sidebar-screen-offset)] md:w-[calc(100%-var(--shell-sidebar-screen-offset))]"
       >
         <SheetHeader className="min-h-12 flex-row items-center border-b border-border py-2 pl-14 pr-3">
-          <SheetTitle className="text-xs font-normal text-primary/55">
+          <SheetTitle className="text-xs font-normal text-foreground/55">
             {data || seed
               ? companySheetPositionLabel(position, total, filtered, hasMore)
               : "Company"}
@@ -4222,8 +4222,10 @@ export function RelationshipSheet({
           <div className="flex flex-col gap-3 px-4 py-6">
             {seed ? (
               <div>
-                <h2 className="truncate text-lg font-semibold text-primary">{companyName(seed)}</h2>
-                <p className="truncate text-xs text-primary/45">
+                <h2 className="truncate text-lg font-semibold text-foreground">
+                  {companyName(seed)}
+                </h2>
+                <p className="truncate text-xs text-foreground/45">
                   {seed.accountDomain?.trim() || seed.primaryEmail?.trim() || "Company"}
                 </p>
               </div>
@@ -4241,7 +4243,7 @@ export function RelationshipSheet({
                 </div>
               </>
             ) : (
-              <p className="text-sm text-primary/50">Loading this company…</p>
+              <p className="text-sm text-foreground/50">Loading this company…</p>
             )}
           </div>
         ) : (
@@ -4250,15 +4252,15 @@ export function RelationshipSheet({
               <section>
                 <div className="flex items-center gap-3">
                   <Avatar className="size-10 rounded-none">
-                    <AvatarFallback className="rounded-none border border-border bg-background-100 text-xs font-semibold text-primary/60">
+                    <AvatarFallback className="rounded-none border border-border bg-background-100 text-xs font-semibold text-foreground/60">
                       {companyName(data.relationship).slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <h2 className="truncate text-lg font-semibold text-primary">
+                    <h2 className="truncate text-lg font-semibold text-foreground">
                       {companyName(data.relationship)}
                     </h2>
-                    <p className="truncate text-xs text-primary/45">
+                    <p className="truncate text-xs text-foreground/45">
                       {companyDomainHref(data.relationship.accountDomain) ? (
                         <a
                           className="underline-offset-2 hover:underline"
@@ -4290,7 +4292,7 @@ export function RelationshipSheet({
                 ) : null}
               </section>
               <section className="mt-5 border-t border-border pt-4">
-                <p className="mb-3 text-xs font-medium text-primary/55">Record details</p>
+                <p className="mb-3 text-xs font-medium text-foreground/55">Record details</p>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className="rounded-none">
                     Lifecycle ·{" "}
@@ -4325,8 +4327,8 @@ export function RelationshipSheet({
                   </Badge>
                 </div>
                 <dl className="mt-5 grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-3 text-xs">
-                  <dt className="text-primary/40">Domain</dt>
-                  <dd className="truncate text-primary/75">
+                  <dt className="text-foreground/40">Domain</dt>
+                  <dd className="truncate text-foreground/75">
                     {companyDomainHref(data.relationship.accountDomain) ? (
                       <a
                         className="underline-offset-2 hover:underline"
@@ -4340,8 +4342,8 @@ export function RelationshipSheet({
                       companyDomainLabel(data.relationship.accountDomain)
                     )}
                   </dd>
-                  <dt className="text-primary/40">Email</dt>
-                  <dd className="truncate text-primary/75">
+                  <dt className="text-foreground/40">Email</dt>
+                  <dd className="truncate text-foreground/75">
                     {companyEmail?.href ? (
                       <a className="underline-offset-2 hover:underline" href={companyEmail.href}>
                         {companyEmail.text}
@@ -4350,17 +4352,19 @@ export function RelationshipSheet({
                       companyEmail?.text
                     )}
                   </dd>
-                  <dt className="text-primary/40">Company</dt>
+                  <dt className="text-foreground/40">Company</dt>
                   {/* The name is whatever was saved. capitalize turned "acme harbor" into "Acme Harbor". */}
-                  <dd className="text-primary/75">{companyName(data.relationship)}</dd>
-                  <dt className="text-primary/40">Categories</dt>
-                  <dd className="text-primary/75">
+                  <dd className="text-foreground/75">{companyName(data.relationship)}</dd>
+                  <dt className="text-foreground/40">Categories</dt>
+                  <dd className="text-foreground/75">
                     {companyCategoriesLabel(data.relationship.categories)}
                   </dd>
-                  <dt className="text-primary/40">Description</dt>
-                  <dd className="text-primary/75">{companyDescriptionCopy(data.relationship)}</dd>
-                  <dt className="text-primary/40">LinkedIn</dt>
-                  <dd className="text-primary/75">
+                  <dt className="text-foreground/40">Description</dt>
+                  <dd className="text-foreground/75">
+                    {companyDescriptionCopy(data.relationship)}
+                  </dd>
+                  <dt className="text-foreground/40">LinkedIn</dt>
+                  <dd className="text-foreground/75">
                     <a
                       className="underline-offset-2 hover:underline"
                       href={companyLinkedIn?.href}
@@ -4372,8 +4376,8 @@ export function RelationshipSheet({
                   </dd>
                   {companySource ? (
                     <>
-                      <dt className="text-primary/40">Source</dt>
-                      <dd className="text-primary/75">
+                      <dt className="text-foreground/40">Source</dt>
+                      <dd className="text-foreground/75">
                         <a
                           className="underline-offset-2 hover:underline"
                           href={companySource}
@@ -4402,14 +4406,14 @@ export function RelationshipSheet({
                         .find((url): url is string => Boolean(url));
                       return (
                         <React.Fragment key={field}>
-                          <dt className="text-primary/40">
+                          <dt className="text-foreground/40">
                             {COMPANY_FIELD_LABELS[field] ?? humanize(field)}
                           </dt>
-                          <dd className="text-primary/75">
+                          <dd className="text-foreground/75">
                             {shown}
                             {source ? (
                               <a
-                                className="ml-2 text-[11px] text-primary/40 underline-offset-2 hover:underline"
+                                className="ml-2 text-[11px] text-foreground/40 underline-offset-2 hover:underline"
                                 href={source}
                                 rel="noreferrer"
                                 target="_blank"
@@ -4421,38 +4425,38 @@ export function RelationshipSheet({
                         </React.Fragment>
                       );
                     })}
-                  <dt className="text-primary/40">People</dt>
-                  <dd className="text-primary/75">{data.participants.length}</dd>
-                  <dt className="text-primary/40">Lifecycle</dt>
-                  <dd className="text-primary/75">
+                  <dt className="text-foreground/40">People</dt>
+                  <dd className="text-foreground/75">{data.participants.length}</dd>
+                  <dt className="text-foreground/40">Lifecycle</dt>
+                  <dd className="text-foreground/75">
                     {supportedRecordValue(
                       data.relationship.lifecycle,
                       data.missionControl.evidence.lifecycle,
                     )}
                   </dd>
-                  <dt className="text-primary/40">Health</dt>
-                  <dd className="text-primary/75">
+                  <dt className="text-foreground/40">Health</dt>
+                  <dd className="text-foreground/75">
                     {supportedRecordValue(
                       data.relationship.health,
                       data.missionControl.evidence.health,
                     )}
                   </dd>
-                  <dt className="text-primary/40">Engagement</dt>
-                  <dd className="text-primary/75">
+                  <dt className="text-foreground/40">Engagement</dt>
+                  <dd className="text-foreground/75">
                     {supportedRecordValue(
                       data.relationship.engagement,
                       data.missionControl.evidence.engagement,
                     )}
                   </dd>
-                  <dt className="text-primary/40">Sentiment</dt>
-                  <dd className="text-primary/75">
+                  <dt className="text-foreground/40">Sentiment</dt>
+                  <dd className="text-foreground/75">
                     {supportedRecordValue(
                       data.relationship.sentiment,
                       data.missionControl.evidence.sentiment,
                     )}
                   </dd>
-                  <dt className="text-primary/40">Last activity</dt>
-                  <dd className="text-primary/75">
+                  <dt className="text-foreground/40">Last activity</dt>
+                  <dd className="text-foreground/75">
                     {companyLastActivityLabel(data.relationship.lastTouchAt)}
                   </dd>
                 </dl>
@@ -4477,8 +4481,8 @@ export function RelationshipSheet({
                     aria-current={activeSection === section ? "page" : undefined}
                     className={
                       activeSection === section
-                        ? "h-auto rounded-none bg-background-200 px-3 py-1.5 text-primary"
-                        : "h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
+                        ? "h-auto rounded-none bg-background-200 px-3 py-1.5 text-foreground"
+                        : "h-auto rounded-none px-3 py-1.5 text-foreground/50 hover:text-foreground"
                     }
                     key={section}
                     onClick={() => openSection(section)}
@@ -4517,7 +4521,7 @@ export function RelationshipSheet({
                   );
                 })()}
 
-                <p className="text-xs font-medium text-primary/55">Highlights</p>
+                <p className="text-xs font-medium text-foreground/55">Highlights</p>
 
                 <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {[
@@ -4555,8 +4559,8 @@ export function RelationshipSheet({
                     ["Open promises", String(openCommitmentCount(data.commitments))],
                   ].map(([label, value]) => (
                     <div key={label} className="min-h-24 rounded-none border border-border p-3">
-                      <p className="text-[11px] text-primary/40">{label}</p>
-                      <p className="mt-5 text-sm font-medium text-primary">{value}</p>
+                      <p className="text-[11px] text-foreground/40">{label}</p>
+                      <p className="mt-5 text-sm font-medium text-foreground">{value}</p>
                     </div>
                   ))}
                 </div>
@@ -4568,23 +4572,23 @@ export function RelationshipSheet({
                       {emailActivityEmptyCopy(timeline.some((item) => item.source === "meeting"))}
                     </EmptyText>
                   ) : (
-                    <ul className="flex flex-col divide-y divide-primary/10 rounded-none border border-border">
+                    <ul className="flex flex-col divide-y divide-foreground/10 rounded-none border border-border">
                       {data.emailThreads.map((thread) => (
                         <li key={thread.id} className="flex items-start justify-between gap-4 p-3">
                           <div className="min-w-0">
-                            <p className="truncate text-xs font-medium text-primary">
+                            <p className="truncate text-xs font-medium text-foreground">
                               {mailThreadSubjectLabel(thread.subject)}
                             </p>
-                            <p className="mt-1 truncate text-[11px] text-primary/45">
+                            <p className="mt-1 truncate text-[11px] text-foreground/45">
                               {mailThreadPartyLabel(thread.counterpartyEmail)} ·{" "}
                               {mailMessageCountLabel(thread.messageCount)}
                             </p>
                           </div>
                           <div className="shrink-0 text-right">
-                            <p className="text-[11px] text-primary/55">
+                            <p className="text-[11px] text-foreground/55">
                               {mailReplyLabel(thread.replyState)}
                             </p>
-                            <p className="mt-1 text-[11px] text-primary/35">
+                            <p className="mt-1 text-[11px] text-foreground/35">
                               {mailThreadActivityLabel(thread.lastActivityAt)}
                             </p>
                           </div>
@@ -4699,8 +4703,8 @@ export function RelationshipSheet({
                             key={cue.id}
                             className="rounded-none border border-amber-500/30 bg-amber-500/5 p-3"
                           >
-                            <p className="text-xs font-medium text-primary">{copy.title}</p>
-                            <p className="mt-1 text-xs text-primary/60">{copy.detail}</p>
+                            <p className="text-xs font-medium text-foreground">{copy.title}</p>
+                            <p className="mt-1 text-xs text-foreground/60">{copy.detail}</p>
                           </li>
                         );
                       })}
@@ -4717,11 +4721,13 @@ export function RelationshipSheet({
 
                 {data.intelligence?.effectivePolicy ? (
                   <div
-                    className="border border-border p-3 text-xs text-primary/60"
+                    className="border border-border p-3 text-xs text-foreground/60"
                     data-capability="privacy-deletion"
                   >
                     <details>
-                      <summary className="cursor-pointer font-medium text-primary">Privacy</summary>
+                      <summary className="cursor-pointer font-medium text-foreground">
+                        Privacy
+                      </summary>
                       <div className="mt-2 grid gap-1 sm:grid-cols-2">
                         <Badge className="justify-start font-normal" variant="secondary">
                           Capture: {capturePolicyLabel(data.intelligence.effectivePolicy.capture)}
@@ -4756,7 +4762,7 @@ export function RelationshipSheet({
                     }) ? (
                       confirmingDeletion ? (
                         <div className="mt-3 space-y-2">
-                          <p className="text-[12px] text-primary/70">
+                          <p className="text-[12px] text-foreground/70">
                             {deleteConversationConfirmCopy()}
                           </p>
                           <div className="flex flex-wrap gap-2">
@@ -4797,7 +4803,7 @@ export function RelationshipSheet({
                         </Button>
                       )
                     ) : (
-                      <p className="mt-3 text-[11px] text-primary/45">
+                      <p className="mt-3 text-[11px] text-foreground/45">
                         No mail or meeting data to delete.
                       </p>
                     )}
@@ -4831,10 +4837,10 @@ export function RelationshipSheet({
                           key={evaluation.evaluationId}
                           className="border border-border p-3 text-xs"
                         >
-                          <p className="font-medium text-primary">
+                          <p className="font-medium text-foreground">
                             {recoveryClassificationLabel(evaluation.classification)}
                           </p>
-                          <p className="mt-1 text-primary/60">
+                          <p className="mt-1 text-foreground/60">
                             {recoveryExplanationCopy(
                               evaluation.classification,
                               evaluation.explanation,
@@ -4852,7 +4858,7 @@ export function RelationshipSheet({
                     </EmptyText>
                   )}
                   {data.intelligence?.recommendationEvaluations.length ? (
-                    <details className="mt-2 text-xs text-primary/55">
+                    <details className="mt-2 text-xs text-foreground/55">
                       <summary className="cursor-pointer">Inspect ranking factors</summary>
                       {data.intelligence.recommendationEvaluations.map((evaluation) => (
                         <ul
@@ -4882,17 +4888,17 @@ export function RelationshipSheet({
                         <li key={action.id} className="rounded-none border border-border p-3">
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <p className="text-sm font-medium text-primary">
+                              <p className="text-sm font-medium text-foreground">
                                 {ACTION_TYPE_LABELS[action.actionType] ??
                                   humanize(action.actionType)}
                               </p>
-                              <p className="mt-1 text-xs text-primary/60">
+                              <p className="mt-1 text-xs text-foreground/60">
                                 {actionReasonCopy(action.reason)}
                               </p>
                             </div>
                             <ModeChip mode={action.executionMode} />
                           </div>
-                          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-primary/40">
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-foreground/40">
                             <Badge className="font-normal" variant="outline">
                               {attentionReasonLabel(action.detector)}
                             </Badge>
@@ -4904,7 +4910,7 @@ export function RelationshipSheet({
                             </Badge>
                           </div>
                           {action.evidence.length > 0 ? (
-                            <details className="mt-2 text-xs text-primary/55">
+                            <details className="mt-2 text-xs text-foreground/55">
                               <summary className="cursor-pointer">Inspect supporting words</summary>
                               <ul className="mt-2 space-y-1 border-l border-border pl-3">
                                 {action.evidence.map((item) => (
@@ -5004,8 +5010,8 @@ export function RelationshipSheet({
                               key={participant.id}
                               className="flex items-start justify-between gap-2 border border-border p-2 text-xs"
                             >
-                              <div className={`min-w-0 ${departed ? "text-primary/50" : ""}`}>
-                                <p className="font-medium text-primary">
+                              <div className={`min-w-0 ${departed ? "text-foreground/50" : ""}`}>
+                                <p className="font-medium text-foreground">
                                   {name}
                                   {participant.role
                                     ? ` · ${participantRoleLabel(participant.role)}`
@@ -5016,15 +5022,15 @@ export function RelationshipSheet({
                                     </Badge>
                                   ) : null}
                                 </p>
-                                <p className="mt-1 text-primary/60">
+                                <p className="mt-1 text-foreground/60">
                                   {profile.length ? profile.join(" · ") : "No profile details yet"}
                                 </p>
-                                <p className="mt-1 text-[10px] uppercase tracking-wide text-primary/40">
+                                <p className="mt-1 text-[10px] uppercase tracking-wide text-foreground/40">
                                   {profile.length}/4 profile fields
                                 </p>
                                 {cited.length ? (
                                   <details className="mt-2">
-                                    <summary className="cursor-pointer text-primary/60">
+                                    <summary className="cursor-pointer text-foreground/60">
                                       Public research · {cited.length}{" "}
                                       {cited.length === 1 ? "detail" : "details"}
                                     </summary>
@@ -5061,7 +5067,7 @@ export function RelationshipSheet({
                               {person?.id ? (
                                 confirmingPersonId === person.id ? (
                                   <div className="flex max-w-xs shrink-0 flex-col items-end gap-2">
-                                    <p className="text-right text-[12px] text-primary/70">
+                                    <p className="text-right text-[12px] text-foreground/70">
                                       {removePersonConfirmCopy(name)}
                                     </p>
                                     <div className="flex gap-2">
@@ -5208,10 +5214,10 @@ export function RelationshipSheet({
                     <ul className="space-y-2">
                       {data.intelligence.mutualActionPlans.map((plan) => (
                         <li key={plan.planId} className="border border-border p-3 text-xs">
-                          <p className="font-medium text-primary">
+                          <p className="font-medium text-foreground">
                             {mutualPlanHeading(plan.status, plan.currentRevision.version)}
                           </p>
-                          <ul className="mt-1 list-disc pl-4 text-primary/60">
+                          <ul className="mt-1 list-disc pl-4 text-foreground/60">
                             {plan.currentRevision.items.map((item) => (
                               <li key={item.itemId}>
                                 {mutualPlanItemLine(item.title, item.ownerParticipantRef)}
@@ -5265,15 +5271,15 @@ export function RelationshipSheet({
                           key={change.dimension}
                           className="rounded-none border border-border p-3"
                         >
-                          <p className="text-xs font-medium text-primary">
+                          <p className="text-xs font-medium text-foreground">
                             {relationshipChangeLabel(change.dimension)}
                           </p>
-                          <p className="mt-1 text-xs text-primary/60">
+                          <p className="mt-1 text-xs text-foreground/60">
                             {relationshipDeltaValue(change.before)} →{" "}
                             {relationshipDeltaValue(change.after)}
                           </p>
                           {change.reason ? (
-                            <p className="mt-1 text-[11px] text-primary/40">
+                            <p className="mt-1 text-[11px] text-foreground/40">
                               {projectionReasonCopy(change.reason)}
                             </p>
                           ) : null}
@@ -5282,16 +5288,19 @@ export function RelationshipSheet({
                     </ul>
                   ) : null}
                   {data.intelligence?.contradictionCases.length ? (
-                    <ul className="mb-3 space-y-2 rounded-none border border-amber-500/30 p-3 text-xs text-primary/60">
+                    <ul className="mb-3 space-y-2 rounded-none border border-amber-500/30 p-3 text-xs text-foreground/60">
                       {data.intelligence.contradictionCases.map((item) => (
                         <li key={item.caseId}>
-                          <Label className="font-medium text-primary">
+                          <Label className="font-medium text-foreground">
                             {relationshipChangeLabel(item.dimension)}:
                           </Label>{" "}
                           {item.status === "open"
                             ? `Choose the current value from ${item.sides.length} sources.`
                             : contradictionReasonCopy(item.reason)}
-                          <Badge className="ml-1 font-normal text-primary/40" variant="secondary">
+                          <Badge
+                            className="ml-1 font-normal text-foreground/40"
+                            variant="secondary"
+                          >
                             (
                             {item.sides
                               .map((side) => contradictionSourceLabel(side.source))
@@ -5326,13 +5335,13 @@ export function RelationshipSheet({
                     </ul>
                   ) : null}
                   {data.intelligence?.delta.uncertainClaimIds.length ? (
-                    <p className="mb-3 text-xs text-primary/50">
+                    <p className="mb-3 text-xs text-foreground/50">
                       {uncertainClaimCopy(data.intelligence.delta.uncertainClaimIds.length)}
                     </p>
                   ) : null}
                   {data.intelligence?.delta.recommendationReason ? (
-                    <p className="mb-3 rounded-none border border-border p-3 text-xs text-primary/60">
-                      <Label className="font-medium text-primary">
+                    <p className="mb-3 rounded-none border border-border p-3 text-xs text-foreground/60">
+                      <Label className="font-medium text-foreground">
                         Why the recommendation changed:
                       </Label>{" "}
                       {projectionReasonCopy(data.intelligence.delta.recommendationReason)}
@@ -5350,12 +5359,12 @@ export function RelationshipSheet({
                     <ul className="flex flex-col gap-2">
                       {changes.map((snapshot) => (
                         <li key={snapshot.id} className="flex gap-3 border-l border-border pl-3">
-                          <ClockCounterClockwise className="mt-0.5 size-4 shrink-0 text-primary/35" />
+                          <ClockCounterClockwise className="mt-0.5 size-4 shrink-0 text-foreground/35" />
                           <div>
-                            <p className="text-xs text-primary/70">
+                            <p className="text-xs text-foreground/70">
                               {snapshot.changedDimensions.map(relationshipChangeLabel).join(", ")}
                             </p>
-                            <p className="text-[11px] text-primary/35">
+                            <p className="text-[11px] text-foreground/35">
                               v{snapshot.version} · {relativeTime(snapshot.createdAt)}
                             </p>
                           </div>
@@ -5387,19 +5396,19 @@ export function RelationshipSheet({
                       ).map((receipt) => (
                         <li
                           key={receipt.receiptId}
-                          className="rounded-none border border-border p-3 text-xs text-primary/60"
+                          className="rounded-none border border-border p-3 text-xs text-foreground/60"
                         >
                           <p>
                             {governanceCaptureLabel(receipt.capturePolicy)} ·{" "}
                             {governanceRouteLabel(receipt.routing)}
                           </p>
-                          <p className="mt-1 text-[11px] text-primary/40">
+                          <p className="mt-1 text-[11px] text-foreground/40">
                             {governancePlaceLabel(receipt.region)} ·{" "}
                             {governanceRetentionLabel(receipt.retention)} ·{" "}
                             {governanceDisclosureLabel(receipt.participantDisclosure)} ·{" "}
                             {governanceDeletionLabel(receipt.deletionOutcome)}
                           </p>
-                          <p className="mt-1 text-[11px] text-primary/40">
+                          <p className="mt-1 text-[11px] text-foreground/40">
                             Legal hold {receipt.legalHold ? "on" : "off"} ·{" "}
                             {governanceExcerptLabel(receipt.evidenceClip)}
                           </p>
@@ -5442,24 +5451,24 @@ export function RelationshipSheet({
                     noun="Mail and meetings"
                     onRetry={() => void load()}
                   >
-                    <ul className="flex flex-col divide-y divide-primary/10 rounded-none border border-border">
+                    <ul className="flex flex-col divide-y divide-foreground/10 rounded-none border border-border">
                       {communicationTimeline.map((item) => (
                         <li key={item.id} className="p-3">
                           <div className="flex items-center justify-between gap-2">
-                            <Label className="text-xs font-medium text-primary">
+                            <Label className="text-xs font-medium text-foreground">
                               {activitySourceLabel(item.source)} · {humanize(item.interactionType)}
                             </Label>
                             <Badge
-                              className="text-[11px] font-normal text-primary/35"
+                              className="text-[11px] font-normal text-foreground/35"
                               variant="secondary"
                             >
                               {item.bodyLocked ? "Locked" : "Shared"}
                             </Badge>
                           </div>
-                          <p className="mt-1 text-xs text-primary/55">
+                          <p className="mt-1 text-xs text-foreground/55">
                             {communicationPreviewLabel(item.subject)}
                           </p>
-                          <p className="mt-1 text-[11px] text-primary/40">
+                          <p className="mt-1 text-[11px] text-foreground/40">
                             {relativeTime(item.occurredAt)} · {mailAccessReason(item.access.reason)}
                           </p>
                         </li>
@@ -5491,7 +5500,7 @@ export function RelationshipSheet({
                     noun="Activity"
                     onRetry={() => void load()}
                   >
-                    <ul className="flex flex-col divide-y divide-primary/10 rounded-none border border-border">
+                    <ul className="flex flex-col divide-y divide-foreground/10 rounded-none border border-border">
                       {timeline.map((observation) => (
                         <li key={observation.id} className="p-3">
                           <Button
@@ -5501,22 +5510,22 @@ export function RelationshipSheet({
                             className="h-auto w-full justify-start rounded-none p-0 text-left hover:bg-transparent"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <Label className="text-xs font-medium text-primary">
+                              <Label className="text-xs font-medium text-foreground">
                                 {activityHeading(observation.source, observation.eventType)}
                               </Label>
                               <Badge
-                                className="text-[11px] font-normal text-primary/35"
+                                className="text-[11px] font-normal text-foreground/35"
                                 variant="secondary"
                               >
                                 {relativeTime(observation.occurredAt)}
                               </Badge>
                             </div>
-                            <p className="mt-1 text-xs text-primary/55">
+                            <p className="mt-1 text-xs text-foreground/55">
                               {activitySummaryLabel(observation.summary)}
                             </p>
                           </Button>
                           {observation.id in evidence ? (
-                            <div className="mt-2 max-h-52 space-y-1 overflow-auto rounded-none bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
+                            <div className="mt-2 max-h-52 space-y-1 overflow-auto rounded-none bg-background-100 p-2 text-[11px] text-foreground/60 dark:bg-background-200">
                               {activityLinesBesideSummary(
                                 activityEvidenceLines(
                                   evidence[observation.id],
@@ -5584,7 +5593,7 @@ function CorrectionReview({
       data-capability="conversation-review"
     >
       <SectionTitle title={focusedReviewTitle(items.length, hasMore)} />
-      <p className="mb-3 text-xs text-primary/55">
+      <p className="mb-3 text-xs text-foreground/55">
         {items.length === 0 ? "Older conversations may still need review." : focusedReviewIntro()}
       </p>
       <ul className="flex flex-col gap-3">
@@ -5593,20 +5602,20 @@ function CorrectionReview({
           return (
             <li key={item.id} className="rounded-none border border-border bg-background p-3">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-primary">
+                <p className="text-xs font-medium text-foreground">
                   {reviewItemLabelCopy(item.label)}
                 </p>
-                <Badge className="text-[11px] font-normal text-primary/40" variant="secondary">
+                <Badge className="text-[11px] font-normal text-foreground/40" variant="secondary">
                   {Math.round(item.confidence * 100)}% · {reviewEvidenceKindLabel(item.kind)}
                 </Badge>
               </div>
               {item.exactQuote ? (
-                <blockquote className="my-2 border-l border-border pl-2 text-xs text-primary/55">
+                <blockquote className="my-2 border-l border-border pl-2 text-xs text-foreground/55">
                   “{item.exactQuote}”
                 </blockquote>
               ) : null}
               {reviewCaveatLines(item.caveats).map((line) => (
-                <p key={line} className="mb-2 text-xs text-primary/55">
+                <p key={line} className="mb-2 text-xs text-foreground/55">
                   {line}
                 </p>
               ))}
@@ -5773,12 +5782,12 @@ function StateCorrection({
 
 function SectionTitle({ title }: { title: string }) {
   return (
-    <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-primary/45">{title}</h3>
+    <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-foreground/45">{title}</h3>
   );
 }
 
 function EmptyText({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs text-primary/45">{children}</p>;
+  return <p className="text-xs text-foreground/45">{children}</p>;
 }
 
 function SheetPaneStatus({
@@ -5813,7 +5822,7 @@ function SheetPaneStatus({
     <>
       {failed ? (
         <div className="mb-2 flex items-center justify-between gap-3">
-          <p className="text-[13px] text-primary/70">{sheetPaneRefreshCopy(noun)}</p>
+          <p className="text-[13px] text-foreground/70">{sheetPaneRefreshCopy(noun)}</p>
           {retry}
         </div>
       ) : null}
@@ -5846,7 +5855,7 @@ function TwoColumnList({
           ) : (
             <ul className="flex flex-col gap-1.5">
               {(items as string[]).map((item, index) => (
-                <li key={`${item}:${index}`} className="text-xs text-primary/65">
+                <li key={`${item}:${index}`} className="text-xs text-foreground/65">
                   · {item}
                 </li>
               ))}

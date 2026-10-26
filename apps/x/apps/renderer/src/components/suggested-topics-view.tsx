@@ -95,7 +95,7 @@ function TopicCard({ topic, onTrack, isRemoving }: TopicCardProps) {
         type="button"
         onClick={onTrack}
         disabled={isRemoving}
-        className="mt-auto flex w-fit items-center gap-1.5 rounded-none bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-auto flex w-fit items-center gap-1.5 rounded-none bg-primary/10 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isRemoving ? (
           <>
@@ -233,7 +233,7 @@ export function SuggestedTopicsView({
     <div className="flex h-full flex-col overflow-hidden">
       <div className="shrink-0 border-b border-border px-6 py-5">
         <div className="flex items-center gap-2">
-          <Lightbulb className="size-5 text-primary" />
+          <Lightbulb className="size-5 text-foreground" />
           <h2 className="text-base font-semibold text-foreground">
             Suggested Topics
           </h2>

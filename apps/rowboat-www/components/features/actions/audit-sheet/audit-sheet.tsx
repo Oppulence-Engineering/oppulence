@@ -55,8 +55,8 @@ export function ActionAuditSheet({
         <SheetHeader className="border-b border-border">
           <SheetTitle>Audit trail</SheetTitle>
           <SheetDescription className="flex items-center gap-1.5">
-            <Receipt weight="fill" className="text-primary/40" />
-            <code className="font-mono text-xs text-primary/70">{resourceRef}</code>
+            <Receipt weight="fill" className="text-foreground/40" />
+            <code className="font-mono text-xs text-foreground/70">{resourceRef}</code>
           </SheetDescription>
         </SheetHeader>
 
@@ -64,11 +64,11 @@ export function ActionAuditSheet({
           {error ? (
             <p className="text-sm text-amber-700 dark:text-amber-300">{error}</p>
           ) : chain === null ? (
-            <div className="flex items-center gap-2 text-sm text-primary/50">
+            <div className="flex items-center gap-2 text-sm text-foreground/50">
               <Spinner className="size-4" /> Loading…
             </div>
           ) : chain.entries.length === 0 ? (
-            <p className="text-sm text-primary/50">No actions recorded for this object.</p>
+            <p className="text-sm text-foreground/50">No actions recorded for this object.</p>
           ) : (
             chain.entries.map((e) => <AuditEntryCard key={e.proposal.id} entry={e} />)
           )}
@@ -87,7 +87,7 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
           {actionKindLabel(p.kind)}
         </Badge>
         <Badge variant="outline">{actionStatusLabel(p.status)}</Badge>
-        <Badge className="ml-auto text-xs font-normal text-primary/45" variant="secondary">
+        <Badge className="ml-auto text-xs font-normal text-foreground/45" variant="secondary">
           {localMomentLabel(p.createdAt)}
         </Badge>
       </CardHeader>
@@ -108,7 +108,7 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
               when={t.issuedAt}
               detail={
                 <div className="inline-flex flex-wrap items-center gap-1.5">
-                  <code className="font-mono text-primary/50">token {t.hashPrefix}…</code>
+                  <code className="font-mono text-foreground/50">token {t.hashPrefix}…</code>
                   {t.consumed ? (
                     <Badge
                       variant="outline"
@@ -130,7 +130,7 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
               when={p.executedAt}
               detail={
                 p.resultRef ? (
-                  <code className="font-mono text-primary/50">{p.resultRef}</code>
+                  <code className="font-mono text-foreground/50">{p.resultRef}</code>
                 ) : (
                   p.reason
                 )
@@ -144,7 +144,7 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
               when={p.resolvedAt}
               detail={
                 p.returnEventId ? (
-                  <code className="font-mono text-primary/50">
+                  <code className="font-mono text-foreground/50">
                     return event {p.returnEventId.slice(0, 8)}…
                   </code>
                 ) : undefined
@@ -171,20 +171,20 @@ function Leg({
   return (
     <li className="flex items-start gap-2">
       <Badge
-        className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-background-200 p-0 text-primary/50 dark:bg-background-100"
+        className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-background-200 p-0 text-foreground/50 dark:bg-background-100"
         variant="secondary"
       >
         {icon}
       </Badge>
       <div className="flex flex-col">
-        <div className="flex items-center gap-1.5 text-primary/80">
+        <div className="flex items-center gap-1.5 text-foreground/80">
           <Label className="font-normal">{label}</Label>
-          <ArrowRight weight="bold" className="text-primary/25" />
-          <Badge className="font-normal text-primary/45" variant="secondary">
+          <ArrowRight weight="bold" className="text-foreground/25" />
+          <Badge className="font-normal text-foreground/45" variant="secondary">
             {localMomentLabel(when)}
           </Badge>
         </div>
-        {detail ? <div className="text-primary/60">{detail}</div> : null}
+        {detail ? <div className="text-foreground/60">{detail}</div> : null}
       </div>
     </li>
   );

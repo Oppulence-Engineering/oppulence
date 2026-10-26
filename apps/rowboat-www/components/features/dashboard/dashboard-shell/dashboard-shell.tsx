@@ -237,7 +237,7 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
                   <div className="flex items-center gap-2">
                     <Button
                       aria-label="Toggle sidebar"
-                      className={`size-7 rounded-none text-primary/60 hover:bg-background-100 hover:text-primary dark:hover:bg-background-300 ${
+                      className={`size-7 rounded-none text-foreground/60 hover:bg-background-100 hover:text-foreground dark:hover:bg-background-300 ${
                         sidebarOpen ? "md:hidden" : ""
                       }`}
                       onClick={toggleSidebar}

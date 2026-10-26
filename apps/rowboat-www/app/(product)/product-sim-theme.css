@@ -1,8 +1,8 @@
 /**
  * Authenticated product shell (`/app`, settings, …).
  *
- * The shell uses the desktop app's tokens: product-theme.css plus the
- * [data-product-shell] rules in @oppulence/ui/product-system.css. Sim
+ * The shell uses the shared tokens in @oppulence/ui/tokens.css (Polar base)
+ * plus the [data-product-shell] rules in @oppulence/ui/product-system.css. Sim
  * components (emcn, product previews) read Sim token names, so the shell maps
  * those names onto the shared tokens. The transform stays at scale 1 so fixed
  * in-shell panels keep the shell as their containing block.
