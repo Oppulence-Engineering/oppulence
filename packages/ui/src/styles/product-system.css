@@ -5,48 +5,17 @@
  * the Electron renderer opt in with `data-product-shell`, while retaining
  * their own surface and status colors around these shared hierarchy tokens.
  */
+/* Colors come from tokens.css (Polar base). These names stay as aliases. */
 [data-product-shell] {
-  --font-product:
-    var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
-  --product-text-strong: #292929;
-  --product-text-secondary: #5d5d5d;
-  --product-text-tertiary: #9e9e9e;
-  --foreground: var(--product-text-strong);
-  --card-foreground: var(--product-text-strong);
-  --popover-foreground: var(--product-text-strong);
-  --primary: var(--product-text-strong);
-  --secondary-foreground: var(--product-text-strong);
-  --accent-foreground: var(--product-text-strong);
-  --muted-foreground: var(--product-text-secondary);
+  --font-product: var(--typeface-sans);
+  --product-text-strong: var(--foreground);
+  --product-text-secondary: var(--muted-foreground);
+  --product-text-tertiary: var(--subtle-foreground);
   color: var(--product-text-strong);
   font-family: var(--font-product);
   font-size: 14px;
   font-weight: 400;
   letter-spacing: -0.15px;
-}
-
-.dark [data-product-shell],
-[data-product-shell].dark {
-  --background: #111214;
-  --background-50: #0d0e0f;
-  --background-100: #18191c;
-  --background-200: #202125;
-  --background-300: #292b30;
-  --card: #141518;
-  --popover: #18191c;
-  --border: #292a2f;
-  --input: #303137;
-  --primary: #f1f2f4;
-  --primary-foreground: #101113;
-  --muted: #1b1c20;
-  --muted-foreground: #909298;
-  --accent: #202126;
-  --accent-foreground: #f1f2f4;
-  --ring: #3578f6;
-  --product-text-strong: #f1f2f4;
-  --product-text-secondary: #a0a2a8;
-  --product-text-tertiary: #71737a;
 }
 
 [data-product-shell] :where(*):not(code, pre, kbd, [class*="font-mono"]) {
@@ -142,13 +111,6 @@
 
 [data-product-shell] :where([data-tone="tertiary"]) {
   color: var(--product-text-tertiary) !important;
-}
-
-/* Product surfaces use square geometry, including overlays portalled to the document body. */
-body:has([data-product-shell]) *,
-.app-shell,
-.app-shell * {
-  border-radius: 0 !important;
 }
 
 /* Navigation and card icon scales remain distinct even when nested. */

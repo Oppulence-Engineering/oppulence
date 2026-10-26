@@ -21,3 +21,13 @@ libvips is licensed under the GNU Lesser General Public License,
 version 3 or later (LGPL-3.0-or-later). That license is not Apache 2.0.
 A recipient who wants the corresponding library source can use the version
 recorded in the desktop lockfile.
+
+Polar design primitives
+-----------------------
+
+packages/ui/src/styles/polar.css copies the color scales, shadows, and radius
+scale from Polar (https://github.com/polarsource/polar), file
+clients/apps/web/src/styles/globals.css at commit
+b116f66b91dd135a4554623c08018ea933cc1234. Polar is licensed under the Apache
+License 2.0. Copyright Polar Software Inc. The file header lists the changes.
+Polar's PP Neue Montreal font is not included.
