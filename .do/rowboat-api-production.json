@@ -40,9 +40,7 @@
       }
     ]
   },
-  "features": [
-    "buildpack-stack=ubuntu-22"
-  ],
+  "features": ["buildpack-stack=ubuntu-22"],
   "envs": [
     {
       "key": "ANTHROPIC_API_KEY",
@@ -136,7 +134,7 @@
     },
     {
       "key": "DATABASE_URL",
-      "value": "EV[1:EOal8OvN134ijgnxvLvMa/ZYyA+f87BU:hAiY8h89K+fioYbYw23BS9tZ9hCNL62qWchYKm8ylGsb8MmOj//YmsJvDCiFIuWZeue5mfxhvh29oIl5hPBXll8efsnuisyJSPFXpRAgaAS+q4EMH/zb6lkDSUiuYVscf8xrhlpqp6RLVtCJPBQ4PkEjUIKTUNh9e/Eeb0k6SuJYkwn9fVL+y/Ql0qVZtv/hsrKAVLOdzzba+8Xucy2Da0ZDrVM=]",
+      "value": "EV[1:AnnqP8q/ccnop1fxYyirwpkDeieHUORo:BMpsX8mV7TR1baK7cCQwYsUAP1xAxlTA8LeIu5+yaxgsbW1rmUY/SjbvaeFsec6f9+conyS6tQb8lzRlwPQVeN4yLr9+LBKJYFx+xo5ActVmqwKED/4quY2qx22Y2hgCNSpu6iECLSW5hW4KrB7629v11A/AB40qLboMxRIzrKunGnyY/D/w9eA/yjOAUuSLF/m7/Y0USbkW1eaj44z8OMFpGHVK/EounsQ=]",
       "scope": "RUN_TIME",
       "type": "SECRET"
     },
@@ -257,7 +255,7 @@
     },
     {
       "key": "MIGRATION_DATABASE_URL",
-      "value": "EV[1:ouGTRiGVRmn0xywTKv/gnykPrRGy1wOP:RdCD4prM4mjHjlM3rHbqvmHevQ08QnlkwKBbOvt9qjvDAENxIyaJc9R2HajaK85Nxket/4M9kbpP+ySiW2L2wVsZPSn+mSTVODnvZAa3JVUg+hMsz5xB5PauM7T0PzmGrLBLAZ1T32+FyDivW3FTVgHOTO0DGcOiFO4rruH8GHQ0II3728krzD+Br/DYK0e58+2zGO92b3ekhQcBBaxb]",
+      "value": "EV[1:iLKWhf2CDk5ySG8C2yjgOiAgSdfyqwpa:KHX3BHAznOaD7dTqojWVc+hoY/G7ucXV8V5L1LnKTbO7HXiib3Ms+qo2DvrvW0AolLh4Ga83iowAwuUqq/H5t3QbHABHe3hFcVIK7aNQ0JlJD7ySMev5kbA46UQTcSUDMS2KBmA6Jx3HbNmEZEbJDNARE3Vtam9kizFd1w+2pwfGHPD7mHp0VjmxKyFt2BUj477F4ik7K0f5ogyD+w3nx0SRk0QNuG00BDs=]",
       "scope": "RUN_TIME",
       "type": "SECRET"
     },
@@ -308,7 +306,7 @@
     },
     {
       "key": "REDIS_URL",
-      "value": "EV[1:d7kk3ABIMIYajf2zQHAMrKHqdzXK2LkF:G92X2het+PCSujGVBtpzTtCjYkNke5WAczrN5Jqy8ZAUsgfWhZ4bd4RtilIkfzZ0PzgRFLE3oCF2aJBBovW3br7/2BnpivtPAj+hdeqemko4pQfoRZ2hTvG3cLe+NrYNocc90LEhcoJmKiMYjFVCLdEf9ddbf4iPpv2MTOnig4d/]",
+      "value": "EV[1:bNCYq3k5SKiYGUE6UntklbRq6JfAbIBd:lUuXKL1XZQtBc9NAwottpkVM6HJcMok0fsuY1L02KpgxhLmJpQN/k9ad8sbIJ8kHFKJZFNFQKeZnEktrfQraNhJChJrCJX2RHTkPP6lhSQWfhLn8dPICUrs1mFOmWOpN3woXWDxhlVAhttlJVst1CDPT0hE1LZnkrJ/dxmzdJ3781ZdRVnk=]",
       "scope": "RUN_TIME",
       "type": "SECRET"
     },
