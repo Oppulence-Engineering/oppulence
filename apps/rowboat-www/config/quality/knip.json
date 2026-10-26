@@ -122,6 +122,7 @@
     "@hookform/resolvers",
     "@shadcn/react",
     "@storybook/react",
+    "ajv",
     "axe-core",
     "class-variance-authority",
     "cmdk",
