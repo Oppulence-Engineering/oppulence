@@ -102,10 +102,6 @@
     "components/features/revenue/relationships-view/relationships-view.tsx": ["exports"]
   },
   "ignoreDependencies": [
-    "@emotion/react",
-    "@emotion/styled",
-    "@mui/icons-material",
-    "@mui/material",
     "@radix-ui/react-use-controllable-state",
     "@radix-ui/react-avatar",
     "@radix-ui/react-collapsible",

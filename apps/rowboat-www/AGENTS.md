@@ -96,7 +96,6 @@ do not call protected Go API endpoints directly from Client Components.
   (`npm run component:new` remains an alias). See `docs/growth-standard.md`.
 - New shared primitives must use `npm run ui:add`; do not silently overwrite
   an existing customized primitive.
-- The marketing site also uses MUI icons.
 - Heavy dashboard features include TipTap, XYFlow, Shiki, Streamdown, and
   relationship graph components.
 

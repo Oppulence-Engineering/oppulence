@@ -16,7 +16,8 @@ describe("Better Auth–style app shell", () => {
     expect(metadata.openGraph?.siteName).toBe("Oppulence");
     expect(metadata.twitter).toMatchObject({ card: "summary_large_image" });
     expect(metadata.icons).toMatchObject({
-      icon: [{ url: "/marketing/oppulence-icon.png", sizes: "any" }],
+      icon: [{ url: "/icon.png", sizes: "96x96" }],
+      apple: "/apple-icon.png",
     });
   });
 
