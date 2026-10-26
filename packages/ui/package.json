@@ -16,7 +16,8 @@
     "./hooks/*": "./src/hooks/*.ts",
     "./lib/*": "./src/lib/*",
     "./globals.css": "./src/styles/globals.css",
-    "./product-system.css": "./src/styles/product-system.css"
+    "./product-system.css": "./src/styles/product-system.css",
+    "./tokens.css": "./src/styles/tokens.css"
   },
   "peerDependencies": {
     "react": "^19.0.0",
