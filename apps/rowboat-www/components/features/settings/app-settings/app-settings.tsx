@@ -752,7 +752,7 @@ function DefaultsCard() {
                     {agent ? visibleAgentLabel(agents, agent) : undefined}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="app-shell rounded-[2px]">
+                <SelectContent className="app-shell rounded-xs">
                   {agents.map((item) => (
                     <SelectItem key={item.slug} value={item.slug}>
                       {item.name.trim() || item.slug}
@@ -976,7 +976,7 @@ export function PlanSection({ session }: { session: SessionShape }) {
           </div>
           <div className="flex items-center gap-2">
             {billing?.status ? (
-              <Badge className="rounded-[2px]" variant="outline">
+              <Badge className="rounded-xs" variant="outline">
                 {billingStatusLabel(billing.status)}
               </Badge>
             ) : null}

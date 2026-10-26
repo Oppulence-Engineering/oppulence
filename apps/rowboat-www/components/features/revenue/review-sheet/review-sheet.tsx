@@ -425,7 +425,7 @@ export function ReviewSheet({
 
         <div className="flex flex-1 flex-col gap-5 px-4 py-5">
           {upsell ? (
-            <div className="flex flex-col gap-2 rounded-[2px] border border-oppulence-orange/40 bg-oppulence-orange/5 p-4">
+            <div className="flex flex-col gap-2 rounded-xs border border-oppulence-orange/40 bg-oppulence-orange/5 p-4">
               <div className="text-sm font-medium text-foreground">
                 Acting on actions is a paid step
               </div>
@@ -579,7 +579,7 @@ export function ReviewSheet({
 
           {/* The original email, fetched on demand (RFC 031 Layer 3). */}
           {originalEmail ? (
-            <div className="rounded-[2px] border border-border p-3">
+            <div className="rounded-xs border border-border p-3">
               {original === null ? (
                 <Button variant="ghost" size="sm" onClick={viewOriginal} disabled={loadingOriginal}>
                   {loadingOriginal ? <CircleNotch className="animate-spin" /> : <EnvelopeSimple />}
@@ -592,7 +592,7 @@ export function ReviewSheet({
               )}
             </div>
           ) : supportingQuotes.length > 0 ? (
-            <div className="rounded-[2px] border border-border p-3">
+            <div className="rounded-xs border border-border p-3">
               <p className="text-xs font-medium text-foreground">Supporting words</p>
               <ul className="mt-2 space-y-1">
                 {supportingQuotes.map((quote) => (
@@ -605,7 +605,7 @@ export function ReviewSheet({
           ) : null}
 
           {isSend ? (
-            <div className="flex flex-col gap-2 rounded-[2px] border border-border p-3">
+            <div className="flex flex-col gap-2 rounded-xs border border-border p-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm text-foreground">Sending check</CardTitle>
                 <PolicyBadge status={action.policyStatus} />
@@ -640,7 +640,7 @@ export function ReviewSheet({
           ) : null}
 
           {rejecting ? (
-            <div className="flex items-center gap-2 rounded-[2px] border border-border p-3">
+            <div className="flex items-center gap-2 rounded-xs border border-border p-3">
               <Input
                 autoFocus
                 value={rejectReason}

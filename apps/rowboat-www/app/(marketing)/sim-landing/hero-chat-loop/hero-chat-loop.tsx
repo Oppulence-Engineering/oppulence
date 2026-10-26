@@ -188,7 +188,7 @@ export function HeroChatLoop({
       >
         <div
           className={cn(
-            "max-w-[70%] shrink-0 self-end overflow-hidden rounded-[16px] bg-[var(--surface-5)] px-3.5 py-2 text-[var(--text-primary)] text-sm leading-5 transition-[opacity,transform] duration-200 ease-out",
+            "max-w-[70%] shrink-0 self-end overflow-hidden rounded-2xl bg-[var(--surface-5)] px-3.5 py-2 text-[var(--text-primary)] text-sm leading-5 transition-[opacity,transform] duration-200 ease-out",
             showUser ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
           )}
         >

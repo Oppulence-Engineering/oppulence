@@ -285,7 +285,7 @@ function ScanRow({ scan }: { scan: RevenueLeakScan }) {
         </div>
       </TableCell>
       <TableCell className="w-[70px] px-3">
-        <Badge variant="outline" className="w-fit rounded-[2px] font-normal">
+        <Badge variant="outline" className="w-fit rounded-xs font-normal">
           {scan.lookbackDays}d
         </Badge>
       </TableCell>

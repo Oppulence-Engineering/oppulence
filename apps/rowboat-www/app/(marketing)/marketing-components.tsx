@@ -139,7 +139,7 @@ function MarketingIcon({
       variant="icon"
       className={cn(
         "marketing-icon-frame",
-        compact ? "size-7 rounded-none" : "size-9 rounded-[8px]",
+        compact ? "size-7 rounded-none" : "size-9 rounded-md",
         iconToneClasses[tone],
         className,
       )}
@@ -296,7 +296,7 @@ function EyebrowPill({
         className,
       )}
     >
-      <MarketingIcon className="size-5 rounded-[3px]" compact icon={icon} tone={tone} />
+      <MarketingIcon className="size-5 rounded-xs" compact icon={icon} tone={tone} />
       <MarketingSpan className="min-w-0 truncate font-normal">{children}</MarketingSpan>
     </p>
   );

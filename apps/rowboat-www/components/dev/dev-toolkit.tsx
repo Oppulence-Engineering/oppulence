@@ -249,7 +249,7 @@ function A11yTab({
             {summary.results.slice(0, 8).map((result) => (
               <li key={`${result.id}-${result.help}`}>
                 <Badge
-                  className="rounded-none border-0 bg-transparent p-0 font-normal text-[#f59e0b] shadow-none"
+                  className="rounded-none border-0 bg-transparent p-0 font-normal text-warning shadow-none"
                   variant="outline"
                 >
                   {result.impact ?? "unknown"}

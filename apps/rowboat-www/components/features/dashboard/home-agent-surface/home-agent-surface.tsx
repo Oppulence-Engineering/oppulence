@@ -95,7 +95,7 @@ export function HomeAgentSurface({
             aria-label="Agent brief"
             className={[
               "relative",
-              "[&_[data-slot=input-group]]:rounded-[10px]",
+              "[&_[data-slot=input-group]]:rounded-lg",
               "[&_[data-slot=input-group]]:border",
               "[&_[data-slot=input-group]]:border-[var(--border)]",
               "[&_[data-slot=input-group]]:bg-[var(--surface-2)]",
@@ -115,7 +115,7 @@ export function HomeAgentSurface({
 
           <div className="mt-7 max-sm:hidden">
             <span className="text-[13px] text-[var(--text-secondary)]">Suggested actions</span>
-            <div className="mt-2 flex flex-col overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--bg)]">
+            <div className="mt-2 flex flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg)]">
               {STARTING_POINTS.map((action, index) => {
                 const Icon = ACTION_ICONS[index];
                 return (
@@ -140,7 +140,7 @@ export function HomeAgentSurface({
           >
             {STARTING_POINTS.map((startingPoint) => (
               <button
-                className="rounded-[10px] border border-[var(--border)] px-3 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
+                className="rounded-lg border border-[var(--border)] px-3 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
                 key={startingPoint.title}
                 onClick={() => onSelectPrompt(startingPoint.prompt)}
                 type="button"

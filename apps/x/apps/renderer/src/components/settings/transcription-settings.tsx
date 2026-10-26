@@ -870,7 +870,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="shrink-0 rounded-[2px] font-normal">
+            <Badge variant="outline" className="shrink-0 rounded-xs font-normal">
               {dictationStatus?.monitorReady && dictationStatus.accessibilityTrusted
                 ? "Ready"
                 : "Needs setup"}
@@ -1110,7 +1110,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                 <div className="flex items-center gap-2 text-xs font-medium text-foreground">
                   <Wrench className="size-3.5" /> Voice Command Mode
                   {dictationSettings.commandModeEnabled && dictationStatus?.commandModeReady ? (
-                    <Badge variant="outline" className="rounded-[2px] font-normal">
+                    <Badge variant="outline" className="rounded-xs font-normal">
                       {dictationStatus.commandShortcut}
                     </Badge>
                   ) : null}
@@ -1150,7 +1150,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                 <div className="flex items-center gap-2 text-xs font-medium text-foreground">
                   Fast local dictation
                   {fastModels.ready ? (
-                    <Badge variant="outline" className="rounded-[2px] font-normal">
+                    <Badge variant="outline" className="rounded-xs font-normal">
                       Neural Engine ready
                     </Badge>
                   ) : null}

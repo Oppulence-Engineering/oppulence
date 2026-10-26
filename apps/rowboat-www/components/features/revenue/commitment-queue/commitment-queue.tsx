@@ -8,9 +8,14 @@ import {
   ArrowClockwise,
   Check,
   Export,
+  Hash as TypeNumber,
   MagnifyingGlass,
   PencilSimple,
   Plugs,
+  Plus,
+  Table as TableIcon,
+  Tag as TagIcon,
+  TextT as TypeText,
   Warning,
   X,
 } from "@/lib/icons";
@@ -55,7 +60,6 @@ import {
 } from "@oppulence/ui/components/select";
 import { cn } from "@oppulence/ui/lib/utils";
 import { Badge as SimBadge, Chip } from "@sim/emcn";
-import { Plus, Table as TableIcon, TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
 import { WorkspaceEmptyIllustration } from "@/components/features/revenue/shared/shared";
 import {
   SimProductHeader,
@@ -1863,7 +1867,7 @@ export function CommitmentQueue({
       ) : null}
 
       <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent className="app-shell rounded-[2px] sm:max-w-lg">
+        <DialogContent className="app-shell rounded-xs sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Correct this promise</DialogTitle>
             <DialogDescription>
@@ -1948,7 +1952,7 @@ function StatusBadge({ state, acceptance }: { state: string; acceptance: string 
     <Badge
       variant="outline"
       className={cn(
-        "rounded-[2px]",
+        "rounded-xs",
         !review &&
           state === "met" &&
           "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",

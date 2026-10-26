@@ -13,7 +13,7 @@ const WORKFLOW_TITLE = "Lead enrichment";
 /** The seeded reply renders the paced content and native resource chip without workspace data queries. */
 export function HeroChatReply({ content, onOpenWorkflowResource }: HeroChatReplyProps) {
   return (
-    <div className="space-y-4 font-[family-name:var(--font-inter)] text-[var(--text-primary)] text-base leading-[25px] tracking-[0] antialiased">
+    <div className="space-y-4 font-sans text-[var(--text-primary)] text-base leading-[25px] tracking-[0] antialiased">
       {content.split("\n\n").map((paragraph, index) => {
         const resourceIndex = paragraph.indexOf(WORKFLOW_TITLE);
         return (

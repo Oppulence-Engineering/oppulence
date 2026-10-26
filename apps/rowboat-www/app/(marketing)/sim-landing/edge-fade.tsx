@@ -42,7 +42,7 @@ const DEPTH = {
 const GROUND = {
   surface: "from-[var(--surface-3)]",
   canvas: "from-[var(--bg)]",
-  paper: "from-[#F8F8F8] dark:from-[var(--surface-2)]",
+  paper: "from-background",
 } as const;
 
 interface EdgeFadeProps {

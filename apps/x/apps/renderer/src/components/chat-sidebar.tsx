@@ -584,7 +584,7 @@ export function ChatSidebar({
       className={cn(
         "relative flex min-w-0 flex-col overflow-hidden bg-background",
         // Inset-shell card: gutter + hairline border, matching the main pane.
-        isOpen && "my-2 ml-0 mr-2 rounded-[2px] border border-border",
+        isOpen && "my-2 ml-0 mr-2 rounded-xs border border-border",
         !isResizing && !justToggledMaximize && "transition-[width] duration-200 ease-linear",
         className,
       )}

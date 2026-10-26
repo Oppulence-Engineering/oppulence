@@ -193,6 +193,13 @@ export default defineConfig([
   },
 
   {
+    files: ["apps/renderer/src/**/*.{ts,tsx}"],
+    rules: {
+      "x-architecture/no-raw-design-values": ["error", { baseline: baseline.rawDesignValues }],
+    },
+  },
+
+  {
     files: ["apps/main/src/**/*.ts", "packages/core/src/**/*.ts"],
     rules: {
       "x-architecture/no-container-resolve": ["error", { baseline: baseline.containerResolve }],

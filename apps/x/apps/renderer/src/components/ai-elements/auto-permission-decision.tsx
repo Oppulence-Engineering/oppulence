@@ -45,7 +45,7 @@ export function AutoPermissionDecision({
         "not-prose mb-4 w-full rounded-none border",
         allowed
           ? "border-green-500/50 bg-green-50/80 dark:border-green-500/35 dark:bg-green-950/30"
-          : "border-[#fa2525]/60 bg-[#fa2525]/15 dark:border-[#fa2525]/50 dark:bg-[#fa2525]/20",
+          : "border-destructive/60 bg-destructive/15 dark:border-destructive/50 dark:bg-destructive/20",
         className,
       )}
       {...props}

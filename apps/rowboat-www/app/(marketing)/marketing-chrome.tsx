@@ -63,7 +63,7 @@ export function InlineLogo({
       ) : (
         <Image
           alt=""
-          className={cn("rounded-[3px]", compact ? "size-5" : prominent ? "size-10" : "size-7")}
+          className={cn("rounded-xs", compact ? "size-5" : prominent ? "size-10" : "size-7")}
           height={iconSize}
           src="/icon.png"
           width={iconSize}

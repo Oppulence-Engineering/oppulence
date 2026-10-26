@@ -341,7 +341,7 @@ export function AuditSheet({
                     <SelectTrigger size="sm" className="w-48">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="app-shell rounded-[2px]">
+                    <SelectContent className="app-shell rounded-xs">
                       {MANUAL_OUTCOMES.map((o) => (
                         <SelectItem key={o.value} value={o.value}>
                           {o.label}
@@ -439,7 +439,7 @@ function SubObjects({ decision }: { decision: ActionAudit["decisions"][number] }
       {present.map(([label, lines]) => (
         <details key={label} className="text-xs">
           <summary className="cursor-pointer text-foreground/55">{label}</summary>
-          <ul className="mt-1 flex flex-col gap-1 rounded-[2px] bg-background-100/60 p-2 text-[11px] text-foreground/70 dark:bg-background-100/40">
+          <ul className="mt-1 flex flex-col gap-1 rounded-xs bg-background-100/60 p-2 text-[11px] text-foreground/70 dark:bg-background-100/40">
             {lines.map((line) => (
               <li key={line}>{line}</li>
             ))}

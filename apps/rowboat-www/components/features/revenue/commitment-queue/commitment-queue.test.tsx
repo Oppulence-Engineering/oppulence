@@ -400,7 +400,7 @@ describe("CommitmentQueue", () => {
       path.join(import.meta.dirname, "commitment-queue.tsx"),
       "utf8",
     );
-    expect(queueSource).not.toContain('"rounded-[2px] capitalize"');
+    expect(queueSource).not.toContain('"rounded-xs capitalize"');
     expect(
       screen.queryByRole("button", { name: /Run 6-month Promise Leak Audit/ }),
     ).not.toBeInTheDocument();

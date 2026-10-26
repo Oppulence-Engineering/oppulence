@@ -11,7 +11,7 @@ interface GovernMenuPreviewProps {
 export function GovernMenuPreview({ layout = "menu" }: GovernMenuPreviewProps) {
   return (
     <MenuPreviewFrame kind="govern" layout={layout}>
-      <div className="w-[420px] overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
+      <div className="w-[420px] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
         <div className="flex h-11 items-center gap-2 border-[var(--border)] border-b px-4">
           <Mail className="size-[14px] text-[var(--text-icon)]" />
           <span className="text-[var(--text-primary)]">Follow-up draft</span>

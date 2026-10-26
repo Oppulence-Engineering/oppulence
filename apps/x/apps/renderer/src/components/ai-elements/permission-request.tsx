@@ -103,7 +103,7 @@ export const PermissionRequest = ({
         isResponded
           ? isApproved
             ? "border-green-500/60 bg-green-200/80 dark:border-green-500/40 dark:bg-green-900/40"
-            : "border-[#fa2525]/70 bg-[#fa2525]/30 dark:border-[#fa2525]/60 dark:bg-[#fa2525]/30"
+            : "border-destructive/70 bg-destructive/30 dark:border-destructive/60 dark:bg-destructive/30"
           : "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20",
         className,
       )}

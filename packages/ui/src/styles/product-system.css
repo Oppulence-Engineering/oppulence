@@ -137,6 +137,41 @@
 /* ── Phosphor icon system ───────────────────────────────────────────────────
    Shared treatment for `@oppulence/ui` and product surfaces: crisp geometry,
    optical centering, and tactile hover/active feedback without per-call-site CSS. */
+/*
+ * Radius. App code in both apps marks surfaces with a `rounded-none`
+ * placeholder (about 580 uses). Inside a product shell or the settings
+ * workspace, the placeholder takes the shared radius (Polar 0.6rem). The
+ * one-sided `rounded-*-none` classes keep their square edge. Images and
+ * avatars (logos, initials) stay square: on a 16-24px tile the shared radius
+ * reads as a circle.
+ * ponytail: CSS placeholder, not a class codemod. Replace the placeholders
+ * with `rounded-lg` in app code, then delete this block.
+ */
+:is([data-product-shell], .rowboat-shell, .settings-workspace)
+  .rounded-none:not(img, [data-slot^="avatar"]) {
+  border-radius: var(--radius) !important;
+}
+
+:is([data-product-shell], .rowboat-shell, .settings-workspace) .rounded-l-none {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+:is([data-product-shell], .rowboat-shell, .settings-workspace) .rounded-r-none {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+:is([data-product-shell], .rowboat-shell, .settings-workspace) .rounded-t-none {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+:is([data-product-shell], .rowboat-shell, .settings-workspace) .rounded-b-none {
+  border-bottom-right-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
 :root {
   --icon-duration: 160ms;
   --icon-ease: cubic-bezier(0.4, 0, 0.2, 1);

@@ -190,7 +190,7 @@ export function ToolsTab() {
         {busy === "msw" ? <Label className="font-normal opacity-60">Starting worker…</Label> : null}
         {mswActive ? (
           <Badge
-            className="rounded-none border-0 bg-transparent p-0 font-normal text-[#22c55e] shadow-none"
+            className="rounded-none border-0 bg-transparent p-0 font-normal text-success shadow-none"
             variant="outline"
           >
             MSW worker active
@@ -267,7 +267,7 @@ export function ToolsTab() {
         <strong>Session</strong>
         {sessionError ? (
           <Badge
-            className="rounded-none border-0 bg-transparent p-0 font-normal text-[#ef4444] shadow-none"
+            className="rounded-none border-0 bg-transparent p-0 font-normal text-destructive shadow-none"
             variant="outline"
           >
             {sessionError}

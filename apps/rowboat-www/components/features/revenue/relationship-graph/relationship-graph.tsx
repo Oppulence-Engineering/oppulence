@@ -198,7 +198,7 @@ const nodeShape = (kind: RelationshipGraphNode["kind"]) => {
   if (kind === "risk") return "rounded-none";
   if (kind === "milestone") return "rounded-none";
   if (kind === "source") return "rounded-none";
-  return "rounded-[2px]";
+  return "rounded-xs";
 };
 
 const NodeIcon = ({
@@ -323,7 +323,7 @@ function TypedGraphEdge(props: EdgeProps<FlowEdge>) {
       {showLabel ? (
         <EdgeLabelRenderer>
           <div
-            className="pointer-events-none absolute rounded-[2px] border border-border bg-background px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-foreground/65 shadow-sm"
+            className="pointer-events-none absolute rounded-xs border border-border bg-background px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-foreground/65 shadow-sm"
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >
             {graphEdgeLabel(props.data?.graphEdge.label || "")}
@@ -623,7 +623,7 @@ function GraphCanvas({
       <Controls showInteractive={false} className="!border-border !bg-background" />
       <Panel
         position="top-right"
-        className="rounded-[2px] border border-border bg-background/90 px-2 py-1 text-[10px] text-foreground/50 backdrop-blur"
+        className="rounded-xs border border-border bg-background/90 px-2 py-1 text-[10px] text-foreground/50 backdrop-blur"
       >
         {graphCountLabel(graphNodes.length, "item", "items")} ·{" "}
         {graphCountLabel(graphEdges.length, "connection", "connections")}
@@ -2143,7 +2143,7 @@ export function RelationshipGraphWorkspace({
 
   return (
     <section
-      className="overflow-hidden rounded-[2px] border border-border bg-background"
+      className="overflow-hidden rounded-xs border border-border bg-background"
       data-capability={GRAPH_CAPABILITIES}
       data-slot="relationship-graph"
     >
@@ -2218,7 +2218,7 @@ export function RelationshipGraphWorkspace({
               >
                 <SelectValue placeholder="Choose a company" />
               </SelectTrigger>
-              <SelectContent className="app-shell rounded-[2px]">
+              <SelectContent className="app-shell rounded-xs">
                 {relationships.map((relationship) => (
                   <SelectItem key={relationship.id} value={relationship.id}>
                     {companyName(relationship)}
@@ -2386,7 +2386,7 @@ export function RelationshipGraphWorkspace({
               >
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="app-shell rounded-[2px]">
+              <SelectContent className="app-shell rounded-xs">
                 <SelectItem value="force">{graphLayoutLabel("force")}</SelectItem>
                 <SelectItem value="radial">{graphLayoutLabel("radial")}</SelectItem>
                 <SelectItem value="timeline">{graphLayoutLabel("timeline")}</SelectItem>
@@ -2462,7 +2462,7 @@ export function RelationshipGraphWorkspace({
                 >
                   <SelectValue placeholder="Saved views" />
                 </SelectTrigger>
-                <SelectContent className="app-shell rounded-[2px]">
+                <SelectContent className="app-shell rounded-xs">
                   {savedViews.map((view) => (
                     <SelectItem key={view.id} value={view.id}>
                       {view.label}

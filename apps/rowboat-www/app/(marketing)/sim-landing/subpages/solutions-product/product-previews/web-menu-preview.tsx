@@ -52,7 +52,7 @@ const COLUMNS = [
 export function WebMenuPreview({ layout = "menu" }: WebMenuPreviewProps) {
   return (
     <MenuPreviewFrame kind="web" layout={layout}>
-      <div className="w-[620px] overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
+      <div className="w-[620px] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
         <MenuPreviewHeader icon={Layout} title="Today" actions="Concept preview" />
         <MenuPreviewToolbar>
           <Chip rightIcon={ChevronDown}>Your day</Chip>

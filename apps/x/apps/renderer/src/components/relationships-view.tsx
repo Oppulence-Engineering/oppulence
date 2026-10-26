@@ -330,7 +330,7 @@ export function RelationshipsView({
   return (
     <div className="app-shell min-h-0 flex-1 overflow-y-auto bg-background">
       <div className="mx-auto flex w-full max-w-none flex-col gap-4 px-6 py-6">
-        <section className="rounded-[2px] border border-border bg-background-50 p-4 dark:bg-background-100/30">
+        <section className="rounded-xs border border-border bg-background-50 p-4 dark:bg-background-100/30">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
@@ -430,7 +430,7 @@ export function RelationshipsView({
                   <SelectTrigger className="w-full sm:w-44" size="sm">
                     <SelectValue placeholder="Health" />
                   </SelectTrigger>
-                  <SelectContent className="app-shell rounded-[2px]">
+                  <SelectContent className="app-shell rounded-xs">
                     <SelectItem value="all">All health</SelectItem>
                     {HEALTH_OPTIONS.map((value) => (
                       <SelectItem key={value} value={value}>
@@ -443,7 +443,7 @@ export function RelationshipsView({
                   <SelectTrigger className="w-full sm:w-44" size="sm">
                     <SelectValue placeholder="Lifecycle" />
                   </SelectTrigger>
-                  <SelectContent className="app-shell rounded-[2px]">
+                  <SelectContent className="app-shell rounded-xs">
                     <SelectItem value="all">All lifecycle</SelectItem>
                     {LIFECYCLE_OPTIONS.map((value) => (
                       <SelectItem key={value} value={value}>
@@ -465,7 +465,7 @@ export function RelationshipsView({
               </div>
 
               {error ? (
-                <div className="flex gap-2 rounded-[2px] border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+                <div className="flex gap-2 rounded-xs border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
                   <Warning className="mt-0.5 size-4 shrink-0" />
                   {error}
                 </div>
@@ -484,7 +484,7 @@ export function RelationshipsView({
                   </Button>
                 </EmptyBlock>
               ) : (
-                <ul className="flex flex-col divide-y divide-foreground/10 rounded-[2px] border border-border">
+                <ul className="flex flex-col divide-y divide-foreground/10 rounded-xs border border-border">
                   {rows.map((relationship) => (
                     <li key={relationship.id}>
                       <button
@@ -497,10 +497,7 @@ export function RelationshipsView({
                             <span className="truncate text-sm font-medium text-foreground">
                               {relationship.displayName}
                             </span>
-                            <Badge
-                              variant="outline"
-                              className="rounded-[2px] font-normal capitalize"
-                            >
+                            <Badge variant="outline" className="rounded-xs font-normal capitalize">
                               {humanize(relationship.lifecycle)}
                             </Badge>
                             <span
@@ -688,7 +685,7 @@ function PortfolioAttentionQueue({
       </div>
       <ol className="space-y-2">
         {customerItems.slice(0, showAll ? 10 : 3).map((item) => (
-          <li key={item.id} className="rounded-[2px] border border-border p-3">
+          <li key={item.id} className="rounded-xs border border-border p-3">
             <div className="flex flex-wrap items-start gap-3">
               <button
                 type="button"
@@ -701,7 +698,7 @@ function PortfolioAttentionQueue({
                   </span>
                   <Badge
                     variant="outline"
-                    className={`rounded-[2px] capitalize ${
+                    className={`rounded-xs capitalize ${
                       item.urgencyBand === "critical"
                         ? "border-red-500/40 text-red-600"
                         : item.urgencyBand === "high"
@@ -788,7 +785,7 @@ function PortfolioAttentionQueue({
         </Button>
       ) : null}
       {maintenanceItems.length > 0 ? (
-        <details className="rounded-[2px] border border-border p-3 text-xs">
+        <details className="rounded-xs border border-border p-3 text-xs">
           <summary className="cursor-pointer font-medium text-foreground">
             Data maintenance · {maintenanceItems.length} source issue
             {maintenanceItems.length === 1 ? "" : "s"}
@@ -798,7 +795,7 @@ function PortfolioAttentionQueue({
               <button
                 key={item.id}
                 type="button"
-                className="block w-full rounded-[2px] border border-border p-2 text-left hover:bg-primary/5"
+                className="block w-full rounded-xs border border-border p-2 text-left hover:bg-primary/5"
                 onClick={() => onOpenRelationship(item.relationshipId)}
               >
                 <span className="font-medium text-foreground">{item.relationshipName}</span>
@@ -815,7 +812,7 @@ function PortfolioAttentionQueue({
 function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
   if (statuses.length === 0) {
     return (
-      <Badge variant="outline" className="w-fit rounded-[2px] font-normal text-foreground/45">
+      <Badge variant="outline" className="w-fit rounded-xs font-normal text-foreground/45">
         No evidence sources yet
       </Badge>
     );
@@ -828,7 +825,7 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
           key={`${source.source}:${source.sourceAccountId}`}
           variant="outline"
           title={source.lastError || source.lastObservationAt}
-          className={`rounded-[2px] font-normal capitalize ${
+          className={`rounded-xs font-normal capitalize ${
             relationshipSourceHealth(source) === "healthy"
               ? "border-emerald-500/30"
               : relationshipSourceHealth(source) === "syncing"
@@ -975,10 +972,10 @@ function SourceConnectionCards({
               ? Math.round((account.backfillCompleted / account.backfillTotal) * 100)
               : null;
           return (
-            <article key={item.source} className="space-y-3 rounded-[2px] border border-border p-3">
+            <article key={item.source} className="space-y-3 rounded-xs border border-border p-3">
               <div className="flex items-start justify-between gap-2">
                 <h3 className="text-sm font-medium text-foreground">{item.displayName}</h3>
-                <Badge variant="outline" className="rounded-[2px] capitalize">
+                <Badge variant="outline" className="rounded-xs capitalize">
                   {humanize(account?.status || "not_connected")}
                 </Badge>
               </div>
@@ -1118,7 +1115,7 @@ function IdentityReviewInbox({
   return (
     <section
       aria-labelledby="identity-review-heading"
-      className="space-y-2 rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      className="space-y-2 rounded-xs border border-amber-500/30 bg-amber-500/5 p-3"
       data-capability="identity-review"
     >
       <div className="flex items-start justify-between gap-3">
@@ -1131,7 +1128,7 @@ function IdentityReviewInbox({
             receive actions until reviewed.
           </p>
         </div>
-        <Badge variant="outline" className="rounded-[2px] border-amber-500/40">
+        <Badge variant="outline" className="rounded-xs border-amber-500/40">
           Human decision required
         </Badge>
       </div>
@@ -1242,10 +1239,10 @@ function SemanticSearch({ onError }: { onError: (message: string | null) => void
         matches.length === 0 ? (
           <p className="text-xs text-foreground/45">No evidence matched that question.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-foreground/10 rounded-[2px] border border-border">
+          <ul className="flex flex-col divide-y divide-foreground/10 rounded-xs border border-border">
             {matches.map((match) => (
               <li key={match.threadId} className="flex items-center gap-3 px-3 py-2">
-                <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
+                <Badge variant="outline" className="rounded-xs font-normal capitalize">
                   {match.classification}
                 </Badge>
                 <div className="min-w-0 flex-1">
@@ -1297,7 +1294,7 @@ function MissionControlOverview({
             </h3>
             <p className="mt-1 text-xs text-foreground/60">{model.completeness.explanation}</p>
           </div>
-          <Badge variant="outline" className="rounded-[2px] font-normal">
+          <Badge variant="outline" className="rounded-xs font-normal">
             {supported}/{total} state dimensions sourced
           </Badge>
         </div>
@@ -1350,7 +1347,7 @@ function MissionControlOverview({
                   {RELATIONSHIP_DIMENSION_LABELS[item.dimension] ??
                     relationshipLabel(item.dimension)}
                 </span>
-                <Badge variant="outline" className="rounded-[2px] font-normal">
+                <Badge variant="outline" className="rounded-xs font-normal">
                   {item.supported
                     ? (AUTHORITY_LABELS[item.authority ?? ""] ?? relationshipLabel(item.authority))
                     : "Explicitly incomplete"}
@@ -1686,12 +1683,12 @@ function RelationshipSheet({
           <div className="flex flex-col gap-6 px-4 py-5">
             <section>
               <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="rounded-[2px] capitalize">
+                <Badge variant="outline" className="rounded-xs capitalize">
                   {humanize(data.relationship.lifecycle)}
                 </Badge>
                 <Badge
                   variant="outline"
-                  className={`rounded-[2px] capitalize ${HEALTH_TONE[data.relationship.health]}`}
+                  className={`rounded-xs capitalize ${HEALTH_TONE[data.relationship.health]}`}
                 >
                   {humanize(data.relationship.health)}
                 </Badge>
@@ -1845,7 +1842,7 @@ function RelationshipSheet({
               }
             />
 
-            <details className="rounded-[2px] border border-border p-3">
+            <details className="rounded-xs border border-border p-3">
               <summary className="cursor-pointer text-sm font-medium text-foreground">
                 Review model and evidence
               </summary>
@@ -1926,7 +1923,7 @@ function RelationshipSheet({
                       {data.intelligence.liveCues.map((cue) => (
                         <li
                           key={cue.id}
-                          className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+                          className="rounded-xs border border-amber-500/30 bg-amber-500/5 p-3"
                         >
                           <p className="text-xs font-medium text-foreground">{cue.title}</p>
                           <p className="mt-1 text-xs text-foreground/60">{cue.detail}</p>
@@ -2072,7 +2069,7 @@ function RelationshipSheet({
             </section>
 
             {historicalActions.length ? (
-              <details className="rounded-[2px] border border-border p-3">
+              <details className="rounded-xs border border-border p-3">
                 <summary className="cursor-pointer text-sm font-medium text-foreground">
                   Action history ({historicalActions.length})
                 </summary>
@@ -2326,7 +2323,7 @@ function RelationshipSheet({
               {data.intelligence?.delta.changes.length ? (
                 <ul className="mb-3 flex flex-col gap-2">
                   {data.intelligence.delta.changes.map((change) => (
-                    <li key={change.dimension} className="rounded-[2px] border border-border p-3">
+                    <li key={change.dimension} className="rounded-xs border border-border p-3">
                       <p className="text-xs font-medium capitalize text-foreground">
                         {humanize(change.dimension)}
                       </p>
@@ -2342,7 +2339,7 @@ function RelationshipSheet({
                 </ul>
               ) : null}
               {data.intelligence?.contradictionCases.length ? (
-                <ul className="mb-3 space-y-2 rounded-[2px] border border-amber-500/30 p-3 text-xs text-foreground/60">
+                <ul className="mb-3 space-y-2 rounded-xs border border-amber-500/30 p-3 text-xs text-foreground/60">
                   {data.intelligence.contradictionCases.map((item) => (
                     <li key={item.caseId}>
                       <span className="font-medium capitalize text-foreground">
@@ -2393,7 +2390,7 @@ function RelationshipSheet({
                 </p>
               ) : null}
               {data.intelligence?.delta.recommendationReason ? (
-                <p className="mb-3 rounded-[2px] border border-border p-3 text-xs text-foreground/60">
+                <p className="mb-3 rounded-xs border border-border p-3 text-xs text-foreground/60">
                   <span className="font-medium text-foreground">
                     Why the recommendation changed:
                   </span>{" "}
@@ -2432,7 +2429,7 @@ function RelationshipSheet({
                   {data.intelligence.governanceReceipts.slice(0, 5).map((receipt) => (
                     <li
                       key={receipt.receiptId}
-                      className="rounded-[2px] border border-border p-3 text-xs text-foreground/60"
+                      className="rounded-xs border border-border p-3 text-xs text-foreground/60"
                     >
                       <p>
                         {humanize(receipt.capturePolicy)} · {humanize(receipt.routing)}
@@ -2457,7 +2454,7 @@ function RelationshipSheet({
               {timeline.length === 0 ? (
                 <EmptyText>No observations yet.</EmptyText>
               ) : (
-                <ul className="flex flex-col divide-y divide-foreground/10 rounded-[2px] border border-border">
+                <ul className="flex flex-col divide-y divide-foreground/10 rounded-xs border border-border">
                   {timeline.map((observation) => (
                     <li key={observation.id} className="p-3">
                       <button
@@ -2478,7 +2475,7 @@ function RelationshipSheet({
                         </p>
                       </button>
                       {observation.id in evidence ? (
-                        <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-[2px] bg-background-100 p-2 text-[11px] text-foreground/60 dark:bg-background-200">
+                        <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-xs bg-background-100 p-2 text-[11px] text-foreground/60 dark:bg-background-200">
                           {JSON.stringify(evidence[observation.id], null, 2)}
                         </pre>
                       ) : null}
@@ -2519,7 +2516,7 @@ function RecommendationReviewCard({
   const canEditContent = action.executionStatus === "pending" && action.queueStatus === "open";
 
   return (
-    <li className="rounded-[2px] border border-border p-3">
+    <li className="rounded-xs border border-border p-3">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-medium text-foreground">
@@ -2864,7 +2861,7 @@ function ActionAuditPanel({
                 <SelectTrigger size="sm" className="w-48">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="app-shell rounded-[2px]">
+                <SelectContent className="app-shell rounded-xs">
                   {MANUAL_OUTCOME_OPTIONS.map((item) => (
                     <SelectItem key={item.value} value={item.value}>
                       {item.label}
@@ -2941,7 +2938,7 @@ function CorrectionReview({
   if (items.length === 0) return null;
   return (
     <section
-      className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      className="rounded-xs border border-amber-500/30 bg-amber-500/5 p-3"
       data-capability="conversation-review"
     >
       <SectionTitle title={`Focused evidence review (${items.length})`} />
@@ -2952,7 +2949,7 @@ function CorrectionReview({
         {items.map((item) => {
           const draft = drafts[item.id] ?? item.currentValue;
           return (
-            <li key={item.id} className="rounded-[2px] border border-border bg-background p-3">
+            <li key={item.id} className="rounded-xs border border-border bg-background p-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-medium text-foreground">{item.label}</p>
                 <span className="text-[11px] text-foreground/40">
@@ -3056,7 +3053,7 @@ function StateCorrection({
 
   return (
     <section
-      className="rounded-[2px] border border-dashed border-border p-3"
+      className="rounded-xs border border-dashed border-border p-3"
       data-capability="state-correction"
     >
       <SectionTitle title="Correct the model" />
@@ -3072,7 +3069,7 @@ function StateCorrection({
           <SelectTrigger size="sm">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
+          <SelectContent className="app-shell rounded-xs">
             {["health", "lifecycle", "engagement", "sentiment"].map((item) => (
               <SelectItem key={item} value={item}>
                 {humanize(item)}
@@ -3084,7 +3081,7 @@ function StateCorrection({
           <SelectTrigger size="sm">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
+          <SelectContent className="app-shell rounded-xs">
             {options.map((item) => (
               <SelectItem key={item} value={item}>
                 {humanize(item)}
@@ -3163,7 +3160,7 @@ function TwoColumnList({
 
 function ModeChip({ mode }: { mode: string }) {
   return (
-    <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
+    <Badge variant="outline" className="rounded-xs font-normal capitalize">
       {humanize(mode)}
     </Badge>
   );
@@ -3171,7 +3168,7 @@ function ModeChip({ mode }: { mode: string }) {
 
 function ListSkeleton() {
   return (
-    <div className="flex items-center gap-2 rounded-[2px] border border-border p-4 text-sm text-foreground/45">
+    <div className="flex items-center gap-2 rounded-xs border border-border p-4 text-sm text-foreground/45">
       <CircleNotch className="size-4 animate-spin" />
       Loading relationship state…
     </div>
@@ -3190,7 +3187,7 @@ function EmptyBlock({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-[2px] border border-dashed border-border py-16 text-center">
+    <div className="flex flex-col items-center gap-4 rounded-xs border border-dashed border-border py-16 text-center">
       <div className="flex size-12 items-center justify-center rounded-full bg-background-200 text-foreground/50 dark:bg-background-100">
         {icon}
       </div>
@@ -3253,7 +3250,7 @@ function CreateRelationshipDialog({
             <SelectTrigger size="sm">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="app-shell rounded-[2px]">
+            <SelectContent className="app-shell rounded-xs">
               {KIND_OPTIONS.map((item) => (
                 <SelectItem key={item} value={item}>
                   {titleize(item)}

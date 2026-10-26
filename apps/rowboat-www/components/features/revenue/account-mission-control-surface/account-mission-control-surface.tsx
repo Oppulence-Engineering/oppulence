@@ -3,7 +3,7 @@
 import "client-only";
 
 import { Badge } from "@sim/emcn";
-import { Building } from "@sim/emcn/icons";
+import { Buildings as Building } from "@/lib/icons";
 import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";

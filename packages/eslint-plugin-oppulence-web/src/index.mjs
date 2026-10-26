@@ -2,6 +2,7 @@ import noAsyncSetInterval from "./rules/no-async-setinterval.mjs";
 import noClientServerImports from "./rules/no-client-server-imports.mjs";
 import noDirectApiFetch from "./rules/no-direct-api-fetch.mjs";
 import noRawBrowserStorage from "./rules/no-raw-browser-storage.mjs";
+import noRawDesignValues from "./rules/no-raw-design-values.mjs";
 import noRawUpstreamErrors from "./rules/no-raw-upstream-errors.mjs";
 import noSensitiveBrowserStorage from "./rules/no-sensitive-browser-storage.mjs";
 import noSensitiveConsole from "./rules/no-sensitive-console.mjs";
@@ -23,6 +24,7 @@ export const rules = {
   "no-direct-api-fetch": noDirectApiFetch,
   "no-async-setinterval": noAsyncSetInterval,
   "no-raw-browser-storage": noRawBrowserStorage,
+  "no-raw-design-values": noRawDesignValues,
   "no-sensitive-browser-storage": noSensitiveBrowserStorage,
   "no-upstream-html-proxy": noUpstreamHtmlProxy,
   "require-safe-proxy-headers": requireSafeProxyHeaders,

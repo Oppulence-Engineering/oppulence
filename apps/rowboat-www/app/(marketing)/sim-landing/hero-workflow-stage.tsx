@@ -124,7 +124,7 @@ function StagedHeroWorkflowStage({
             <span
               aria-hidden
               className={cn(
-                "pointer-events-none absolute inset-0 rounded-[13px] ring-[1.75px] ring-[var(--text-secondary)] transition-opacity duration-300 ease-out",
+                "pointer-events-none absolute inset-0 rounded-xl ring-[1.75px] ring-[var(--text-secondary)] transition-opacity duration-300 ease-out",
                 selectedId === block.id && built ? "opacity-100" : "opacity-0",
               )}
             />
