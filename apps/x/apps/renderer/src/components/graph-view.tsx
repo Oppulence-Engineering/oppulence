@@ -740,7 +740,7 @@ export function GraphView({
           <button
             key={node.id}
             type="button"
-            className="sr-only focus:not-sr-only focus:block focus:min-w-64 focus:border focus:border-oppulence-orange focus:bg-background focus:px-3 focus:py-2 focus:text-left focus:text-xs focus:text-primary focus:shadow-lg"
+            className="sr-only focus:not-sr-only focus:block focus:min-w-64 focus:border focus:border-oppulence-orange focus:bg-background focus:px-3 focus:py-2 focus:text-left focus:text-xs focus:text-foreground focus:shadow-lg"
             onFocus={() => setHoveredNodeId(node.id)}
             onBlur={() => setHoveredNodeId(null)}
             onClick={() => onSelectNode?.(node.id)}

@@ -497,7 +497,7 @@ export function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
                 e.stopPropagation();
                 handleSetDefault(p.id);
               }}
-              className="inline-flex text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+              className="inline-flex text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               Set as default
             </span>

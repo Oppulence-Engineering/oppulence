@@ -64,7 +64,7 @@ export function BackgroundTaskDetail({
       <div className="border-b border-border px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center size-10 rounded-none bg-primary/10">
-            <Workflow className="size-5 text-primary" />
+            <Workflow className="size-5 text-foreground" />
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-semibold truncate">{name}</h1>

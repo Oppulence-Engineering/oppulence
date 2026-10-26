@@ -442,12 +442,12 @@ export function HomeView({
 
           {/* Relationship-first front door */}
           <section
-            className="rowboat-dev-card border-primary/20 bg-primary/[0.025] p-[18px]"
+            className="rowboat-dev-card border-foreground/20 bg-primary/[0.025] p-[18px]"
             data-capability="relationship-home mission-control"
             data-tour-target="home-accounts"
           >
             <div className="flex flex-wrap items-start gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-none border border-primary/20 bg-primary/5 text-primary">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-none border border-foreground/20 bg-primary/5 text-foreground">
                 <UsersRound className="size-[17px]" />
               </div>
               <div className="min-w-0 flex-1">
@@ -565,7 +565,7 @@ export function HomeView({
             <button
               type="button"
               onClick={() => onOpenRelationships?.(goldenPathTarget?.id)}
-              className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
+              className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-foreground hover:underline"
             >
               Review evidence and approval
               <ArrowRight className="size-3" />
@@ -628,7 +628,7 @@ export function HomeView({
                   type="button"
                   onClick={onOpenEmail}
                   aria-label="Open inbox"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-foreground hover:underline"
                 >
                   Open
                   <ArrowRight className="size-3" />
@@ -665,7 +665,7 @@ export function HomeView({
                   type="button"
                   onClick={onOpenAgents}
                   aria-label="Open background tasks"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-foreground hover:underline"
                 >
                   Open
                   <ArrowRight className="size-3" />
@@ -693,7 +693,7 @@ export function HomeView({
               <button
                 type="button"
                 onClick={onOpenAgents}
-                className="mt-3.5 flex items-center gap-2 border-t border-border pt-3 text-[12.5px] font-medium text-primary"
+                className="mt-3.5 flex items-center gap-2 border-t border-border pt-3 text-[12.5px] font-medium text-foreground"
               >
                 <Plus className="size-3" />
                 Create a task
@@ -710,7 +710,7 @@ export function HomeView({
               <button
                 type="button"
                 onClick={onOpenMeetings}
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-medium text-foreground hover:underline"
               >
                 All meetings
                 <ArrowRight className="size-3" />
@@ -810,7 +810,7 @@ export function HomeView({
                   <button
                     type="button"
                     onClick={() => setConnectionsSettingsOpen(true)}
-                    className="ml-1 flex h-5 shrink-0 items-center gap-1 rounded-none px-1 text-[12px] font-medium text-primary hover:underline"
+                    className="ml-1 flex h-5 shrink-0 items-center gap-1 rounded-none px-1 text-[12px] font-medium text-foreground hover:underline"
                   >
                     Connections
                     <ArrowRight className="size-3" />
@@ -842,7 +842,7 @@ export function HomeView({
                   with evidence, drafts, research, and connected tools.
                 </span>
               </div>
-              <span className="flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-primary">
+              <span className="flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-foreground">
                 New chat
                 <ArrowRight className="size-3.5" />
               </span>

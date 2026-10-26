@@ -450,7 +450,7 @@ export function ChatSidebar({
                   {files.map((filePath, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary"
+                      className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-foreground"
                     >
                       @{wikiLabel(filePath)}
                     </span>
@@ -683,12 +683,14 @@ export function ChatSidebar({
 
           {workContext ? (
             <div className="flex shrink-0 items-center gap-2 border-b border-border bg-primary/[0.025] px-3 py-2 text-xs">
-              <span className="font-mono text-[10px] uppercase tracking-wide text-primary/40">
+              <span className="font-mono text-[10px] uppercase tracking-wide text-foreground/40">
                 Working with
               </span>
-              <span className="min-w-0 truncate font-medium text-primary">{workContext.label}</span>
+              <span className="min-w-0 truncate font-medium text-foreground">
+                {workContext.label}
+              </span>
               {workContext.detail ? (
-                <span className="hidden min-w-0 truncate text-primary/45 lg:inline">
+                <span className="hidden min-w-0 truncate text-foreground/45 lg:inline">
                   {workContext.detail}
                 </span>
               ) : null}

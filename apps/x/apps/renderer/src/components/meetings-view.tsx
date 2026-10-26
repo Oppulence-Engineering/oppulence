@@ -1127,7 +1127,7 @@ export function MeetingsView({
       <div className="shrink-0 border-b border-border px-6 py-5" data-tour-target="meeting-notes">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Mic className="size-5 text-primary" />
+            <Mic className="size-5 text-foreground" />
             <h2 className="text-base font-semibold text-foreground">Meetings</h2>
           </div>
           <Button
