@@ -32,19 +32,10 @@ export function computeMailboxBackoff(input: ComputeBackoffInput): number {
 }
 
 export type MailboxJobType =
-  | "initial_backfill"
-  | "incremental_sync"
-  | "repair"
-  | "watch_renewal"
-  | "provider_action";
+  "initial_backfill" | "incremental_sync" | "repair" | "watch_renewal" | "provider_action";
 
 export type MailboxJobStatus =
-  | "queued"
-  | "running"
-  | "backoff"
-  | "succeeded"
-  | "failed"
-  | "cancelled";
+  "queued" | "running" | "backoff" | "succeeded" | "failed" | "cancelled";
 
 export type MailboxJob = {
   id: string;

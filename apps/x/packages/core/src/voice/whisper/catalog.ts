@@ -46,13 +46,7 @@ function coremlSidecarFor(entryId: string): ModelEntry["coreml"] | undefined {
 }
 
 export type ModelFamily =
-  | "tiny"
-  | "base"
-  | "small"
-  | "large-v3"
-  | "large-v3-turbo"
-  | "vad"
-  | "speaker-embedding";
+  "tiny" | "base" | "small" | "large-v3" | "large-v3-turbo" | "vad" | "speaker-embedding";
 
 export type ModelQuant = "f16" | "q5_0" | "q5_1" | "q8_0" | "none";
 

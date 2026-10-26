@@ -43,12 +43,7 @@ export type ConnectorScope = z.infer<typeof ConnectorScopeSchema>;
 export type ConnectorEntitlement = z.infer<typeof ConnectorEntitlementSchema>;
 
 export type ConnectorLifecycleAction =
-  | "connect"
-  | "disconnect"
-  | "reconnect"
-  | "wait"
-  | "unavailable"
-  | "retry";
+  "connect" | "disconnect" | "reconnect" | "wait" | "unavailable" | "retry";
 
 export function connectorLifecycleAction(input: {
   connected: boolean;
