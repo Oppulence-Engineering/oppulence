@@ -8,7 +8,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@sim/emcn";
-import { Check, ChevronDown, Columns3, ListFilter, Table } from "@sim/emcn/icons";
+import {
+  CaretDown as ChevronDown,
+  Check,
+  Columns as Columns3,
+  FunnelSimple as ListFilter,
+  Table,
+} from "@/lib/icons";
 import {
   MenuPreviewHeader,
   MenuPreviewToolbar,

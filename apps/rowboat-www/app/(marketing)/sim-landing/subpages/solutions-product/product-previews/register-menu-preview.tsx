@@ -1,14 +1,14 @@
 import { Badge, Chip } from "@sim/emcn";
 import {
-  ChevronDown,
-  Columns3,
-  ListFilter,
+  CaretDown as ChevronDown,
+  Columns as Columns3,
+  FunnelSimple as ListFilter,
+  Hash as TypeNumber,
   Plus,
   Table,
-  TagIcon,
-  TypeNumber,
-  TypeText,
-} from "@sim/emcn/icons";
+  Tag as TagIcon,
+  TextT as TypeText,
+} from "@/lib/icons";
 
 import { cn } from "@/lib/sim/cn";
 

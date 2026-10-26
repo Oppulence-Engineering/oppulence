@@ -1,6 +1,6 @@
 "use client";
 
-import { Workflow } from "@sim/emcn/icons";
+import { FlowArrow as Workflow } from "@/lib/icons";
 import { ResourceMention } from "@/sim-port/workspace/home/components/message-content/components/resource-mention";
 
 interface HeroChatReplyProps {

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { Chip } from "@sim/emcn";
-import { Globe, Layout, Mic } from "@sim/emcn/icons";
+import { Globe, Layout, Microphone as Mic } from "@/lib/icons";
 
 import { cn } from "@/lib/sim/cn";
 

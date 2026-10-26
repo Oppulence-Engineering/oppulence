@@ -1,5 +1,5 @@
 import { cn } from "@sim/emcn";
-import { ArrowRight, FileText, Table, Workflow } from "@sim/emcn/icons";
+import { ArrowRight, FileText, FlowArrow as Workflow, Table } from "@/lib/icons";
 import { PREVIEW_SUGGESTIONS } from "../preview-chat-content";
 
 interface HeroChatWelcomeProps {

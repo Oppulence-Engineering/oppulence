@@ -1,5 +1,5 @@
 import { Button, Chip } from "@sim/emcn";
-import { Mail } from "@sim/emcn/icons";
+import { EnvelopeSimple as Mail } from "@/lib/icons";
 
 import { MenuPreviewFrame } from "../../../shared/menu-preview-frame";
 

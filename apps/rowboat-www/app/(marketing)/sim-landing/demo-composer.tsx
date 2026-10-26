@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUp, cn, Tooltip } from "@sim/emcn";
-import { Mic, Paperclip, Plus, Slash } from "@sim/emcn/icons";
+import { Lightning as Slash, Microphone as Mic, Paperclip, Plus } from "@/lib/icons";
 
 /** Icon controls, in the product's order, each labelled as the product labels it. */
 export const COMPOSER_ACTIONS = ["Add resources", "Attach file", "Skills"] as const;

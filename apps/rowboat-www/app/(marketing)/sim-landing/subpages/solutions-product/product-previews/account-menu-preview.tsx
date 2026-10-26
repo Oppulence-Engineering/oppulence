@@ -1,5 +1,5 @@
 import { Badge } from "@sim/emcn";
-import { Building } from "@sim/emcn/icons";
+import { Buildings as Building } from "@/lib/icons";
 
 import { MenuPreviewFrame } from "../../../shared/menu-preview-frame";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Chip } from "@sim/emcn";
-import { Mic, MicOff, Pause, Square } from "@sim/emcn/icons";
+import { Microphone as Mic, MicrophoneSlash as MicOff, Pause, Square } from "@/lib/icons";
 
 import { cn } from "@/lib/sim/cn";
 
