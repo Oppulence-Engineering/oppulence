@@ -8,6 +8,16 @@ import { buildLlmsTxt, getSeoLander } from "@/app/(marketing)/seo-theme";
 import { footerGroups, headerNav, dedicatedMarketingPaths } from "@/app/(marketing)/site";
 import { buildPublicSitemap } from "@/app/sitemap";
 
+const marketingStylesUrl = new URL("../app/(marketing)/marketing-styles.css", import.meta.url);
+
+/** The marketing stylesheet with each local `@import` file appended after its import line. */
+function readMarketingStyles() {
+  return readFileSync(marketingStylesUrl, "utf8").replace(
+    /@import "(\.\/[^"]+)";/g,
+    (line, path: string) => `${line}\n${readFileSync(new URL(path, marketingStylesUrl), "utf8")}`,
+  );
+}
+
 const knownStaticHrefs = new Set([
   "/",
   "/sign-in",
@@ -75,10 +85,7 @@ describe("public marketing information architecture", () => {
       new URL("../app/(marketing)/marketing-components.tsx", import.meta.url),
       "utf8",
     );
-    const styles = readFileSync(
-      new URL("../app/(marketing)/marketing-styles.css", import.meta.url),
-      "utf8",
-    );
+    const styles = readMarketingStyles();
     expect(source).toContain("sm-nav-item");
     expect(source).toContain("sm-nav-panel");
     expect(source).not.toContain("data-marketing-dropdown");
@@ -106,10 +113,7 @@ describe("public marketing information architecture", () => {
   });
 
   it("styles catalog and compare pages instead of shipping class names with no CSS", () => {
-    const styles = readFileSync(
-      new URL("../app/(marketing)/marketing-styles.css", import.meta.url),
-      "utf8",
-    );
+    const styles = readMarketingStyles();
     const simLandingStyles = readFileSync(
       new URL("../app/(marketing)/sim-landing/sim-landing.css", import.meta.url),
       "utf8",
@@ -359,10 +363,7 @@ describe("public marketing information architecture", () => {
       new URL("../app/(marketing)/seo-lander.tsx", import.meta.url),
       "utf8",
     );
-    const styles = readFileSync(
-      new URL("../app/(marketing)/marketing-styles.css", import.meta.url),
-      "utf8",
-    );
+    const styles = readMarketingStyles();
 
     expect(page?.title).toMatch(/Help center software/i);
     expect(lander?.faqs.length).toBeGreaterThan(0);
@@ -390,10 +391,7 @@ describe("public marketing information architecture", () => {
       new URL("../app/(marketing)/marketing-sim-theme.css", import.meta.url),
       "utf8",
     );
-    const styles = readFileSync(
-      new URL("../app/(marketing)/marketing-styles.css", import.meta.url),
-      "utf8",
-    );
+    const styles = readMarketingStyles();
 
     expect(layoutClient).toContain("SimLandingShell");
     expect(layoutClient).not.toContain("TopBar");

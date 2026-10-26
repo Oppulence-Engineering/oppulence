@@ -1,0 +1,369 @@
+/* Attio-inspired main landing page: centered thesis, product window, sparse platform proof. */
+@layer utilities {
+  .sm-attio-home {
+    --attio-blue: #245bc2;
+    --attio-ink: #1c1d1f;
+    /* #6f7988 measured 4.22:1 on the soft band, under the 4.5:1 AA floor.
+       #5a6473 keeps the same cool hue at 5.74:1. */
+    --attio-muted: #5a6473;
+    --attio-faint: #8b96a1;
+    --attio-line: #e4e7ec;
+    --attio-chip: #e8f0ff;
+    --attio-soft: #fafafb;
+    --sim-window-shadow:
+      0 0 0 1px rgb(0 0 0 / 8%), 0 2px 6px 0 rgb(0 0 0 / 5%), 0 4px 42px 0 rgb(0 0 0 / 6%);
+    background: #ffffff;
+    color: var(--attio-ink);
+    font-family:
+      var(--font-attio-sans, var(--font-marketing-sans)), "Inter", ui-sans-serif, system-ui,
+      sans-serif;
+    letter-spacing: -0.011em;
+  }
+
+  /* Sim.ai homepage rhythm: generous gaps, hero grouped with proof band. */
+
+  /* Sim platform suite: two cards that widen on hover. */
+
+  /* Sim features rail */
+
+  /* Sim governance grid */
+
+  .sm-attio-home a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .linear-shell:has(> .sm-attio-home) {
+    width: 100%;
+    max-width: none;
+    flex: 1;
+    padding-inline: 0;
+  }
+
+  .sm-site:has(.sm-attio-home) .linear-guides::before,
+  .sm-site:has(.sm-attio-home) .linear-guides::after {
+    content: none;
+  }
+
+  /* The shell clips overflow, which silently disables position: sticky for the
+     platform rail. The Attio home has no horizontal bleed, so clipping is safe
+     to drop here. */
+  .sm-site:has(.sm-attio-home) {
+    overflow: visible;
+  }
+
+  /* Homepage header stays the same 56px bar as every other public page. */
+  .sm-site:has(.sm-attio-home) .sm-header {
+    border-bottom-color: rgb(20 24 28 / 6%);
+    background: #ffffff;
+  }
+
+  .sm-site:has(.sm-attio-home) .sm-header .linear-header-inner {
+    width: min(100%, 1200px);
+    padding-inline: 24px;
+  }
+
+  .sm-site:has(.sm-attio-home) .sm-header-cta svg {
+    display: none;
+  }
+
+  /* Attio frames every section with vertical hairlines: a 1440px container
+     with a 24px gutter leaves a 1392px frame whose edges carry the rules
+     (x=168 and x=1560 at 1728px). Content is then inset one column of the
+     24-column grid, so it starts at x=226. */
+
+  /* The hero is full-bleed over its gradient, so it opts out of the rules. */
+
+  /* Hero: clean paper wash — no pinstripes or periwinkle noise. */
+
+  .sm-hero-chips,
+  .sm-site .sm-hero-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .sm-site .linear-subpage-description .sm-hero-chips {
+    justify-content: flex-start;
+  }
+
+  .sm-hero-chips span,
+  .sm-hero-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--attio-line);
+    border-radius: 999px;
+    padding: 6px 12px;
+    color: #5a6473;
+    background: #ffffff;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .sm-attio-home .sm-attio-btn {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid #cbd3db;
+    border-radius: 0;
+    background: #ffffff;
+    padding: 0 12px;
+    color: #2b333c;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+    transition:
+      border-color 140ms ease,
+      background 140ms ease,
+      color 140ms ease;
+  }
+
+  .sm-attio-home .sm-attio-btn:hover {
+    border-color: #aab6c2;
+    background: #fbfcfd;
+  }
+
+  .sm-attio-home .sm-attio-btn-primary {
+    border-color: #3d444b;
+    background: #1c2126;
+    color: #f4f5f6;
+  }
+
+  .sm-attio-home .sm-attio-btn-primary:hover {
+    border-color: #1c2126;
+    background: #0d1114;
+    color: #ffffff;
+  }
+
+  /* Product window: one framed demo with integrated tabs. */
+
+  /* Logo band: Attio's 5-cell grid where a 1px gap over a line-coloured
+     background draws the hairlines between 96px cells. */
+
+  /* Attio's cells carry a 20px mark beside the name, not bare text. */
+
+  /* Homepage story sections use their own semantic class names so their
+     layouts remain independent from catalog-page card styles. */
+
+  /* The problem statement is a four-column ledger, not a run-on list. */
+
+  /* Integration names need explicit cells; bare inline links collapse into
+     one unreadable string when there is no separator in the source text. */
+
+  /* Capability rows alternate editorial copy and real product imagery. The
+     bounded media column prevents intrinsic screenshots from inflating the
+     page into several thousand pixels of unstructured content. */
+
+  /* Shared section rhythm. Attio alternates #ffffff and #fafafb bands and
+     uses one 40px/44px heading scale for every section below the hero. */
+  /* Attio's section rhythm is asymmetric: 152px above the head, 80px below
+     the content. Symmetric padding is what made our page feel evenly spaced
+     rather than top-weighted like the reference. */
+
+  /* Attio closes on a near-black band, not another white one. */
+
+  /* Attio holds every section heading at a fixed 40px/44px rather than
+     scaling it fluidly, so the hero stays the only large type on the page. */
+  /* Attio caps section headings at 880px and keeps them to two or three
+     lines. Anything longer stops reading as a headline. */
+  .sm-attio-home h2 {
+    max-width: 880px;
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  .sm-attio-home h2 > span:first-child {
+    color: var(--attio-ink);
+  }
+
+  .sm-attio-home h2 > span + span {
+    color: var(--attio-muted);
+  }
+
+  /* Attio's secondary head link: 32px tall, 12px label, hairline border. */
+
+  /* Platform: Attio's sticky capability rail beside hairline-separated rows.
+     The rail tracks whichever row is crossing the viewport middle. */
+  .sm-attio-platform-grid {
+    display: grid;
+    align-items: start;
+    gap: clamp(32px, 4vw, 72px);
+    grid-template-columns: 260px minmax(0, 1fr);
+    margin-top: clamp(48px, 5vw, 76px);
+    border-top: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-rail {
+    position: sticky;
+    top: 116px;
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    padding-top: clamp(48px, 5vw, 80px);
+  }
+
+  .sm-attio-rail a {
+    border-left: 2px solid transparent;
+    padding: 8px 0 8px 20px;
+    color: #5a6472;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    transition:
+      color 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .sm-attio-rail a:hover {
+    color: var(--attio-ink);
+  }
+
+  .sm-attio-rail a[data-active="true"] {
+    border-left-color: var(--attio-blue);
+    color: var(--attio-ink);
+  }
+
+  .sm-attio-rows {
+    display: grid;
+    border-left: 1px solid var(--attio-line);
+  }
+
+  /* Attio stacks each row: a copy block with 112px/80px padding and a 24px
+     heading, then a full-bleed media panel separated by a top hairline. It is
+     never a side-by-side split. */
+  .sm-attio-row {
+    display: block;
+    scroll-margin-top: 140px;
+    border-bottom: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-row:last-child {
+    border-bottom: 0;
+  }
+
+  .sm-attio-row-copy {
+    padding: clamp(56px, 7.4vw, 112px) 5.55% clamp(44px, 5.3vw, 80px);
+  }
+
+  .sm-attio-row h3 {
+    max-width: 560px;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+
+  .sm-attio-row h3 > span:first-child {
+    color: var(--attio-ink);
+  }
+
+  .sm-attio-row h3 > span + span {
+    color: var(--attio-muted);
+  }
+
+  .sm-attio-row-media {
+    overflow: hidden;
+    border-top: 1px solid var(--attio-line);
+    background: var(--attio-soft);
+  }
+
+  .sm-attio-row-media img,
+  .sm-attio-setup-media img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .sm-attio-row-media img {
+    max-height: 655px;
+    object-fit: cover;
+    object-position: top center;
+  }
+
+  /* Self-building: centred copy, one CTA, one wide screenshot. */
+
+  /* Attio runs this heading to 926px so it lands on three lines, not five. */
+
+  /* Attio runs Universal Context and Connectivity as one continuous #101010
+     region: a huge wordmark over a radial glow, then a 5-up icon strip
+     divided by hairlines. This is the single biggest visual beat on the page. */
+
+  /* Wordmark stage: the glow rises from the bottom, behind the type. */
+
+  /* Scoped past `.sm-attio-home h2`, which otherwise pins this to 40px. */
+
+  /* Icon strip: 32px/28px cells divided by hairlines, icon top, copy bottom. */
+
+  /* Connectivity keeps the dark treatment and Attio's 40px heading. */
+
+  /* Attio divides column groups with hairlines rather than boxing each item. */
+
+  /* Connectivity: centred copy over a wrapped integration wall. */
+  /* Governance: Attio's stat block. Blue left rule, 32px value, muted label,
+     and no card chrome. */
+  /* Attio caps this column at 464px but lets the heading itself run to 880px,
+     so the copy still breaks over three lines rather than four. */
+
+  /* How it works: Attio's changelog columns. Full-bleed hairlines, a 12px
+     muted kicker, an 18px title, and a 16px body. */
+
+  /* Attio closes each changelog column with a 56px strip of hairline ticks. */
+
+  @media (max-width: 1000px) {
+    .sm-attio-platform-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+    }
+
+    .sm-attio-rail {
+      top: 70px;
+      z-index: 4;
+      display: flex;
+      overflow-x: auto;
+      gap: 4px;
+      border-bottom: 1px solid var(--attio-line);
+      background: var(--attio-soft);
+      padding-top: 0;
+      scrollbar-width: none;
+    }
+
+    .sm-attio-rail a {
+      flex: 0 0 auto;
+      border-bottom: 2px solid transparent;
+      border-left: 0;
+      padding: 14px 12px;
+      white-space: nowrap;
+    }
+
+    .sm-attio-rail a[data-active="true"] {
+      border-bottom-color: var(--attio-blue);
+      border-left-color: transparent;
+    }
+
+    .sm-attio-rows {
+      border-left: 0;
+    }
+
+    .sm-attio-row-copy {
+      padding-inline: 0;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .sm-attio-home .sm-attio-btn {
+      flex: 1;
+      min-height: 42px;
+    }
+
+    .sm-attio-home h2,
+    .sm-attio-dark-connect h2 {
+      font-size: clamp(1.75rem, 8vw, 2.15rem);
+    }
+  }
+}
