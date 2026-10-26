@@ -36,7 +36,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE_REPOSITORY: ghcr.io/oppulence-engineering/desktop-assistant-rowboat-api
+  IMAGE_REPOSITORY: ghcr.io/playbookmediallc/desktop-assistant-rowboat-api
   INFISICAL_PROJECT_ID: 04ebc1cf-0ec5-4e9e-8ab9-4c6da4252574
   INFISICAL_ENVIRONMENT: prod
   INFISICAL_PATH: /

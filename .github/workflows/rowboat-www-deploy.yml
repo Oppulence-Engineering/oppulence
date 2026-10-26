@@ -37,7 +37,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE_REPOSITORY: ghcr.io/oppulence-engineering/rowboat-www
+  IMAGE_REPOSITORY: ghcr.io/playbookmediallc/rowboat-www
   RELEASE_NAME: rowboat-www
   CHART_DIR: charts/rowboat-www
 

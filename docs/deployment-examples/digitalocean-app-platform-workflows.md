@@ -33,8 +33,8 @@ For this monorepo, a Dockerfile such as `apps/rowboat-www/Dockerfile` copies sha
 
 ## Provisioned production apps
 
-| App | App Platform ID | Default URL | Spec | Caller |
-| --- | --- | --- | --- | --- |
+| App         | App Platform ID                        | Default URL                                             | Spec                              | Caller                                           |
+| ----------- | -------------------------------------- | ------------------------------------------------------- | --------------------------------- | ------------------------------------------------ |
 | rowboat-www | `f2e91ead-9963-46be-b205-4fb7518dea2d` | https://rowboat-www-production-gmmbn.ondigitalocean.app | `.do/rowboat-www-production.yaml` | `.github/workflows/rowboat-www-app-platform.yml` |
 | rowboat-api | `dd11bce0-097b-459a-9c36-c66f3562cd5a` | https://rowboat-api-production-w59vj.ondigitalocean.app | `.do/rowboat-api-production.json` | `.github/workflows/rowboat-api-app-platform.yml` |
 
@@ -96,7 +96,7 @@ jobs:
       deploy_ref: refs/heads/main
       build_image: true
       image_registry_type: GHCR
-      image_registry: oppulence-engineering
+      image_registry: playbookmediallc
       image_repository: rowboat-www
       dockerfile_path: apps/rowboat-www/Dockerfile
       build_context: .
