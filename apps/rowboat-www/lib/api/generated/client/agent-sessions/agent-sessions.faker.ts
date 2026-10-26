@@ -26,8 +26,8 @@ export const getListAgentSessionsResponseMock = (
     () => ({
       agent: faker.string.alpha({ length: { min: 10, max: 20 } }),
       agentSource: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       channel: faker.string.alpha({ length: { min: 10, max: 20 } }),
       continuationToken: faker.helpers.arrayElement([
@@ -37,16 +37,16 @@ export const getListAgentSessionsResponseMock = (
       costUnits: faker.number.int(),
       createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
       error: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       errorCode: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       lastActivityAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       llmCalls: faker.number.int(),
       sessionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -58,8 +58,8 @@ export const getListAgentSessionsResponseMock = (
         "canceled",
       ] as const),
       title: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       toolCalls: faker.number.int(),
       turns: faker.number.int(),
@@ -73,8 +73,8 @@ export const getCreateAgentSessionResponseMock = (
 ): DurableAgentSessionView => ({
   agent: faker.string.alpha({ length: { min: 10, max: 20 } }),
   agentSource: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
   ]),
   channel: faker.string.alpha({ length: { min: 10, max: 20 } }),
   continuationToken: faker.helpers.arrayElement([
@@ -83,17 +83,14 @@ export const getCreateAgentSessionResponseMock = (
   ]),
   costUnits: faker.number.int(),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
-  error: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
-  ]),
+  error: faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
   errorCode: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
   ]),
   lastActivityAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   llmCalls: faker.number.int(),
   sessionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -104,10 +101,7 @@ export const getCreateAgentSessionResponseMock = (
     "failed",
     "canceled",
   ] as const),
-  title: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
-  ]),
+  title: faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
   toolCalls: faker.number.int(),
   turns: faker.number.int(),
   ...overrideResponse,
@@ -145,17 +139,11 @@ export const getListAgentSessionEventsResponseMock = (
     () => ({
       data: {},
       seq: faker.number.int(),
-      turnSeq: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.number.int(), null]),
-        undefined,
-      ]),
+      turnSeq: faker.helpers.arrayElement([faker.number.int(), null]),
       type: faker.string.alpha({ length: { min: 10, max: 20 } }),
     }),
   ),
-  nextSeq: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.number.int(), null]),
-    undefined,
-  ]),
+  nextSeq: faker.helpers.arrayElement([faker.number.int(), null]),
   ...overrideResponse,
 });
 
@@ -164,10 +152,7 @@ export const getStreamAgentSessionResponseMock = (
 ): DurableAgentSessionEvent => ({
   data: {},
   seq: faker.number.int(),
-  turnSeq: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.number.int(), null]),
-    undefined,
-  ]),
+  turnSeq: faker.helpers.arrayElement([faker.number.int(), null]),
   type: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });

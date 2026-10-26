@@ -18,10 +18,7 @@ export const getGetOpenAPIResponseMock = (): GetOpenAPI200 => ({});
 export const getGetReadyzResponseMock = (
   overrideResponse: Partial<Extract<ReadyResponse, object>> = {},
 ): ReadyResponse => ({
-  failed: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
-  ]),
+  failed: faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
   status: faker.helpers.arrayElement(["ready", "not_ready"] as const),
   ...overrideResponse,
 });

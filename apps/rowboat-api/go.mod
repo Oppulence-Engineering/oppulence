@@ -11,7 +11,7 @@ require (
 	github.com/adhocore/gronx v1.20.0
 	github.com/flume/enthistory v0.17.4
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-chi/chi/v5 v5.3.0
+	github.com/go-chi/chi/v5 v5.4.0
 	github.com/go-redis/redis/v8 v8.11.3
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0

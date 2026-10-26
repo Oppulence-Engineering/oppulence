@@ -54,7 +54,7 @@ export const ListBackgroundTaskRunsForAccount200Response = zod
             lastHeartbeatAt: zod.iso
               .datetime({ offset: true })
               .nullish()
-              .describe("Latest worker heartbeat\/progress timestamp."),
+              .describe("Latest worker heartbeat/progress timestamp."),
             localRunId: zod
               .string()
               .nullish()
@@ -92,7 +92,7 @@ export const ListBackgroundTaskRunsForAccount200Response = zod
               ),
             slug: zod
               .string()
-              .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+              .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
             startedAt: zod.iso
               .datetime({ offset: true })
               .nullish()
@@ -226,7 +226,7 @@ export const ListBackgroundTaskTemplates200Response = zod
               .describe("Default task slug used when instantiating this template."),
             triggers: zod
               .unknown()
-              .nullish()
+              .optional()
               .describe(
                 "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
               ),
@@ -307,7 +307,7 @@ export const GetBackgroundTaskTemplate200Response = zod
     taskSlug: zod.string().describe("Default task slug used when instantiating this template."),
     triggers: zod
       .unknown()
-      .nullish()
+      .optional()
       .describe(
         "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
       ),
@@ -380,7 +380,7 @@ export const InstantiateBackgroundTaskTemplateBody = zod
     slug: zod.string().nullish().describe("Task slug override. Defaults to template.taskSlug."),
     triggers: zod
       .unknown()
-      .nullish()
+      .optional()
       .describe(
         "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
       ),
@@ -445,7 +445,7 @@ export const InstantiateBackgroundTaskTemplate201Response = zod
       .describe("Last successful schedule reconciliation timestamp."),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     systemManaged: zod
       .boolean()
       .describe(
@@ -463,7 +463,7 @@ export const InstantiateBackgroundTaskTemplate201Response = zod
       ),
     triggers: zod
       .unknown()
-      .nullish()
+      .optional()
       .describe(
         "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
       ),
@@ -618,7 +618,7 @@ export const ListBackgroundTasks200Response = zod
               .describe("Last successful schedule reconciliation timestamp."),
             slug: zod
               .string()
-              .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+              .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
             systemManaged: zod
               .boolean()
               .describe(
@@ -638,7 +638,7 @@ export const ListBackgroundTasks200Response = zod
               ),
             triggers: zod
               .unknown()
-              .nullish()
+              .optional()
               .describe(
                 "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
               ),
@@ -722,7 +722,7 @@ export const CreateBackgroundTaskBody = zod
       .describe("Optional stable slug. If omitted, rowboat-api slugifies name."),
     triggers: zod
       .unknown()
-      .nullish()
+      .optional()
       .describe(
         "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
       ),
@@ -785,7 +785,7 @@ export const CreateBackgroundTask201Response = zod
       .describe("Last successful schedule reconciliation timestamp."),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     systemManaged: zod
       .boolean()
       .describe(
@@ -803,7 +803,7 @@ export const CreateBackgroundTask201Response = zod
       ),
     triggers: zod
       .unknown()
-      .nullish()
+      .optional()
       .describe(
         "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
       ),
@@ -943,7 +943,7 @@ export const EnsureFirstPartyBackgroundTasks200Response = zod
               .describe("Last successful schedule reconciliation timestamp."),
             slug: zod
               .string()
-              .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+              .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
             systemManaged: zod
               .boolean()
               .describe(
@@ -963,7 +963,7 @@ export const EnsureFirstPartyBackgroundTasks200Response = zod
               ),
             triggers: zod
               .unknown()
-              .nullish()
+              .optional()
               .describe(
                 "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
               ),
@@ -1105,7 +1105,7 @@ export const DeleteBackgroundTask500Response = zod
  * @summary Get background task mirror
  */
 export const GetBackgroundTaskParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Background task slug, matching bg-tasks/<slug> locally."),
 });
 
 export const GetBackgroundTask200Response = zod
@@ -1164,7 +1164,7 @@ export const GetBackgroundTask200Response = zod
       .describe("Last successful schedule reconciliation timestamp."),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     systemManaged: zod
       .boolean()
       .describe(
@@ -1182,7 +1182,7 @@ export const GetBackgroundTask200Response = zod
       ),
     triggers: zod
       .unknown()
-      .nullish()
+      .optional()
       .describe(
         "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
       ),
@@ -1249,7 +1249,7 @@ export const PatchBackgroundTaskParams = zod.object({
 
 export const PatchBackgroundTaskBody = zod
   .strictObject({
-    active: zod.boolean().optional().describe("Enable or disable local scheduling\/remote pickup."),
+    active: zod.boolean().optional().describe("Enable or disable local scheduling/remote pickup."),
     createdAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -1277,10 +1277,10 @@ export const PatchBackgroundTaskBody = zod
       ),
     revision: zod
       .int()
-      .describe("Current task revision returned by the last GET\/list\/PATCH response."),
+      .describe("Current task revision returned by the last GET/list/PATCH response."),
     triggers: zod
       .unknown()
-      .nullish()
+      .optional()
       .describe(
         "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
       ),
@@ -1345,7 +1345,7 @@ export const PatchBackgroundTask200Response = zod
       .describe("Last successful schedule reconciliation timestamp."),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     systemManaged: zod
       .boolean()
       .describe(
@@ -1363,7 +1363,7 @@ export const PatchBackgroundTask200Response = zod
       ),
     triggers: zod
       .unknown()
-      .nullish()
+      .optional()
       .describe(
         "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
       ),
@@ -1457,7 +1457,7 @@ export const PatchBackgroundTask500Response = zod
  * @summary Get task artifact
  */
 export const GetBackgroundTaskArtifactParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Background task slug, matching bg-tasks/<slug> locally."),
 });
 
 export const GetBackgroundTaskArtifact200Response = zod
@@ -1466,12 +1466,12 @@ export const GetBackgroundTaskArtifact200Response = zod
     revision: zod.int().describe("Optimistic-lock revision used by write endpoints."),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     updatedAt: zod.iso
       .datetime({ offset: true })
       .describe("Server timestamp for the last artifact update."),
   })
-  .describe("Markdown artifact mirror for bg-tasks\/<slug>\/index.md.");
+  .describe("Markdown artifact mirror for bg-tasks/<slug>/index.md.");
 
 export const GetBackgroundTaskArtifact401Response = zod
   .strictObject({
@@ -1523,7 +1523,7 @@ export const GetBackgroundTaskArtifact500Response = zod
  * @summary Put task artifact
  */
 export const PutBackgroundTaskArtifactParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Background task slug, matching bg-tasks/<slug> locally."),
 });
 
 export const PutBackgroundTaskArtifactBody = zod
@@ -1544,12 +1544,12 @@ export const PutBackgroundTaskArtifact200Response = zod
     revision: zod.int().describe("Optimistic-lock revision used by write endpoints."),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     updatedAt: zod.iso
       .datetime({ offset: true })
       .describe("Server timestamp for the last artifact update."),
   })
-  .describe("Markdown artifact mirror for bg-tasks\/<slug>\/index.md.");
+  .describe("Markdown artifact mirror for bg-tasks/<slug>/index.md.");
 
 export const PutBackgroundTaskArtifact400Response = zod
   .strictObject({
@@ -1633,7 +1633,7 @@ export const PutBackgroundTaskArtifact500Response = zod
  * @summary List task runs
  */
 export const ListBackgroundTaskRunsParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Background task slug, matching bg-tasks/<slug> locally."),
 });
 
 export const ListBackgroundTaskRunsQueryParams = zod.object({
@@ -1641,7 +1641,7 @@ export const ListBackgroundTaskRunsQueryParams = zod.object({
     .enum(["queued", "running", "succeeded", "failed", "stopped"])
     .optional()
     .describe(
-      "Optional run status filter. Use queued for desktop pickup or running\/failed\/succeeded for polling dashboards.",
+      "Optional run status filter. Use queued for desktop pickup or running/failed/succeeded for polling dashboards.",
     ),
   executor: zod.enum(["desktop", "api"]).optional().describe("Optional execution backend filter."),
   limit: zod.coerce
@@ -1682,7 +1682,7 @@ export const ListBackgroundTaskRuns200Response = zod
             lastHeartbeatAt: zod.iso
               .datetime({ offset: true })
               .nullish()
-              .describe("Latest worker heartbeat\/progress timestamp."),
+              .describe("Latest worker heartbeat/progress timestamp."),
             localRunId: zod
               .string()
               .nullish()
@@ -1720,7 +1720,7 @@ export const ListBackgroundTaskRuns200Response = zod
               ),
             slug: zod
               .string()
-              .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+              .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
             startedAt: zod.iso
               .datetime({ offset: true })
               .nullish()
@@ -1835,7 +1835,7 @@ export const ListBackgroundTaskRuns500Response = zod
  * @summary Create task run mirror
  */
 export const CreateBackgroundTaskRunParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Background task slug, matching bg-tasks/<slug> locally."),
 });
 
 export const CreateBackgroundTaskRunBody = zod
@@ -1871,7 +1871,7 @@ export const CreateBackgroundTaskRunBody = zod
       .enum(["queued", "running", "succeeded", "failed", "stopped"])
       .optional()
       .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
       ),
     subUseCase: zod.string().nullish().describe("Task-specific usage label."),
     summary: zod.string().nullish().describe("Initial run summary."),
@@ -1888,7 +1888,7 @@ export const CreateBackgroundTaskRunBody = zod
     useCase: zod.string().nullish().describe("High-level usage label."),
   })
   .describe(
-    "Creates a run mirror for a desktop execution. Remote\/manual queue creation usually uses POST \/trigger instead.",
+    "Creates a run mirror for a desktop execution. Remote/manual queue creation usually uses POST /trigger instead.",
   );
 
 export const CreateBackgroundTaskRun201Response = zod
@@ -1906,7 +1906,7 @@ export const CreateBackgroundTaskRun201Response = zod
     lastHeartbeatAt: zod.iso
       .datetime({ offset: true })
       .nullish()
-      .describe("Latest worker heartbeat\/progress timestamp."),
+      .describe("Latest worker heartbeat/progress timestamp."),
     localRunId: zod
       .string()
       .nullish()
@@ -1944,7 +1944,7 @@ export const CreateBackgroundTaskRun201Response = zod
       ),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     startedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -2083,7 +2083,7 @@ export const GetBackgroundTaskRun200Response = zod
     lastHeartbeatAt: zod.iso
       .datetime({ offset: true })
       .nullish()
-      .describe("Latest worker heartbeat\/progress timestamp."),
+      .describe("Latest worker heartbeat/progress timestamp."),
     localRunId: zod
       .string()
       .nullish()
@@ -2121,7 +2121,7 @@ export const GetBackgroundTaskRun200Response = zod
       ),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     startedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -2211,7 +2211,7 @@ export const GetBackgroundTaskRun500Response = zod
  * @summary Patch task run mirror
  */
 export const PatchBackgroundTaskRunParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Background task slug, matching bg-tasks/<slug> locally."),
   runId: zod.string().describe("Cloud-visible run id for a background task run."),
 });
 
@@ -2245,7 +2245,7 @@ export const PatchBackgroundTaskRunBody = zod
       .enum(["queued", "running", "succeeded", "failed", "stopped"])
       .optional()
       .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
       ),
     subUseCase: zod.string().nullish().describe("Task-specific usage label."),
     summary: zod.string().nullish().describe("Latest run summary."),
@@ -2286,7 +2286,7 @@ export const PatchBackgroundTaskRun200Response = zod
     lastHeartbeatAt: zod.iso
       .datetime({ offset: true })
       .nullish()
-      .describe("Latest worker heartbeat\/progress timestamp."),
+      .describe("Latest worker heartbeat/progress timestamp."),
     localRunId: zod
       .string()
       .nullish()
@@ -2324,7 +2324,7 @@ export const PatchBackgroundTaskRun200Response = zod
       ),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     startedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -2467,7 +2467,7 @@ export const CancelBackgroundTaskRun202Response = zod
     lastHeartbeatAt: zod.iso
       .datetime({ offset: true })
       .nullish()
-      .describe("Latest worker heartbeat\/progress timestamp."),
+      .describe("Latest worker heartbeat/progress timestamp."),
     localRunId: zod
       .string()
       .nullish()
@@ -2505,7 +2505,7 @@ export const CancelBackgroundTaskRun202Response = zod
       ),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     startedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -2625,7 +2625,7 @@ export const CancelBackgroundTaskRun503Response = zod
  * @summary Open the transcript
  */
 export const ListBackgroundTaskRunEventsParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Background task slug, matching bg-tasks/<slug> locally."),
   runId: zod.string().describe("Cloud-visible run id for a background task run."),
 });
 
@@ -2665,13 +2665,13 @@ export const ListBackgroundTaskRunEvents200Response = zod
           })
           .describe("Mirrored JSONL event from a background task run log."),
       )
-      .describe("Run log\/progress events ordered by seq."),
+      .describe("Run log/progress events ordered by seq."),
     nextSeq: zod
       .int()
       .nullish()
       .describe("Last sequence on this page. Show the next events sends it as afterSeq."),
   })
-  .describe("Ordered durable task log\/progress event list for a run.");
+  .describe("Ordered durable task log/progress event list for a run.");
 
 export const ListBackgroundTaskRunEvents401Response = zod
   .strictObject({
@@ -2723,7 +2723,7 @@ export const ListBackgroundTaskRunEvents500Response = zod
  * @summary Append task run logs
  */
 export const AppendBackgroundTaskRunEventsParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Background task slug, matching bg-tasks/<slug> locally."),
   runId: zod.string().describe("Cloud-visible run id for a background task run."),
 });
 
@@ -2824,7 +2824,7 @@ export const AppendBackgroundTaskRunEvents500Response = zod
  * @summary Stream task run progress
  */
 export const StreamBackgroundTaskRunEventsParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Background task slug, matching bg-tasks/<slug> locally."),
   runId: zod.string().describe("Cloud-visible run id for a background task run."),
 });
 
@@ -2926,7 +2926,7 @@ export const RetryBackgroundTaskRun202Response = zod
     lastHeartbeatAt: zod.iso
       .datetime({ offset: true })
       .nullish()
-      .describe("Latest worker heartbeat\/progress timestamp."),
+      .describe("Latest worker heartbeat/progress timestamp."),
     localRunId: zod
       .string()
       .nullish()
@@ -2964,7 +2964,7 @@ export const RetryBackgroundTaskRun202Response = zod
       ),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     startedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -3084,7 +3084,7 @@ export const RetryBackgroundTaskRun503Response = zod
  * @summary Signal API-worker run
  */
 export const SignalBackgroundTaskRunParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Background task slug, matching bg-tasks/<slug> locally."),
   runId: zod.string().describe("Cloud-visible run id for a background task run."),
 });
 
@@ -3094,7 +3094,7 @@ export const SignalBackgroundTaskRunBody = zod
       .record(zod.string(), zod.unknown())
       .optional()
       .describe(
-        "Optional signal payload. update_context can carry context\/text\/requestedContext for the next runtime checkpoint.",
+        "Optional signal payload. update_context can carry context/text/requestedContext for the next runtime checkpoint.",
       ),
     signal: zod.enum(["pause", "resume", "update_context"]).describe("Supported control signal."),
   })
@@ -3115,7 +3115,7 @@ export const SignalBackgroundTaskRun202Response = zod
     lastHeartbeatAt: zod.iso
       .datetime({ offset: true })
       .nullish()
-      .describe("Latest worker heartbeat\/progress timestamp."),
+      .describe("Latest worker heartbeat/progress timestamp."),
     localRunId: zod
       .string()
       .nullish()
@@ -3153,7 +3153,7 @@ export const SignalBackgroundTaskRun202Response = zod
       ),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     startedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -3273,7 +3273,7 @@ export const SignalBackgroundTaskRun503Response = zod
  * @summary Poll task run status
  */
 export const GetBackgroundTaskRunStatusParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Background task slug, matching bg-tasks/<slug> locally."),
   runId: zod.string().describe("Cloud-visible run id for a background task run."),
 });
 
@@ -3285,7 +3285,7 @@ export const GetBackgroundTaskRunStatus200Response = zod
     lastHeartbeatAt: zod.iso
       .datetime({ offset: true })
       .nullish()
-      .describe("Latest worker heartbeat\/progress timestamp."),
+      .describe("Latest worker heartbeat/progress timestamp."),
     progressMessage: zod.string().nullish().describe("Progress message."),
     progressPercent: zod.int().nullish().describe("Best-known progress for polling clients."),
     revision: zod.int().describe("Current run revision."),
@@ -3295,7 +3295,7 @@ export const GetBackgroundTaskRunStatus200Response = zod
     status: zod
       .enum(["queued", "running", "succeeded", "failed", "stopped"])
       .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+        "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
       ),
     temporalRunId: zod.string().nullish().describe("Temporal run id for API-worker runs."),
     temporalStatus: zod.string().nullish().describe("Last mirrored Temporal status."),
@@ -3497,7 +3497,7 @@ export const TriggerBackgroundTask202Response = zod
     lastHeartbeatAt: zod.iso
       .datetime({ offset: true })
       .nullish()
-      .describe("Latest worker heartbeat\/progress timestamp."),
+      .describe("Latest worker heartbeat/progress timestamp."),
     localRunId: zod
       .string()
       .nullish()
@@ -3535,7 +3535,7 @@ export const TriggerBackgroundTask202Response = zod
       ),
     slug: zod
       .string()
-      .describe("Stable per-user background task slug matching bg-tasks\/<slug> locally."),
+      .describe("Stable per-user background task slug matching bg-tasks/<slug> locally."),
     startedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
