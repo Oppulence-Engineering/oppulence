@@ -29,7 +29,9 @@ export default createRule({
   name: "no-raw-design-values",
   meta: {
     type: "problem",
-    docs: { description: "WEB030: class strings use design tokens, not raw colors, radii, or fonts" },
+    docs: {
+      description: "WEB030: class strings use design tokens, not raw colors, radii, or fonts",
+    },
     schema: [
       {
         type: "object",

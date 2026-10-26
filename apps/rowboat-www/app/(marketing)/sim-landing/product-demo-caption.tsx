@@ -9,8 +9,7 @@ import { PRODUCT_DEMO_BEATS, type ProductDemoBeatId } from "./product-demo-beats
 import { useProductDemoBeat } from "./product-demo-context";
 
 const EXIT_MS = 320;
-const TITLE =
-  "col-start-1 row-start-1 mx-auto max-w-[26ch] text-balance text-muted-foreground";
+const TITLE = "col-start-1 row-start-1 mx-auto max-w-[26ch] text-balance text-muted-foreground";
 
 interface ProductDemoCaptionProps {
   className?: string;

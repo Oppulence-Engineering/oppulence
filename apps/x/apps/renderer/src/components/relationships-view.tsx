@@ -497,10 +497,7 @@ export function RelationshipsView({
                             <span className="truncate text-sm font-medium text-foreground">
                               {relationship.displayName}
                             </span>
-                            <Badge
-                              variant="outline"
-                              className="rounded-xs font-normal capitalize"
-                            >
+                            <Badge variant="outline" className="rounded-xs font-normal capitalize">
                               {humanize(relationship.lifecycle)}
                             </Badge>
                             <span
