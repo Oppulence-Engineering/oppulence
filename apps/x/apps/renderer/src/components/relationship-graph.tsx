@@ -789,7 +789,7 @@ export function RelationshipGraphWorkspace({
 
   return (
     <section
-      className="overflow-hidden rounded-[2px] border border-border bg-background"
+      className="overflow-hidden rounded-xs border border-border bg-background"
       data-capability="relationship-graph graph-query graph-saved-views graph-governed-actions"
     >
       <div className="border-b border-border p-3">
@@ -835,7 +835,7 @@ export function RelationshipGraphWorkspace({
               <SelectTrigger size="sm" className="w-48">
                 <SelectValue placeholder="Choose an account" />
               </SelectTrigger>
-              <SelectContent className="app-shell rounded-[2px]">
+              <SelectContent className="app-shell rounded-xs">
                 {relationships.map((relationship) => (
                   <SelectItem key={relationship.id} value={relationship.id}>
                     {relationship.displayName}
@@ -924,7 +924,7 @@ export function RelationshipGraphWorkspace({
           <SelectTrigger size="sm" className="w-32">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
+          <SelectContent className="app-shell rounded-xs">
             <SelectItem value="force">Cluster layout</SelectItem>
             <SelectItem value="radial">Radial layout</SelectItem>
             <SelectItem value="timeline">Timeline layout</SelectItem>
@@ -985,7 +985,7 @@ export function RelationshipGraphWorkspace({
               <SelectTrigger size="sm" className="w-36">
                 <SelectValue placeholder="Saved views" />
               </SelectTrigger>
-              <SelectContent className="app-shell rounded-[2px]">
+              <SelectContent className="app-shell rounded-xs">
                 {savedViews.map((view) => (
                   <SelectItem key={view.id} value={view.id}>
                     {view.label}

@@ -8,7 +8,7 @@ import { ProductDemoCaption } from "./product-demo-caption";
 import { ProductDemoBeatProvider } from "./product-demo-context";
 import { ProductDemoScene } from "./product-demo-visual";
 
-const PAPER = "bg-[#F8F8F8] dark:bg-[var(--surface-2)]";
+const PAPER = "bg-background";
 const FRAME_PLAYER = "lg:aspect-[2/1] lg:max-w-[calc((100svh-168px)*2)]";
 const TITLE_INSET = "lg:top-[13%]";
 const LINK_INSET = "lg:bottom-[13%]";

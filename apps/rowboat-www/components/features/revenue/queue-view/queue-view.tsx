@@ -441,7 +441,7 @@ export function QueueView({
             >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="app-shell rounded-[2px]">
+            <SelectContent className="app-shell rounded-xs">
               {QUEUE_FILTERS.map((f) => (
                 <SelectItem key={f.value} value={f.value}>
                   {f.label}
@@ -888,7 +888,7 @@ function CreateActionDialog({
               >
                 <SelectValue placeholder="Company" />
               </SelectTrigger>
-              <SelectContent className="app-shell rounded-[2px]">
+              <SelectContent className="app-shell rounded-xs">
                 {relationships.map((r) => (
                   <SelectItem key={r.id} value={r.id}>
                     {companyName(r)}
@@ -924,7 +924,7 @@ function CreateActionDialog({
               <SelectTrigger aria-label={recoveryFollowUpName(actionType)} size="sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="app-shell rounded-[2px]">
+              <SelectContent className="app-shell rounded-xs">
                 {createActionTypes.map((t) => (
                   <SelectItem key={t} value={t}>
                     {ACTION_TYPE_LABELS[t] ?? t.replaceAll("_", " ")}

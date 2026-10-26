@@ -218,7 +218,7 @@ function ConnectorScopeList({
 }) {
   if (scopes.length === 0) return null;
   return (
-    <details className="rounded-[3px] border border-foreground/10 bg-primary/[0.02] px-3 py-2">
+    <details className="rounded-xs border border-foreground/10 bg-primary/[0.02] px-3 py-2">
       <summary
         aria-label={`Permissions for ${productName}`}
         className="cursor-pointer text-xs font-medium text-foreground/70"
@@ -322,7 +322,7 @@ function GoogleConnectionSettings() {
           Gmail &amp; Google Calendar
           <Badge
             className={cn(
-              "rounded-[2px]",
+              "rounded-xs",
               health.tone === "ok" && "border-oppulence-green/40 text-oppulence-green",
               health.tone === "bad" && "border-destructive/40 text-destructive",
             )}
@@ -510,16 +510,16 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
               {connector.displayName}
             </Label>
             {connector.connected ? (
-              <Badge className="shrink-0 rounded-[2px] border-oppulence-green/40 text-oppulence-green">
+              <Badge className="shrink-0 rounded-xs border-oppulence-green/40 text-oppulence-green">
                 Active
               </Badge>
             ) : (
-              <Badge className="shrink-0 rounded-[2px] text-foreground/50" variant="outline">
+              <Badge className="shrink-0 rounded-xs text-foreground/50" variant="outline">
                 Not connected
               </Badge>
             )}
             {health ? (
-              <Badge className="shrink-0 rounded-[2px]" variant="outline">
+              <Badge className="shrink-0 rounded-xs" variant="outline">
                 {health}
               </Badge>
             ) : null}

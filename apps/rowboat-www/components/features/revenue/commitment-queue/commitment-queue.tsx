@@ -1867,7 +1867,7 @@ export function CommitmentQueue({
       ) : null}
 
       <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent className="app-shell rounded-[2px] sm:max-w-lg">
+        <DialogContent className="app-shell rounded-xs sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Correct this promise</DialogTitle>
             <DialogDescription>
@@ -1952,7 +1952,7 @@ function StatusBadge({ state, acceptance }: { state: string; acceptance: string 
     <Badge
       variant="outline"
       className={cn(
-        "rounded-[2px]",
+        "rounded-xs",
         !review &&
           state === "met" &&
           "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",

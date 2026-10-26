@@ -134,7 +134,7 @@ export function DictationMicrophoneSettings({ value, onChange }: Props) {
                   {index + 1}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-xs text-foreground">{label}</span>
-                <Badge variant="outline" className="shrink-0 rounded-[2px] text-[9px] font-normal">
+                <Badge variant="outline" className="shrink-0 rounded-xs text-[9px] font-normal">
                   {connected ? "Available" : "Disconnected"}
                 </Badge>
                 <Button

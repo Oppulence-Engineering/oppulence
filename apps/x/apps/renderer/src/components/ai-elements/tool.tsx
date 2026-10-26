@@ -65,8 +65,8 @@ export const Tool = ({ className, children, autoPermissionDetail, ...props }: To
     <Collapsible
       className={cn(
         autoPermissionDetail
-          ? "w-full rounded-[28px] border bg-[var(--card-surface)] transition-colors duration-150 ease-out hover:border-foreground/30"
-          : "not-prose mb-4 w-full rounded-[28px] border bg-[var(--card-surface)] transition-colors duration-150 ease-out hover:border-foreground/30",
+          ? "w-full rounded-xl border bg-[var(--card-surface)] transition-colors duration-150 ease-out hover:border-foreground/30"
+          : "not-prose mb-4 w-full rounded-xl border bg-[var(--card-surface)] transition-colors duration-150 ease-out hover:border-foreground/30",
         className
       )}
       {...props}
@@ -283,7 +283,7 @@ export const ToolGroupComponent = ({ group, isToolOpen, onToolOpenChange }: Tool
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="not-prose mb-4 w-full rounded-[28px] border bg-[var(--card-surface)] transition-colors duration-150 ease-out hover:border-foreground/30"
+      className="not-prose mb-4 w-full rounded-xl border bg-[var(--card-surface)] transition-colors duration-150 ease-out hover:border-foreground/30"
     >
       <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-2.5">
         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -316,7 +316,7 @@ export const ToolGroupComponent = ({ group, isToolOpen, onToolOpenChange }: Tool
                 key={tool.id}
                 open={isOpen}
                 onOpenChange={(o) => onToolOpenChange(tool.id, o)}
-                className="mb-0 rounded-[20px] border-border/60 bg-transparent hover:border-border/60"
+                className="mb-0 rounded-xl border-border/60 bg-transparent hover:border-border/60"
               >
                 <ToolHeader
                   title={getToolDisplayName(tool)}

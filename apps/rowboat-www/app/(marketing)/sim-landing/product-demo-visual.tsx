@@ -6,7 +6,7 @@ import { EdgeFade } from "./edge-fade";
 import { ProductDemoVisualMount } from "./product-demo-visual-mount";
 
 const EDGE_STRIP =
-  "pointer-events-none absolute z-[5] [--paper:#F8F8F8] dark:[--paper:var(--surface-2)]";
+  "pointer-events-none absolute z-[5] [--paper:var(--background)]";
 const COPY_BAND =
   "inset-x-0 h-[96px] lg:h-[calc(13%+80px)] [mask-image:linear-gradient(to_right,transparent_15%,black_34%,black_66%,transparent_85%)]";
 const COPY_BLUR = "absolute inset-0 backdrop-blur-[8px]";

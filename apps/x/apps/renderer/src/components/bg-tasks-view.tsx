@@ -3572,12 +3572,12 @@ function GlobalCloudRunsView({
           <Select value={slugFilter} onValueChange={setSlugFilter}>
             <SelectTrigger
               size="sm"
-              className="h-6 max-w-[180px] rounded-[2px] text-[11px]"
+              className="h-6 max-w-[180px] rounded-xs text-[11px]"
               aria-label="Filter by task"
             >
               <SelectValue placeholder="All tasks" />
             </SelectTrigger>
-            <SelectContent className="app-shell rounded-[2px]">
+            <SelectContent className="app-shell rounded-xs">
               <SelectItem value="all">All tasks</SelectItem>
               {[...taskNameBySlug.entries()].map(([slug, name]) => (
                 <SelectItem key={slug} value={slug}>
@@ -3592,7 +3592,7 @@ function GlobalCloudRunsView({
             size="sm"
             variant="outline"
             onClick={() => void load(undefined, "replace")}
-            className="h-6 gap-1 rounded-[2px] px-2 text-[11px] text-muted-foreground"
+            className="h-6 gap-1 rounded-xs px-2 text-[11px] text-muted-foreground"
             title="Refresh"
           >
             {loading ? (

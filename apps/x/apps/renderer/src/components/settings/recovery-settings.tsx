@@ -99,7 +99,7 @@ export function RecoverySettings({ dialogOpen }: { dialogOpen: boolean }) {
         title="Local diagnostics"
         description="Check the local systems that power knowledge recall and meeting capture."
       >
-        <div className="divide-y divide-border rounded-[2px] border border-border">
+        <div className="divide-y divide-border rounded-xs border border-border">
           {diagnostics.length === 0 && checking ? (
             <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" /> Checking local systems…
@@ -136,7 +136,7 @@ export function RecoverySettings({ dialogOpen }: { dialogOpen: boolean }) {
         title="Rebuild semantic memory"
         description="Delete only the derived search index and recreate it from your notes. Notes and settings are never removed."
       >
-        <div className="rounded-[2px] border border-border p-4">
+        <div className="rounded-xs border border-border p-4">
           <p className="text-sm font-medium text-foreground">Use this when recall seems stale</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
             Rebuilding may use your configured embedding provider and can take several minutes for

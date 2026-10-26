@@ -972,10 +972,10 @@ function ChatInputInner({
                   </TooltipContent>
                 </Tooltip>
                 <DropdownMenuContent align="start" className="w-72 max-w-[calc(100vw-2rem)] p-2">
-                  <div className="rounded-[14px] border border-border/80 bg-background p-1">
+                  <div className="rounded-xl border border-border/80 bg-background p-1">
                     <DropdownMenuItem
                       onSelect={() => fileInputRef.current?.click()}
-                      className="h-9 rounded-[9px] px-2.5"
+                      className="h-9 rounded-lg px-2.5"
                     >
                       <ImagePlus className="size-4" />
                       <span>Add files or photos</span>
@@ -984,7 +984,7 @@ function ChatInputInner({
                     {/* Working directory lives behind a submenu so the main menu stays to two
                   items. One hover/click away for power users; out of the way otherwise. */}
                     <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="h-9 rounded-[9px] px-2.5">
+                      <DropdownMenuSubTrigger className="h-9 rounded-lg px-2.5">
                         <FolderCog className="size-4" />
                         <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
                           <span>Set working directory</span>
@@ -998,7 +998,7 @@ function ChatInputInner({
                         {workDir && (
                           <div
                             title={workDir}
-                            className="mb-1 flex items-center gap-2 rounded-[9px] bg-blue-50/80 px-2.5 py-2 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300"
+                            className="mb-1 flex items-center gap-2 rounded-lg bg-blue-50/80 px-2.5 py-2 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300"
                           >
                             <FolderCheck className="size-4 shrink-0 text-blue-600 dark:text-blue-300" />
                             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -1017,7 +1017,7 @@ function ChatInputInner({
                           onSelect={() => {
                             void handleSetWorkDir();
                           }}
-                          className="h-9 rounded-[9px] px-2.5"
+                          className="h-9 rounded-lg px-2.5"
                         >
                           <FolderOpen className="size-4" />
                           <span>{workDir ? "Change folder…" : "Choose a folder…"}</span>
@@ -1037,7 +1037,7 @@ function ChatInputInner({
                                   onSelect={() => {
                                     void handleSelectRecentWorkDir(entry.path);
                                   }}
-                                  className="h-8 rounded-[9px] px-2.5"
+                                  className="h-8 rounded-lg px-2.5"
                                 >
                                   <FolderClock className="size-4" />
                                   <span className="min-w-0 flex-1 truncate">{name}</span>
@@ -1058,7 +1058,7 @@ function ChatInputInner({
                             <div className="my-1 h-px bg-border/60" />
                             <DropdownMenuItem
                               onSelect={handleClearWorkDir}
-                              className="h-8 rounded-[9px] px-2.5 text-red-600 focus:bg-red-50 focus:text-red-600 dark:text-red-400 dark:focus:bg-red-950/30"
+                              className="h-8 rounded-lg px-2.5 text-red-600 focus:bg-red-50 focus:text-red-600 dark:text-red-400 dark:focus:bg-red-950/30"
                             >
                               <X className="size-4" />
                               <span>Clear folder</span>

@@ -36,7 +36,7 @@ export function MinimalOnboardingLayout({
     <div
       data-presentation={presentation}
       className={cn(
-        "onboarding-welcome-screen flex flex-1 flex-col overflow-hidden bg-[#09090b] text-white lg:flex-row",
+        "onboarding-welcome-screen flex flex-1 flex-col overflow-hidden bg-[var(--color-polar-950)] text-white lg:flex-row",
         presentation === "dialog" ? "h-full min-h-0" : "min-h-full",
       )}
     >
@@ -84,7 +84,7 @@ export function MinimalOnboardingLayout({
 
       <aside
         className={cn(
-          "onboarding-welcome-panel flex shrink-0 flex-col border-t border-white/8 bg-[#0d0d11] px-6 lg:border-l lg:border-t-0",
+          "onboarding-welcome-panel flex shrink-0 flex-col border-t border-white/8 bg-[var(--color-polar-900)] px-6 lg:border-l lg:border-t-0",
           panelAlign === "start" ? "justify-start py-7 lg:overflow-y-auto" : "justify-center py-10",
           panelSize === "wide" ? "lg:w-[460px] lg:px-8" : "lg:w-[390px] lg:px-10",
           presentation === "dialog" && "min-h-0 overflow-y-auto",

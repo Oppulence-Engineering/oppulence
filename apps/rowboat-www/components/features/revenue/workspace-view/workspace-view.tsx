@@ -144,7 +144,7 @@ export function WorkspaceView({
     return (
       <div className="flex flex-col gap-2 p-3">
         <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-24 w-full rounded-[2px]" />
+        <Skeleton className="h-24 w-full rounded-xs" />
       </div>
     );
   }
@@ -205,7 +205,7 @@ export function WorkspaceView({
         ) : null}
         {sourcesQuery.isLoading && sourceCount === 0 ? (
           <div className="p-4">
-            <Skeleton className="h-16 w-full rounded-[2px]" />
+            <Skeleton className="h-16 w-full rounded-xs" />
           </div>
         ) : sourcesNeverLoaded ? (
           <div className="flex flex-col gap-3 px-4 py-6 text-sm text-[var(--text-secondary)]">

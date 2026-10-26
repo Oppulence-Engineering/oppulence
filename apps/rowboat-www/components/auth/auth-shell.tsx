@@ -81,7 +81,7 @@ export function AuthShell({
 
           {errorMessage ? (
             <p
-              className="mt-6 rounded-[8px] border border-[var(--border)] bg-[var(--surface-3)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--text-primary)]"
+              className="mt-6 rounded-md border border-[var(--border)] bg-[var(--surface-3)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--text-primary)]"
               role="alert"
             >
               {errorMessage}

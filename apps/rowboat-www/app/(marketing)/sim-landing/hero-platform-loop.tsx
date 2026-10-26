@@ -255,7 +255,7 @@ export function HeroPlatformLoop() {
       >
         <div
           ref={previewContainerRef}
-          className="sim-product-preview relative flex h-full w-full overflow-hidden rounded-[6px] border border-[var(--border)] bg-[var(--bg)] [--preview-resource-width:50%]"
+          className="sim-product-preview relative flex h-full w-full overflow-hidden rounded-sm border border-[var(--border)] bg-[var(--bg)] [--preview-resource-width:50%]"
           data-product-preview=""
         >
           <div className={cn("relative h-full min-w-0 flex-1", stageOpen && "max-lg:hidden")}>
@@ -283,7 +283,7 @@ export function HeroPlatformLoop() {
                       variant="ghost"
                       size={null}
                       onClick={() => openResource(activeResourceId ?? "workflow")}
-                      className="size-[30px] rounded-[8px] p-0 hover-hover:bg-[var(--surface-active)]"
+                      className="size-[30px] rounded-md p-0 hover-hover:bg-[var(--surface-active)]"
                       aria-label="Expand resource view"
                     >
                       <PanelLeft className="-scale-x-100 size-[16px] text-[var(--text-icon)]" />

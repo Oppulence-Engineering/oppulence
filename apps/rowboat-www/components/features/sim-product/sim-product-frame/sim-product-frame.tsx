@@ -13,7 +13,7 @@ export function SimProductPanel({ className, ...props }: SimProductPanelProps) {
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-sm shadow-xs",
+        "overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-sm shadow-xs",
         className,
       )}
       data-slot="sim-product-panel"

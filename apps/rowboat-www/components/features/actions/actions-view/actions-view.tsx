@@ -86,7 +86,7 @@ function Ref({ children }: { children: React.ReactNode }) {
   return (
     <Badge
       variant="outline"
-      className="rounded-[2px] bg-background-200 px-1.5 py-0.5 font-mono text-xs font-normal text-foreground/70 dark:bg-background-100"
+      className="rounded-xs bg-background-200 px-1.5 py-0.5 font-mono text-xs font-normal text-foreground/70 dark:bg-background-100"
     >
       {children}
     </Badge>
@@ -296,7 +296,7 @@ export function ActionsView() {
             const heldToken = tokens.current[p.id];
             return (
               <li key={p.id}>
-                <Card className="gap-3 rounded-[2px] border-border bg-background py-4 shadow-none dark:bg-background-50">
+                <Card className="gap-3 rounded-xs border-border bg-background py-4 shadow-none dark:bg-background-50">
                   <CardContent className="flex flex-col gap-3 px-4 pt-0 pb-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <Ref>{actionKindLabel(p.kind)}</Ref>
@@ -328,7 +328,7 @@ export function ActionsView() {
                         <summary className="cursor-pointer select-none text-foreground/50 hover:text-foreground/70">
                           Parameters
                         </summary>
-                        <ul className="mt-1 flex flex-col gap-1 rounded-[2px] bg-background-200 p-2 text-[11px] text-foreground/70 dark:bg-background-100">
+                        <ul className="mt-1 flex flex-col gap-1 rounded-xs bg-background-200 p-2 text-[11px] text-foreground/70 dark:bg-background-100">
                           {actionParamsLines(p.paramsJson).map((line) => (
                             <li key={line}>{line}</li>
                           ))}
