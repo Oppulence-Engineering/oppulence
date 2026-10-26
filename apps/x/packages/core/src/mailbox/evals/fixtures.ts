@@ -8,11 +8,7 @@
  */
 
 export type MailEvalTarget =
-  | "category"
-  | "needs_reply"
-  | "cold_email"
-  | "rule_match"
-  | "draft_reply";
+  "category" | "needs_reply" | "cold_email" | "rule_match" | "draft_reply";
 
 export type MailEvalCase = {
   id: string;
