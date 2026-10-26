@@ -74,10 +74,10 @@ describe("CSS design values (WEB031)", () => {
     const baseline = JSON.parse(readFileSync(BASELINE_FILE, "utf8")) as Record<string, number>;
     const grew = Object.entries(counts)
       .filter(([file, count]) => count > (baseline[file] ?? 0))
-      .map(([file, count]) => `${file}: ${baseline[file] ?? 0} -> ${count}`);
+      .map(([file, count]) => `${file}: ${String(baseline[file] ?? 0)} -> ${String(count)}`);
     const shrank = Object.entries(baseline)
       .filter(([file, count]) => (counts[file] ?? 0) < count)
-      .map(([file, count]) => `${file}: ${count} -> ${counts[file] ?? 0}`);
+      .map(([file, count]) => `${file}: ${String(count)} -> ${String(counts[file] ?? 0)}`);
     expect(grew, "Use tokens from @oppulence/ui instead of raw values").toEqual([]);
     expect(shrank, "Raw values went down. Refresh the baseline (see file header)").toEqual([]);
   });
