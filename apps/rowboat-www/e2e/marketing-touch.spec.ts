@@ -9,6 +9,12 @@ test.use({
 
 test("mobile menu and product controls respond to taps", async ({ page }) => {
   await page.goto("/");
+  // Linux WebKit in CI has no GPU. It paints the stacked EdgeFade backdrop
+  // blurs in software, frames stop after a scroll, and taps never settle.
+  // This test checks taps, not blur, so it turns the blur off.
+  await page.addStyleTag({
+    content: "*{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}",
+  });
   await page.getByLabel("Toggle navigation", { exact: true }).tap();
   await page
     .getByRole("navigation", { name: "Mobile navigation" })

@@ -48,7 +48,13 @@ test("session survives navigation and authenticated auth routes return to the ap
 test("client navigation preserves the document, product shell, and session bootstrap", async ({
   page,
 }) => {
+  // AuthGate checks the session once after hydration. Let that bootstrap
+  // request finish so the count below only sees navigation requests.
+  const bootstrap = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === "/api/auth/session",
+  );
   await authenticate(page, "/app");
+  await bootstrap;
   await page.evaluate(() => {
     document.documentElement.dataset.navigationDocument = crypto.randomUUID();
     const shell = document.querySelector<HTMLElement>("[data-product-shell]");

@@ -1,9 +1,15 @@
 "use client";
 
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 
-import { DevToolkit } from "@/components/dev/dev-toolkit";
-import { RouteDevBadge } from "@/components/dev/route-dev-badge";
+// React.lazy keeps the toolkit (MSW, axe, web-vitals) out of the production
+// bundle: the chunk loads only when dev tools are enabled and render.
+const DevToolkit = lazy(() =>
+  import("@/components/dev/dev-toolkit").then((module) => ({ default: module.DevToolkit })),
+);
+const RouteDevBadge = lazy(() =>
+  import("@/components/dev/route-dev-badge").then((module) => ({ default: module.RouteDevBadge })),
+);
 
 /**
  * Global dev-only overlays.
