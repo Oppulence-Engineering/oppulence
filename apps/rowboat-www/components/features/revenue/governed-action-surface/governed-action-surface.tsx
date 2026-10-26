@@ -3,7 +3,7 @@
 import "client-only";
 
 import { Button, Chip } from "@sim/emcn";
-import { Mail } from "@sim/emcn/icons";
+import { EnvelopeSimple as Mail } from "@/lib/icons";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";

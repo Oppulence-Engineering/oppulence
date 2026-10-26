@@ -14,7 +14,7 @@ import {
   ChipTextarea,
   Switch,
 } from "@sim/emcn";
-import { Link, ListChecks, Loader, User } from "@sim/emcn/icons";
+import { CircleNotch as Loader, Link, ListChecks, User } from "@/lib/icons";
 
 import { errMessage } from "@/components/features/revenue/shared/shared";
 import { companyName } from "@/lib/revenue/revenue-records";

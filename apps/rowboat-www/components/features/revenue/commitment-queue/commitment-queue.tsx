@@ -8,9 +8,14 @@ import {
   ArrowClockwise,
   Check,
   Export,
+  Hash as TypeNumber,
   MagnifyingGlass,
   PencilSimple,
   Plugs,
+  Plus,
+  Table as TableIcon,
+  Tag as TagIcon,
+  TextT as TypeText,
   Warning,
   X,
 } from "@/lib/icons";
@@ -55,7 +60,6 @@ import {
 } from "@oppulence/ui/components/select";
 import { cn } from "@oppulence/ui/lib/utils";
 import { Badge as SimBadge, Chip } from "@sim/emcn";
-import { Plus, Table as TableIcon, TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
 import { WorkspaceEmptyIllustration } from "@/components/features/revenue/shared/shared";
 import {
   SimProductHeader,
