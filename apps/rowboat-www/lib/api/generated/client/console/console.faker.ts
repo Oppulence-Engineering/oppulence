@@ -72,10 +72,7 @@ export const getListConsoleResourcesResponseConsoleGraphSavedViewPayloadMock = (
 ): ConsoleGraphSavedViewPayload => ({
   ...{
     state: {
-      asOf: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
-      ]),
+      asOf: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       changedSinceReview: faker.datatype.boolean(),
       density: faker.number.float({ min: 0.25, max: 1, fractionDigits: 2 }),
       focusDepth: faker.number.int({ min: 0, max: 2 }),
@@ -83,13 +80,13 @@ export const getListConsoleResourcesResponseConsoleGraphSavedViewPayloadMock = (
       layout: faker.helpers.arrayElement(["force", "radial", "timeline"] as const),
       query: faker.string.alpha({ length: { min: 10, max: 2000 } }),
       relationshipId: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 512 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 512 } }),
+        null,
       ]),
       scope: faker.helpers.arrayElement(["portfolio", "relationship"] as const),
       selectedNodeId: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 512 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 512 } }),
+        null,
       ]),
     },
   },
@@ -154,10 +151,7 @@ export const getCreateConsoleResourceResponseConsoleGraphSavedViewPayloadMock = 
 ): ConsoleGraphSavedViewPayload => ({
   ...{
     state: {
-      asOf: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
-      ]),
+      asOf: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       changedSinceReview: faker.datatype.boolean(),
       density: faker.number.float({ min: 0.25, max: 1, fractionDigits: 2 }),
       focusDepth: faker.number.int({ min: 0, max: 2 }),
@@ -165,13 +159,13 @@ export const getCreateConsoleResourceResponseConsoleGraphSavedViewPayloadMock = 
       layout: faker.helpers.arrayElement(["force", "radial", "timeline"] as const),
       query: faker.string.alpha({ length: { min: 10, max: 2000 } }),
       relationshipId: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 512 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 512 } }),
+        null,
       ]),
       scope: faker.helpers.arrayElement(["portfolio", "relationship"] as const),
       selectedNodeId: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 512 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 512 } }),
+        null,
       ]),
     },
   },
@@ -249,10 +243,7 @@ export const getGetConsoleResourceResponseConsoleGraphSavedViewPayloadMock = (
 ): ConsoleGraphSavedViewPayload => ({
   ...{
     state: {
-      asOf: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
-      ]),
+      asOf: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       changedSinceReview: faker.datatype.boolean(),
       density: faker.number.float({ min: 0.25, max: 1, fractionDigits: 2 }),
       focusDepth: faker.number.int({ min: 0, max: 2 }),
@@ -260,13 +251,13 @@ export const getGetConsoleResourceResponseConsoleGraphSavedViewPayloadMock = (
       layout: faker.helpers.arrayElement(["force", "radial", "timeline"] as const),
       query: faker.string.alpha({ length: { min: 10, max: 2000 } }),
       relationshipId: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 512 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 512 } }),
+        null,
       ]),
       scope: faker.helpers.arrayElement(["portfolio", "relationship"] as const),
       selectedNodeId: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 512 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 512 } }),
+        null,
       ]),
     },
   },
@@ -324,10 +315,7 @@ export const getPatchConsoleResourceResponseConsoleGraphSavedViewPayloadMock = (
 ): ConsoleGraphSavedViewPayload => ({
   ...{
     state: {
-      asOf: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
-      ]),
+      asOf: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       changedSinceReview: faker.datatype.boolean(),
       density: faker.number.float({ min: 0.25, max: 1, fractionDigits: 2 }),
       focusDepth: faker.number.int({ min: 0, max: 2 }),
@@ -335,13 +323,13 @@ export const getPatchConsoleResourceResponseConsoleGraphSavedViewPayloadMock = (
       layout: faker.helpers.arrayElement(["force", "radial", "timeline"] as const),
       query: faker.string.alpha({ length: { min: 10, max: 2000 } }),
       relationshipId: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 512 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 512 } }),
+        null,
       ]),
       scope: faker.helpers.arrayElement(["portfolio", "relationship"] as const),
       selectedNodeId: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 512 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 512 } }),
+        null,
       ]),
     },
   },

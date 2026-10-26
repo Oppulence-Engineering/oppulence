@@ -85,7 +85,7 @@ export interface BackgroundTask {
   /** Installed version of the owning first-party template. Zero for user-authored tasks. */
   templateVersion?: number;
   /** Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH. */
-  triggers?: unknown | null;
+  triggers?: unknown;
   /** Server timestamp for the last mirrored task update. */
   updatedAt: string;
 }

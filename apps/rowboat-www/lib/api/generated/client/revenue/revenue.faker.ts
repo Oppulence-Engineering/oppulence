@@ -131,8 +131,8 @@ export const getListRevenueActionsResponseMock = (
       ] as const),
       approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
       approvedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
       channel: faker.helpers.arrayElement([
@@ -163,10 +163,7 @@ export const getListRevenueActionsResponseMock = (
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
-      dueAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
-      ]),
+      dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
         () => ({
           excerpt: faker.helpers.arrayElement([
@@ -184,8 +181,8 @@ export const getListRevenueActionsResponseMock = (
         }),
       ),
       executedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       executionError: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -235,16 +232,16 @@ export const getListRevenueActionsResponseMock = (
       ]),
       reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
       reconciliationCheckedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       reconciliationError: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
       reconciliationNextAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       reconciliationStatus: faker.helpers.arrayElement([
         faker.helpers.arrayElement([
@@ -268,8 +265,8 @@ export const getListRevenueActionsResponseMock = (
         undefined,
       ]),
       snoozedUntil: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       updatedAt: faker.helpers.arrayElement([
         faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -298,8 +295,8 @@ export const getCreateRevenueActionResponseMock = (
   ] as const),
   approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
   approvedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
   channel: faker.helpers.arrayElement([
@@ -330,10 +327,7 @@ export const getCreateRevenueActionResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
-  dueAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       excerpt: faker.helpers.arrayElement([
@@ -351,8 +345,8 @@ export const getCreateRevenueActionResponseMock = (
     }),
   ),
   executedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   executionError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -402,16 +396,16 @@ export const getCreateRevenueActionResponseMock = (
   ]),
   reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
   reconciliationCheckedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
   reconciliationNextAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationStatus: faker.helpers.arrayElement([
     faker.helpers.arrayElement([
@@ -435,8 +429,8 @@ export const getCreateRevenueActionResponseMock = (
     undefined,
   ]),
   snoozedUntil: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   updatedAt: faker.helpers.arrayElement([
     faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -462,8 +456,8 @@ export const getGetRevenueActionResponseMock = (
   ] as const),
   approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
   approvedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
   channel: faker.helpers.arrayElement([
@@ -494,10 +488,7 @@ export const getGetRevenueActionResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
-  dueAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       excerpt: faker.helpers.arrayElement([
@@ -515,8 +506,8 @@ export const getGetRevenueActionResponseMock = (
     }),
   ),
   executedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   executionError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -566,16 +557,16 @@ export const getGetRevenueActionResponseMock = (
   ]),
   reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
   reconciliationCheckedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
   reconciliationNextAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationStatus: faker.helpers.arrayElement([
     faker.helpers.arrayElement([
@@ -599,8 +590,8 @@ export const getGetRevenueActionResponseMock = (
     undefined,
   ]),
   snoozedUntil: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   updatedAt: faker.helpers.arrayElement([
     faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -626,8 +617,8 @@ export const getApproveRevenueActionResponseMock = (
   ] as const),
   approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
   approvedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
   channel: faker.helpers.arrayElement([
@@ -658,10 +649,7 @@ export const getApproveRevenueActionResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
-  dueAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       excerpt: faker.helpers.arrayElement([
@@ -679,8 +667,8 @@ export const getApproveRevenueActionResponseMock = (
     }),
   ),
   executedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   executionError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -730,16 +718,16 @@ export const getApproveRevenueActionResponseMock = (
   ]),
   reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
   reconciliationCheckedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
   reconciliationNextAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationStatus: faker.helpers.arrayElement([
     faker.helpers.arrayElement([
@@ -763,8 +751,8 @@ export const getApproveRevenueActionResponseMock = (
     undefined,
   ]),
   snoozedUntil: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   updatedAt: faker.helpers.arrayElement([
     faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -792,8 +780,8 @@ export const getGetRevenueActionAuditResponseMock = (
       ] as const),
       approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
       approvedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
       channel: faker.helpers.arrayElement([
@@ -824,10 +812,7 @@ export const getGetRevenueActionAuditResponseMock = (
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
-      dueAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
-      ]),
+      dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
         () => ({
           excerpt: faker.helpers.arrayElement([
@@ -845,8 +830,8 @@ export const getGetRevenueActionAuditResponseMock = (
         }),
       ),
       executedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       executionError: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -896,16 +881,16 @@ export const getGetRevenueActionAuditResponseMock = (
       ]),
       reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
       reconciliationCheckedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       reconciliationError: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
       reconciliationNextAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       reconciliationStatus: faker.helpers.arrayElement([
         faker.helpers.arrayElement([
@@ -929,8 +914,8 @@ export const getGetRevenueActionAuditResponseMock = (
         undefined,
       ]),
       snoozedUntil: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       updatedAt: faker.helpers.arrayElement([
         faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -1019,8 +1004,8 @@ export const getDismissRevenueActionResponseMock = (
   ] as const),
   approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
   approvedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
   channel: faker.helpers.arrayElement([
@@ -1051,10 +1036,7 @@ export const getDismissRevenueActionResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
-  dueAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       excerpt: faker.helpers.arrayElement([
@@ -1072,8 +1054,8 @@ export const getDismissRevenueActionResponseMock = (
     }),
   ),
   executedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   executionError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -1123,16 +1105,16 @@ export const getDismissRevenueActionResponseMock = (
   ]),
   reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
   reconciliationCheckedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
   reconciliationNextAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationStatus: faker.helpers.arrayElement([
     faker.helpers.arrayElement([
@@ -1156,8 +1138,8 @@ export const getDismissRevenueActionResponseMock = (
     undefined,
   ]),
   snoozedUntil: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   updatedAt: faker.helpers.arrayElement([
     faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -1183,8 +1165,8 @@ export const getEditRevenueActionResponseMock = (
   ] as const),
   approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
   approvedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
   channel: faker.helpers.arrayElement([
@@ -1215,10 +1197,7 @@ export const getEditRevenueActionResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
-  dueAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       excerpt: faker.helpers.arrayElement([
@@ -1236,8 +1215,8 @@ export const getEditRevenueActionResponseMock = (
     }),
   ),
   executedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   executionError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -1287,16 +1266,16 @@ export const getEditRevenueActionResponseMock = (
   ]),
   reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
   reconciliationCheckedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
   reconciliationNextAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationStatus: faker.helpers.arrayElement([
     faker.helpers.arrayElement([
@@ -1320,8 +1299,8 @@ export const getEditRevenueActionResponseMock = (
     undefined,
   ]),
   snoozedUntil: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   updatedAt: faker.helpers.arrayElement([
     faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -1369,8 +1348,8 @@ export const getExecuteRevenueActionResponseMock = (
   ] as const),
   approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
   approvedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
   channel: faker.helpers.arrayElement([
@@ -1401,10 +1380,7 @@ export const getExecuteRevenueActionResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
-  dueAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       excerpt: faker.helpers.arrayElement([
@@ -1422,8 +1398,8 @@ export const getExecuteRevenueActionResponseMock = (
     }),
   ),
   executedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   executionError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -1473,16 +1449,16 @@ export const getExecuteRevenueActionResponseMock = (
   ]),
   reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
   reconciliationCheckedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
   reconciliationNextAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationStatus: faker.helpers.arrayElement([
     faker.helpers.arrayElement([
@@ -1506,8 +1482,8 @@ export const getExecuteRevenueActionResponseMock = (
     undefined,
   ]),
   snoozedUntil: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   updatedAt: faker.helpers.arrayElement([
     faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -1569,8 +1545,8 @@ export const getRejectRevenueActionResponseMock = (
   ] as const),
   approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
   approvedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
   channel: faker.helpers.arrayElement([
@@ -1601,10 +1577,7 @@ export const getRejectRevenueActionResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
-  dueAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       excerpt: faker.helpers.arrayElement([
@@ -1622,8 +1595,8 @@ export const getRejectRevenueActionResponseMock = (
     }),
   ),
   executedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   executionError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -1673,16 +1646,16 @@ export const getRejectRevenueActionResponseMock = (
   ]),
   reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
   reconciliationCheckedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
   reconciliationNextAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationStatus: faker.helpers.arrayElement([
     faker.helpers.arrayElement([
@@ -1706,8 +1679,8 @@ export const getRejectRevenueActionResponseMock = (
     undefined,
   ]),
   snoozedUntil: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   updatedAt: faker.helpers.arrayElement([
     faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -1733,8 +1706,8 @@ export const getSnoozeRevenueActionResponseMock = (
   ] as const),
   approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
   approvedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
   channel: faker.helpers.arrayElement([
@@ -1765,10 +1738,7 @@ export const getSnoozeRevenueActionResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
-  dueAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       excerpt: faker.helpers.arrayElement([
@@ -1786,8 +1756,8 @@ export const getSnoozeRevenueActionResponseMock = (
     }),
   ),
   executedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   executionError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -1837,16 +1807,16 @@ export const getSnoozeRevenueActionResponseMock = (
   ]),
   reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
   reconciliationCheckedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
   reconciliationNextAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationStatus: faker.helpers.arrayElement([
     faker.helpers.arrayElement([
@@ -1870,8 +1840,8 @@ export const getSnoozeRevenueActionResponseMock = (
     undefined,
   ]),
   snoozedUntil: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   updatedAt: faker.helpers.arrayElement([
     faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -1941,10 +1911,7 @@ export const getGetRevenueImpactResponseMock = (
   handled: faker.number.int(),
   longestOverdueDays: faker.number.int(),
   lost: faker.helpers.arrayElement([faker.number.int(), undefined]),
-  meetingRate: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.number.float({ fractionDigits: 2 }), null]),
-    undefined,
-  ]),
+  meetingRate: faker.helpers.arrayElement([faker.number.float({ fractionDigits: 2 }), null]),
   meetingsBooked: faker.helpers.arrayElement([faker.number.int(), undefined]),
   open: faker.number.int(),
   openTasks: faker.number.int(),
@@ -1955,10 +1922,7 @@ export const getGetRevenueImpactResponseMock = (
   portfolioRiskScore: faker.number.int(),
   relationships: faker.number.int(),
   replied: faker.helpers.arrayElement([faker.number.int(), undefined]),
-  replyRate: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.number.float({ fractionDigits: 2 }), null]),
-    undefined,
-  ]),
+  replyRate: faker.helpers.arrayElement([faker.number.float({ fractionDigits: 2 }), null]),
   riskReasons: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -1980,8 +1944,8 @@ export const getListRevenueLeakScansResponseMock = (
     candidatesSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
     commitmentsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
     completedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     error: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -1993,12 +1957,12 @@ export const getListRevenueLeakScansResponseMock = (
     mode: faker.helpers.arrayElement(["local", "linked"] as const),
     relationshipsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
     sourceFreshnessAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     startedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     status: faker.helpers.arrayElement(["pending", "running", "completed", "failed"] as const),
     threadsDeepRead: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -2016,8 +1980,8 @@ export const getStartRevenueLeakScanResponseMock = (
   candidatesSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
   commitmentsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   error: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -2029,13 +1993,10 @@ export const getStartRevenueLeakScanResponseMock = (
   mode: faker.helpers.arrayElement(["local", "linked"] as const),
   relationshipsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
   sourceFreshnessAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
-  startedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  startedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   status: faker.helpers.arrayElement(["pending", "running", "completed", "failed"] as const),
   threadsDeepRead: faker.helpers.arrayElement([faker.number.int(), undefined]),
   threadsSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -2051,8 +2012,8 @@ export const getGetRevenueLeakScanResponseMock = (
   candidatesSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
   commitmentsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   error: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -2064,13 +2025,10 @@ export const getGetRevenueLeakScanResponseMock = (
   mode: faker.helpers.arrayElement(["local", "linked"] as const),
   relationshipsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
   sourceFreshnessAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
-  startedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  startedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   status: faker.helpers.arrayElement(["pending", "running", "completed", "failed"] as const),
   threadsDeepRead: faker.helpers.arrayElement([faker.number.int(), undefined]),
   threadsSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -2095,8 +2053,8 @@ export const getGetOpenPromisesReportResponseMock = (
           commitmentId: faker.string.alpha({ length: { min: 10, max: 20 } }),
           direction: faker.string.alpha({ length: { min: 10, max: 20 } }),
           dueAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           duePhrase: faker.helpers.arrayElement([
             faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -2170,8 +2128,8 @@ export const getGetRevenueWorkspaceResponseMock = (
 ): RevenueWorkspace => ({
   id: faker.string.uuid(),
   lastVerifiedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   mode: faker.helpers.arrayElement(["local", "linked"] as const),
   outboundOrganizationId: faker.helpers.arrayElement([
@@ -2208,8 +2166,8 @@ export const getLinkRevenueWorkspaceResponseMock = (
 ): RevenueWorkspace => ({
   id: faker.string.uuid(),
   lastVerifiedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   mode: faker.helpers.arrayElement(["local", "linked"] as const),
   outboundOrganizationId: faker.helpers.arrayElement([

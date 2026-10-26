@@ -13,20 +13,14 @@ export const getExchangeWorkOSTokenResponseMock = (
   overrideResponse: Partial<Extract<WorkOSTokenBundle, object>> = {},
 ): WorkOSTokenBundle => ({
   access_token: faker.string.alpha({ length: { min: 10, max: 20 } }),
-  email: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
-  ]),
+  email: faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
   expires_at: faker.number.int(),
   refresh_token: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
   ]),
   token_type: faker.helpers.arrayElement(["Bearer"] as const),
-  user_id: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
-  ]),
+  user_id: faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
   ...overrideResponse,
 });
 
@@ -41,19 +35,13 @@ export const getRefreshWorkOSTokenResponseMock = (
   overrideResponse: Partial<Extract<WorkOSTokenBundle, object>> = {},
 ): WorkOSTokenBundle => ({
   access_token: faker.string.alpha({ length: { min: 10, max: 20 } }),
-  email: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
-  ]),
+  email: faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
   expires_at: faker.number.int(),
   refresh_token: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
   ]),
   token_type: faker.helpers.arrayElement(["Bearer"] as const),
-  user_id: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-    undefined,
-  ]),
+  user_id: faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
   ...overrideResponse,
 });
