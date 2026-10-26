@@ -26,6 +26,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googlechannel"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -303,9 +304,8 @@ func (m *Manager) registerCalendar(ctx context.Context, token string, conn *ent.
 		}
 	}
 
-	// The channel id carries the watched account — /v1/webhooks/google parses
-	// this exact "gcal:{email}:{uuid}" format for user resolution.
-	channelID := "gcal:" + conn.ExternalAccountID + ":" + uuid.NewString()
+	// The channel ID carries the watched account for webhook user resolution.
+	channelID := googlechannel.New("gcal", conn.ExternalAccountID)
 	body := map[string]any{
 		"id":      channelID,
 		"type":    "web_hook",
@@ -351,7 +351,7 @@ func (m *Manager) registerDrive(ctx context.Context, token string, conn *ent.OAu
 		return errors.New("drive changes.startPageToken returned empty page token")
 	}
 
-	channelID := "gdrive:" + conn.ExternalAccountID + ":" + uuid.NewString()
+	channelID := googlechannel.New("gdrive", conn.ExternalAccountID)
 	body := map[string]any{
 		"id":      channelID,
 		"type":    "web_hook",

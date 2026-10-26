@@ -1,14 +1,7 @@
 export type ProductTourVariant = "main" | "relationships" | "meetings" | "actions";
 
 export type ProductTourNavigation =
-  | "home"
-  | "relationships"
-  | "meetings"
-  | "actions"
-  | "chat"
-  | "email"
-  | "knowledge"
-  | "none";
+  "home" | "relationships" | "meetings" | "actions" | "chat" | "email" | "knowledge" | "none";
 
 export function productTourNavigationForTarget(
   target: string,

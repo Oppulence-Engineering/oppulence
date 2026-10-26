@@ -61,10 +61,10 @@ describe("OpenPromisesReportClient", () => {
   });
 
   it("waits for a settled source list before painting the connect step", () => {
-    expect(source).toMatch(/sourcesQuery\.isPending\s*\|\|\s*\(!scanId && scansQuery\.isPending\)/);
-    expect(source).not.toMatch(
-      /sourcesQuery\.isLoading\s*\|\|\s*\(!scanId && scansQuery\.isLoading\)/,
+    expect(source).toMatch(
+      /sourcesQuery\.isPending\s*\|\|\s*\(!scanId\s*&&\s*scansQuery\.isPending\)/,
     );
+    expect(source).not.toContain("sourcesQuery.isLoading || (!scanId && scansQuery.isLoading)");
     expect(source).toContain(
       'title={reconnect ? "Reconnect Google" : "Connect Gmail and Calendar"}',
     );

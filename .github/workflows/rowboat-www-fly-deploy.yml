@@ -1,16 +1,6 @@
-name: Deploy rowboat-www to Fly.io
+name: Legacy rowboat-www Fly rollback
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/rowboat-www/**"
-      - "packages/ui/**"
-      - "packages/relationship-contract/**"
-      - "packages/eslint-plugin-oppulence-web/**"
-      - "charts/rowboat-www/**"
-      - "scripts/rowboat-www-smoke.sh"
-      - ".github/workflows/rowboat-www-fly-deploy.yml"
   workflow_dispatch:
 
 permissions:
@@ -33,9 +23,9 @@ jobs:
       ROWBOAT_WWW_PLAIN_CHAT_APP_ID: ${{ vars.ROWBOAT_WWW_PLAIN_CHAT_APP_ID }}
       ROWBOAT_WWW_PLAIN_CHAT_SECRET: ${{ secrets.ROWBOAT_WWW_PLAIN_CHAT_SECRET }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # master
 
       - name: Validate deployment inputs
         run: |

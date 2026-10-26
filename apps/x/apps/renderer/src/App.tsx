@@ -2717,8 +2717,7 @@ function App() {
           // Handle app-navigation tool results — trigger UI side effects
           if (event.toolName === "app-navigation") {
             const result = event.result as
-              | { success?: boolean; action?: string; [key: string]: unknown }
-              | undefined;
+              { success?: boolean; action?: string; [key: string]: unknown } | undefined;
             if (result?.success) {
               pendingAppNavRef.current = result;
             }

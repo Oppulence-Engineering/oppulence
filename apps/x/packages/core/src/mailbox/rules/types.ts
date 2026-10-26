@@ -146,13 +146,7 @@ export type MailboxRuleRun = {
 };
 
 export type MailboxActionRunStatus =
-  | "pending"
-  | "succeeded"
-  | "failed"
-  | "cancelled"
-  | "needs_approval"
-  | "denied"
-  | "scheduled";
+  "pending" | "succeeded" | "failed" | "cancelled" | "needs_approval" | "denied" | "scheduled";
 
 export type MailboxActionRun = {
   id: string;

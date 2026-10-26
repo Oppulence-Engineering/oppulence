@@ -17,6 +17,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googlechannel"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"go.uber.org/zap"
 )
@@ -175,12 +176,12 @@ func TestBootstrapCreatesWatches(t *testing.T) {
 		t.Fatalf("gmail watch must cover sent, archived, and deleted mail: %+v", g.gmailBodies[0])
 	}
 	cal := byKind[KindCalendar]
-	if cal == nil || !strings.HasPrefix(cal.ChannelID, "gcal:me@gmail.com:") || cal.ResourceID != "res-1" {
-		t.Fatalf("calendar row = %+v (channel id must be gcal:{email}:{uuid})", cal)
+	if cal == nil || googlechannel.Account(cal.ChannelID, "gcal") != "me@gmail.com" || cal.ResourceID != "res-1" {
+		t.Fatalf("calendar row has an invalid channel ID: %+v", cal)
 	}
 	drive := byKind[KindDrive]
-	if drive == nil || !strings.HasPrefix(drive.ChannelID, "gdrive:me@gmail.com:") || drive.ResourceID != "drive-res-1" || drive.HistoryID != "drive-page-1" {
-		t.Fatalf("drive row = %+v (channel id must be gdrive:{email}:{uuid})", drive)
+	if drive == nil || googlechannel.Account(drive.ChannelID, "gdrive") != "me@gmail.com" || drive.ResourceID != "drive-res-1" || drive.HistoryID != "drive-page-1" {
+		t.Fatalf("drive row has an invalid channel ID: %+v", drive)
 	}
 	if gm.RenewClaimedAt != nil || cal.RenewClaimedAt != nil || drive.RenewClaimedAt != nil {
 		t.Fatal("claims must be released after successful registration")
@@ -190,14 +191,14 @@ func TestBootstrapCreatesWatches(t *testing.T) {
 		t.Fatalf("calendar watch calls = %d, want 1", len(g.calendarCalls))
 	}
 	call := g.calendarCalls[0]
-	if call["address"] != "https://api.example/v1/webhooks/google" || call["token"] != "tok-1" {
+	if call["address"] != "https://api.example/v1/webhooks/google" || call["token"] != "tok-1" || call["id"] != cal.ChannelID {
 		t.Fatalf("calendar watch body = %+v", call)
 	}
 	if len(g.driveCalls) != 1 {
 		t.Fatalf("drive watch calls = %d, want 1", len(g.driveCalls))
 	}
 	call = g.driveCalls[0]
-	if call["address"] != "https://api.example/v1/webhooks/google" || call["token"] != "tok-1" {
+	if call["address"] != "https://api.example/v1/webhooks/google" || call["token"] != "tok-1" || call["id"] != drive.ChannelID {
 		t.Fatalf("drive watch body = %+v", call)
 	}
 }

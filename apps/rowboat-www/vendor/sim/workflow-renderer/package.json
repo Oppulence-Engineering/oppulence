@@ -75,12 +75,12 @@
     "@types/react-dom": "^19",
     "@xyflow/react": "12.11.3",
     "jsdom": "^26.0.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "streamdown": "2.7.1",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.10"
   }
 }
