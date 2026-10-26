@@ -37,12 +37,7 @@ export type MailboxCapability =
  * availability state, never a silent sign-out.
  */
 export type MailboxAccountStatus =
-  | "connected"
-  | "missing_scope"
-  | "needs_reconnect"
-  | "paused"
-  | "rate_limited"
-  | "sync_error";
+  "connected" | "missing_scope" | "needs_reconnect" | "paused" | "rate_limited" | "sync_error";
 
 export type MailboxErrorCode =
   | "auth_reconnect_required"
@@ -300,10 +295,7 @@ export type MailboxSentMessage = {
 // --- History / watches -----------------------------------------------------
 
 export type MailboxHistoryChangeType =
-  | "message_added"
-  | "message_removed"
-  | "labels_changed"
-  | "thread_changed";
+  "message_added" | "message_removed" | "labels_changed" | "thread_changed";
 
 export type MailboxHistoryChange = {
   type: MailboxHistoryChangeType;

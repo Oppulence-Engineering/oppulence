@@ -1,0 +1,52 @@
+---
+alerts:
+- rule: DEPLOYMENT_FAILED
+- rule: DOMAIN_FAILED
+domains:
+- domain: oppulence.io
+  type: PRIMARY
+- domain: www.oppulence.io
+  type: ALIAS
+features:
+- buildpack-stack=ubuntu-22
+ingress:
+  rules:
+  - component:
+      name: rowboat-www
+    match:
+      path:
+        prefix: "/"
+name: rowboat-www-production
+region: nyc
+services:
+- envs:
+  - key: ROWBOAT_WWW_SESSION_SECRET
+    scope: RUN_TIME
+    type: SECRET
+    value: EV[1:TzfwKPeHWIfx706mXgi9tQ390HGhwEjo:fxd1q/9RdN+iZLaF8CbgTTmFARYXxAvnBolhBi61jqPrIRp7jNbJfOIqrITUGu6bnq2o5wOOq6DZHxD1WL4jtFDFl+Q+JoXoGAgH7G8QB2E=]
+  - key: ROWBOAT_WWW_API_PROXY_URL
+    scope: RUN_TIME
+    value: https://api.oppulence.io
+  - key: ROWBOAT_WWW_PUBLIC_API_BASE_URL
+    scope: RUN_TIME
+    value: https://api.oppulence.io
+  - key: ROWBOAT_WWW_AUTH_API_BASE_URL
+    scope: RUN_TIME
+    value: https://api.oppulence.io
+  - key: ROWBOAT_WWW_PUBLIC_APP_URL
+    scope: RUN_TIME
+    value: https://oppulence.io
+  - key: ROWBOAT_WWW_WORKOS_PROVIDER
+    scope: RUN_TIME
+    value: GoogleOAuth
+  health_check:
+    http_path: "/readyz"
+  http_port: 8080
+  instance_count: 2
+  instance_size_slug: apps-s-1vcpu-1gb
+  name: rowboat-www
+  image:
+    registry_type: GHCR
+    registry: oppulence-engineering
+    repository: rowboat-www
+    tag: ci-placeholder

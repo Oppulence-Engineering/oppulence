@@ -7,6 +7,10 @@ const flyWorkflow = readFileSync(
   new URL("../../../.github/workflows/rowboat-www-fly-deploy.yml", import.meta.url),
   "utf8",
 );
+const appPlatformWorkflow = readFileSync(
+  new URL("../../../.github/workflows/rowboat-www-app-platform.yml", import.meta.url),
+  "utf8",
+);
 
 describe("Fly.io deployment contract", () => {
   it("builds from the monorepo root and keeps authenticated traffic warm", () => {
@@ -27,9 +31,11 @@ describe("Fly.io deployment contract", () => {
     expect(flyWorkflow).toContain('flyctl scale count 2 --app "${FLY_APP_NAME}" --yes');
   });
 
-  it("deploys relevant main branch changes automatically", () => {
-    expect(flyWorkflow).toContain("push:");
-    expect(flyWorkflow).toContain("branches: [main]");
-    expect(flyWorkflow).toContain('      - "apps/rowboat-www/**"');
+  it("deploys relevant main branch changes to App Platform and keeps Fly manual", () => {
+    expect(flyWorkflow).not.toContain("push:");
+    expect(flyWorkflow).toContain("workflow_dispatch:");
+    expect(appPlatformWorkflow).toContain("push:");
+    expect(appPlatformWorkflow).toContain("branches: [main]");
+    expect(appPlatformWorkflow).toContain('      - "apps/rowboat-www/**"');
   });
 });

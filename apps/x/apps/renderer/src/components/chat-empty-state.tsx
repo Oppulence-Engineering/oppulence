@@ -22,14 +22,7 @@ interface ChatEmptyStateProps {
 
 export interface ChatWorkContext {
   type:
-    | "relationship"
-    | "email"
-    | "meeting"
-    | "knowledge"
-    | "workspace"
-    | "task"
-    | "home"
-    | "browser";
+    "relationship" | "email" | "meeting" | "knowledge" | "workspace" | "task" | "home" | "browser";
   label: string;
   detail?: string;
   hasSelection?: boolean;

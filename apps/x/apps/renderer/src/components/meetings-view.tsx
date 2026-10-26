@@ -89,8 +89,7 @@ type CalendarAttendee = CalendarPerson & {
 };
 
 type DescriptionPart =
-  | { type: "text"; text: string }
-  | { type: "link"; text: string; href: string };
+  { type: "text"; text: string } | { type: "link"; text: string; href: string };
 
 type UpcomingEvent = {
   id: string;
