@@ -243,7 +243,7 @@ export function AuditSheet({
           data-capability="action-audit outcome-observation"
         >
           {loading && !audit ? (
-            <p className="text-sm text-primary/50">Loading history…</p>
+            <p className="text-sm text-foreground/50">Loading history…</p>
           ) : audit ? (
             <>
               <Section title="Lifecycle">
@@ -255,12 +255,12 @@ export function AuditSheet({
                   {audit.revisions.map((r) => (
                     <Card className="gap-0 py-2" key={r.revision}>
                       <CardContent className="flex items-center justify-between px-3 text-xs">
-                        <Label className="font-normal text-primary/70">
+                        <Label className="font-normal text-foreground/70">
                           Rev {r.revision} · {revisionActionLabel(r.actionType)} ·{" "}
                           {revisionChannelLabel(r.channel)}
                         </Label>
                         <Badge
-                          className="font-mono font-normal text-primary/40"
+                          className="font-mono font-normal text-foreground/40"
                           variant="secondary"
                         >
                           {r.revisionHash.slice(0, 14)}…
@@ -273,7 +273,7 @@ export function AuditSheet({
 
               <Section title={`Policy decisions (${audit.decisions.length})`}>
                 {audit.decisions.length === 0 ? (
-                  <p className="text-xs text-primary/45">
+                  <p className="text-xs text-foreground/45">
                     No preflight has run for this action yet.
                   </p>
                 ) : (
@@ -284,7 +284,7 @@ export function AuditSheet({
                           <div className="flex items-center justify-between">
                             <PolicyBadge status={d.status} />
                             <Badge
-                              className="text-xs font-normal text-primary/45"
+                              className="text-xs font-normal text-foreground/45"
                               variant="secondary"
                             >
                               rev {d.revision} · {relativeTime(d.evaluatedAt)}
@@ -317,10 +317,10 @@ export function AuditSheet({
                     {audit.outcomes.map((o) => (
                       <Card className="gap-0 py-2" key={o.id}>
                         <CardContent className="flex items-center justify-between px-3 text-xs">
-                          <Badge className="font-medium text-primary/80" variant="outline">
+                          <Badge className="font-medium text-foreground/80" variant="outline">
                             {outcomeKindLabel(o.kind)}
                           </Badge>
-                          <Label className="font-normal text-primary/45">
+                          <Label className="font-normal text-foreground/45">
                             {outcomeSourceLabel(o.source)} · {relativeTime(o.occurredAt)}
                           </Label>
                         </CardContent>
@@ -328,7 +328,7 @@ export function AuditSheet({
                     ))}
                   </div>
                 ) : (
-                  <p className="mb-3 text-xs text-primary/45">No outcomes recorded yet.</p>
+                  <p className="mb-3 text-xs text-foreground/45">No outcomes recorded yet.</p>
                 )}
                 <div className="flex items-center gap-2">
                   <Select
@@ -365,7 +365,7 @@ export function AuditSheet({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <Label className="mb-2 block text-xs font-medium uppercase tracking-wide text-primary/45">
+      <Label className="mb-2 block text-xs font-medium uppercase tracking-wide text-foreground/45">
         {title}
       </Label>
       {children}
@@ -397,7 +397,7 @@ function Timeline({ audit }: { audit: ActionAudit }) {
             <Badge
               className={
                 "mt-0.5 size-2.5 rounded-full p-0 " +
-                (s.done ? "border-0 bg-emerald-500" : "border border-primary/30 bg-background")
+                (s.done ? "border-0 bg-emerald-500" : "border border-foreground/30 bg-background")
               }
               variant="outline"
             />
@@ -409,10 +409,12 @@ function Timeline({ audit }: { audit: ActionAudit }) {
             ) : null}
           </div>
           <div className="pb-4">
-            <div className={"text-sm " + (s.done ? "text-primary" : "text-primary/40")}>
+            <div className={"text-sm " + (s.done ? "text-foreground" : "text-foreground/40")}>
               {s.label}
             </div>
-            {s.when ? <div className="text-xs text-primary/45">{relativeTime(s.when)}</div> : null}
+            {s.when ? (
+              <div className="text-xs text-foreground/45">{relativeTime(s.when)}</div>
+            ) : null}
           </div>
         </li>
       ))}
@@ -436,8 +438,8 @@ function SubObjects({ decision }: { decision: ActionAudit["decisions"][number] }
     <div className="mt-2 flex flex-col gap-1">
       {present.map(([label, lines]) => (
         <details key={label} className="text-xs">
-          <summary className="cursor-pointer text-primary/55">{label}</summary>
-          <ul className="mt-1 flex flex-col gap-1 rounded-[2px] bg-background-100/60 p-2 text-[11px] text-primary/70 dark:bg-background-100/40">
+          <summary className="cursor-pointer text-foreground/55">{label}</summary>
+          <ul className="mt-1 flex flex-col gap-1 rounded-[2px] bg-background-100/60 p-2 text-[11px] text-foreground/70 dark:bg-background-100/40">
             {lines.map((line) => (
               <li key={line}>{line}</li>
             ))}

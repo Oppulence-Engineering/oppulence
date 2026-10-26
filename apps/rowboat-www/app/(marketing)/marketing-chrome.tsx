@@ -74,7 +74,7 @@ export function InlineLogo({
           className={cn(
             header
               ? "oppulence-compact-lockup__wordmark"
-              : "font-display text-[24px] leading-6 font-medium text-primary",
+              : "font-display text-[24px] leading-6 font-medium text-foreground",
           )}
         >
           {header ? "Oppulence" : "oppulence"}

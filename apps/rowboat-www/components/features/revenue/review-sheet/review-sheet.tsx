@@ -406,7 +406,7 @@ export function ReviewSheet({
               variant="ghost"
               size="sm"
               onClick={() => onOpenAudit(action)}
-              className="ml-auto text-primary/55 hover:text-primary"
+              className="ml-auto text-foreground/55 hover:text-foreground"
             >
               <ClockCounterClockwise /> History
             </Button>
@@ -426,10 +426,10 @@ export function ReviewSheet({
         <div className="flex flex-1 flex-col gap-5 px-4 py-5">
           {upsell ? (
             <div className="flex flex-col gap-2 rounded-[2px] border border-oppulence-orange/40 bg-oppulence-orange/5 p-4">
-              <div className="text-sm font-medium text-primary">
+              <div className="text-sm font-medium text-foreground">
                 Acting on actions is a paid step
               </div>
-              <p className="text-sm text-primary/65">
+              <p className="text-sm text-foreground/65">
                 Scanning, the queue, drafts, and your impact stay free. Approving and sending need a
                 subscription — upgrade to act on this one.
               </p>
@@ -568,7 +568,7 @@ export function ReviewSheet({
                 className="resize-y font-normal"
                 placeholder="What this should say"
               />
-              <p className="mt-1 text-xs text-primary/45">
+              <p className="mt-1 text-xs text-foreground/45">
                 Editing this draft starts a new version and clears the earlier approval. You will
                 approve it again below.
               </p>
@@ -586,17 +586,17 @@ export function ReviewSheet({
                   View original email
                 </Button>
               ) : (
-                <pre className="max-h-56 overflow-auto whitespace-pre-wrap font-normal text-xs text-primary/70">
+                <pre className="max-h-56 overflow-auto whitespace-pre-wrap font-normal text-xs text-foreground/70">
                   {original}
                 </pre>
               )}
             </div>
           ) : supportingQuotes.length > 0 ? (
             <div className="rounded-[2px] border border-border p-3">
-              <p className="text-xs font-medium text-primary">Supporting words</p>
+              <p className="text-xs font-medium text-foreground">Supporting words</p>
               <ul className="mt-2 space-y-1">
                 {supportingQuotes.map((quote) => (
-                  <li className="text-xs text-primary/70" key={quote}>
+                  <li className="text-xs text-foreground/70" key={quote}>
                     “{quote}”
                   </li>
                 ))}
@@ -607,11 +607,11 @@ export function ReviewSheet({
           {isSend ? (
             <div className="flex flex-col gap-2 rounded-[2px] border border-border p-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm text-primary">Sending check</CardTitle>
+                <CardTitle className="text-sm text-foreground">Sending check</CardTitle>
                 <PolicyBadge status={action.policyStatus} />
               </div>
               {!linked ? (
-                <p className="text-xs text-primary/55">
+                <p className="text-xs text-foreground/55">
                   This workspace is in local mode. Sending stays off until it is linked. You can
                   still create a Gmail draft.
                 </p>
@@ -626,7 +626,7 @@ export function ReviewSheet({
                     Re-check policy
                   </Button>
                   {needsRisk ? (
-                    <label className="flex items-center gap-1.5 text-xs text-primary/70">
+                    <label className="flex items-center gap-1.5 text-xs text-foreground/70">
                       <Checkbox
                         checked={acceptRisk}
                         onCheckedChange={(checked) => setAcceptRisk(checked === true)}

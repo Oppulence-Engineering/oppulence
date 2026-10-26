@@ -179,19 +179,19 @@ function ValueRow({
 
   return (
     <div className="group/row flex min-h-[34px] items-center justify-between gap-4 rounded-none px-4 py-1 transition-colors hover:bg-background-100 dark:hover:bg-background-200">
-      <Label className="text-xs font-normal text-primary/60">{label}</Label>
+      <Label className="text-xs font-normal text-foreground/60">{label}</Label>
       <div className="flex min-w-0 items-center gap-1.5">
         {shown ? (
-          <Badge className="truncate font-mono font-normal text-primary" variant="secondary">
+          <Badge className="truncate font-mono font-normal text-foreground" variant="secondary">
             {shown}
           </Badge>
         ) : (
-          <span className="text-right text-xs font-normal text-primary/55">{empty}</span>
+          <span className="text-right text-xs font-normal text-foreground/55">{empty}</span>
         )}
         {copy && shown ? (
           <Button
             aria-label={`Copy ${label}`}
-            className="size-7 text-primary/50 opacity-0 transition-opacity hover:text-primary group-hover/row:opacity-100"
+            className="size-7 text-foreground/50 opacity-0 transition-opacity hover:text-foreground group-hover/row:opacity-100"
             onClick={handleCopy}
             size="icon"
             type="button"
@@ -548,7 +548,7 @@ function FieldLabel({
 }) {
   return (
     <div className="mb-1.5">
-      <Label className="block text-sm text-primary" htmlFor={htmlFor}>
+      <Label className="block text-sm text-foreground" htmlFor={htmlFor}>
         {children}
       </Label>
       {hint ? (
@@ -965,7 +965,9 @@ export function PlanSection({ session }: { session: SessionShape }) {
       <SettingsRow description="The plan this workspace is currently on." title="Current plan">
         <div className="flex items-center justify-between gap-6 p-4">
           <div>
-            <p className="text-lg font-medium text-primary">{planLabel(billing?.plan) || "Free"}</p>
+            <p className="text-lg font-medium text-foreground">
+              {planLabel(billing?.plan) || "Free"}
+            </p>
             {localDayLabel(billing?.trialExpiresAt) ? (
               <p className="text-xs font-medium text-oppulence-orange">
                 Trial ends {localDayLabel(billing?.trialExpiresAt)}
@@ -1111,7 +1113,7 @@ function OverviewSection({ onNavigate }: { onNavigate: (section: SettingsSection
                   {section.description}
                 </CardDescription>
               </div>
-              <ArrowRight className="ml-2 size-3.5 shrink-0 text-primary/25" />
+              <ArrowRight className="ml-2 size-3.5 shrink-0 text-foreground/25" />
             </Button>
           );
         })}
@@ -1277,7 +1279,7 @@ function HelpSection() {
                 {item.description}
               </CardDescription>
             </div>
-            <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
+            <ArrowRight className="ml-auto size-3.5 shrink-0 text-foreground/30" />
           </Button>
         ))}
       </div>

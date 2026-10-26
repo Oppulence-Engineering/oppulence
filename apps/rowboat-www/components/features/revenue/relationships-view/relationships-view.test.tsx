@@ -200,7 +200,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain("personParticipantLabel(participant)");
     expect(source).not.toContain("{participant.displayName}");
     expect(source).not.toContain(
-      'className="bg-background-100 text-[11px] capitalize text-primary/60"',
+      'className="bg-background-100 text-[11px] capitalize text-foreground/60"',
     );
   });
 
@@ -450,10 +450,10 @@ describe("RelationshipsView", () => {
     expect(source).toContain('aria-label="Show company list"');
     expect(source).toContain("clearCompanyGraphURL()");
     expect(source).toContain(
-      '<dd className="text-primary/75">{companyName(data.relationship)}</dd>',
+      '<dd className="text-foreground/75">{companyName(data.relationship)}</dd>',
     );
     expect(source).not.toContain(
-      '<dd className="capitalize text-primary/75">{companyName(data.relationship)}</dd>',
+      '<dd className="capitalize text-foreground/75">{companyName(data.relationship)}</dd>',
     );
     expect(source).toContain("promiseFollowUpTitle(");
     expect(source).toContain("promiseFollowUpEmptyCopy(");
@@ -555,7 +555,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain('aria-current={activeSection === section ? "page" : undefined}');
     expect(source).not.toContain('onClick={() => openSection("activity")}');
     expect(source).not.toContain(
-      'className="h-auto rounded-none bg-background-200 px-3 py-1.5 text-primary"',
+      'className="h-auto rounded-none bg-background-200 px-3 py-1.5 text-foreground"',
     );
     expect(source).toContain("<Plus /> New company");
     expect(source).not.toContain("<Plus /> Add company");
@@ -936,7 +936,7 @@ describe("RelationshipsView", () => {
     );
     expect(source).not.toContain('String(model.evidence.lifecycle?.value ?? "unknown")');
     expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Not known");
-    expect(source).toContain('<dt className="text-primary/40">Sentiment</dt>');
+    expect(source).toContain('<dt className="text-foreground/40">Sentiment</dt>');
     expect(source).toContain(
       "supportedRecordValue(\n                      data.relationship.sentiment,\n                      data.missionControl.evidence.sentiment,",
     );

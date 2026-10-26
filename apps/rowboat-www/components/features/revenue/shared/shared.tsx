@@ -34,7 +34,7 @@ import type { RevenueAction } from "@/lib/revenue/types";
 export function priorityTone(score: number): { label: string; className: string } {
   if (score >= 70) return { label: "High", className: "text-red-600 dark:text-red-400" };
   if (score >= 40) return { label: "Medium", className: "text-amber-600 dark:text-amber-400" };
-  return { label: "Low", className: "text-primary/50" };
+  return { label: "Low", className: "text-foreground/50" };
 }
 
 export function PolicyBadge({ status }: { status: string }) {
@@ -87,7 +87,7 @@ export function ExecutionBadge({ action }: { action: RevenueAction }) {
 
 export function ModeChip({ mode }: { mode: string }) {
   return (
-    <Badge className="gap-1 text-primary/60" variant="outline">
+    <Badge className="gap-1 text-foreground/60" variant="outline">
       {mode === "send" ? <PaperPlaneTilt weight="fill" /> : <EnvelopeSimple weight="fill" />}
       {mode === "send" ? "Send" : "Draft"}
     </Badge>
@@ -97,7 +97,9 @@ export function ModeChip({ mode }: { mode: string }) {
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-xs font-medium uppercase tracking-wide text-primary/45">{label}</Label>
+      <Label className="text-xs font-medium uppercase tracking-wide text-foreground/45">
+        {label}
+      </Label>
       {children}
     </div>
   );
@@ -112,7 +114,7 @@ export function PriorityBreakdown({ action }: { action: RevenueAction }) {
   return (
     <Card className="gap-3 py-3">
       <CardHeader className="px-3 pb-0">
-        <CardTitle className="text-sm font-medium text-primary">
+        <CardTitle className="text-sm font-medium text-foreground">
           Why this ranks {priorityTone(action.priorityScore).label.toLowerCase()}
         </CardTitle>
       </CardHeader>
@@ -120,11 +122,13 @@ export function PriorityBreakdown({ action }: { action: RevenueAction }) {
         <ul className="flex flex-col gap-1">
           {entries.map(([key, value]) => (
             <li key={key} className="flex items-center justify-between text-xs">
-              <Label className="font-normal text-primary/60">{priorityComponentLabel(key)}</Label>
+              <Label className="font-normal text-foreground/60">
+                {priorityComponentLabel(key)}
+              </Label>
               <Badge
                 className={cn(
                   "tabular-nums font-normal",
-                  value < 0 ? "text-red-500" : "text-primary/70",
+                  value < 0 ? "text-red-500" : "text-foreground/70",
                 )}
                 variant="secondary"
               >
@@ -266,7 +270,7 @@ export function WorkspaceEmptyState({
         ) : null}
         <h2
           className={cn(
-            "font-semibold text-primary",
+            "font-semibold text-foreground",
             illustrated ? "text-[20px] leading-6" : "mt-4 text-[22px]",
           )}
         >
@@ -276,8 +280,8 @@ export function WorkspaceEmptyState({
           className={cn(
             "max-w-md",
             illustrated
-              ? "mt-2 text-sm leading-6 text-primary/55"
-              : "mt-1 max-w-sm text-[14px] leading-5 text-primary/50",
+              ? "mt-2 text-sm leading-6 text-foreground/55"
+              : "mt-1 max-w-sm text-[14px] leading-5 text-foreground/50",
           )}
         >
           {description}
@@ -288,22 +292,22 @@ export function WorkspaceEmptyState({
       </div>
       {learnMore.length > 0 ? (
         <div className={cn("w-full", illustrated ? "mb-4 mt-auto max-w-[640px] text-left" : "")}>
-          <p className={cn("text-[12px] text-primary/45", illustrated ? "mb-2" : "mb-3")}>
+          <p className={cn("text-[12px] text-foreground/45", illustrated ? "mb-2" : "mb-3")}>
             What to expect
           </p>
           <div className={cn("grid gap-2 sm:grid-cols-2", !illustrated && "grid-cols-2 gap-3")}>
             {learnMore.map((item) => (
               <div
                 className={cn(
-                  "flex items-center gap-4 text-[13px] text-primary",
+                  "flex items-center gap-4 text-[13px] text-foreground",
                   illustrated
-                    ? "h-[72px] justify-start border border-border bg-background-50 px-3 text-primary/80"
+                    ? "h-[72px] justify-start border border-border bg-background-50 px-3 text-foreground/80"
                     : "h-20 border border-border px-4",
                 )}
                 key={item.label}
               >
                 <Avatar className={cn("rounded-none", illustrated ? "size-10" : "size-12")}>
-                  <AvatarFallback className="rounded-none border border-border bg-background text-primary/45">
+                  <AvatarFallback className="rounded-none border border-border bg-background text-foreground/45">
                     <SquaresFour className={illustrated ? "size-4" : "size-6"} />
                   </AvatarFallback>
                 </Avatar>
@@ -373,7 +377,7 @@ export function listRefreshFailureCopy(noun: string): string {
 export function ListRefreshFailure({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
-      <p className="text-[13px] text-primary/70">{message}</p>
+      <p className="text-[13px] text-foreground/70">{message}</p>
       <Button onClick={onRetry} size="sm" type="button" variant="outline">
         Try again
       </Button>

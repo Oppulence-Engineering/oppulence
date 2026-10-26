@@ -86,7 +86,7 @@ function Ref({ children }: { children: React.ReactNode }) {
   return (
     <Badge
       variant="outline"
-      className="rounded-[2px] bg-background-200 px-1.5 py-0.5 font-mono text-xs font-normal text-primary/70 dark:bg-background-100"
+      className="rounded-[2px] bg-background-200 px-1.5 py-0.5 font-mono text-xs font-normal text-foreground/70 dark:bg-background-100"
     >
       {children}
     </Badge>
@@ -222,7 +222,7 @@ export function ActionsView() {
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col" data-slot="actions-view">
       <header className="flex min-h-12 items-center justify-between gap-4 border-b border-border px-3 py-2">
-        <p className="min-w-0 flex-1 truncate text-[13px] text-primary/55">
+        <p className="min-w-0 flex-1 truncate text-[13px] text-foreground/55">
           {/* Finance proposals are badged on the row. This queue holds every proposal. */}
           Actions an agent proposes wait here. Nothing happens until you approve one.
         </p>
@@ -309,24 +309,26 @@ export function ActionsView() {
                         </Badge>
                       ) : null}
                       <StatusBadge status={p.status} />
-                      <Badge variant="secondary" className="ml-auto font-normal text-primary/45">
+                      <Badge variant="secondary" className="ml-auto font-normal text-foreground/45">
                         {localMomentLabel(p.createdAt)}
                       </Badge>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-sm text-primary/70">
-                      <Receipt weight="fill" className="shrink-0 text-primary/40" />
+                    <div className="flex items-center gap-1.5 text-sm text-foreground/70">
+                      <Receipt weight="fill" className="shrink-0 text-foreground/40" />
                       <Ref>{p.target}</Ref>
                     </div>
 
-                    {p.rationale ? <p className="text-sm text-primary/70">{p.rationale}</p> : null}
+                    {p.rationale ? (
+                      <p className="text-sm text-foreground/70">{p.rationale}</p>
+                    ) : null}
 
                     {p.paramsJson && actionParamsLines(p.paramsJson).length > 0 ? (
                       <details className="text-xs">
-                        <summary className="cursor-pointer select-none text-primary/50 hover:text-primary/70">
+                        <summary className="cursor-pointer select-none text-foreground/50 hover:text-foreground/70">
                           Parameters
                         </summary>
-                        <ul className="mt-1 flex flex-col gap-1 rounded-[2px] bg-background-200 p-2 text-[11px] text-primary/70 dark:bg-background-100">
+                        <ul className="mt-1 flex flex-col gap-1 rounded-[2px] bg-background-200 p-2 text-[11px] text-foreground/70 dark:bg-background-100">
                           {actionParamsLines(p.paramsJson).map((line) => (
                             <li key={line}>{line}</li>
                           ))}
@@ -341,7 +343,7 @@ export function ActionsView() {
                       <p className="text-xs text-red-600 dark:text-red-400">{p.reason}</p>
                     ) : null}
                     {p.status === "rejected" && p.reason ? (
-                      <p className="text-xs text-primary/50">Rejected: {p.reason}</p>
+                      <p className="text-xs text-foreground/50">Rejected: {p.reason}</p>
                     ) : null}
                   </CardContent>
 
@@ -366,7 +368,7 @@ export function ActionsView() {
                           variant="ghost"
                           onClick={() => setRejecting(p)}
                           disabled={!!verb}
-                          className="gap-1.5 text-primary/60"
+                          className="gap-1.5 text-foreground/60"
                         >
                           <Prohibit weight="fill" /> Reject
                         </Button>
@@ -393,7 +395,7 @@ export function ActionsView() {
                       size="sm"
                       variant="ghost"
                       onClick={() => openAudit(p.target)}
-                      className="ml-auto gap-1.5 text-primary/60"
+                      className="ml-auto gap-1.5 text-foreground/60"
                     >
                       <ListChecks weight="fill" /> Audit trail
                     </Button>

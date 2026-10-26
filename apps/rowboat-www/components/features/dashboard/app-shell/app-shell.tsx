@@ -309,8 +309,8 @@ export class ViewBoundary extends React.Component<
       <div className="flex flex-1 items-center justify-center p-8" role="alert">
         <div className="max-w-sm text-center">
           <WarningCircle className="mx-auto size-6 text-destructive" />
-          <p className="mt-3 text-sm font-medium text-primary">This view could not be shown</p>
-          <p className="mt-1 text-[13px] text-primary/55">
+          <p className="mt-3 text-sm font-medium text-foreground">This view could not be shown</p>
+          <p className="mt-1 text-[13px] text-foreground/55">
             The rest of the workspace still works. Open another view, or try this one again.
           </p>
           <Button
@@ -362,13 +362,13 @@ function ShellReleasePill() {
   return (
     <div className="hidden min-w-0 items-center gap-1.5 md:flex">
       <a
-        className="flex min-w-0 items-center gap-2 text-primary/75 transition-colors hover:text-primary"
+        className="flex min-w-0 items-center gap-2 text-foreground/75 transition-colors hover:text-foreground"
         href={entry.url}
         rel="noopener noreferrer"
         target="_blank"
       >
         <Badge
-          className="shrink-0 bg-background-200 font-mono text-[11px] font-medium text-primary/80"
+          className="shrink-0 bg-background-200 font-mono text-[11px] font-medium text-foreground/80"
           variant="secondary"
         >
           {entry.version}
@@ -377,7 +377,7 @@ function ShellReleasePill() {
       </a>
       <Button
         aria-label="Dismiss release note"
-        className="size-6 shrink-0 text-primary/40 hover:text-primary"
+        className="size-6 shrink-0 text-foreground/40 hover:text-foreground"
         onClick={() => {
           setPref(CHANGELOG_SEEN_PREF, entry.version);
           setSeen(entry.version);
@@ -512,7 +512,7 @@ export function sourceHealth(sources: RelationshipSourceStatus[]): SourceHealth 
 }
 
 const SOURCE_TONE_CARD: Record<SourceHealth["tone"], string> = {
-  ok: "border-border text-primary",
+  ok: "border-border text-foreground",
   syncing: "border-oppulence-blue/60 text-oppulence-blue",
   attention: "border-oppulence-orange/60 text-oppulence-orange",
   // An empty workspace has not failed. Orange is reserved for a source that
@@ -607,7 +607,7 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
         {health.label}
       </Label>
       {sources.isError && !sourcesNeverLoaded ? (
-        <span className="text-[12px] font-normal leading-4 text-primary/70">
+        <span className="text-[12px] font-normal leading-4 text-foreground/70">
           {sidebarQueryError(sources.error, "Source status unavailable")}
         </span>
       ) : null}
@@ -616,8 +616,8 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
       typeof connected === "number" ? (
         <div className="flex w-full flex-col gap-1.5">
           <div className="flex items-center justify-between text-[13px]">
-            <Label className="font-normal text-primary">Sources connected</Label>
-            <Badge className="font-normal text-primary/60" variant="secondary">
+            <Label className="font-normal text-foreground">Sources connected</Label>
+            <Badge className="font-normal text-foreground/60" variant="secondary">
               {connected} / {total}
             </Badge>
           </div>
@@ -626,8 +626,8 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
       ) : null}
       {trialDaysLeft === null ? null : (
         <div className="flex items-center justify-between text-[13px]">
-          <Label className="font-normal text-primary">Trial</Label>
-          <Badge className="font-normal text-primary/60" variant="secondary">
+          <Label className="font-normal text-foreground">Trial</Label>
+          <Badge className="font-normal text-foreground/60" variant="secondary">
             {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"} left
           </Badge>
         </div>
@@ -675,14 +675,14 @@ function SidebarNavItem({
     <>
       <Label className="truncate font-normal">{label}</Label>
       {countLabel ? (
-        <Badge className="ml-auto font-normal text-primary/40" variant="secondary">
+        <Badge className="ml-auto font-normal text-foreground/40" variant="secondary">
           {countLabel}
         </Badge>
       ) : null}
       {chevron ? (
         <CaretRight
           className={cn(
-            "h-3.5 w-3.5 shrink-0 text-primary/40 transition-transform",
+            "h-3.5 w-3.5 shrink-0 text-foreground/40 transition-transform",
             countLabel ? "" : "ml-auto",
             chevronOpen && "rotate-90",
           )}
@@ -958,7 +958,7 @@ export function AppShellSidebar({
         <div className="flex h-10 shrink-0 items-center justify-end px-2.5 md:hidden">
           <Button
             aria-label="Close sidebar"
-            className="size-8 shrink-0 rounded-none text-primary/50 hover:bg-background-100 hover:text-primary"
+            className="size-8 shrink-0 rounded-none text-foreground/50 hover:bg-background-100 hover:text-foreground"
             onClick={onToggle}
             size="icon-sm"
             type="button"
@@ -1112,10 +1112,10 @@ export function AppShellSidebar({
             ))}
 
             <div className="flex items-center justify-between pl-3.5 pr-2 pb-1 pt-4">
-              <Label className="text-[12px] font-normal text-primary/40">History</Label>
+              <Label className="text-[12px] font-normal text-foreground/40">History</Label>
               <Button
                 aria-label="New chat"
-                className="size-6 rounded-none text-primary/50 hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
+                className="size-6 rounded-none text-foreground/50 hover:bg-background-100 hover:text-foreground dark:hover:bg-background-300"
                 onClick={onNewChat}
                 size="icon-xs"
                 title="New chat"
@@ -1220,22 +1220,22 @@ export function AppShellSidebar({
                   variant="ghost"
                 >
                   <Avatar aria-hidden="true" className="size-6 rounded-none" size="sm">
-                    <AvatarFallback className="rounded-none border border-border bg-background-100 font-mono text-[11px] uppercase text-primary/60">
+                    <AvatarFallback className="rounded-none border border-border bg-background-100 font-mono text-[11px] uppercase text-foreground/60">
                       {workspace.slice(0, 1)}
                     </AvatarFallback>
                   </Avatar>
-                  <Label className="truncate text-[15px] font-normal text-primary">
+                  <Label className="truncate text-[15px] font-normal text-foreground">
                     {workspace}
                   </Label>
                   {planLabel ? (
                     <Badge
-                      className="shrink-0 bg-background-200 text-[12px] font-normal text-primary/55"
+                      className="shrink-0 bg-background-200 text-[12px] font-normal text-foreground/55"
                       variant="secondary"
                     >
                       {planLabel}
                     </Badge>
                   ) : null}
-                  <CaretUpDown className="ml-auto size-3.5 shrink-0 text-primary/40" />
+                  <CaretUpDown className="ml-auto size-3.5 shrink-0 text-foreground/40" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -1252,8 +1252,8 @@ export function AppShellSidebar({
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="px-2 py-1.5">
-                    <div className="truncate text-sm font-medium text-primary">{workspace}</div>
-                    <div className="truncate font-mono text-[11px] text-primary/50">
+                    <div className="truncate text-sm font-medium text-foreground">{workspace}</div>
+                    <div className="truncate font-mono text-[11px] text-foreground/50">
                       {user.email}
                     </div>
                   </div>
@@ -1275,7 +1275,7 @@ export function AppShellSidebar({
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel className="text-xs uppercase tracking-wider text-primary/50">
+                  <DropdownMenuLabel className="text-xs uppercase tracking-wider text-foreground/50">
                     Theme
                   </DropdownMenuLabel>
                   <DropdownMenuItem
@@ -1301,13 +1301,13 @@ export function AppShellSidebar({
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs uppercase tracking-wider text-primary/50">
+                <DropdownMenuLabel className="text-xs uppercase tracking-wider text-foreground/50">
                   Workspaces
                 </DropdownMenuLabel>
                 {/* This session has one workspace. A menu item here accepted the
                     click and left the menu open. */}
                 <div
-                  className="flex items-center gap-2 px-2 py-1.5 text-sm text-primary"
+                  className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground"
                   data-current-workspace
                 >
                   <Avatar aria-hidden="true" className="size-4 rounded-none" size="sm">
@@ -1325,7 +1325,7 @@ export function AppShellSidebar({
                   />
                   {planLabel ? (
                     <Badge
-                      className="shrink-0 text-[10px] font-normal text-primary/60"
+                      className="shrink-0 text-[10px] font-normal text-foreground/60"
                       variant="outline"
                     >
                       {planLabel}
