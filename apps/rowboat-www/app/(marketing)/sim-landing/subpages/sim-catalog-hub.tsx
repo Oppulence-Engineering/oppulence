@@ -63,7 +63,6 @@ export function SimCatalogHub({
               {items.map((item) => (
                 <div key={item.href}>
                   <Link
-                    aria-label={item.title}
                     className="group/link flex items-center gap-4 px-6 py-4 transition-colors hover-hover:bg-[var(--surface-hover)]"
                     href={item.href}
                   >
