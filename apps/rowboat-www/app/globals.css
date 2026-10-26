@@ -212,10 +212,11 @@
 @layer base {
   :root {
     /*
-     * Global visual density. Zoom shrinks layout contribution in the viewport;
-     * --app-vh compensates so svh shells still fill the screen after scaling.
+     * Zoom stays at 1. Product density comes from the compact type stops in
+     * @oppulence/ui/product-system.css, as on the desktop app. --app-vh still
+     * divides by the zoom so svh shells fill the screen if a surface scales.
      */
-    --app-zoom: 0.8;
+    --app-zoom: 1;
     --app-vh: calc(100svh / var(--app-zoom));
   }
 

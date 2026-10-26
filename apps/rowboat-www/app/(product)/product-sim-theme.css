@@ -1,9 +1,11 @@
 /**
- * Sim.ai visual system for the authenticated product shell (`/app`, settings, …).
+ * Authenticated product shell (`/app`, settings, …).
  *
- * Token sources: sim-landing/sim-landing.css (`.sim-landing-root`) + Sim globals.
- * Uses 80% density via transform scale on the shell (not body zoom) so portalled
- * menus anchor correctly inside [data-product-shell].
+ * The shell uses the desktop app's tokens: product-theme.css plus the
+ * [data-product-shell] rules in @oppulence/ui/product-system.css. Sim
+ * components (emcn, product previews) read Sim token names, so the shell maps
+ * those names onto the shared tokens. The transform stays at scale 1 so fixed
+ * in-shell panels keep the shell as their containing block.
  */
 @import "../(marketing)/sim-landing/sim-landing.css";
 
@@ -11,14 +13,13 @@
 body:has([data-product-shell]) {
   zoom: 1;
   overflow: hidden;
-  background: var(--bg, #fefefe);
-  color: var(--text-primary, #1a1a1a);
+  background: var(--background);
+  color: var(--foreground);
   color-scheme: light;
 }
 
 html.dark body:has([data-product-shell]),
 .dark body:has([data-product-shell]) {
-  background: var(--bg, #1b1b1b);
   color-scheme: dark;
 }
 
@@ -27,11 +28,11 @@ html:has([data-product-shell]) {
   background: inherit;
 }
 
-/* ── Live shell: inherit `.sim-landing-root` tokens + bridge shadcn/TW ───── */
+/* ── Live shell: Sim token names read the shared desktop tokens ──────────── */
 [data-product-shell].sim-product-shell.sim-landing-root {
-  transform: scale(var(--app-zoom, 0.8));
+  transform: scale(var(--app-zoom, 1));
   transform-origin: top left;
-  width: calc(100vw / var(--app-zoom, 0.8));
+  width: calc(100vw / var(--app-zoom, 1));
   height: var(--app-vh);
   --shell-sidebar-width: 252px;
   /* In-shell fixed panels (promise record) share the shell's coordinate
@@ -42,42 +43,38 @@ html:has([data-product-shell]) {
   --shell-nav-row-height: 30px;
   --shell-control-size: 30px;
 
-  /* Tailwind radius utilities inside the shell (globals @theme pins these to 0). */
-  --radius: 8px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  /* Sim token names → shared tokens. Light and dark come from the shared layer. */
+  --bg: var(--background);
+  --surface-1: var(--background-50);
+  --surface-2: var(--card);
+  --surface-3: var(--background-100);
+  --surface-4: var(--background-200);
+  --surface-5: var(--background-300);
+  --surface-6: var(--background-400);
+  --surface-7: var(--background-500);
+  --surface-hover: var(--background-100);
+  --surface-active: var(--accent);
+  --border: var(--background-300);
+  --text-primary: var(--foreground);
+  --text-body: var(--foreground);
+  --text-secondary: var(--product-text-secondary);
+  --text-tertiary: var(--product-text-secondary);
+  --text-muted: var(--muted-foreground);
+  --text-icon: var(--muted-foreground);
+  --text-subtle: var(--product-text-tertiary);
+  --text-icon-muted: var(--product-text-tertiary);
+  --text-inverse: var(--primary-foreground);
 
-  /* Bridge Oppulence / shadcn semantic tokens onto Sim surfaces. */
-  --background: var(--bg);
-  --background-50: var(--surface-1);
-  --background-100: var(--surface-hover);
-  --background-200: var(--surface-3);
-  --background-300: var(--surface-4);
-  --foreground: var(--text-primary);
-  --primary: var(--text-primary);
-  --primary-foreground: var(--text-inverse);
-  --secondary: var(--surface-3);
-  --secondary-foreground: var(--text-primary);
-  --muted: var(--surface-3);
-  --muted-foreground: var(--text-muted);
-  --accent: var(--surface-hover);
-  --accent-foreground: var(--text-primary);
-  --card: var(--surface-2);
-  --card-foreground: var(--text-primary);
-  --popover: var(--surface-2);
-  --popover-foreground: var(--text-primary);
-  --input: var(--border);
-  --ring: #3578f6;
-
-  --product-text-strong: var(--text-primary);
-  --product-text-secondary: var(--text-secondary);
-  --product-text-tertiary: var(--text-muted);
+  /* Compact type stops, as in product-system.css. */
+  --text-micro: 12px;
+  --text-xs: 12px;
+  --text-caption: 12px;
+  --text-small: 13px;
+  --text-base: 14px;
+  --text-md: 14px;
 
   font-size: var(--text-base);
   line-height: 1.45;
-  letter-spacing: -0.015em;
 }
 
 /* Portaled sheets sit on the viewport, outside this shell's scale. Their
@@ -143,7 +140,6 @@ html[data-sidebar-collapsed] [data-product-shell].sim-product-shell.sim-landing-
 
 [data-product-shell].sim-product-shell [data-sidebar-nav] [data-sidebar-row] {
   min-height: var(--shell-nav-row-height);
-  border-radius: 8px !important;
   color: var(--text-body);
   font-size: var(--text-small);
   font-weight: 400;
@@ -177,10 +173,6 @@ html[data-sidebar-collapsed] [data-product-shell].sim-product-shell.sim-landing-
   border-color: var(--border);
 }
 
-[data-product-shell].sim-product-shell [data-sidebar-account] button {
-  border-radius: 8px !important;
-}
-
 /* Status card + overlays inside the shell */
 [data-product-shell].sim-product-shell .app-shell,
 [data-product-shell].sim-product-shell [data-slot="app-sidebar"] [role="menu"],
@@ -208,9 +200,5 @@ html[data-sidebar-collapsed] [data-product-shell].sim-product-shell.sim-landing-
 }
 
 [data-product-shell].sim-product-shell [data-slot="home-agent-surface"] h1 {
-  font-size: clamp(2rem, 3.5vw, 2.35rem) !important;
-  font-weight: 500 !important;
-  line-height: 1.08 !important;
-  letter-spacing: -0.04em !important;
   color: var(--text-primary);
 }

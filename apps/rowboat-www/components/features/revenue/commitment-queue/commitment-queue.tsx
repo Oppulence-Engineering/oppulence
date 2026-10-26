@@ -1052,7 +1052,7 @@ export function CommitmentQueue({
             ) : null}
             {googleNeedsReconnect ? (
               <Button
-                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={onOpenConnectors}
                 size="sm"
                 type="button"
@@ -1064,7 +1064,7 @@ export function CommitmentQueue({
               // Connect is already the action in that case; this button only
               // stays while a scan is running or Gmail can actually be read.
               <Button
-                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
                 disabled={scanning}
                 onClick={onScan}
                 size="sm"
@@ -1214,7 +1214,7 @@ export function CommitmentQueue({
               {registerEmptyAccountsDetail(false)}
             </p>
             <Button
-              className="mt-5 bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              className="mt-5 bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={() => openCompanyCreate(onOpenAccounts)}
               size="sm"
               type="button"
@@ -1279,7 +1279,7 @@ export function CommitmentQueue({
                 <Button
                   type="button"
                   size="sm"
-                  className="bg-[#3478f6] text-white"
+                  className="bg-primary text-primary-foreground"
                   onClick={onOpenConnectors}
                 >
                   <Plugs /> Reconnect Google
@@ -1288,7 +1288,7 @@ export function CommitmentQueue({
                 <Button
                   type="button"
                   size="sm"
-                  className="bg-[#3478f6] text-white"
+                  className="bg-primary text-primary-foreground"
                   onClick={onScan}
                   disabled={scanning}
                 >
@@ -1338,7 +1338,7 @@ export function CommitmentQueue({
                   <Button
                     type="button"
                     size="sm"
-                    className="bg-[#3478f6] text-white"
+                    className="bg-primary text-primary-foreground"
                     onClick={onOpenConnectors}
                   >
                     <Plugs />{" "}
@@ -1348,7 +1348,7 @@ export function CommitmentQueue({
                   <Button
                     type="button"
                     size="sm"
-                    className="bg-[#3478f6] text-white"
+                    className="bg-primary text-primary-foreground"
                     onClick={onScan}
                     disabled={scanning}
                   >
@@ -1538,7 +1538,7 @@ export function CommitmentQueue({
             ) : null}
             <div className="border-b border-border p-4">
               <div className="flex items-start gap-3">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-none bg-[#3478f6] text-white">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-none bg-primary text-primary-foreground">
                   <Plugs className="size-4" />
                 </div>
                 <div className="min-w-0">
@@ -1554,7 +1554,7 @@ export function CommitmentQueue({
                   <Button
                     type="button"
                     size="sm"
-                    className="bg-[#3478f6] text-white"
+                    className="bg-primary text-primary-foreground"
                     disabled={busy !== null}
                     onClick={async () => {
                       setBusy(`${selected.id}:recovery`);
