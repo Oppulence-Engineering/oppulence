@@ -11,7 +11,7 @@
       },
       "image": {
         "registry_type": "GHCR",
-        "registry": "oppulence-engineering",
+        "registry": "playbookmediallc",
         "repository": "desktop-assistant-rowboat-api",
         "tag": "ci-placeholder"
       }
@@ -40,9 +40,7 @@
       }
     ]
   },
-  "features": [
-    "buildpack-stack=ubuntu-22"
-  ],
+  "features": ["buildpack-stack=ubuntu-22"],
   "envs": [
     {
       "key": "ANTHROPIC_API_KEY",
@@ -477,7 +475,7 @@
       },
       "image": {
         "registry_type": "GHCR",
-        "registry": "oppulence-engineering",
+        "registry": "playbookmediallc",
         "repository": "desktop-assistant-rowboat-api",
         "tag": "ci-placeholder"
       }
@@ -519,7 +517,7 @@
       },
       "image": {
         "registry_type": "GHCR",
-        "registry": "oppulence-engineering",
+        "registry": "playbookmediallc",
         "repository": "desktop-assistant-rowboat-api",
         "tag": "ci-placeholder"
       }
@@ -534,7 +532,7 @@
       "instance_size_slug": "apps-s-1vcpu-1gb",
       "image": {
         "registry_type": "GHCR",
-        "registry": "oppulence-engineering",
+        "registry": "playbookmediallc",
         "repository": "desktop-assistant-rowboat-api",
         "tag": "ci-placeholder"
       }

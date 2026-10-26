@@ -52,7 +52,7 @@ jobs:
       timeout_minutes: 90
       build_image: true
       image_registry_type: GHCR
-      image_registry: oppulence-engineering
+      image_registry: playbookmediallc
       image_repository: desktop-assistant-rowboat-api
       dockerfile_path: apps/rowboat-api/Dockerfile
       build_context: .
