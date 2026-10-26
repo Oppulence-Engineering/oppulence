@@ -3,7 +3,8 @@ package main
 required_fragments := {
 	"make fmt-check architecture mod-verify",
 	"go test ./... -race -count=1",
-	"golangci/golangci-lint-action@v8",
+	# Workflows pin actions to a commit SHA, so require the action, not a tag.
+	"golangci/golangci-lint-action@",
 	"govulncheck@v1.7.0",
 	"gitleaks:v8.30.1",
 	"make policy",
