@@ -68,5 +68,5 @@ export interface BackgroundTaskPatchRequest {
   /** Current task revision returned by the last GET/list/PATCH response. */
   revision: number;
   /** Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH. */
-  triggers?: unknown | null;
+  triggers?: unknown;
 }

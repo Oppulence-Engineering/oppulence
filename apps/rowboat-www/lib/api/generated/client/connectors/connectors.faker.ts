@@ -172,11 +172,8 @@ export const getListConnectorsResponseMock = (
           name: faker.string.alpha({ length: { min: 10, max: 20 } }),
           perInvocationApproval: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
           requiredPlan: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([
-              faker.string.alpha({ length: { min: 10, max: 20 } }),
-              null,
-            ]),
-            undefined,
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            null,
           ]),
           risk: faker.helpers.arrayElement(["low", "medium", "high", "money-moving"] as const),
           stepUpRequired: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
@@ -185,8 +182,8 @@ export const getListConnectorsResponseMock = (
       ]),
       connected: faker.datatype.boolean(),
       connectedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       connectionHealth: faker.helpers.arrayElement([
         "healthy",
@@ -195,8 +192,8 @@ export const getListConnectorsResponseMock = (
         "disconnected",
       ] as const),
       connectionReason: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       description: faker.string.alpha({ length: { min: 10, max: 20 } }),
       displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -224,11 +221,8 @@ export const getListConnectorsResponseMock = (
           name: faker.string.alpha({ length: { min: 10, max: 20 } }),
           perInvocationApproval: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
           requiredPlan: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([
-              faker.string.alpha({ length: { min: 10, max: 20 } }),
-              null,
-            ]),
-            undefined,
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            null,
           ]),
           risk: faker.helpers.arrayElement(["low", "medium", "high", "money-moving"] as const),
           stepUpRequired: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
@@ -237,12 +231,12 @@ export const getListConnectorsResponseMock = (
       ]),
       health: faker.helpers.arrayElement(["healthy", "degraded", "unavailable"] as const),
       iconUrl: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       lastUsedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       mcpTools: faker.helpers.arrayElement([
         Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
@@ -261,8 +255,8 @@ export const getListConnectorsResponseMock = (
         undefined,
       ]),
       revokedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       status: faker.helpers.arrayElement(["enabled", "maintenance", "disabled"] as const),
       templateBlocks: faker.helpers.arrayElement([
@@ -289,11 +283,8 @@ export const getListConnectorsResponseMock = (
             undefined,
           ]),
           samplePrompt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([
-              faker.string.alpha({ length: { min: 10, max: 20 } }),
-              null,
-            ]),
-            undefined,
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            null,
           ]),
           title: faker.string.alpha({ length: { min: 10, max: 20 } }),
           trustTier: faker.helpers.arrayElement(["read", "write", "act", "money-moving"] as const),
@@ -344,16 +335,16 @@ export const getSearchHubSpotResponseMock = (
     () => ({
       archived: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
       createdAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
       id: faker.string.alpha({ length: { min: 10, max: 20 } }),
       properties: {
         [faker.string.alphanumeric(5)]: faker.string.alpha({ length: { min: 10, max: 20 } }),
       },
       updatedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
-        undefined,
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        null,
       ]),
     }),
   ),

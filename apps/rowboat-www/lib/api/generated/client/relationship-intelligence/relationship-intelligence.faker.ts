@@ -89,8 +89,8 @@ export const getListCommitmentsResponseMock = (
           undefined,
         ]),
         completedAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         confidence: faker.number.float({ fractionDigits: 2 }),
         counterpartyParticipantRef: faker.helpers.arrayElement([
@@ -104,8 +104,8 @@ export const getListCommitmentsResponseMock = (
           "mutual",
         ] as const),
         dueAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         duePhrase: faker.helpers.arrayElement([
           faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -170,10 +170,7 @@ export const getExportCommitmentResponseMock = (
         undefined,
       ]),
       direction: faker.string.alpha({ length: { min: 10, max: 20 } }),
-      dueAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
-      ]),
+      dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       duePhrase: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
@@ -233,30 +230,24 @@ export const getListRelationshipAttentionResponseMock = (
   hasMore: faker.datatype.boolean(),
   items: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
     acknowledgedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
-    acknowledgedBy: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.string.uuid(), null]),
-      undefined,
-    ]),
+    acknowledgedBy: faker.helpers.arrayElement([faker.string.uuid(), null]),
     createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
     detectorVersion: faker.number.int(),
     dismissedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
-    dismissedBy: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.string.uuid(), null]),
-      undefined,
-    ]),
+    dismissedBy: faker.helpers.arrayElement([faker.string.uuid(), null]),
     evidenceRefs: Array.from(
       { length: faker.number.int({ min: 1, max: 10 }) },
       (_, i) => i + 1,
     ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
     expiresAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     explanation: faker.string.alpha({ length: { min: 10, max: 20 } }),
     id: faker.string.uuid(),
@@ -271,8 +262,8 @@ export const getListRelationshipAttentionResponseMock = (
     relationshipName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     relationshipStateVersion: faker.number.int(),
     snoozedUntil: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     sourceRequirements: Array.from(
       { length: faker.number.int({ min: 1, max: 10 }) },
@@ -302,30 +293,21 @@ export const getDecideRelationshipAttentionResponseMock = (
   overrideResponse: Partial<Extract<RelationshipAttentionItem, object>> = {},
 ): RelationshipAttentionItem => ({
   acknowledgedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
-  acknowledgedBy: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.uuid(), null]),
-    undefined,
-  ]),
+  acknowledgedBy: faker.helpers.arrayElement([faker.string.uuid(), null]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   detectorVersion: faker.number.int(),
   dismissedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
-  dismissedBy: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.uuid(), null]),
-    undefined,
-  ]),
+  dismissedBy: faker.helpers.arrayElement([faker.string.uuid(), null]),
   evidenceRefs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
-  expiresAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  expiresAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   explanation: faker.string.alpha({ length: { min: 10, max: 20 } }),
   id: faker.string.uuid(),
   ownerId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
@@ -339,8 +321,8 @@ export const getDecideRelationshipAttentionResponseMock = (
   relationshipName: faker.string.alpha({ length: { min: 10, max: 20 } }),
   relationshipStateVersion: faker.number.int(),
   snoozedUntil: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   sourceRequirements: Array.from(
     { length: faker.number.int({ min: 1, max: 10 }) },
@@ -440,8 +422,8 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
         (_, i) => i + 1,
       ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
       decidedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       decision: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -468,16 +450,16 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
       ),
       evidenceCount: faker.number.int(),
       evidenceFrom: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       evidenceRefs: Array.from(
         { length: faker.number.int({ min: 1, max: 10 }) },
         (_, i) => i + 1,
       ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
       evidenceTo: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       existingRelationship: {
         accountDomain: faker.helpers.arrayElement([
@@ -494,8 +476,8 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           undefined,
         ]),
         companyEnrichedAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
         companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -524,12 +506,12 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           "partner",
         ] as const),
         lastChangedAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         lastTouchAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         lifecycle: faker.helpers.arrayElement([
           "prospect",
@@ -554,8 +536,8 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           undefined,
         ]),
         nextActionAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
         peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -564,8 +546,8 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           undefined,
         ]),
         projectedAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         projectorVersion: faker.number.int(),
         resourceRefs: Array.from(
@@ -649,8 +631,8 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           undefined,
         ]),
         companyEnrichedAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
         companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -679,12 +661,12 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           "partner",
         ] as const),
         lastChangedAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         lastTouchAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         lifecycle: faker.helpers.arrayElement([
           "prospect",
@@ -709,8 +691,8 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           undefined,
         ]),
         nextActionAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
         peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -719,8 +701,8 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           undefined,
         ]),
         projectedAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         projectorVersion: faker.number.int(),
         resourceRefs: Array.from(
@@ -784,10 +766,7 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
     { length: faker.number.int({ min: 1, max: 10 }) },
     (_, i) => i + 1,
   ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
-  decidedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   decision: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -813,15 +792,15 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
   ),
   evidenceCount: faker.number.int(),
   evidenceFrom: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   evidenceRefs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
   evidenceTo: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   existingRelationship: {
     accountDomain: faker.helpers.arrayElement([
@@ -837,8 +816,8 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     companyEnrichedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -867,12 +846,12 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       "partner",
     ] as const),
     lastChangedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lastTouchAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lifecycle: faker.helpers.arrayElement([
       "prospect",
@@ -896,8 +875,8 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     nextActionAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
     peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -906,8 +885,8 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     projectedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     projectorVersion: faker.number.int(),
     resourceRefs: Array.from(
@@ -985,8 +964,8 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     companyEnrichedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -1015,12 +994,12 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       "partner",
     ] as const),
     lastChangedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lastTouchAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lifecycle: faker.helpers.arrayElement([
       "prospect",
@@ -1044,8 +1023,8 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     nextActionAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
     peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -1054,8 +1033,8 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     projectedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     projectorVersion: faker.number.int(),
     resourceRefs: Array.from(
@@ -1111,10 +1090,7 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
     { length: faker.number.int({ min: 1, max: 10 }) },
     (_, i) => i + 1,
   ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
-  decidedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  decidedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   decision: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -1140,15 +1116,15 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
   ),
   evidenceCount: faker.number.int(),
   evidenceFrom: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   evidenceRefs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
   evidenceTo: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   existingRelationship: {
     accountDomain: faker.helpers.arrayElement([
@@ -1164,8 +1140,8 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     companyEnrichedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -1194,12 +1170,12 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       "partner",
     ] as const),
     lastChangedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lastTouchAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lifecycle: faker.helpers.arrayElement([
       "prospect",
@@ -1223,8 +1199,8 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     nextActionAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
     peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -1233,8 +1209,8 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     projectedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     projectorVersion: faker.number.int(),
     resourceRefs: Array.from(
@@ -1312,8 +1288,8 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     companyEnrichedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -1342,12 +1318,12 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       "partner",
     ] as const),
     lastChangedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lastTouchAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lifecycle: faker.helpers.arrayElement([
       "prospect",
@@ -1371,8 +1347,8 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     nextActionAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
     peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -1381,8 +1357,8 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     projectedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     projectorVersion: faker.number.int(),
     resourceRefs: Array.from(
@@ -1575,8 +1551,8 @@ export const getApproveRelationshipRecommendationResponseMock = (
   ] as const),
   approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
   approvedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
   channel: faker.helpers.arrayElement([
@@ -1607,10 +1583,7 @@ export const getApproveRelationshipRecommendationResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
-  dueAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       excerpt: faker.helpers.arrayElement([
@@ -1628,8 +1601,8 @@ export const getApproveRelationshipRecommendationResponseMock = (
     }),
   ),
   executedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   executionError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -1679,16 +1652,16 @@ export const getApproveRelationshipRecommendationResponseMock = (
   ]),
   reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
   reconciliationCheckedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
   reconciliationNextAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationStatus: faker.helpers.arrayElement([
     faker.helpers.arrayElement([
@@ -1712,8 +1685,8 @@ export const getApproveRelationshipRecommendationResponseMock = (
     undefined,
   ]),
   snoozedUntil: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   updatedAt: faker.helpers.arrayElement([
     faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -1739,8 +1712,8 @@ export const getRejectRelationshipRecommendationResponseMock = (
   ] as const),
   approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
   approvedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
   channel: faker.helpers.arrayElement([
@@ -1771,10 +1744,7 @@ export const getRejectRelationshipRecommendationResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
-  dueAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       excerpt: faker.helpers.arrayElement([
@@ -1792,8 +1762,8 @@ export const getRejectRelationshipRecommendationResponseMock = (
     }),
   ),
   executedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   executionError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -1843,16 +1813,16 @@ export const getRejectRelationshipRecommendationResponseMock = (
   ]),
   reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
   reconciliationCheckedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationError: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
   reconciliationNextAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   reconciliationStatus: faker.helpers.arrayElement([
     faker.helpers.arrayElement([
@@ -1876,8 +1846,8 @@ export const getRejectRelationshipRecommendationResponseMock = (
     undefined,
   ]),
   snoozedUntil: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   updatedAt: faker.helpers.arrayElement([
     faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -1894,17 +1864,17 @@ export const getGetRelationshipSourceInventoryResponseMock = (
       accounts: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
         () => ({
           authorizationStartedAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           authorizedAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           backfillCompleted: faker.number.int(),
           backfillCompletedAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           backfillPhase: faker.helpers.arrayElement([
             "idle",
@@ -1925,8 +1895,8 @@ export const getGetRelationshipSourceInventoryResponseMock = (
           connectionId: faker.string.uuid(),
           consentingActorId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
           disconnectedAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           errorCode: faker.helpers.arrayElement([
             faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -1943,32 +1913,32 @@ export const getGetRelationshipSourceInventoryResponseMock = (
             undefined,
           ]),
           lastFailedSyncAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           lastObservationAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           lastProviderEventAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           lastSuccessAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           lastSyncAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           missingScopes: Array.from(
             { length: faker.number.int({ min: 1, max: 10 }) },
             (_, i) => i + 1,
           ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
           nextRetryAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           requiredScopes: Array.from(
             { length: faker.number.int({ min: 1, max: 10 }) },
@@ -1976,8 +1946,8 @@ export const getGetRelationshipSourceInventoryResponseMock = (
           ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
           retryCount: faker.number.int(),
           revokedAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           source: faker.helpers.arrayElement(["google", "slack", "hubspot"] as const),
           sourceAccountId: faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -1994,8 +1964,8 @@ export const getGetRelationshipSourceInventoryResponseMock = (
             "disconnected",
           ] as const),
           syncStartedAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
         }),
       ),
@@ -2032,17 +2002,17 @@ export const getGetRelationshipSourceStatusesResponseMock = (
   sources: faker.helpers.arrayElement([
     Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
       authorizationStartedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       authorizedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       backfillCompleted: faker.number.int(),
       backfillCompletedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       backfillPhase: faker.helpers.arrayElement([
         "idle",
@@ -2063,8 +2033,8 @@ export const getGetRelationshipSourceStatusesResponseMock = (
       connectionId: faker.string.uuid(),
       consentingActorId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
       disconnectedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       errorCode: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -2081,32 +2051,32 @@ export const getGetRelationshipSourceStatusesResponseMock = (
         undefined,
       ]),
       lastFailedSyncAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       lastObservationAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       lastProviderEventAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       lastSuccessAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       lastSyncAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       missingScopes: Array.from(
         { length: faker.number.int({ min: 1, max: 10 }) },
         (_, i) => i + 1,
       ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
       nextRetryAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       requiredScopes: Array.from(
         { length: faker.number.int({ min: 1, max: 10 }) },
@@ -2114,8 +2084,8 @@ export const getGetRelationshipSourceStatusesResponseMock = (
       ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
       retryCount: faker.number.int(),
       revokedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       source: faker.helpers.arrayElement(["google", "slack", "hubspot"] as const),
       sourceAccountId: faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -2132,8 +2102,8 @@ export const getGetRelationshipSourceStatusesResponseMock = (
         "disconnected",
       ] as const),
       syncStartedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
     })),
     undefined,
@@ -2145,17 +2115,17 @@ export const getReportRelationshipSourceAuthorizationResponseMock = (
   overrideResponse: Partial<Extract<RelationshipSourceStatus, object>> = {},
 ): RelationshipSourceStatus => ({
   authorizationStartedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   authorizedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   backfillCompleted: faker.number.int(),
   backfillCompletedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   backfillPhase: faker.helpers.arrayElement([
     "idle",
@@ -2176,8 +2146,8 @@ export const getReportRelationshipSourceAuthorizationResponseMock = (
   connectionId: faker.string.uuid(),
   consentingActorId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
   disconnectedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   errorCode: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -2193,41 +2163,38 @@ export const getReportRelationshipSourceAuthorizationResponseMock = (
     undefined,
   ]),
   lastFailedSyncAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastObservationAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastProviderEventAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastSuccessAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastSyncAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   missingScopes: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
   nextRetryAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   requiredScopes: Array.from(
     { length: faker.number.int({ min: 1, max: 10 }) },
     (_, i) => i + 1,
   ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
   retryCount: faker.number.int(),
-  revokedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  revokedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   source: faker.helpers.arrayElement(["google", "slack", "hubspot"] as const),
   sourceAccountId: faker.string.alpha({ length: { min: 10, max: 20 } }),
   status: faker.helpers.arrayElement([
@@ -2243,8 +2210,8 @@ export const getReportRelationshipSourceAuthorizationResponseMock = (
     "disconnected",
   ] as const),
   syncStartedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   ...overrideResponse,
 });
@@ -2253,17 +2220,17 @@ export const getResyncRelationshipSourceResponseMock = (
   overrideResponse: Partial<Extract<RelationshipSourceStatus, object>> = {},
 ): RelationshipSourceStatus => ({
   authorizationStartedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   authorizedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   backfillCompleted: faker.number.int(),
   backfillCompletedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   backfillPhase: faker.helpers.arrayElement([
     "idle",
@@ -2284,8 +2251,8 @@ export const getResyncRelationshipSourceResponseMock = (
   connectionId: faker.string.uuid(),
   consentingActorId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
   disconnectedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   errorCode: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -2301,41 +2268,38 @@ export const getResyncRelationshipSourceResponseMock = (
     undefined,
   ]),
   lastFailedSyncAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastObservationAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastProviderEventAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastSuccessAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastSyncAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   missingScopes: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
   nextRetryAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   requiredScopes: Array.from(
     { length: faker.number.int({ min: 1, max: 10 }) },
     (_, i) => i + 1,
   ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
   retryCount: faker.number.int(),
-  revokedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  revokedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   source: faker.helpers.arrayElement(["google", "slack", "hubspot"] as const),
   sourceAccountId: faker.string.alpha({ length: { min: 10, max: 20 } }),
   status: faker.helpers.arrayElement([
@@ -2351,8 +2315,8 @@ export const getResyncRelationshipSourceResponseMock = (
     "disconnected",
   ] as const),
   syncStartedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   ...overrideResponse,
 });
@@ -2361,17 +2325,17 @@ export const getDisconnectRelationshipSourceResponseMock = (
   overrideResponse: Partial<Extract<RelationshipSourceStatus, object>> = {},
 ): RelationshipSourceStatus => ({
   authorizationStartedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   authorizedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   backfillCompleted: faker.number.int(),
   backfillCompletedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   backfillPhase: faker.helpers.arrayElement([
     "idle",
@@ -2392,8 +2356,8 @@ export const getDisconnectRelationshipSourceResponseMock = (
   connectionId: faker.string.uuid(),
   consentingActorId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
   disconnectedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   errorCode: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -2409,41 +2373,38 @@ export const getDisconnectRelationshipSourceResponseMock = (
     undefined,
   ]),
   lastFailedSyncAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastObservationAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastProviderEventAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastSuccessAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastSyncAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   missingScopes: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
   nextRetryAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   requiredScopes: Array.from(
     { length: faker.number.int({ min: 1, max: 10 }) },
     (_, i) => i + 1,
   ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
   retryCount: faker.number.int(),
-  revokedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  revokedAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   source: faker.helpers.arrayElement(["google", "slack", "hubspot"] as const),
   sourceAccountId: faker.string.alpha({ length: { min: 10, max: 20 } }),
   status: faker.helpers.arrayElement([
@@ -2459,8 +2420,8 @@ export const getDisconnectRelationshipSourceResponseMock = (
     "disconnected",
   ] as const),
   syncStartedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   ...overrideResponse,
 });
@@ -2485,8 +2446,8 @@ export const getListRelationshipsResponseMock = (
         undefined,
       ]),
       companyEnrichedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
       companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -2515,12 +2476,12 @@ export const getListRelationshipsResponseMock = (
         "partner",
       ] as const),
       lastChangedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       lastTouchAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       lifecycle: faker.helpers.arrayElement([
         "prospect",
@@ -2545,8 +2506,8 @@ export const getListRelationshipsResponseMock = (
         undefined,
       ]),
       nextActionAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
       peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -2555,8 +2516,8 @@ export const getListRelationshipsResponseMock = (
         undefined,
       ]),
       projectedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       projectorVersion: faker.number.int(),
       resourceRefs: Array.from(
@@ -2602,8 +2563,8 @@ export const getCreateRelationshipResponseMock = (
     undefined,
   ]),
   companyEnrichedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
   companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -2632,12 +2593,12 @@ export const getCreateRelationshipResponseMock = (
     "partner",
   ] as const),
   lastChangedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastTouchAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lifecycle: faker.helpers.arrayElement([
     "prospect",
@@ -2661,8 +2622,8 @@ export const getCreateRelationshipResponseMock = (
     undefined,
   ]),
   nextActionAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
   peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -2671,8 +2632,8 @@ export const getCreateRelationshipResponseMock = (
     undefined,
   ]),
   projectedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   projectorVersion: faker.number.int(),
   resourceRefs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
@@ -2752,10 +2713,7 @@ export const getGetRelationshipGraphResponseMock = (
       faker.number.float({ min: 0, max: 1, fractionDigits: 2 }),
       undefined,
     ]),
-    dueAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
-    ]),
+    dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     engagement: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -2795,8 +2753,8 @@ export const getGetRelationshipGraphResponseMock = (
     ]),
     metadata: {},
     occurredAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     policyStatus: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -2833,8 +2791,8 @@ export const getGetRelationshipGraphResponseMock = (
       undefined,
     ]),
     updatedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
   })),
   observationHasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
@@ -2869,8 +2827,8 @@ export const getGetRelationshipResponseMock = (
       ] as const),
       approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
       approvedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
       channel: faker.helpers.arrayElement([
@@ -2901,10 +2859,7 @@ export const getGetRelationshipResponseMock = (
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
-      dueAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
-      ]),
+      dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
         () => ({
           excerpt: faker.helpers.arrayElement([
@@ -2922,8 +2877,8 @@ export const getGetRelationshipResponseMock = (
         }),
       ),
       executedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       executionError: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -2973,16 +2928,16 @@ export const getGetRelationshipResponseMock = (
       ]),
       reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
       reconciliationCheckedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       reconciliationError: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
       reconciliationNextAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       reconciliationStatus: faker.helpers.arrayElement([
         faker.helpers.arrayElement([
@@ -3006,8 +2961,8 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       snoozedUntil: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       updatedAt: faker.helpers.arrayElement([
         faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -3052,8 +3007,8 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       completedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       confidence: faker.number.float({ fractionDigits: 2 }),
       counterpartyParticipantRef: faker.helpers.arrayElement([
@@ -3066,10 +3021,7 @@ export const getGetRelationshipResponseMock = (
         "promised_by_them",
         "mutual",
       ] as const),
-      dueAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
-      ]),
+      dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       duePhrase: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
@@ -3168,8 +3120,8 @@ export const getGetRelationshipResponseMock = (
         (_, i) => i + 1,
       ).map(() => ({
         completedAt: faker.helpers.arrayElement([
-          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-          undefined,
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          null,
         ]),
         legalHold: faker.datatype.boolean(),
         receiptId: faker.string.uuid(),
@@ -3386,8 +3338,8 @@ export const getGetRelationshipResponseMock = (
             undefined,
           ]),
           reviewedAt: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           reviewerId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
           status: faker.helpers.arrayElement([
@@ -3404,28 +3356,26 @@ export const getGetRelationshipResponseMock = (
           ]),
           supported: faker.datatype.boolean(),
           validFrom: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           validTo: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-            undefined,
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            null,
           ]),
           value: faker.helpers.arrayElement([
-            faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
               faker.string.alpha({ length: { min: 10, max: 20 } }),
-              Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
-                () => faker.string.alpha({ length: { min: 10, max: 20 } }),
-              ),
-            ]),
+            ),
             null,
           ]),
           valueSchemaVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
         },
       },
       freshnessBoundary: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       pending: {},
       previousReviewedStateVersion: faker.number.int(),
@@ -3508,8 +3458,8 @@ export const getGetRelationshipResponseMock = (
       ] as const),
       approvalStatus: faker.helpers.arrayElement(["pending", "approved", "rejected"] as const),
       approvedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       approvedRevision: faker.helpers.arrayElement([faker.number.int(), undefined]),
       channel: faker.helpers.arrayElement([
@@ -3540,10 +3490,7 @@ export const getGetRelationshipResponseMock = (
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
-      dueAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
-      ]),
+      dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
         () => ({
           excerpt: faker.helpers.arrayElement([
@@ -3561,8 +3508,8 @@ export const getGetRelationshipResponseMock = (
         }),
       ),
       executedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       executionError: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -3612,16 +3559,16 @@ export const getGetRelationshipResponseMock = (
       ]),
       reconciliationAttempts: faker.helpers.arrayElement([faker.number.int(), undefined]),
       reconciliationCheckedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       reconciliationError: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
       reconciliationNextAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       reconciliationStatus: faker.helpers.arrayElement([
         faker.helpers.arrayElement([
@@ -3645,8 +3592,8 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       snoozedUntil: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       updatedAt: faker.helpers.arrayElement([
         faker.date.past().toISOString().slice(0, 19) + "Z",
@@ -3671,8 +3618,8 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       companyEnrichedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
       companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -3701,12 +3648,12 @@ export const getGetRelationshipResponseMock = (
         "partner",
       ] as const),
       lastChangedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       lastTouchAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       lifecycle: faker.helpers.arrayElement([
         "prospect",
@@ -3731,8 +3678,8 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       nextActionAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
       peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -3741,8 +3688,8 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       projectedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       projectorVersion: faker.number.int(),
       resourceRefs: Array.from(
@@ -3799,8 +3746,8 @@ export const getRetractRelationshipAssertionResponseMock = (
     undefined,
   ]),
   companyEnrichedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
   companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -3829,12 +3776,12 @@ export const getRetractRelationshipAssertionResponseMock = (
     "partner",
   ] as const),
   lastChangedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastTouchAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lifecycle: faker.helpers.arrayElement([
     "prospect",
@@ -3858,8 +3805,8 @@ export const getRetractRelationshipAssertionResponseMock = (
     undefined,
   ]),
   nextActionAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
   peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -3868,8 +3815,8 @@ export const getRetractRelationshipAssertionResponseMock = (
     undefined,
   ]),
   projectedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   projectorVersion: faker.number.int(),
   resourceRefs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
@@ -3982,7 +3929,7 @@ export const getRunCommitmentRecoveryResponseMock = (
         Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
           faker.string.alpha({ length: { min: 10, max: 20 } }),
         ),
-        undefined,
+        null,
       ]),
     }),
   ),
@@ -4098,8 +4045,8 @@ export const getAppendCommitmentTransitionResponseMock = (
     undefined,
   ]),
   completedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   confidence: faker.number.float({ fractionDigits: 2 }),
   counterpartyParticipantRef: faker.helpers.arrayElement([
@@ -4108,10 +4055,7 @@ export const getAppendCommitmentTransitionResponseMock = (
   ]),
   currentEventVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
   direction: faker.helpers.arrayElement(["promised_by_me", "promised_by_them", "mutual"] as const),
-  dueAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
-  ]),
+  dueAt: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
   duePhrase: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -4174,13 +4118,10 @@ export const getGetRelationshipCommunicationTimelineResponseMock = (
     visibility: faker.helpers.arrayElement(["private", "metadata", "full"] as const),
   })),
   nextBefore: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
-  nextBeforeId: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.uuid(), null]),
-    undefined,
-  ]),
+  nextBeforeId: faker.helpers.arrayElement([faker.string.uuid(), null]),
   ...overrideResponse,
 });
 
@@ -4230,8 +4171,8 @@ export const getResolveRelationshipContradictionResponseMock = (
       (_, i) => i + 1,
     ).map(() => ({
       completedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       legalHold: faker.datatype.boolean(),
       receiptId: faker.string.uuid(),
@@ -4398,8 +4339,8 @@ export const getResolveRelationshipContradictionResponseMock = (
       undefined,
     ]),
     companyEnrichedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -4428,12 +4369,12 @@ export const getResolveRelationshipContradictionResponseMock = (
       "partner",
     ] as const),
     lastChangedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lastTouchAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lifecycle: faker.helpers.arrayElement([
       "prospect",
@@ -4457,8 +4398,8 @@ export const getResolveRelationshipContradictionResponseMock = (
       undefined,
     ]),
     nextActionAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
     peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -4467,8 +4408,8 @@ export const getResolveRelationshipContradictionResponseMock = (
       undefined,
     ]),
     projectedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     projectorVersion: faker.number.int(),
     resourceRefs: Array.from(
@@ -4543,8 +4484,8 @@ export const getCorrectConversationEvidenceResponseMock = (
       (_, i) => i + 1,
     ).map(() => ({
       completedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       legalHold: faker.datatype.boolean(),
       receiptId: faker.string.uuid(),
@@ -4711,8 +4652,8 @@ export const getCorrectConversationEvidenceResponseMock = (
       undefined,
     ]),
     companyEnrichedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -4741,12 +4682,12 @@ export const getCorrectConversationEvidenceResponseMock = (
       "partner",
     ] as const),
     lastChangedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lastTouchAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lifecycle: faker.helpers.arrayElement([
       "prospect",
@@ -4770,8 +4711,8 @@ export const getCorrectConversationEvidenceResponseMock = (
       undefined,
     ]),
     nextActionAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
     peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -4780,8 +4721,8 @@ export const getCorrectConversationEvidenceResponseMock = (
       undefined,
     ]),
     projectedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     projectorVersion: faker.number.int(),
     resourceRefs: Array.from(
@@ -4856,8 +4797,8 @@ export const getDecideConversationChangeResponseMock = (
       (_, i) => i + 1,
     ).map(() => ({
       completedAt: faker.helpers.arrayElement([
-        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-        undefined,
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        null,
       ]),
       legalHold: faker.datatype.boolean(),
       receiptId: faker.string.uuid(),
@@ -5024,8 +4965,8 @@ export const getDecideConversationChangeResponseMock = (
       undefined,
     ]),
     companyEnrichedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -5054,12 +4995,12 @@ export const getDecideConversationChangeResponseMock = (
       "partner",
     ] as const),
     lastChangedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lastTouchAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     lifecycle: faker.helpers.arrayElement([
       "prospect",
@@ -5083,8 +5024,8 @@ export const getDecideConversationChangeResponseMock = (
       undefined,
     ]),
     nextActionAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
     peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -5093,8 +5034,8 @@ export const getDecideConversationChangeResponseMock = (
       undefined,
     ]),
     projectedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
     projectorVersion: faker.number.int(),
     resourceRefs: Array.from(
@@ -5127,8 +5068,8 @@ export const getRequestConversationDeletionResponseMock = (
   overrideResponse: Partial<Extract<ConversationDeletionReceipt, object>> = {},
 ): ConversationDeletionReceipt => ({
   completedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   legalHold: faker.datatype.boolean(),
   receiptId: faker.string.uuid(),
@@ -5260,8 +5201,8 @@ export const getCorrectRelationshipResponseMock = (
     undefined,
   ]),
   companyEnrichedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
   companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
@@ -5290,12 +5231,12 @@ export const getCorrectRelationshipResponseMock = (
     "partner",
   ] as const),
   lastChangedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lastTouchAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   lifecycle: faker.helpers.arrayElement([
     "prospect",
@@ -5319,8 +5260,8 @@ export const getCorrectRelationshipResponseMock = (
     undefined,
   ]),
   nextActionAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
   peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -5329,8 +5270,8 @@ export const getCorrectRelationshipResponseMock = (
     undefined,
   ]),
   projectedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   projectorVersion: faker.number.int(),
   resourceRefs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
@@ -5497,13 +5438,10 @@ export const getGetRelationshipTimelineResponseMock = (
 ): GetRelationshipTimeline200 => ({
   hasMore: faker.datatype.boolean(),
   nextBefore: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
-  nextBeforeId: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.uuid(), null]),
-    undefined,
-  ]),
+  nextBeforeId: faker.helpers.arrayElement([faker.string.uuid(), null]),
   observations: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       contentHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -5568,8 +5506,8 @@ export const getSetCloudResearchConsentResponseMock = (
 ): CloudResearchConsentState => ({
   consented: faker.datatype.boolean(),
   consentedAt: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-    undefined,
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    null,
   ]),
   ...overrideResponse,
 });
@@ -5616,8 +5554,8 @@ export const getGetResearchStatusResponseMock = (
   consent: {
     consented: faker.datatype.boolean(),
     consentedAt: faker.helpers.arrayElement([
-      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
-      undefined,
+      faker.date.past().toISOString().slice(0, 19) + "Z",
+      null,
     ]),
   },
   reason: faker.helpers.arrayElement([

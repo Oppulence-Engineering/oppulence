@@ -14,10 +14,7 @@ export { getTextToSpeechResponseMock } from "./voice.faker";
 
 export const getTextToSpeechMockHandler = (
   overrideResponse?:
-    | ArrayBuffer
-    | ((
-        info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Promise<ArrayBuffer> | ArrayBuffer),
+    Blob | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Blob> | Blob),
   options?: RequestHandlerOptions,
 ) => {
   return http.post(
@@ -29,10 +26,10 @@ export const getTextToSpeechMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getTextToSpeechResponseMock();
-      return HttpResponse.arrayBuffer(
-        binaryBody instanceof ArrayBuffer ? binaryBody : new ArrayBuffer(0),
-        { status: 200, headers: { "Content-Type": "audio/mpeg" } },
-      );
+      return new HttpResponse(binaryBody, {
+        status: 200,
+        headers: { "Content-Type": "audio/mpeg" },
+      });
     },
     options,
   );

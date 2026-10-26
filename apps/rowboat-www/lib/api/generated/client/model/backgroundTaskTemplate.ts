@@ -42,7 +42,7 @@ export interface BackgroundTaskTemplate {
   /** Default task slug used when instantiating this template. */
   taskSlug: string;
   /** Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH. */
-  triggers?: unknown | null;
+  triggers?: unknown;
   /** Monotonic product definition version used for safe upgrades. */
   version: number;
 }
