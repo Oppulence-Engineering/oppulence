@@ -14,7 +14,6 @@
     font-feature-settings: "cv01", "ss03";
   }
 
-
   .marketing-polar .font-display {
     font-family: var(--typeface-sans);
   }
@@ -912,7 +911,6 @@
    * choreography stay unchanged.
    */
 
-
   .marketing-polar .font-display {
     font-family: var(--typeface-sans);
   }
@@ -1266,7 +1264,6 @@
    * Then the dark theme, using cossistant's exact dark scale — their
    * accent brightens on dark (orange 44% -> 50%), so the red does too.
    */
-
 
   /*
    * Polish round 1 — fluid rhythm and type detailing. Fixed section
@@ -2027,7 +2024,6 @@
     letter-spacing: -0.011em;
     line-height: 1.55;
   }
-
 
   .sm-site .linear-shell {
     width: min(100%, 1440px);
