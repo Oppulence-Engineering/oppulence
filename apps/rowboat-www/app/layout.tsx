@@ -9,7 +9,7 @@ import { createMetadata } from "@/lib/metadata";
 import { cn } from "@/lib/utils";
 
 import "./globals.css";
-import "./product-theme.css";
+import "@oppulence/ui/product-theme.css";
 
 export const metadata: Metadata = createMetadata({
   title: {

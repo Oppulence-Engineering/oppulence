@@ -17,6 +17,7 @@
     "./lib/*": "./src/lib/*",
     "./globals.css": "./src/styles/globals.css",
     "./product-system.css": "./src/styles/product-system.css",
+    "./product-theme.css": "./src/styles/product-theme.css",
     "./tokens.css": "./src/styles/tokens.css"
   },
   "peerDependencies": {
