@@ -22,7 +22,9 @@ raise a budget merely to land a change.
 
 Rule ownership:
 
-- `WEB001`–`WEB014`, `WEB019`, `WEB022`: `@oppulence/eslint-plugin-web`
+- `WEB001`–`WEB014`, `WEB019`, `WEB022`, `WEB030`: `@oppulence/eslint-plugin-web`
+- `WEB031`: `quality/css-design-values.test.ts` — raw colors and font stacks in CSS (web, desktop
+  renderer, and `packages/ui`) cannot grow past `quality/css-design-values-baseline.json`
 - `WEB015`–`WEB018`: `quality/repository-policies.test.ts` and contract drift scripts
 - `WEB020`: `quality/component-contracts.test.ts` plus colocated Testing Library tests
 - `WEB023`–`WEB028`: `quality/generate-policies.test.ts` and `quality/generate-*.test.ts` — Zod-only

@@ -41,13 +41,15 @@ local warnings but are failures in CI.
 | X018 | Background retries must retain bounded backoff                             | architecture review; planned semantic rule |
 | X019 | Durable processing requires an idempotency identity                        | domain tests; planned semantic rule        |
 | X020 | Generated outputs are changed through their generator                      | package/export checks and review           |
+| X021 | Renderer class strings use design tokens, not raw colors, radii, or fonts  | ESLint baseline                            |
 
 ## Ratchets
 
 The repository contains legacy debt that cannot safely be rewritten as one mechanical
 change. Ratchets record exact existing findings and reject new ones:
 
-- `config/baselines/architecture.json`: direct writes, raw reads, service-location, and pollers.
+- `config/baselines/architecture.json`: direct writes, raw reads, service-location, pollers, and raw
+  design values (X021). The one X021 entry is the Discord brand color in the settings dialog.
 - `config/baselines/dependency-cruiser-known-violations.json`: existing dependency cycles.
 - `config/baselines/knip.json`: existing unused files and symbols.
 - `config/baselines/prettier.json`: existing formatting debt.
