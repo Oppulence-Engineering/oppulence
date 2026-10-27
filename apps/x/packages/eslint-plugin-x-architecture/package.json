@@ -16,11 +16,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@typescript-eslint/utils": "^8.67.0"
+    "@typescript-eslint/utils": "^8.72.0"
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.67.0",
-    "@typescript-eslint/rule-tester": "^8.67.0",
+    "@typescript-eslint/parser": "^8.72.0",
+    "@typescript-eslint/rule-tester": "^8.72.0",
     "@types/node": "^25.0.3",
     "typescript": "^5.9.3",
     "vitest": "catalog:"
