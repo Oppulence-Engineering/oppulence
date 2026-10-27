@@ -14,7 +14,7 @@ podDisruptionBudget:
   unhealthyPodEvictionPolicy: IfHealthyBudget
 
 image:
-  repository: ghcr.io/oppulence-engineering/desktop-assistant-rowboat-api
+  repository: ghcr.io/playbookmediallc/desktop-assistant-rowboat-api
   tag: "" # set by CI to the released git SHA / tag
 
 imagePullSecrets:
