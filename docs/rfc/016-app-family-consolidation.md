@@ -120,7 +120,7 @@ production surfaces.
 | Local capture and transcription contract | `clients/apps/desktop`                      | Desktop UI only, optional local helpers                  |
 | Oppulence product connector manifest     | `clients/apps/desktop` + `server` | Canvas, Cadence, Corinthian, Conduit, Eigen integrations |
 | Hosted public SDK contract               | `clients/apps/dashboard`                | `sdk/python`, external developers                   |
-| Desktop cloud SDK contract               | `server`            | `clients/packages/api-client`, desktop integrations   |
+| Desktop cloud SDK contract               | `server`            | `sdk/typescript`, desktop integrations   |
 
 Contract owners publish schemas, examples, and compatibility tests. Consumers do
 not add endpoints by assumption.
@@ -362,7 +362,7 @@ Create a small registry in `docs` or `apps/README.md`:
 
 | Contract           | Owner                         | Contract artifact                                                      | Stability |
 | ------------------ | ----------------------------- | ---------------------------------------------------------------------- | --------- |
-| desktop-cloud-api  | `server`            | `server/api/openapi.json` + `clients/packages/api-client` | beta      |
+| desktop-cloud-api  | `server`            | `server/api/openapi.json` + `sdk/typescript` | beta      |
 | hosted-project-api | `clients/apps/dashboard`                | OpenAPI or typed route manifest                                        | stable    |
 | widget-api         | `clients/apps/dashboard`                | OpenAPI or route tests                                                 | beta      |
 | desktop-ipc        | `clients/apps/desktop`                      | TypeScript types                                                       | internal  |

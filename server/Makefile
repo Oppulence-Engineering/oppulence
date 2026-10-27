@@ -153,7 +153,7 @@ tidy:
 #   protoc-gen-go, protoc-gen-go-grpc, protoc-gen-entgrpc (go install).
 
 GOBIN := $(shell go env GOPATH)/bin
-SDK_TS_DIR := ../clients/packages/api-client
+SDK_TS_DIR := ../sdk/typescript
 WWW_DIR := ../clients/apps/web
 
 .PHONY: generate
@@ -235,11 +235,11 @@ install-quality-tools: install-atlas
 
 .PHONY: generate-check
 generate-check: generate
-	git diff --exit-code -- ent api/openapi.json internal/gqlapi ../clients/packages/api-client ../clients/apps/web/lib/api/generated
+	git diff --exit-code -- ent api/openapi.json internal/gqlapi ../sdk/typescript ../clients/apps/web/lib/api/generated
 
 .PHONY: contract-generate-check
 contract-generate-check: contract-generate
-	git diff --exit-code -- ent api/openapi.json internal/gqlapi ../clients/packages/api-client ../clients/apps/web/lib/api/generated
+	git diff --exit-code -- ent api/openapi.json internal/gqlapi ../sdk/typescript ../clients/apps/web/lib/api/generated
 
 # ---- database migrations (Atlas, via ent) ----------------------------------
 

@@ -89,7 +89,8 @@ function requiredKeys() {
 }
 
 // Compose reads the shell environment before the root .env. A `<KEY>` value is
-// the legacy .env.example placeholder, which compose would accept as a real key.
+// a placeholder copied from the old root .env.example, which compose would
+// accept as a real key.
 function missingKeys() {
   const text = existsSync(ENV_FILE) ? readFileSync(ENV_FILE, "utf8") : "";
   const fromFile = new Map(

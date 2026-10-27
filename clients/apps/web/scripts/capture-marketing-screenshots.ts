@@ -37,7 +37,7 @@ const artifactDir =
   path.join(repoRoot, ".rowboat-kind/marketing-screenshots");
 const logFile = path.join(artifactDir, "desktop.log");
 const relationshipFixture = path.join(
-  repoRoot,
+  __dirname,
   "fixtures/relationship-marketing-observations.json",
 );
 

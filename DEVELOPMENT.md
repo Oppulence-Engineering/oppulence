@@ -2,11 +2,11 @@
 
 Oppulence runs locally as three surfaces. One command, `dev`, drives all of them.
 
-| Surface                    | Path               | Runs as                                                  |
-| -------------------------- | ------------------ | -------------------------------------------------------- |
-| Desktop (Electron)         | `clients/apps/desktop`           | nested pnpm workspace                                    |
-| Web app and marketing site | `clients/apps/web` | Next.js (npm), hot reload                                |
-| Backend (API and worker)   | `server` | Go, in Docker Compose with Postgres, Redis, and Temporal |
+| Surface                    | Path                   | Runs as                                                  |
+| -------------------------- | ---------------------- | -------------------------------------------------------- |
+| Desktop (Electron)         | `clients/apps/desktop` | nested pnpm workspace                                    |
+| Web app and marketing site | `clients/apps/web`     | Next.js (npm), hot reload                                |
+| Backend (API and worker)   | `server`               | Go, in Docker Compose with Postgres, Redis, and Temporal |
 
 ## Quick start
 
@@ -47,12 +47,12 @@ The backend will not start without these keys in the root `.env`. `dev` reads
 the list from `docker-compose.rowboat-api.yml`, so a newly required key is
 picked up without changing the CLI.
 
-| Key                                        | Used for                             | Where to get it                                                            |
-| ------------------------------------------ | ------------------------------------ | -------------------------------------------------------------------------- |
-| `WORKOS_API_KEY`                           | Sign-in through WorkOS AuthKit       | WorkOS dashboard; see [AUTH.md](server/AUTH.md#local-end-to-end) |
-| `OPENROUTER_API_KEY`                       | Assistant chat (the worker calls it) | [openrouter.ai/keys](https://openrouter.ai/keys)                           |
-| `OPENAI_API_KEY`                           | Embeddings                           | [platform.openai.com/api-keys](https://platform.openai.com/api-keys)       |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth connections             | A Google Cloud OAuth client; see [google-setup.md](google-setup.md)        |
+| Key                                        | Used for                             | Where to get it                                                      |
+| ------------------------------------------ | ------------------------------------ | -------------------------------------------------------------------- |
+| `WORKOS_API_KEY`                           | Sign-in through WorkOS AuthKit       | WorkOS dashboard; see [AUTH.md](server/AUTH.md#local-end-to-end)     |
+| `OPENROUTER_API_KEY`                       | Assistant chat (the worker calls it) | [openrouter.ai/keys](https://openrouter.ai/keys)                     |
+| `OPENAI_API_KEY`                           | Embeddings                           | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth connections             | A Google Cloud OAuth client; see [google-setup.md](google-setup.md)  |
 
 For an offline plumbing check, set `ROWBOAT_COMPOSE_MOCK_LLM=1`. Chat turns then
 get a canned reply from devstack; `OPENROUTER_API_KEY` still needs a value.
@@ -78,9 +78,9 @@ Run the gate for each surface you touched:
 
 | Surface | Command                                                                       |
 | ------- | ----------------------------------------------------------------------------- |
-| Desktop | `cd clients/apps/desktop && pnpm verify`                                                    |
+| Desktop | `cd clients/apps/desktop && pnpm verify`                                      |
 | Web app | `cd clients/apps/web && npm run verify:fast` (before merge: `npm run verify`) |
-| Backend | `cd server && make verify`                                          |
+| Backend | `cd server && make verify`                                                    |
 
 `dev up` installs the lefthook git hooks, which format staged files and run the
 architecture gauntlets on commit and push. PR titles must follow Conventional
@@ -91,5 +91,3 @@ Commits; see [CONTRIBUTING.md](CONTRIBUTING.md).
 - **kind (Kubernetes):** `make stack` deploys the backend with the production
   Helm chart; `make help` lists every target. It is slower, so use it for chart
   and infrastructure changes.
-- **Legacy dashboard (`clients/apps/dashboard`):** the root `docker-compose.yml`, with keys
-  from the root `.env.example`.

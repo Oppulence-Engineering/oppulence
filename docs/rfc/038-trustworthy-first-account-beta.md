@@ -1219,7 +1219,7 @@ relationship systems:
 - `server/ent/schema/relationship*.go`
 - `server/ent/schema/revenue_action.go`
 - `server/api/openapi.json`
-- `clients/packages/api-client`
+- `sdk/typescript`
 - `clients/apps/web/components/revenue/relationships-view.tsx`
 - `clients/apps/web/components/revenue/queue-view.tsx`
 - `clients/apps/web/components/revenue/review-sheet.tsx`
@@ -1249,7 +1249,7 @@ The implementation is anchored by:
   live provider write scopes, and design-partner release-owner signoff;
 - desktop relationship publication, outbox, capture guardian, recovery,
   retention, and microphone/system-audio suites under `clients/apps/desktop`;
-- generated `api/openapi.json`, `clients/packages/api-client`, and the shared
+- generated `api/openapi.json`, `sdk/typescript`, and the shared
   `clients/packages/relationship-contract` package;
 - the redacted administrator support bundle at
   `GET /v1/relationship-beta/diagnostics`;

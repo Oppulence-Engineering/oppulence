@@ -14,7 +14,7 @@ clients/apps/desktop/apps/renderer/dist/
 **/yarn.lock
 **/*.min.*
 **/CHANGELOG.md
-clients/packages/api-client/src/generated/schema.ts
+sdk/typescript/src/generated/schema.ts
 .release-please-manifest.json
 
 # The nested desktop workspace owns formatting through its own ratchet.
