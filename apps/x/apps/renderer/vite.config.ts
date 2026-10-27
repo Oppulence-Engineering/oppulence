@@ -58,9 +58,8 @@ export default defineConfig({
         if (!importer) {
           return undefined;
         }
-        const fromUi =
-          importer.includes(`${path.sep}packages${path.sep}ui${path.sep}`) ||
-          importer.includes(`${path.sep}@oppulence+ui@`);
+        // Vite gives importer IDs with "/" on all platforms, Windows included.
+        const fromUi = importer.includes("/packages/ui/") || importer.includes("/@oppulence+ui@");
         if (!fromUi) {
           return undefined;
         }
