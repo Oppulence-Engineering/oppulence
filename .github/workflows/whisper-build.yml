@@ -1,6 +1,6 @@
 # Builds the per-arch, statically-linked whisper-cli from the pinned whisper.cpp
 # tag (RFC 009 §20, Appendix I). Artifacts are consumed by the release pipeline,
-# which stages the matching arch into apps/x/vendor/whisper/<plat>-<arch>/ before
+# which stages the matching arch into clients/apps/desktop/vendor/whisper/<plat>-<arch>/ before
 # `electron-forge make` (where the app's existing osxNotarize notarizes the whole
 # bundle, including this signed helper).
 #
@@ -11,8 +11,8 @@ on:
   workflow_dispatch: {}
   push:
     paths:
-      - "apps/x/vendor/whisper/PIN"
-      - "apps/x/vendor/whisper/build.sh"
+      - "clients/apps/desktop/vendor/whisper/PIN"
+      - "clients/apps/desktop/vendor/whisper/build.sh"
       - ".github/workflows/whisper-build.yml"
 
 # Publishing the per-arch binaries to the PIN-keyed GitHub Release.
@@ -92,7 +92,7 @@ jobs:
 
       - name: Build whisper-cli (pinned tag)
         shell: bash
-        working-directory: apps/x/vendor/whisper
+        working-directory: clients/apps/desktop/vendor/whisper
         # Pass flags via env, not inline ${{ }} interpolation: the Windows flags
         # contain quotes (-G "Visual Studio 17 2022") that would be re-parsed and
         # mangled if substituted into the run-script text. As an env value the
@@ -111,14 +111,14 @@ jobs:
             exit 0
           fi
           codesign --force --options runtime --timestamp \
-            --entitlements apps/x/apps/main/entitlements.plist \
-            --sign "$DEVELOPER_ID" apps/x/vendor/whisper/out/whisper-cli
-          codesign --verify --strict --deep apps/x/vendor/whisper/out/whisper-cli
+            --entitlements clients/apps/desktop/apps/main/entitlements.plist \
+            --sign "$DEVELOPER_ID" clients/apps/desktop/vendor/whisper/out/whisper-cli
+          codesign --verify --strict --deep clients/apps/desktop/vendor/whisper/out/whisper-cli
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: whisper-${{ matrix.plat }}-${{ matrix.arch }}
-          path: apps/x/vendor/whisper/out/
+          path: clients/apps/desktop/vendor/whisper/out/
           if-no-files-found: error
 
       # Publish to a PIN-keyed GitHub Release so the release + e2e pipelines can
@@ -130,12 +130,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PIN="$(tr -d '[:space:]' < apps/x/vendor/whisper/PIN)"
+          PIN="$(tr -d '[:space:]' < clients/apps/desktop/vendor/whisper/PIN)"
           TAG="whisper-bin-$PIN"
           ASSET="whisper-${{ matrix.plat }}-${{ matrix.arch }}.tar.gz"
           # Archive the contents of out/ so the binary extracts directly into
           # vendor/whisper/<plat>-<arch>/ on the consuming side.
-          tar -czf "$ASSET" -C apps/x/vendor/whisper/out .
+          tar -czf "$ASSET" -C clients/apps/desktop/vendor/whisper/out .
           # Idempotent + race-tolerant across parallel matrix legs: create the
           # release if missing (swallow "already exists"), then upload this leg's
           # asset, retrying in case another leg is mid-create.

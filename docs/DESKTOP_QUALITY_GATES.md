@@ -12,7 +12,7 @@ This repo's desktop checks are modeled after quality gates used by high-star Ele
 
 ## Rowboat Gates
 
-- `Desktop Quality Gates`: PR workflow for `apps/x/**` that runs lint, core tests, Electron hardening checks, and TypeScript/build checks.
+- `Desktop Quality Gates`: PR workflow for `clients/apps/desktop/**` that runs lint, core tests, Electron hardening checks, and TypeScript/build checks.
 - `x Smoke Test`: PR workflow that packages the Linux Electron app and boots it under `xvfb`.
 - `Desktop Performance Nightly`: scheduled full/deep kind-backed perf gate with artifacts and Kubernetes diagnostics.
 - `Dependency Review`: PR gate that blocks newly introduced high-severity vulnerable dependencies.

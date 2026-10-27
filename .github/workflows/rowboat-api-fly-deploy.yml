@@ -101,7 +101,7 @@ jobs:
           flyctl secrets set --stage --app "${FLY_APP_NAME}" "${secret_args[@]}"
 
       - name: Deploy and converge process topology
-        run: apps/rowboat-api/scripts/fly-deploy.sh "${FLY_APP_NAME}"
+        run: server/scripts/fly-deploy.sh "${FLY_APP_NAME}"
 
       - name: Smoke test Fly deployment
         env:

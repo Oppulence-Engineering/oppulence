@@ -8,8 +8,8 @@
 #   rowboat-www  production build, started by Playwright against rowboat-api
 #
 # Suites:
-#   1. Go:         apps/rowboat-api/integration (tag accountdeletione2e)
-#   2. Playwright: apps/rowboat-www/e2e-stack (the real Settings → Account UI)
+#   1. Go:         server/integration (tag accountdeletione2e)
+#   2. Playwright: clients/apps/web/e2e-stack (the real Settings → Account UI)
 #
 # Usage: scripts/account-deletion-e2e.sh [--skip-browser] [--skip-www-build] [--keep-db]
 # Needs: go, node/npm, psql/createdb/dropdb, and a PostgreSQL server on 127.0.0.1:5432.
@@ -26,8 +26,8 @@ for arg in "$@"; do
 done
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-API_DIR="$ROOT/apps/rowboat-api"
-WWW_DIR="$ROOT/apps/rowboat-www"
+API_DIR="$ROOT/server"
+WWW_DIR="$ROOT/clients/apps/web"
 PG_HOST="${PG_HOST:-127.0.0.1}"
 PG_USER="${PG_USER:-$(whoami)}"
 DB_NAME="rowboat_account_deletion_e2e_$(date +%s)"

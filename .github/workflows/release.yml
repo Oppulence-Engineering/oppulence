@@ -86,7 +86,7 @@ jobs:
 
       - name: Patch forge config (fix volumeName exceeds 27 chars)
         run: |
-          CONFIG="apps/x/apps/main/forge.config.cjs"
+          CONFIG="clients/apps/desktop/apps/main/forge.config.cjs"
           if grep -q "volumeName" "$CONFIG"; then
             echo "volumeName already present in forge.config.cjs"
           else
@@ -105,7 +105,7 @@ jobs:
         with:
           node-version: 22
           cache: "pnpm"
-          cache-dependency-path: "apps/x/pnpm-lock.yaml"
+          cache-dependency-path: "clients/apps/desktop/pnpm-lock.yaml"
 
       - name: Cache Electron binaries
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
@@ -113,7 +113,7 @@ jobs:
           path: |
             ~/Library/Caches/electron
             ~/Library/Caches/electron-builder
-          key: ${{ runner.os }}-electron-${{ hashFiles('apps/x/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-electron-${{ hashFiles('clients/apps/desktop/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-electron-
 
@@ -136,7 +136,7 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       # Stage the prebuilt whisper-cli for every arch this job packages (RFC 009).
       # Without this, generateAssets finds an empty vendor dir and ships without
@@ -170,7 +170,7 @@ jobs:
       # packages/core/src/memory/onnx/assets.ts and exits non-zero on a mismatch,
       # so a compromised mirror fails the release rather than shipping.
       - name: Stage on-device embedding model
-        run: node apps/x/scripts/embeddings-fetch.mjs
+        run: node clients/apps/desktop/scripts/embeddings-fetch.mjs
 
       - name: Build electron distributables
         env:
@@ -234,14 +234,14 @@ jobs:
           NODE
           npx electron-forge make --skip-package --arch=arm64 --platform=darwin --targets "@electron-forge/maker-dmg,@electron-forge/maker-zip"
           npx electron-forge make --skip-package --arch=x64 --platform=darwin --targets "@electron-forge/maker-dmg,@electron-forge/maker-zip"
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
 
       # maker-dmg produces an unsigned .dmg (the app inside is already signed +
       # notarized). Sign, notarize, and staple the disk image too so the download
       # itself passes Gatekeeper on first open — not just the app after install.
       # Must run before "Cleanup keychain" (needs the Developer ID identity).
       - name: Sign + notarize + staple DMGs
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -332,13 +332,13 @@ jobs:
           while IFS= read -r artifact; do
             gh release upload "$RELEASE_TAG" "$artifact" --clobber
           done < "$artifacts_file"
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: distributables-macos
-          path: apps/x/apps/main/out/make/**
+          path: clients/apps/desktop/apps/main/out/make/**
           if-no-files-found: error
           retention-days: 30
 
@@ -360,7 +360,7 @@ jobs:
         with:
           node-version: 22
           cache: "pnpm"
-          cache-dependency-path: "apps/x/pnpm-lock.yaml"
+          cache-dependency-path: "clients/apps/desktop/pnpm-lock.yaml"
 
       - name: Cache Electron binaries
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
@@ -368,7 +368,7 @@ jobs:
           path: |
             ~/.cache/electron
             ~/.cache/electron-builder
-          key: ${{ runner.os }}-electron-${{ hashFiles('apps/x/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-electron-${{ hashFiles('clients/apps/desktop/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-electron-
 
@@ -379,7 +379,7 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       # Stage the prebuilt whisper-cli for every arch this job packages (RFC 009).
       - name: Stage whisper-cli binaries (RFC 009)
@@ -401,7 +401,7 @@ jobs:
       # packages/core/src/memory/onnx/assets.ts and exits non-zero on a mismatch,
       # so a compromised mirror fails the release rather than shipping.
       - name: Stage on-device embedding model
-        run: node apps/x/scripts/embeddings-fetch.mjs
+        run: node clients/apps/desktop/scripts/embeddings-fetch.mjs
 
       - name: Build electron distributables
         env:
@@ -455,7 +455,7 @@ jobs:
           NODE
           npx electron-forge make --skip-package --arch=x64 --platform=linux --targets "@electron-forge/maker-deb,@electron-forge/maker-rpm,@electron-forge/maker-zip"
           npx electron-forge make --skip-package --arch=arm64 --platform=linux --targets "@electron-forge/maker-deb,@electron-forge/maker-rpm,@electron-forge/maker-zip"
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
 
       - name: Attach release assets
         env:
@@ -478,13 +478,13 @@ jobs:
           while IFS= read -r artifact; do
             gh release upload "$RELEASE_TAG" "$artifact" --clobber
           done < "$artifacts_file"
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: distributables-linux
-          path: apps/x/apps/main/out/make/**
+          path: clients/apps/desktop/apps/main/out/make/**
           if-no-files-found: error
           retention-days: 30
 
@@ -506,7 +506,7 @@ jobs:
         with:
           node-version: 22
           cache: "pnpm"
-          cache-dependency-path: "apps/x/pnpm-lock.yaml"
+          cache-dependency-path: "clients/apps/desktop/pnpm-lock.yaml"
 
       - name: Cache Electron binaries
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
@@ -514,13 +514,13 @@ jobs:
           path: |
             ~\\AppData\\Local\\electron\\Cache
             ~\\AppData\\Local\\electron-builder\\Cache
-          key: ${{ runner.os }}-electron-${{ hashFiles('apps/x/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-electron-${{ hashFiles('clients/apps/desktop/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-electron-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       # Stage the prebuilt whisper-cli for this job's arch (RFC 009). Uses bash
       # (git-bash on the Windows runner) so the shared staging script runs as-is.
@@ -543,7 +543,7 @@ jobs:
       # so a compromised mirror fails the release rather than shipping.
       - name: Stage on-device embedding model
         shell: bash
-        run: node apps/x/scripts/embeddings-fetch.mjs
+        run: node clients/apps/desktop/scripts/embeddings-fetch.mjs
 
       - name: Build electron distributables
         env:
@@ -598,7 +598,7 @@ jobs:
           $packageScript | node --input-type=module - win32 x64
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npx electron-forge make --skip-package --arch=x64 --platform=win32 --targets "@electron-forge/maker-squirrel,@electron-forge/maker-zip"
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
 
       - name: Attach release assets
         env:
@@ -621,13 +621,13 @@ jobs:
           foreach ($artifact in $artifacts) {
             gh release upload $env:RELEASE_TAG $artifact.FullName --clobber
           }
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: distributables-windows
-          path: apps/x/apps/main/out/make/**
+          path: clients/apps/desktop/apps/main/out/make/**
           if-no-files-found: error
           retention-days: 30
 
@@ -646,7 +646,7 @@ jobs:
       - name: Generate SPDX SBOM with Syft
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
-          path: ./apps/x
+          path: ./clients/apps/desktop
           format: spdx-json
           output-file: solomon-ai-x-${{ needs.release-context.outputs.version }}.spdx.json
           upload-artifact: true
@@ -655,7 +655,7 @@ jobs:
       - name: Generate CycloneDX SBOM with Syft
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
-          path: ./apps/x
+          path: ./clients/apps/desktop
           format: cyclonedx-json
           output-file: solomon-ai-x-${{ needs.release-context.outputs.version }}.cdx.json
           upload-artifact: true

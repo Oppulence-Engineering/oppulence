@@ -1,6 +1,6 @@
 # Engineering Quality Gates Plan — Pre-commit Hooks, Performance & Regression Tests
 
-> Status: **Implemented (P0–P3).** Scope: the `apps/x` Electron desktop app primarily, with
+> Status: **Implemented (P0–P3).** Scope: the `clients/apps/desktop` Electron desktop app primarily, with
 > hooks spanning the polyglot monorepo (Go API + perf tool, Next.js web, TS desktop).
 > Method: benchmarked against how shipping OSS Electron apps (VS Code, Signal, Element,
 > Joplin, Bitwarden, Mattermost, Logseq, Standard Notes) do this, then mapped to what we
@@ -18,11 +18,11 @@ All phases are landed. Files in parentheses.
 - [x] **L1 pre-commit** — `lefthook.yml`: Prettier + ESLint `--fix` on staged TS, `gofmt` + `go vet`
       on staged Go. Verified end-to-end.
 - [x] **L2 commit-msg** — commitlint (`commitlint.config.cjs`) matching the PR-title types. Verified.
-- [x] **L3 pre-push** — renderer `tsc -b` + `apps/x` unit tests (`lefthook.yml`).
+- [x] **L3 pre-push** — renderer `tsc -b` + `clients/apps/desktop` unit tests (`lefthook.yml`).
 - [x] **L3/P3 import boundary** — renderer `no-restricted-imports` rule keeps `@x/core`/`electron`/
-      node built-ins out of the browser layer (`apps/x/apps/renderer/eslint.config.js`).
+      node built-ins out of the browser layer (`clients/apps/desktop/apps/renderer/eslint.config.js`).
 - [x] **L4 PR CI** — `x-smoke-test.yml` reworked: renderer typecheck → lint → unit → package →
-      **Playwright-Electron smoke** (`apps/x/apps/main/{playwright.config.ts,e2e/smoke.spec.ts}`)
+      **Playwright-Electron smoke** (`clients/apps/desktop/apps/main/{playwright.config.ts,e2e/smoke.spec.ts}`)
       replacing the 5s boot.
 - [x] **L4 perf-lite** — `scripts/perf-lite.mjs` + `x-perf-lite.yml` (renderer bundle-size budget).
 - [x] **L5 perf regression gate** — rolling CI baseline wired into `desktop-perf-nightly.yml`
@@ -64,9 +64,9 @@ are incremental.
 | Perf docs | Thorough operator doc | `docs/DESKTOP_PERFORMANCE_GATE.md` |
 | Perf CI | Nightly (full tier) + weekly (deep) + manual dispatch, under xvfb on a kind stack | `.github/workflows/desktop-perf-nightly.yml` |
 | Perf entrypoints | `make perf-desktop[-full|-deep|-quick|-baseline]` | `Makefile` |
-| Lint | ESLint flat config (root + renderer) | `apps/x/eslint.config.mts`, `apps/x/apps/renderer/eslint.config.js` |
+| Lint | ESLint flat config (root + renderer) | `clients/apps/desktop/eslint.config.mts`, `clients/apps/desktop/apps/renderer/eslint.config.js` |
 | PR-title hygiene | Conventional-commit PR-title check (feat/fix/perf/…) | `.github/workflows/pr-title-lint.yml` |
-| Unit tests | vitest, 4 tests in `packages/core` | `apps/x/packages/core/src/**/**.test.ts` |
+| Unit tests | vitest, 4 tests in `packages/core` | `clients/apps/desktop/packages/core/src/**/**.test.ts` |
 | Boot smoke (PR) | install → build shared/core/preload → lint → Forge package → launch 5s under xvfb, assert process alive | `.github/workflows/x-smoke-test.yml` |
 | Release/build CI | Multi-OS Forge build/publish | `electron-build.yml`, `release.yml`, `x-publish.yml` |
 
@@ -82,9 +82,9 @@ are incremental.
 | **Perf gate not in per-PR signal** (nightly/manual only) | Regressions found a day late, not on the PR | 🟡 Low |
 
 > Repo nuance that shapes tooling choice: **there is no root `package.json`** — the monorepo root
-> is polyglot (Go `apps/rowboat-api` + `tools/desktop-perf`, Next.js `apps/rowboat`/`rowboat-www`,
-> and the nested pnpm workspace `apps/x`). Git hooks install at the **git root**, but the JS
-> toolchain lives under `apps/x`. This matters for the hook-tool decision (§5).
+> is polyglot (Go `server` + `tools/desktop-perf`, Next.js `clients/apps/dashboard`/`rowboat-www`,
+> and the nested pnpm workspace `clients/apps/desktop`). Git hooks install at the **git root**, but the JS
+> toolchain lives under `clients/apps/desktop`. This matters for the hook-tool decision (§5).
 
 ---
 
@@ -131,7 +131,7 @@ are incremental.
 | Mattermost desktop | none | `@playwright/test` (built app) | none |
 | Logseq | none | Playwright (Java/Clojure) | none |
 | Standard Notes | commitlint cfg unused | mocha-headless / AVA | none |
-| **rowboat `apps/x` (us)** | **none → P0** | **boot-smoke only → P1** | **tiered Go gate (ahead)** |
+| **rowboat `clients/apps/desktop` (us)** | **none → P0** | **boot-smoke only → P1** | **tiered Go gate (ahead)** |
 
 ---
 
@@ -156,7 +156,7 @@ are incremental.
 
 | Decision | Choice | Why (evidence) |
 |---|---|---|
-| **Hook runner** | **lefthook** at the git root (primary) — or husky+lint-staged scoped to `apps/x` (alternative) | The root is **polyglot with no root `package.json`**. lefthook is a single language-agnostic binary that runs per-glob commands (TS *and* Go *and* Next) in parallel without a Node package at the root — a cleaner fit than husky here. *Caveat:* the JS-ecosystem standard is husky+lint-staged (4/8 OSS apps); if we'd rather keep hooks inside `apps/x` and stay 100% conventional, use that. **Recommendation: lefthook for the root**, because our root is not a JS package. |
+| **Hook runner** | **lefthook** at the git root (primary) — or husky+lint-staged scoped to `clients/apps/desktop` (alternative) | The root is **polyglot with no root `package.json`**. lefthook is a single language-agnostic binary that runs per-glob commands (TS *and* Go *and* Next) in parallel without a Node package at the root — a cleaner fit than husky here. *Caveat:* the JS-ecosystem standard is husky+lint-staged (4/8 OSS apps); if we'd rather keep hooks inside `clients/apps/desktop` and stay 100% conventional, use that. **Recommendation: lefthook for the root**, because our root is not a JS package. |
 | **Staged-file lint/format** | **eslint --fix + prettier --write** on staged TS/TSX; `gofmt`/`go vet` on staged Go | Matches the dominant OSS pattern (eslint+prettier on staged). |
 | **Formatter** | **Prettier 3** + `.editorconfig` | We have none today; every husky-using OSS app pairs eslint with prettier. |
 | **Commit messages** | Keep **PR-title lint** as the gate (we squash-merge → PR title *is* the commit). Add local `commit-msg` commitlint only if we want clean intermediate history. | commitlint-via-hook was 0/8; PR-title/CI enforcement is the norm. Low priority. |
@@ -171,14 +171,14 @@ are incremental.
 
 ### Layer 0 — Foundations
 - [ ] Add **Prettier 3** config + `.prettierignore` and a root **`.editorconfig`** (tabs/spaces, EOL,
-      final newline) covering `apps/x` (and ideally the Next apps).
-- [ ] Add a single **`scripts/lint-staged-*`** (or `lint-staged.config.mjs` under `apps/x`) that is
+      final newline) covering `clients/apps/desktop` (and ideally the Next apps).
+- [ ] Add a single **`scripts/lint-staged-*`** (or `lint-staged.config.mjs` under `clients/apps/desktop`) that is
       the *one* definition of "format + lint a set of files", callable by the hook and CI.
 
 ### Layer 1 — Pre-commit hook (fast, staged-only) — **P0**
 - [ ] Install **lefthook** at the git root with a `lefthook.yml`:
-  - `apps/x/**/*.{ts,tsx}` (staged) → `eslint --fix` + `prettier --write`
-  - `apps/rowboat/**`, `apps/rowboat-www/**` `*.{ts,tsx}` (staged) → prettier/eslint as configured there
+  - `clients/apps/desktop/**/*.{ts,tsx}` (staged) → `eslint --fix` + `prettier --write`
+  - `clients/apps/dashboard/**`, `clients/apps/web/**` `*.{ts,tsx}` (staged) → prettier/eslint as configured there
   - `**/*.go` (staged) → `gofmt -w` + `go vet` (scoped to the changed module)
   - Keep total hook time **< ~2s on a typical change**; never run `tsc` or tests here.
 - [ ] Document `git commit --no-verify` as the documented escape hatch.
@@ -189,14 +189,14 @@ are incremental.
       wired via lefthook `commit-msg`. Otherwise rely on PR-title lint + squash-merge.
 
 ### Layer 3 — pre-push (optional, opt-in) — **P2**
-- [ ] lefthook `pre-push`: run **renderer `tsc -b`** (typecheck) + **`apps/x` `npm test`** (the
+- [ ] lefthook `pre-push`: run **renderer `tsc -b`** (typecheck) + **`clients/apps/desktop` `npm test`** (the
       vitest unit suite). Fast enough for push, too slow for commit (Joplin's split). Make it
       skippable for WIP branches.
 
 ### Layer 4 — PR CI (the real gate) — **P0/P1**
 Augment `x-smoke-test.yml` (or split into `x-ci.yml`):
-- [ ] **P0: add renderer typecheck** — `cd apps/x/apps/renderer && npx tsc -b` (closes the highest-risk gap).
-- [ ] **P0: run unit tests** — `cd apps/x && npm test` (currently not in PR CI).
+- [ ] **P0: add renderer typecheck** — `cd clients/apps/desktop/apps/renderer && npx tsc -b` (closes the highest-risk gap).
+- [ ] **P0: run unit tests** — `cd clients/apps/desktop && npm test` (currently not in PR CI).
 - [ ] **P1: replace the 5s boot smoke with a real Playwright-Electron smoke** — `_electron.launch`
       the packaged binary, assert: window opens, renderer reaches the empty/sign-in shell, a basic
       interaction works (e.g., focus composer, open settings). Keep it headless under xvfb on Linux;
@@ -234,11 +234,11 @@ Augment `x-smoke-test.yml` (or split into `x-ci.yml`):
 
 ## 8. Concrete first changes (P0 checklist, file-level)
 
-1. `lefthook.yml` (repo root) — pre-commit globs for `apps/x` TS (eslint --fix + prettier) and Go (gofmt + go vet).
-2. `apps/x/.prettierrc` (or root) + `.prettierignore`; `.editorconfig` (repo root).
-3. `apps/x/apps/renderer` — confirm `tsc -b` is the typecheck entry (it is: `build` = `tsc -b && vite build`); add a standalone `typecheck` script.
-4. `.github/workflows/x-smoke-test.yml` — insert steps: `renderer typecheck`, `apps/x npm test`, before/after the package step.
-5. Onboarding note in `apps/x/CLAUDE.md` / `README` — how hooks run, `--no-verify`, and `make perf-desktop`.
+1. `lefthook.yml` (repo root) — pre-commit globs for `clients/apps/desktop` TS (eslint --fix + prettier) and Go (gofmt + go vet).
+2. `clients/apps/desktop/.prettierrc` (or root) + `.prettierignore`; `.editorconfig` (repo root).
+3. `clients/apps/desktop/apps/renderer` — confirm `tsc -b` is the typecheck entry (it is: `build` = `tsc -b && vite build`); add a standalone `typecheck` script.
+4. `.github/workflows/x-smoke-test.yml` — insert steps: `renderer typecheck`, `clients/apps/desktop npm test`, before/after the package step.
+5. Onboarding note in `clients/apps/desktop/CLAUDE.md` / `README` — how hooks run, `--no-verify`, and `make perf-desktop`.
 
 ---
 
@@ -252,7 +252,7 @@ Augment `x-smoke-test.yml` (or split into `x-ci.yml`):
 - **Risk:** Playwright-Electron flakiness on CI. Mitigation: start with a tiny, deterministic smoke
   (launch + shell-ready + one interaction) under xvfb, expand only once green and stable.
 - **Risk:** polyglot-root hook tooling. Mitigation: lefthook chosen specifically because the root has
-  no `package.json`; if the team prefers JS-standard tooling, scope husky+lint-staged inside `apps/x`.
+  no `package.json`; if the team prefers JS-standard tooling, scope husky+lint-staged inside `clients/apps/desktop`.
 
 ---
 

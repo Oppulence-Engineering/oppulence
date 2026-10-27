@@ -2,11 +2,11 @@
 set -e
 
 # build rowboat-www Next.js app
-(cd apps/rowboat-www && \
+(cd clients/apps/web && \
     npm install && \
     npm run build)
 
 # build rowboat server
-(cd apps/cli && \
+(cd clients/apps/cli && \
     npm install && \
     npm run build)

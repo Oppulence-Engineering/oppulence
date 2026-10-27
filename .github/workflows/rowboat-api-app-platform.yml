@@ -4,10 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/rowboat-api/**"
-      - "packages/oauth-resource-server-go/**"
+      - "server/**"
+      - "server/oauth-resource-server/**"
       - ".do/rowboat-api-production.json"
-      - "charts/rowboat-api/values-production.yaml"
+      - "infra/charts/rowboat-api/values-production.yaml"
       - "scripts/rowboat-database-pool.sh"
       - ".github/workflows/rowboat-api-app-platform.yml"
   workflow_dispatch:
@@ -24,12 +24,12 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
       - run: go test ./... -count=1 -timeout=30m
-        working-directory: apps/rowboat-api
+        working-directory: server
       - run: go vet ./...
-        working-directory: apps/rowboat-api
+        working-directory: server
 
   database-pool:
     runs-on: ubuntu-latest
@@ -38,7 +38,7 @@ jobs:
       - uses: digitalocean/action-doctl@3cb3953159719656269e044e0e24ca16dd2a690f # v2.5.2
         with:
           token: ${{ secrets.DIGITALOCEAN_DATABASE_TOKEN }}
-      - run: scripts/rowboat-database-pool.sh charts/rowboat-api/values-production.yaml
+      - run: scripts/rowboat-database-pool.sh infra/charts/rowboat-api/values-production.yaml
 
   deploy:
     needs: [quality, database-pool]
@@ -54,7 +54,7 @@ jobs:
       image_registry_type: GHCR
       image_registry: playbookmediallc
       image_repository: desktop-assistant-rowboat-api
-      dockerfile_path: apps/rowboat-api/Dockerfile
+      dockerfile_path: server/Dockerfile
       build_context: .
       healthcheck_url: ${{ vars.ROWBOAT_API_HEALTHCHECK_URL }}
       healthcheck_attempts: 30

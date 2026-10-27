@@ -1,0 +1,59 @@
+import { createRequire } from "node:module";
+import path from "node:path";
+
+// file: linked plugins resolve peers from their source tree, which sits
+// outside the app's node_modules. Load the peer from the package that is
+// linting so `npm ci` in rowboat-www is enough.
+const require = createRequire(path.join(process.cwd(), "package.json"));
+/** @type {typeof import("@typescript-eslint/utils")} */
+const utils = require("@typescript-eslint/utils");
+const { ESLintUtils } = utils;
+
+export const createRule = ESLintUtils.RuleCreator(
+  (name) =>
+    `https://github.com/PlaybookMediaLLC/oppulence/tree/main/clients/packages/eslint-plugin-web#${name}`,
+);
+
+export function normalizedFilename(context) {
+  const filename = context.filename || context.getFilename();
+  return path.relative(process.cwd(), filename).replaceAll(path.sep, "/");
+}
+
+export function matchesAnyPath(filename, patterns = []) {
+  return patterns.some(
+    (pattern) => filename === pattern || filename.endsWith(pattern) || filename.includes(pattern),
+  );
+}
+
+export function hasDirective(sourceCode, directive) {
+  return sourceCode.ast.body.some(
+    (node) => node.type === "ExpressionStatement" && node.directive === directive,
+  );
+}
+
+export function propertyName(node) {
+  if (!node) return undefined;
+  if (node.type === "Identifier") return node.name;
+  if (node.type === "Literal" && typeof node.value === "string") return node.value;
+  return undefined;
+}
+
+export function isMemberCall(node, objectName, methodNames) {
+  if (node.type !== "CallExpression" || node.callee.type !== "MemberExpression") return false;
+  const method = propertyName(node.callee.property);
+  if (!method || !methodNames.includes(method)) return false;
+  const object = node.callee.object;
+  if (object.type === "Identifier") return object.name === objectName;
+  return object.type === "MemberExpression" && propertyName(object.property) === objectName;
+}
+
+export const pathOptionsSchema = [
+  {
+    type: "object",
+    properties: {
+      allowFiles: { type: "array", items: { type: "string" } },
+      allowPaths: { type: "array", items: { type: "string" } },
+    },
+    additionalProperties: false,
+  },
+];

@@ -7,7 +7,7 @@
 **Implementation branch:** `feat/transcription-routing-and-relationship-loop`
 
 **Baseline:** `develop` at `fc203dd1`
-**Surface:** Oppulence Desktop (`apps/x`)
+**Surface:** Oppulence Desktop (`clients/apps/desktop`)
 
 > This document preserves the baseline findings. Findings 1–4 and 7 were addressed;
 > findings 5 and 8 received the shared-commitment and native/renderer 1:1 evidence
@@ -63,8 +63,8 @@ were used to explain intent, but a capability is classified as shipped only when
 user-reachable path exists in current code.
 
 No microphone, system-audio, packaging, or model inference test was run during this
-audit. The worktree did not have `apps/x/node_modules`, and OS permission behavior needs
-the manual signal-verification runbook in `apps/x/MEETING_CAPTURE.md`. Findings below
+audit. The worktree did not have `clients/apps/desktop/node_modules`, and OS permission behavior needs
+the manual signal-verification runbook in `clients/apps/desktop/MEETING_CAPTURE.md`. Findings below
 therefore distinguish code-backed behavior from runtime verification.
 
 ## Mission rubric

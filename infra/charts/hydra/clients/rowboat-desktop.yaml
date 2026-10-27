@@ -1,0 +1,60 @@
+# Provisions the public desktop sign-in client. Connector-broker clients are
+# generated separately by infra/charts/hydra/generate_clients.py.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rowboat-desktop-oauth-client
+  labels:
+    app.kubernetes.io/component: hydra-client-reconciler
+    app.kubernetes.io/part-of: rowboat
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      name: rowboat-desktop-oauth-client
+      labels:
+        app.kubernetes.io/component: hydra-client-reconciler
+        networking.rowboat.dev/hydra-admin-access: "true"
+    spec:
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      containers:
+        - name: reconcile-client
+          image: oryd/hydra:v2.3.0
+          env:
+            - name: HYDRA_ADMIN_URL
+              value: http://hydra-admin.ory.svc.cluster.local:4445
+          command: [/bin/sh, -c]
+          args:
+            - |
+              set -eu
+              if hydra get oauth2-client solomon-desktop --endpoint "$HYDRA_ADMIN_URL" >/dev/null 2>&1; then
+                hydra update oauth2-client solomon-desktop \
+                  --endpoint "$HYDRA_ADMIN_URL" \
+                  --name "Solomon AI Desktop" \
+                  --grant-type authorization_code,refresh_token \
+                  --response-type code \
+                  --token-endpoint-auth-method none \
+                  --scope openid,offline_access,email,profile \
+                  --redirect-uri "http://127.0.0.1/callback" \
+                  --redirect-uri "solomon-ai://callback" \
+                  --skip-consent=false
+              else
+                cat > /tmp/solomon-desktop.json <<'JSON'
+              {
+                "client_id": "solomon-desktop",
+                "client_name": "Solomon AI Desktop",
+                "grant_types": ["authorization_code", "refresh_token"],
+                "response_types": ["code"],
+                "token_endpoint_auth_method": "none",
+                "scope": "openid offline_access email profile",
+                "redirect_uris": ["http://127.0.0.1/callback", "solomon-ai://callback"],
+                "skip_consent": false
+              }
+              JSON
+                wget -qO- \
+                  --header "Content-Type: application/json" \
+                  --post-file /tmp/solomon-desktop.json \
+                  "$HYDRA_ADMIN_URL/admin/clients" >/dev/null
+              fi

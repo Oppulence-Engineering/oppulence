@@ -58,7 +58,7 @@ jobs:
         with:
           node-version: 22
           cache: "pnpm"
-          cache-dependency-path: "apps/x/pnpm-lock.yaml"
+          cache-dependency-path: "clients/apps/desktop/pnpm-lock.yaml"
 
       - name: Cache Electron binaries
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
@@ -66,17 +66,17 @@ jobs:
           path: |
             ~/.cache/electron
             ~/.cache/electron-builder
-          key: ${{ runner.os }}-electron-${{ hashFiles('apps/x/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-electron-${{ hashFiles('clients/apps/desktop/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-electron-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Build shared/core/preload (TypeScript)
         run: npm run deps
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Install xvfb + Vulkan loader (Linux)
         if: runner.os == 'Linux'
@@ -99,13 +99,13 @@ jobs:
       # artifact's.
       - name: Stage on-device embedding model
         shell: bash
-        run: node apps/x/scripts/embeddings-fetch.mjs
+        run: node clients/apps/desktop/scripts/embeddings-fetch.mjs
 
       - name: Package electron app (unsigned)
         run: node .github/scripts/x-smoke-package-linux.mjs
 
       - name: Playwright-Electron e2e
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
         shell: bash
         env:
           # Tighten whisper.spec.ts now that the binary is staged (RFC 009 WP 3.x).
@@ -124,7 +124,7 @@ jobs:
         with:
           name: playwright-report-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            apps/x/apps/main/playwright-report/
-            apps/x/apps/main/test-results/
+            clients/apps/desktop/apps/main/playwright-report/
+            clients/apps/desktop/apps/main/test-results/
           if-no-files-found: ignore
           retention-days: 7

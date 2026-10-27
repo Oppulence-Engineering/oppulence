@@ -4,9 +4,9 @@ Oppulence runs locally as three surfaces. One command, `dev`, drives all of them
 
 | Surface                    | Path               | Runs as                                                  |
 | -------------------------- | ------------------ | -------------------------------------------------------- |
-| Desktop (Electron)         | `apps/x`           | nested pnpm workspace                                    |
-| Web app and marketing site | `apps/rowboat-www` | Next.js (npm), hot reload                                |
-| Backend (API and worker)   | `apps/rowboat-api` | Go, in Docker Compose with Postgres, Redis, and Temporal |
+| Desktop (Electron)         | `clients/apps/desktop`           | nested pnpm workspace                                    |
+| Web app and marketing site | `clients/apps/web` | Next.js (npm), hot reload                                |
+| Backend (API and worker)   | `server` | Go, in Docker Compose with Postgres, Redis, and Temporal |
 
 ## Quick start
 
@@ -38,8 +38,8 @@ lockfile changed, and migrations run every time the backend starts.
 | `dev down [--volumes]`  | Stop the backend; `--volumes` also deletes its data                                  |
 
 `dev` is [`dev/cli.mjs`](dev/cli.mjs): plain Node with no dependencies. It wraps
-`docker-compose.rowboat-api.yml`, `npm run dev:stack` in `apps/rowboat-www`, and
-`npm run dev` in `apps/x`, so those still work on their own.
+`docker-compose.rowboat-api.yml`, `npm run dev:stack` in `clients/apps/web`, and
+`npm run dev` in `clients/apps/desktop`, so those still work on their own.
 
 ## Secrets
 
@@ -49,7 +49,7 @@ picked up without changing the CLI.
 
 | Key                                        | Used for                             | Where to get it                                                            |
 | ------------------------------------------ | ------------------------------------ | -------------------------------------------------------------------------- |
-| `WORKOS_API_KEY`                           | Sign-in through WorkOS AuthKit       | WorkOS dashboard; see [AUTH.md](apps/rowboat-api/AUTH.md#local-end-to-end) |
+| `WORKOS_API_KEY`                           | Sign-in through WorkOS AuthKit       | WorkOS dashboard; see [AUTH.md](server/AUTH.md#local-end-to-end) |
 | `OPENROUTER_API_KEY`                       | Assistant chat (the worker calls it) | [openrouter.ai/keys](https://openrouter.ai/keys)                           |
 | `OPENAI_API_KEY`                           | Embeddings                           | [platform.openai.com/api-keys](https://platform.openai.com/api-keys)       |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth connections             | A Google Cloud OAuth client; see [google-setup.md](google-setup.md)        |
@@ -57,7 +57,7 @@ picked up without changing the CLI.
 For an offline plumbing check, set `ROWBOAT_COMPOSE_MOCK_LLM=1`. Chat turns then
 get a canned reply from devstack; `OPENROUTER_API_KEY` still needs a value.
 
-The web app reads `apps/rowboat-www/.env.local`. `dev up` copies it from
+The web app reads `clients/apps/web/.env.local`. `dev up` copies it from
 `.env.example`, whose defaults already point at the local API.
 
 ## Ports
@@ -78,9 +78,9 @@ Run the gate for each surface you touched:
 
 | Surface | Command                                                                       |
 | ------- | ----------------------------------------------------------------------------- |
-| Desktop | `cd apps/x && pnpm verify`                                                    |
-| Web app | `cd apps/rowboat-www && npm run verify:fast` (before merge: `npm run verify`) |
-| Backend | `cd apps/rowboat-api && make verify`                                          |
+| Desktop | `cd clients/apps/desktop && pnpm verify`                                                    |
+| Web app | `cd clients/apps/web && npm run verify:fast` (before merge: `npm run verify`) |
+| Backend | `cd server && make verify`                                          |
 
 `dev up` installs the lefthook git hooks, which format staged files and run the
 architecture gauntlets on commit and push. PR titles must follow Conventional
@@ -91,5 +91,5 @@ Commits; see [CONTRIBUTING.md](CONTRIBUTING.md).
 - **kind (Kubernetes):** `make stack` deploys the backend with the production
   Helm chart; `make help` lists every target. It is slower, so use it for chart
   and infrastructure changes.
-- **Legacy dashboard (`apps/rowboat`):** the root `docker-compose.yml`, with keys
+- **Legacy dashboard (`clients/apps/dashboard`):** the root `docker-compose.yml`, with keys
   from the root `.env.example`.

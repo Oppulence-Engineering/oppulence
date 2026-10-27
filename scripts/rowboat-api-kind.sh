@@ -22,11 +22,11 @@ MOCK_GOOGLE="${ROWBOAT_KIND_MOCK_GOOGLE:-}"
 GOOGLE_REDIRECT_PORT="${ROWBOAT_GOOGLE_REDIRECT_PORT:-18080}"
 COREDNS_MEMORY_LIMIT="${ROWBOAT_KIND_COREDNS_MEMORY_LIMIT:-512Mi}"
 STATE_DIR="${ROWBOAT_KIND_STATE_DIR:-${ROOT_DIR}/.rowboat-kind}"
-DEPS_FILE="${ROOT_DIR}/deploy/kind/rowboat-api/dependencies.yaml"
-KIND_CONFIG_FILE="${ROOT_DIR}/deploy/kind/rowboat-api/kind-config.yaml"
-VALUES_FILE="${ROOT_DIR}/charts/rowboat-api/values-kind.yaml"
-CHART_DIR="${ROOT_DIR}/charts/rowboat-api"
-WWW_CHART_DIR="${ROOT_DIR}/charts/rowboat-www"
+DEPS_FILE="${ROOT_DIR}/infra/deploy/kind/rowboat-api/dependencies.yaml"
+KIND_CONFIG_FILE="${ROOT_DIR}/infra/deploy/kind/rowboat-api/kind-config.yaml"
+VALUES_FILE="${ROOT_DIR}/infra/charts/rowboat-api/values-kind.yaml"
+CHART_DIR="${ROOT_DIR}/infra/charts/rowboat-api"
+WWW_CHART_DIR="${ROOT_DIR}/infra/charts/rowboat-www"
 INFISICAL_PROJECT_ID="${INFISICAL_PROJECT_ID:-}"
 INFISICAL_TOKEN="${INFISICAL_TOKEN:-}"
 INFISICAL_ENVIRONMENT="${INFISICAL_ENVIRONMENT:-dev}"
@@ -155,7 +155,7 @@ image_tag() {
 
 build_and_load_image() {
   ensure_cluster
-  docker build -f "${ROOT_DIR}/apps/rowboat-api/Dockerfile" -t "$IMAGE" "$ROOT_DIR"
+  docker build -f "${ROOT_DIR}/server/Dockerfile" -t "$IMAGE" "$ROOT_DIR"
   kind load docker-image --name "$CLUSTER_NAME" "$IMAGE"
 }
 
@@ -1542,7 +1542,7 @@ show_status() {
 
 run_desktop() {
   ensure_host_access
-  cd "${ROOT_DIR}/apps/x"
+  cd "${ROOT_DIR}/clients/apps/desktop"
   # Point Gmail at the devstack mock unless the caller is deliberately running
   # against a real mailbox. Real Google is the default for OAuth and mail;
   # silently mocking mail in that mode would
@@ -1604,7 +1604,7 @@ Run the desktop against it with:
   scripts/rowboat-api-kind.sh desktop
 
 Or manually:
-  cd apps/x && API_URL=http://localhost:${API_PORT} ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT=9222 npm run dev
+  cd clients/apps/desktop && API_URL=http://localhost:${API_PORT} ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT=9222 npm run dev
 EOF
     ;;
   deploy)

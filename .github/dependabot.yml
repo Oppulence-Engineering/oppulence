@@ -20,7 +20,7 @@ updates:
 
   # npm/pnpm dependencies for the Electron app
   - package-ecosystem: "npm"
-    directory: "/apps/x"
+    directory: "/clients/apps/desktop"
     schedule:
       interval: "weekly"
       day: "monday"

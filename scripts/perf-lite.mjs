@@ -7,7 +7,7 @@
 // size, read from the SAME source of truth (tools/desktop-perf/budget.json).
 //
 // Usage:
-//   node scripts/perf-lite.mjs            # measure apps/x/apps/renderer/dist
+//   node scripts/perf-lite.mjs            # measure clients/apps/desktop/apps/renderer/dist
 //   (run the renderer build first; CI does `vite build` then this script)
 import { readFileSync, statSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const budgetPath = path.join(root, "tools/desktop-perf/budget.json");
-const distDir = path.join(root, "apps/x/apps/renderer/dist");
+const distDir = path.join(root, "clients/apps/desktop/apps/renderer/dist");
 
 function walk(dir) {
   const files = [];

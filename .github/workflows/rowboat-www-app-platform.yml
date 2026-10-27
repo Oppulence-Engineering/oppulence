@@ -4,10 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/rowboat-www/**"
-      - "packages/ui/**"
-      - "packages/relationship-contract/**"
-      - "packages/eslint-plugin-oppulence-web/**"
+      - "clients/apps/web/**"
+      - "clients/packages/ui/**"
+      - "clients/packages/relationship-contract/**"
+      - "clients/packages/eslint-plugin-web/**"
       - "scripts/rowboat-www-smoke.sh"
       - ".do/rowboat-www-production.yaml"
       - ".github/workflows/rowboat-www-app-platform.yml"
@@ -29,25 +29,25 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: apps/rowboat-www/package-lock.json
+          cache-dependency-path: clients/apps/web/package-lock.json
       - run: npm ci
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
       - run: npx playwright install --with-deps chromium
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
       - run: npm run verify:fast
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
       - run: npm run arch
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
       - run: npm run contracts:check
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
       - run: npm run queries:check
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
       - run: npm run security:semgrep
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
       - run: npm run test
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
       - run: npm run build
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
 
   deploy:
     needs: quality
@@ -63,7 +63,7 @@ jobs:
       image_registry_type: GHCR
       image_registry: playbookmediallc
       image_repository: rowboat-www
-      dockerfile_path: apps/rowboat-www/Dockerfile
+      dockerfile_path: clients/apps/web/Dockerfile
       build_context: .
       # Version skew protection: an open tab from an older deploy reloads.
       build_args: NEXT_DEPLOYMENT_ID=${{ github.sha }}

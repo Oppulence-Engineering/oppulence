@@ -4,9 +4,9 @@
 
 **Goal:** Turn Rowboat desktop voice from a working local Whisper path into a product-grade speech layer for dogfooding, push-to-talk, commands, meetings, model management, privacy, evaluation, and email workflows.
 
-**Architecture:** Keep the local engine in main/core and expose typed IPC contracts through `apps/x/packages/shared`. Renderer code should stay as thin capture/UI orchestration, while durable behavior such as command parsing, model health, auto-selection, diagnostics, and privacy policy lives in core. Each feature lands behind typed settings and tested seams so local Whisper, Deepgram, and future providers can share the same UX states.
+**Architecture:** Keep the local engine in main/core and expose typed IPC contracts through `clients/apps/desktop/packages/shared`. Renderer code should stay as thin capture/UI orchestration, while durable behavior such as command parsing, model health, auto-selection, diagnostics, and privacy policy lives in core. Each feature lands behind typed settings and tested seams so local Whisper, Deepgram, and future providers can share the same UX states.
 
-**Tech Stack:** Electron main/renderer, React, TypeScript, Zod IPC schemas, Vitest, whisper.cpp, CoreML/Metal capability probing, MessagePort streaming, existing Rowboat workspace/file IPC, existing email RFCs in `apps/rfc/email-*`.
+**Tech Stack:** Electron main/renderer, React, TypeScript, Zod IPC schemas, Vitest, whisper.cpp, CoreML/Metal capability probing, MessagePort streaming, existing Rowboat workspace/file IPC, existing email RFCs in `docs/rfc/email-*`.
 
 ---
 
@@ -14,28 +14,28 @@
 
 The implementation must build on the current local transcription stack, not on the older "Deepgram only" state described in the opening section of RFC 009.
 
-- `apps/rfc/009-local-on-device-transcription.md` - base local Whisper architecture, settings, IPC, model manager, eval, packaging, and privacy reference.
-- `apps/rfc/017-on-device-meeting-diarization.md` - future local speaker separation track for meetings.
-- `apps/rfc/email-000-inbox-zero-agent-reference.md` - Inbox Zero feature reference for all email-related voice work.
-- `apps/rfc/email-002-mailbox-command-center.md` - command center behaviors that voice commands should target.
-- `apps/rfc/email-003-ai-rules-and-action-engine.md` - safe action execution, rules, and confirmations.
-- `apps/rfc/email-004-reply-zero-and-drafting.md` - voice-to-reply and drafting workflows.
-- `apps/rfc/email-014-sync-reliability-rate-limits-and-repair.md` - sync repair and provider reliability constraints.
-- `apps/rfc/email-018-email-product-roadmap-and-build-order.md` - build order for email product features.
-- `apps/rfc/email-021-implementation-blueprints-and-code-examples.md` - concrete email implementation examples to reuse.
-- `apps/x/packages/shared/src/transcription.ts` - shared provider, Whisper model, capability, segment, and config schemas.
-- `apps/x/packages/shared/src/ipc.ts` - typed IPC contracts for `whisper:*`, `transcription:*`, `voice:*`, meeting, workspace, and future voice commands.
-- `apps/x/apps/main/src/ipc.ts` - main-process IPC handlers that wire core services to renderer.
-- `apps/x/packages/core/src/voice/voice.ts` - persisted voice/transcription config and provider resolution entry point.
-- `apps/x/packages/core/src/voice/whisper/` - local Whisper catalog, checksums, model manager, capability probe, runner, service facade, streaming session, WER and eval tests.
-- `apps/x/apps/renderer/src/hooks/useVoiceMode.ts` - current voice input hook; local path captures batch PCM and transcribes on submit.
-- `apps/x/apps/renderer/src/hooks/useMeetingTranscription.ts` - current meeting hook; cloud streaming or local MessagePort streaming into meeting notes.
-- `apps/x/apps/renderer/src/lib/whisper-stream.ts` - renderer MessagePort driver for local meeting streaming.
-- `apps/x/apps/renderer/src/components/settings/transcription-settings.tsx` - settings UI for providers, device capability, and model download/remove.
-- `apps/x/apps/renderer/src/components/chat-input-with-mentions.tsx` - first consumer of push-to-talk dictation.
-- `apps/x/apps/renderer/src/components/email-view.tsx` - first consumer of voice-to-email workflows.
-- `apps/x/apps/renderer/src/components/meetings-view.tsx` - first consumer of meeting recorder upgrades.
-- `apps/x/apps/renderer/src/components/ui/command.tsx` - command palette surface for voice command search and execution.
+- `docs/rfc/009-local-on-device-transcription.md` - base local Whisper architecture, settings, IPC, model manager, eval, packaging, and privacy reference.
+- `docs/rfc/017-on-device-meeting-diarization.md` - future local speaker separation track for meetings.
+- `docs/rfc/email-000-inbox-zero-agent-reference.md` - Inbox Zero feature reference for all email-related voice work.
+- `docs/rfc/email-002-mailbox-command-center.md` - command center behaviors that voice commands should target.
+- `docs/rfc/email-003-ai-rules-and-action-engine.md` - safe action execution, rules, and confirmations.
+- `docs/rfc/email-004-reply-zero-and-drafting.md` - voice-to-reply and drafting workflows.
+- `docs/rfc/email-014-sync-reliability-rate-limits-and-repair.md` - sync repair and provider reliability constraints.
+- `docs/rfc/email-018-email-product-roadmap-and-build-order.md` - build order for email product features.
+- `docs/rfc/email-021-implementation-blueprints-and-code-examples.md` - concrete email implementation examples to reuse.
+- `clients/apps/desktop/packages/shared/src/transcription.ts` - shared provider, Whisper model, capability, segment, and config schemas.
+- `clients/apps/desktop/packages/shared/src/ipc.ts` - typed IPC contracts for `whisper:*`, `transcription:*`, `voice:*`, meeting, workspace, and future voice commands.
+- `clients/apps/desktop/apps/main/src/ipc.ts` - main-process IPC handlers that wire core services to renderer.
+- `clients/apps/desktop/packages/core/src/voice/voice.ts` - persisted voice/transcription config and provider resolution entry point.
+- `clients/apps/desktop/packages/core/src/voice/whisper/` - local Whisper catalog, checksums, model manager, capability probe, runner, service facade, streaming session, WER and eval tests.
+- `clients/apps/desktop/apps/renderer/src/hooks/useVoiceMode.ts` - current voice input hook; local path captures batch PCM and transcribes on submit.
+- `clients/apps/desktop/apps/renderer/src/hooks/useMeetingTranscription.ts` - current meeting hook; cloud streaming or local MessagePort streaming into meeting notes.
+- `clients/apps/desktop/apps/renderer/src/lib/whisper-stream.ts` - renderer MessagePort driver for local meeting streaming.
+- `clients/apps/desktop/apps/renderer/src/components/settings/transcription-settings.tsx` - settings UI for providers, device capability, and model download/remove.
+- `clients/apps/desktop/apps/renderer/src/components/chat-input-with-mentions.tsx` - first consumer of push-to-talk dictation.
+- `clients/apps/desktop/apps/renderer/src/components/email-view.tsx` - first consumer of voice-to-email workflows.
+- `clients/apps/desktop/apps/renderer/src/components/meetings-view.tsx` - first consumer of meeting recorder upgrades.
+- `clients/apps/desktop/apps/renderer/src/components/ui/command.tsx` - command palette surface for voice command search and execution.
 
 ## Product Shape
 
@@ -55,7 +55,7 @@ The finished product should feel like one coherent voice layer:
 
 Implement these shared contracts before feature-specific UI. Every task below references these names.
 
-Add to `apps/x/packages/shared/src/transcription.ts`:
+Add to `clients/apps/desktop/packages/shared/src/transcription.ts`:
 
 ```ts
 export const WhisperModelHealth = z.object({
@@ -191,7 +191,7 @@ export const TranscriptionConfig = z.object({
 });
 ```
 
-Extend `apps/x/packages/shared/src/ipc.ts`:
+Extend `clients/apps/desktop/packages/shared/src/ipc.ts`:
 
 ```ts
 "whisper:diagnose": {
@@ -228,14 +228,14 @@ Extend `apps/x/packages/shared/src/ipc.ts`:
 
 **Files:**
 
-- Modify: `apps/x/packages/shared/src/transcription.ts`
-- Modify: `apps/x/packages/shared/src/ipc.ts`
-- Modify: `apps/x/packages/core/src/voice/voice.ts`
-- Modify: `apps/x/packages/core/src/voice/transcription-config.test.ts`
+- Modify: `clients/apps/desktop/packages/shared/src/transcription.ts`
+- Modify: `clients/apps/desktop/packages/shared/src/ipc.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/voice.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/transcription-config.test.ts`
 
 - [ ] **Step 1: Add failing config tests**
 
-Add these tests to `apps/x/packages/core/src/voice/transcription-config.test.ts`:
+Add these tests to `clients/apps/desktop/packages/core/src/voice/transcription-config.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -265,17 +265,17 @@ describe("transcription privacy config", () => {
 
 - [ ] **Step 2: Run the failing test**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/transcription-config.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/transcription-config.test.ts`
 
 Expected: FAIL because `privacy` is missing from the shared `TranscriptionConfig`.
 
 - [ ] **Step 3: Add shared schemas**
 
-Add the shared schema block from "Shared Contracts" to `apps/x/packages/shared/src/transcription.ts`, export each type, and add the IPC entries to `apps/x/packages/shared/src/ipc.ts`.
+Add the shared schema block from "Shared Contracts" to `clients/apps/desktop/packages/shared/src/transcription.ts`, export each type, and add the IPC entries to `clients/apps/desktop/packages/shared/src/ipc.ts`.
 
 - [ ] **Step 4: Preserve existing config files**
 
-In `apps/x/packages/core/src/voice/voice.ts`, ensure config reads parse missing `privacy` through the schema default and config writes preserve existing nested keys:
+In `clients/apps/desktop/packages/core/src/voice/voice.ts`, ensure config reads parse missing `privacy` through the schema default and config writes preserve existing nested keys:
 
 ```ts
 export async function setTranscriptionConfig(
@@ -301,14 +301,14 @@ export async function setTranscriptionConfig(
 
 - [ ] **Step 5: Run the config tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/transcription-config.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/transcription-config.test.ts`
 
 Expected: PASS.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add apps/x/packages/shared/src/transcription.ts apps/x/packages/shared/src/ipc.ts apps/x/packages/core/src/voice/voice.ts apps/x/packages/core/src/voice/transcription-config.test.ts
+git add clients/apps/desktop/packages/shared/src/transcription.ts clients/apps/desktop/packages/shared/src/ipc.ts clients/apps/desktop/packages/core/src/voice/voice.ts clients/apps/desktop/packages/core/src/voice/transcription-config.test.ts
 git commit -m "feat: extend voice transcription contracts"
 ```
 
@@ -316,18 +316,18 @@ git commit -m "feat: extend voice transcription contracts"
 
 **Files:**
 
-- Create: `apps/x/packages/core/src/voice/whisper/diagnostics.ts`
-- Create: `apps/x/packages/core/src/voice/whisper/diagnostics.test.ts`
-- Modify: `apps/x/packages/core/src/voice/whisper/runner.ts`
-- Modify: `apps/x/packages/core/src/voice/whisper/runner.test.ts`
-- Modify: `apps/x/packages/core/src/voice/whisper/service.ts`
-- Modify: `apps/x/apps/main/src/ipc.ts`
-- Create: `apps/x/apps/renderer/src/components/settings/local-speech-dogfood-panel.tsx`
-- Modify: `apps/x/apps/renderer/src/components/settings/transcription-settings.tsx`
+- Create: `clients/apps/desktop/packages/core/src/voice/whisper/diagnostics.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/whisper/diagnostics.test.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/runner.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/runner.test.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/service.ts`
+- Modify: `clients/apps/desktop/apps/main/src/ipc.ts`
+- Create: `clients/apps/desktop/apps/renderer/src/components/settings/local-speech-dogfood-panel.tsx`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/settings/transcription-settings.tsx`
 
 - [ ] **Step 1: Write the failing diagnostics test**
 
-Create `apps/x/packages/core/src/voice/whisper/diagnostics.test.ts`:
+Create `clients/apps/desktop/packages/core/src/voice/whisper/diagnostics.test.ts`:
 
 ```ts
 import { describe, expect, it, vi } from "vitest";
@@ -384,13 +384,13 @@ describe("runWhisperDiagnostic", () => {
 
 - [ ] **Step 2: Run the failing diagnostics test**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/whisper/diagnostics.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/whisper/diagnostics.test.ts`
 
 Expected: FAIL because `diagnostics.ts` does not exist.
 
 - [ ] **Step 3: Implement diagnostics core**
 
-Create `apps/x/packages/core/src/voice/whisper/diagnostics.ts`:
+Create `clients/apps/desktop/packages/core/src/voice/whisper/diagnostics.ts`:
 
 ```ts
 import type {
@@ -448,7 +448,7 @@ export async function runWhisperDiagnostic(
 
 - [ ] **Step 4: Wire service and IPC**
 
-First extend `RunResult` in `apps/x/packages/core/src/voice/whisper/runner.ts` so diagnostics can show the engine proof line:
+First extend `RunResult` in `clients/apps/desktop/packages/core/src/voice/whisper/runner.ts` so diagnostics can show the engine proof line:
 
 ```ts
 export interface RunResult {
@@ -472,7 +472,7 @@ return {
 };
 ```
 
-Add `diagnose` to `apps/x/packages/core/src/voice/whisper/service.ts`:
+Add `diagnose` to `clients/apps/desktop/packages/core/src/voice/whisper/service.ts`:
 
 ```ts
 async diagnose(req: {
@@ -502,7 +502,7 @@ async diagnose(req: {
 }
 ```
 
-Add the handler in `apps/x/apps/main/src/ipc.ts`:
+Add the handler in `clients/apps/desktop/apps/main/src/ipc.ts`:
 
 ```ts
 "whisper:diagnose": async (_event, req) => {
@@ -518,7 +518,7 @@ Add the handler in `apps/x/apps/main/src/ipc.ts`:
 
 - [ ] **Step 5: Add dogfood settings panel**
 
-Create `apps/x/apps/renderer/src/components/settings/local-speech-dogfood-panel.tsx`:
+Create `clients/apps/desktop/apps/renderer/src/components/settings/local-speech-dogfood-panel.tsx`:
 
 ```tsx
 import { useCallback, useRef, useState } from "react";
@@ -617,14 +617,14 @@ Render it from `TranscriptionSettings` under the device capability line.
 
 - [ ] **Step 6: Run tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/whisper/diagnostics.test.ts src/voice/whisper/runner.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/whisper/diagnostics.test.ts src/voice/whisper/runner.test.ts`
 
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add apps/x/packages/core/src/voice/whisper/diagnostics.ts apps/x/packages/core/src/voice/whisper/diagnostics.test.ts apps/x/packages/core/src/voice/whisper/runner.ts apps/x/packages/core/src/voice/whisper/runner.test.ts apps/x/packages/core/src/voice/whisper/service.ts apps/x/apps/main/src/ipc.ts apps/x/apps/renderer/src/components/settings/local-speech-dogfood-panel.tsx apps/x/apps/renderer/src/components/settings/transcription-settings.tsx
+git add clients/apps/desktop/packages/core/src/voice/whisper/diagnostics.ts clients/apps/desktop/packages/core/src/voice/whisper/diagnostics.test.ts clients/apps/desktop/packages/core/src/voice/whisper/runner.ts clients/apps/desktop/packages/core/src/voice/whisper/runner.test.ts clients/apps/desktop/packages/core/src/voice/whisper/service.ts clients/apps/desktop/apps/main/src/ipc.ts clients/apps/desktop/apps/renderer/src/components/settings/local-speech-dogfood-panel.tsx clients/apps/desktop/apps/renderer/src/components/settings/transcription-settings.tsx
 git commit -m "feat: add local speech dogfood diagnostics"
 ```
 
@@ -632,11 +632,11 @@ git commit -m "feat: add local speech dogfood diagnostics"
 
 **Files:**
 
-- Modify: `apps/x/packages/core/src/voice/whisper/model-manager.ts`
-- Modify: `apps/x/packages/core/src/voice/whisper/model-manager.test.ts`
-- Modify: `apps/x/packages/core/src/voice/whisper/service.ts`
-- Modify: `apps/x/apps/main/src/ipc.ts`
-- Modify: `apps/x/apps/renderer/src/components/settings/transcription-settings.tsx`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/model-manager.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/model-manager.test.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/service.ts`
+- Modify: `clients/apps/desktop/apps/main/src/ipc.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/settings/transcription-settings.tsx`
 
 - [ ] **Step 1: Add failing health tests**
 
@@ -692,7 +692,7 @@ it("repairs a model by deleting bad artifacts and re-running ensureModel", async
 
 - [ ] **Step 2: Run the failing tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/whisper/model-manager.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/whisper/model-manager.test.ts`
 
 Expected: FAIL because `verifyModel` and `repairModel` are not implemented.
 
@@ -854,14 +854,14 @@ Add two icon buttons for installed models:
 
 - [ ] **Step 6: Run tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/whisper/model-manager.test.ts src/voice/whisper/catalog.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/whisper/model-manager.test.ts src/voice/whisper/catalog.test.ts`
 
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add apps/x/packages/core/src/voice/whisper/model-manager.ts apps/x/packages/core/src/voice/whisper/model-manager.test.ts apps/x/packages/core/src/voice/whisper/service.ts apps/x/apps/main/src/ipc.ts apps/x/apps/renderer/src/components/settings/transcription-settings.tsx
+git add clients/apps/desktop/packages/core/src/voice/whisper/model-manager.ts clients/apps/desktop/packages/core/src/voice/whisper/model-manager.test.ts clients/apps/desktop/packages/core/src/voice/whisper/service.ts clients/apps/desktop/apps/main/src/ipc.ts clients/apps/desktop/apps/renderer/src/components/settings/transcription-settings.tsx
 git commit -m "feat: add whisper model verify and repair"
 ```
 
@@ -869,16 +869,16 @@ git commit -m "feat: add whisper model verify and repair"
 
 **Files:**
 
-- Create: `apps/x/packages/core/src/voice/whisper/benchmark.ts`
-- Create: `apps/x/packages/core/src/voice/whisper/benchmark.test.ts`
-- Modify: `apps/x/packages/core/src/voice/whisper/service.ts`
-- Modify: `apps/x/packages/core/src/voice/voice.ts`
-- Modify: `apps/x/apps/main/src/ipc.ts`
-- Modify: `apps/x/apps/renderer/src/components/settings/transcription-settings.tsx`
+- Create: `clients/apps/desktop/packages/core/src/voice/whisper/benchmark.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/whisper/benchmark.test.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/service.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/voice.ts`
+- Modify: `clients/apps/desktop/apps/main/src/ipc.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/settings/transcription-settings.tsx`
 
 - [ ] **Step 1: Add failing benchmark selection tests**
 
-Create `apps/x/packages/core/src/voice/whisper/benchmark.test.ts`:
+Create `clients/apps/desktop/packages/core/src/voice/whisper/benchmark.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -913,7 +913,7 @@ describe("chooseAutoModel", () => {
 
 - [ ] **Step 2: Run failing benchmark tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/whisper/benchmark.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/whisper/benchmark.test.ts`
 
 Expected: FAIL because `benchmark.ts` does not exist.
 
@@ -1026,14 +1026,14 @@ In `transcription-settings.tsx`, add an "Auto" model option and a "Benchmark thi
 
 - [ ] **Step 7: Run tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/whisper/benchmark.test.ts src/voice/transcription-config.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/whisper/benchmark.test.ts src/voice/transcription-config.test.ts`
 
 Expected: PASS.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add apps/x/packages/core/src/voice/whisper/benchmark.ts apps/x/packages/core/src/voice/whisper/benchmark.test.ts apps/x/packages/core/src/voice/whisper/service.ts apps/x/packages/core/src/voice/voice.ts apps/x/apps/main/src/ipc.ts apps/x/apps/renderer/src/components/settings/transcription-settings.tsx
+git add clients/apps/desktop/packages/core/src/voice/whisper/benchmark.ts clients/apps/desktop/packages/core/src/voice/whisper/benchmark.test.ts clients/apps/desktop/packages/core/src/voice/whisper/service.ts clients/apps/desktop/packages/core/src/voice/voice.ts clients/apps/desktop/apps/main/src/ipc.ts clients/apps/desktop/apps/renderer/src/components/settings/transcription-settings.tsx
 git commit -m "feat: add whisper model auto selector"
 ```
 
@@ -1041,12 +1041,12 @@ git commit -m "feat: add whisper model auto selector"
 
 **Files:**
 
-- Modify: `apps/x/packages/core/src/voice/voice.ts`
-- Modify: `apps/x/packages/core/src/voice/transcription-config.test.ts`
-- Modify: `apps/x/apps/main/src/ipc.ts`
-- Modify: `apps/x/apps/renderer/src/hooks/useVoiceMode.ts`
-- Modify: `apps/x/apps/renderer/src/hooks/useMeetingTranscription.ts`
-- Modify: `apps/x/apps/renderer/src/components/settings/transcription-settings.tsx`
+- Modify: `clients/apps/desktop/packages/core/src/voice/voice.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/transcription-config.test.ts`
+- Modify: `clients/apps/desktop/apps/main/src/ipc.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/hooks/useVoiceMode.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/hooks/useMeetingTranscription.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/settings/transcription-settings.tsx`
 
 - [ ] **Step 1: Add failing provider resolution tests**
 
@@ -1069,7 +1069,7 @@ describe("local-only privacy provider resolution", () => {
 
 - [ ] **Step 2: Run failing provider test**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/transcription-config.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/transcription-config.test.ts`
 
 Expected: FAIL until provider resolution accepts `localOnly` and returns `whisper-local`.
 
@@ -1192,14 +1192,14 @@ Show proof text only when local-only is on:
 
 - [ ] **Step 6: Run tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/transcription-config.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/transcription-config.test.ts`
 
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add apps/x/packages/core/src/voice/voice.ts apps/x/packages/core/src/voice/transcription-config.test.ts apps/x/apps/main/src/ipc.ts apps/x/apps/renderer/src/hooks/useVoiceMode.ts apps/x/apps/renderer/src/hooks/useMeetingTranscription.ts apps/x/apps/renderer/src/components/settings/transcription-settings.tsx
+git add clients/apps/desktop/packages/core/src/voice/voice.ts clients/apps/desktop/packages/core/src/voice/transcription-config.test.ts clients/apps/desktop/apps/main/src/ipc.ts clients/apps/desktop/apps/renderer/src/hooks/useVoiceMode.ts clients/apps/desktop/apps/renderer/src/hooks/useMeetingTranscription.ts clients/apps/desktop/apps/renderer/src/components/settings/transcription-settings.tsx
 git commit -m "feat: enforce local-only speech privacy"
 ```
 
@@ -1207,11 +1207,11 @@ git commit -m "feat: enforce local-only speech privacy"
 
 **Files:**
 
-- Modify: `apps/x/packages/core/src/voice/whisper/streaming.ts`
-- Modify: `apps/x/packages/core/src/voice/whisper/streaming.test.ts`
-- Modify: `apps/x/apps/renderer/src/lib/whisper-stream.ts`
-- Modify: `apps/x/apps/renderer/src/hooks/useVoiceMode.ts`
-- Modify: `apps/x/apps/renderer/src/hooks/useMeetingTranscription.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/streaming.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/streaming.test.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/lib/whisper-stream.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/hooks/useVoiceMode.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/hooks/useMeetingTranscription.ts`
 
 - [ ] **Step 1: Add failing streaming partial tests**
 
@@ -1270,7 +1270,7 @@ function makeSpeechFrameSequence(_speaker: "you", samples: number): Int16Array {
 
 - [ ] **Step 2: Run failing streaming tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/whisper/streaming.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/whisper/streaming.test.ts`
 
 Expected: FAIL because `Session` does not emit partial events.
 
@@ -1345,7 +1345,7 @@ function estimateConfidence(result: { text?: string; rtf?: number }): number {
 
 - [ ] **Step 4: Parse partials in renderer stream driver**
 
-In `apps/x/apps/renderer/src/lib/whisper-stream.ts`, extend options:
+In `clients/apps/desktop/apps/renderer/src/lib/whisper-stream.ts`, extend options:
 
 ```ts
 export interface OpenWhisperStreamOptions {
@@ -1413,14 +1413,14 @@ onPartial: (event) => {
 
 - [ ] **Step 7: Run tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/whisper/streaming.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/whisper/streaming.test.ts`
 
 Expected: PASS.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add apps/x/packages/core/src/voice/whisper/streaming.ts apps/x/packages/core/src/voice/whisper/streaming.test.ts apps/x/apps/renderer/src/lib/whisper-stream.ts apps/x/apps/renderer/src/hooks/useVoiceMode.ts apps/x/apps/renderer/src/hooks/useMeetingTranscription.ts
+git add clients/apps/desktop/packages/core/src/voice/whisper/streaming.ts clients/apps/desktop/packages/core/src/voice/whisper/streaming.test.ts clients/apps/desktop/apps/renderer/src/lib/whisper-stream.ts clients/apps/desktop/apps/renderer/src/hooks/useVoiceMode.ts clients/apps/desktop/apps/renderer/src/hooks/useMeetingTranscription.ts
 git commit -m "feat: add local streaming partials"
 ```
 
@@ -1428,16 +1428,16 @@ git commit -m "feat: add local streaming partials"
 
 **Files:**
 
-- Create: `apps/x/apps/renderer/src/hooks/usePushToTalk.ts`
-- Create: `apps/x/apps/renderer/src/lib/dictation-targets.ts`
-- Modify: `apps/x/apps/renderer/src/components/chat-input-with-mentions.tsx`
-- Modify: `apps/x/apps/renderer/src/components/email-view.tsx`
-- Modify: `apps/x/apps/renderer/src/components/markdown-editor.tsx`
-- Modify: `apps/x/apps/renderer/src/components/ui/command.tsx`
+- Create: `clients/apps/desktop/apps/renderer/src/hooks/usePushToTalk.ts`
+- Create: `clients/apps/desktop/apps/renderer/src/lib/dictation-targets.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/chat-input-with-mentions.tsx`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/email-view.tsx`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/markdown-editor.tsx`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/ui/command.tsx`
 
 - [ ] **Step 1: Add dictation target unit tests**
 
-Create `apps/x/apps/renderer/src/lib/dictation-targets.test.ts`:
+Create `clients/apps/desktop/apps/renderer/src/lib/dictation-targets.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -1460,7 +1460,7 @@ describe("insertDictationText", () => {
 
 - [ ] **Step 2: Run failing dictation tests**
 
-Run: `cd apps/x/apps/renderer && npx vitest run src/lib/dictation-targets.test.ts`
+Run: `cd clients/apps/desktop/apps/renderer && npx vitest run src/lib/dictation-targets.test.ts`
 
 Expected: FAIL because the helper does not exist.
 
@@ -1556,18 +1556,18 @@ Each surface must show the same compact mic state:
 
 - [ ] **Step 6: Run renderer tests and typecheck**
 
-Run: `cd apps/x/apps/renderer && npx vitest run src/lib/dictation-targets.test.ts`
+Run: `cd clients/apps/desktop/apps/renderer && npx vitest run src/lib/dictation-targets.test.ts`
 
 Expected: PASS.
 
-Run: `cd apps/x && npm run lint`
+Run: `cd clients/apps/desktop && npm run lint`
 
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add apps/x/apps/renderer/src/hooks/usePushToTalk.ts apps/x/apps/renderer/src/lib/dictation-targets.ts apps/x/apps/renderer/src/lib/dictation-targets.test.ts apps/x/apps/renderer/src/components/chat-input-with-mentions.tsx apps/x/apps/renderer/src/components/email-view.tsx apps/x/apps/renderer/src/components/markdown-editor.tsx apps/x/apps/renderer/src/components/ui/command.tsx
+git add clients/apps/desktop/apps/renderer/src/hooks/usePushToTalk.ts clients/apps/desktop/apps/renderer/src/lib/dictation-targets.ts clients/apps/desktop/apps/renderer/src/lib/dictation-targets.test.ts clients/apps/desktop/apps/renderer/src/components/chat-input-with-mentions.tsx clients/apps/desktop/apps/renderer/src/components/email-view.tsx clients/apps/desktop/apps/renderer/src/components/markdown-editor.tsx clients/apps/desktop/apps/renderer/src/components/ui/command.tsx
 git commit -m "feat: add push-to-talk across desktop surfaces"
 ```
 
@@ -1575,14 +1575,14 @@ git commit -m "feat: add push-to-talk across desktop surfaces"
 
 **Files:**
 
-- Create: `apps/x/packages/core/src/voice/commands/parser.ts`
-- Create: `apps/x/packages/core/src/voice/commands/parser.test.ts`
-- Create: `apps/x/packages/core/src/voice/commands/executor.ts`
-- Create: `apps/x/packages/core/src/voice/commands/executor.test.ts`
-- Modify: `apps/x/apps/main/src/ipc.ts`
-- Create: `apps/x/apps/renderer/src/hooks/useVoiceCommandMode.ts`
-- Create: `apps/x/apps/renderer/src/components/voice-command-confirmation.tsx`
-- Modify: `apps/x/apps/renderer/src/components/ui/command.tsx`
+- Create: `clients/apps/desktop/packages/core/src/voice/commands/parser.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/commands/parser.test.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/commands/executor.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/commands/executor.test.ts`
+- Modify: `clients/apps/desktop/apps/main/src/ipc.ts`
+- Create: `clients/apps/desktop/apps/renderer/src/hooks/useVoiceCommandMode.ts`
+- Create: `clients/apps/desktop/apps/renderer/src/components/voice-command-confirmation.tsx`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/ui/command.tsx`
 
 - [ ] **Step 1: Add parser tests**
 
@@ -1624,7 +1624,7 @@ describe("parseVoiceCommand", () => {
 
 - [ ] **Step 2: Run failing parser tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/commands/parser.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/commands/parser.test.ts`
 
 Expected: FAIL because parser files do not exist.
 
@@ -1787,7 +1787,7 @@ export async function executeVoiceCommand(
 
 - [ ] **Step 6: Wire IPC**
 
-In `apps/x/apps/main/src/ipc.ts`:
+In `clients/apps/desktop/apps/main/src/ipc.ts`:
 
 ```ts
 const unavailableEmailActions = {
@@ -1822,14 +1822,14 @@ Create `voice-command-confirmation.tsx` with a modal that shows the parsed inten
 
 - [ ] **Step 8: Run tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/commands/parser.test.ts src/voice/commands/executor.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/commands/parser.test.ts src/voice/commands/executor.test.ts`
 
 Expected: PASS.
 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add apps/x/packages/core/src/voice/commands apps/x/apps/main/src/ipc.ts apps/x/apps/renderer/src/hooks/useVoiceCommandMode.ts apps/x/apps/renderer/src/components/voice-command-confirmation.tsx apps/x/apps/renderer/src/components/ui/command.tsx
+git add clients/apps/desktop/packages/core/src/voice/commands clients/apps/desktop/apps/main/src/ipc.ts clients/apps/desktop/apps/renderer/src/hooks/useVoiceCommandMode.ts clients/apps/desktop/apps/renderer/src/components/voice-command-confirmation.tsx clients/apps/desktop/apps/renderer/src/components/ui/command.tsx
 git commit -m "feat: add voice command mode"
 ```
 
@@ -1837,12 +1837,12 @@ git commit -m "feat: add voice command mode"
 
 **Files:**
 
-- Create: `apps/x/packages/core/src/voice/meetings/summary.ts`
-- Create: `apps/x/packages/core/src/voice/meetings/summary.test.ts`
-- Modify: `apps/x/apps/renderer/src/hooks/useMeetingTranscription.ts`
-- Modify: `apps/x/apps/renderer/src/components/meetings-view.tsx`
-- Modify: `apps/x/packages/shared/src/ipc.ts`
-- Modify: `apps/x/apps/main/src/ipc.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/meetings/summary.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/meetings/summary.test.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/hooks/useMeetingTranscription.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/meetings-view.tsx`
+- Modify: `clients/apps/desktop/packages/shared/src/ipc.ts`
+- Modify: `clients/apps/desktop/apps/main/src/ipc.ts`
 
 - [ ] **Step 1: Add summary extraction tests**
 
@@ -1869,7 +1869,7 @@ You: Sarah should follow up with legal.
 
 - [ ] **Step 2: Run failing summary tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/meetings/summary.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/meetings/summary.test.ts`
 
 Expected: FAIL because summary files do not exist.
 
@@ -1906,7 +1906,7 @@ export function extractMeetingStructure(transcript: string): MeetingStructure {
 
 - [ ] **Step 4: Add IPC contract**
 
-Add to `apps/x/packages/shared/src/ipc.ts`:
+Add to `clients/apps/desktop/packages/shared/src/ipc.ts`:
 
 ```ts
 "meeting:extractStructure": {
@@ -1963,14 +1963,14 @@ In `meetings-view.tsx`, add a recorder status bar with:
 
 - [ ] **Step 7: Run tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/meetings/summary.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/meetings/summary.test.ts`
 
 Expected: PASS.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add apps/x/packages/core/src/voice/meetings apps/x/apps/renderer/src/hooks/useMeetingTranscription.ts apps/x/apps/renderer/src/components/meetings-view.tsx apps/x/packages/shared/src/ipc.ts apps/x/apps/main/src/ipc.ts
+git add clients/apps/desktop/packages/core/src/voice/meetings clients/apps/desktop/apps/renderer/src/hooks/useMeetingTranscription.ts clients/apps/desktop/apps/renderer/src/components/meetings-view.tsx clients/apps/desktop/packages/shared/src/ipc.ts clients/apps/desktop/apps/main/src/ipc.ts
 git commit -m "feat: upgrade local meeting recorder"
 ```
 
@@ -1978,24 +1978,24 @@ git commit -m "feat: upgrade local meeting recorder"
 
 **Files:**
 
-- Create: `apps/x/packages/core/src/voice/email/actions.ts`
-- Create: `apps/x/packages/core/src/voice/email/actions.test.ts`
-- Create: `apps/x/packages/core/src/voice/email/staged-actions.ts`
-- Create: `apps/x/packages/core/src/voice/email/staged-actions.test.ts`
-- Modify: `apps/x/packages/core/src/voice/commands/executor.ts`
-- Modify: `apps/x/apps/renderer/src/components/email-view.tsx`
-- Modify: `apps/x/apps/renderer/src/hooks/usePushToTalk.ts`
-- Modify: `apps/rfc/email-021-implementation-blueprints-and-code-examples.md`
+- Create: `clients/apps/desktop/packages/core/src/voice/email/actions.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/email/actions.test.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/email/staged-actions.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/email/staged-actions.test.ts`
+- Modify: `clients/apps/desktop/packages/core/src/voice/commands/executor.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/email-view.tsx`
+- Modify: `clients/apps/desktop/apps/renderer/src/hooks/usePushToTalk.ts`
+- Modify: `docs/rfc/email-021-implementation-blueprints-and-code-examples.md`
 
 **RFC references for the implementing agent:**
 
-- `apps/rfc/email-000-inbox-zero-agent-reference.md` defines the Inbox Zero feature inventory this work should emulate.
-- `apps/rfc/email-002-mailbox-command-center.md` defines the inbox command center UX targets.
-- `apps/rfc/email-003-ai-rules-and-action-engine.md` defines safe action execution and rule creation.
-- `apps/rfc/email-004-reply-zero-and-drafting.md` defines reply-zero drafting and review.
-- `apps/rfc/email-014-sync-reliability-rate-limits-and-repair.md` defines provider sync and repair constraints.
-- `apps/rfc/email-018-email-product-roadmap-and-build-order.md` defines email build order.
-- `apps/rfc/email-021-implementation-blueprints-and-code-examples.md` holds concrete code examples; append voice examples there so future agents see email and voice together.
+- `docs/rfc/email-000-inbox-zero-agent-reference.md` defines the Inbox Zero feature inventory this work should emulate.
+- `docs/rfc/email-002-mailbox-command-center.md` defines the inbox command center UX targets.
+- `docs/rfc/email-003-ai-rules-and-action-engine.md` defines safe action execution and rule creation.
+- `docs/rfc/email-004-reply-zero-and-drafting.md` defines reply-zero drafting and review.
+- `docs/rfc/email-014-sync-reliability-rate-limits-and-repair.md` defines provider sync and repair constraints.
+- `docs/rfc/email-018-email-product-roadmap-and-build-order.md` defines email build order.
+- `docs/rfc/email-021-implementation-blueprints-and-code-examples.md` holds concrete code examples; append voice examples there so future agents see email and voice together.
 
 - [ ] **Step 1: Add email voice action tests**
 
@@ -2083,7 +2083,7 @@ describe("createVoiceEmailFileStore", () => {
 
 - [ ] **Step 2: Run failing action tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/email/actions.test.ts src/voice/email/staged-actions.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/email/actions.test.ts src/voice/email/staged-actions.test.ts`
 
 Expected: FAIL because email voice actions and staged action storage do not exist.
 
@@ -2224,12 +2224,12 @@ const runEmailVoiceCommand = useCallback(async (text: string) => {
 
 - [ ] **Step 5: Append email RFC implementation notes**
 
-Append a section to `apps/rfc/email-021-implementation-blueprints-and-code-examples.md`:
+Append a section to `docs/rfc/email-021-implementation-blueprints-and-code-examples.md`:
 
 ```md
 ## Voice-To-Email Adapter
 
-Voice email commands should use `apps/x/packages/core/src/voice/email/actions.ts` as the adapter layer. This keeps speech parsing separate from provider-specific Gmail or Outlook execution and follows:
+Voice email commands should use `clients/apps/desktop/packages/core/src/voice/email/actions.ts` as the adapter layer. This keeps speech parsing separate from provider-specific Gmail or Outlook execution and follows:
 
 - `email-000` for Inbox Zero parity goals.
 - `email-002` for command center surfaces.
@@ -2242,14 +2242,14 @@ Destructive actions require `VoiceCommandConfirmation`. Reply drafting and rule 
 
 - [ ] **Step 6: Run tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/email/actions.test.ts src/voice/email/staged-actions.test.ts src/voice/commands/executor.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/email/actions.test.ts src/voice/email/staged-actions.test.ts src/voice/commands/executor.test.ts`
 
 Expected: PASS.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add apps/x/packages/core/src/voice/email/actions.ts apps/x/packages/core/src/voice/email/actions.test.ts apps/x/packages/core/src/voice/email/staged-actions.ts apps/x/packages/core/src/voice/email/staged-actions.test.ts apps/x/packages/core/src/voice/commands/executor.ts apps/x/apps/renderer/src/components/email-view.tsx apps/x/apps/renderer/src/hooks/usePushToTalk.ts apps/rfc/email-021-implementation-blueprints-and-code-examples.md
+git add clients/apps/desktop/packages/core/src/voice/email/actions.ts clients/apps/desktop/packages/core/src/voice/email/actions.test.ts clients/apps/desktop/packages/core/src/voice/email/staged-actions.ts clients/apps/desktop/packages/core/src/voice/email/staged-actions.test.ts clients/apps/desktop/packages/core/src/voice/commands/executor.ts clients/apps/desktop/apps/renderer/src/components/email-view.tsx clients/apps/desktop/apps/renderer/src/hooks/usePushToTalk.ts docs/rfc/email-021-implementation-blueprints-and-code-examples.md
 git commit -m "feat: add voice-to-email workflows"
 ```
 
@@ -2257,12 +2257,12 @@ git commit -m "feat: add voice-to-email workflows"
 
 **Files:**
 
-- Modify: `apps/x/packages/core/src/voice/whisper/__fixtures__/asr/manifest.json`
-- Modify: `apps/x/packages/core/src/voice/whisper/__fixtures__/asr/README.md`
-- Modify: `apps/x/packages/core/src/voice/whisper/whisper.eval.test.ts`
-- Create: `apps/x/packages/core/src/voice/whisper/eval-report.ts`
-- Create: `apps/x/packages/core/src/voice/whisper/eval-report.test.ts`
-- Modify: `apps/x/package.json`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/__fixtures__/asr/manifest.json`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/__fixtures__/asr/README.md`
+- Modify: `clients/apps/desktop/packages/core/src/voice/whisper/whisper.eval.test.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/whisper/eval-report.ts`
+- Create: `clients/apps/desktop/packages/core/src/voice/whisper/eval-report.test.ts`
+- Modify: `clients/apps/desktop/package.json`
 
 - [ ] **Step 1: Add eval report tests**
 
@@ -2287,7 +2287,7 @@ describe("summarizeEvalResults", () => {
 
 - [ ] **Step 2: Run failing eval report tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/whisper/eval-report.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/whisper/eval-report.test.ts`
 
 Expected: FAIL because `eval-report.ts` does not exist.
 
@@ -2359,7 +2359,7 @@ If a fixture file is not present yet, add a manifest entry only when the matchin
 
 - [ ] **Step 5: Wire package script**
 
-In `apps/x/package.json`, add:
+In `clients/apps/desktop/package.json`, add:
 
 ```json
 {
@@ -2371,15 +2371,15 @@ In `apps/x/package.json`, add:
 
 - [ ] **Step 6: Run eval tests**
 
-Run: `cd apps/x/packages/core && npx vitest run src/voice/whisper/eval-report.test.ts`
+Run: `cd clients/apps/desktop/packages/core && npx vitest run src/voice/whisper/eval-report.test.ts`
 
 Expected: PASS.
 
 Run when a local model is installed:
 
 ```bash
-cd apps/x
-ROWBOAT_WHISPER_BIN=apps/x/vendor/whisper/darwin-arm64/whisper-cli ROWBOAT_WHISPER_EVAL_MODEL=base.en-q5_1 npm run test:whisper-eval
+cd clients/apps/desktop
+ROWBOAT_WHISPER_BIN=clients/apps/desktop/vendor/whisper/darwin-arm64/whisper-cli ROWBOAT_WHISPER_EVAL_MODEL=base.en-q5_1 npm run test:whisper-eval
 ```
 
 Expected: PASS with WER and RTF printed for each fixture.
@@ -2387,7 +2387,7 @@ Expected: PASS with WER and RTF printed for each fixture.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add apps/x/packages/core/src/voice/whisper/__fixtures__/asr apps/x/packages/core/src/voice/whisper/whisper.eval.test.ts apps/x/packages/core/src/voice/whisper/eval-report.ts apps/x/packages/core/src/voice/whisper/eval-report.test.ts apps/x/package.json
+git add clients/apps/desktop/packages/core/src/voice/whisper/__fixtures__/asr clients/apps/desktop/packages/core/src/voice/whisper/whisper.eval.test.ts clients/apps/desktop/packages/core/src/voice/whisper/eval-report.ts clients/apps/desktop/packages/core/src/voice/whisper/eval-report.test.ts clients/apps/desktop/package.json
 git commit -m "test: expand whisper accuracy eval harness"
 ```
 
@@ -2395,19 +2395,19 @@ git commit -m "test: expand whisper accuracy eval harness"
 
 **Files:**
 
-- Modify: `apps/rfc/009-local-on-device-transcription.md`
-- Modify: `apps/rfc/017-on-device-meeting-diarization.md`
-- Modify: `apps/rfc/email-018-email-product-roadmap-and-build-order.md`
-- Modify: `apps/x/ANALYTICS.md`
+- Modify: `docs/rfc/009-local-on-device-transcription.md`
+- Modify: `docs/rfc/017-on-device-meeting-diarization.md`
+- Modify: `docs/rfc/email-018-email-product-roadmap-and-build-order.md`
+- Modify: `clients/apps/desktop/ANALYTICS.md`
 
 - [ ] **Step 1: Update RFC 009 current state**
 
-In `apps/rfc/009-local-on-device-transcription.md`, add an "Implementation status as of 2026-06-12" section near the top:
+In `docs/rfc/009-local-on-device-transcription.md`, add an "Implementation status as of 2026-06-12" section near the top:
 
 ```md
 ## Implementation status as of 2026-06-12
 
-Local Whisper exists in the desktop app: shared transcription schemas, main-process IPC, model catalog, checksums, CoreML/Metal capability probing, model manager, batch voice transcription, local meeting streaming, and WER tests are present under `apps/x`. The next product layer is tracked in `docs/superpowers/plans/2026-06-12-local-voice-product-expansion.md`: diagnostics, model repair, auto-selection, privacy enforcement, local partials, push-to-talk everywhere, voice commands, meeting recorder polish, voice-to-email, and eval expansion.
+Local Whisper exists in the desktop app: shared transcription schemas, main-process IPC, model catalog, checksums, CoreML/Metal capability probing, model manager, batch voice transcription, local meeting streaming, and WER tests are present under `clients/apps/desktop`. The next product layer is tracked in `docs/superpowers/plans/2026-06-12-local-voice-product-expansion.md`: diagnostics, model repair, auto-selection, privacy enforcement, local partials, push-to-talk everywhere, voice commands, meeting recorder polish, voice-to-email, and eval expansion.
 ```
 
 - [ ] **Step 2: Update RFC 017 dependency note**
@@ -2420,7 +2420,7 @@ This diarization track should consume the upgraded local meeting recorder and st
 
 - [ ] **Step 3: Update email roadmap**
 
-In `apps/rfc/email-018-email-product-roadmap-and-build-order.md`, add a voice milestone after the command center and drafting milestones:
+In `docs/rfc/email-018-email-product-roadmap-and-build-order.md`, add a voice milestone after the command center and drafting milestones:
 
 ```md
 ### Voice-enabled email milestone
@@ -2431,12 +2431,12 @@ After the command center, action engine, and reply drafting surfaces exist, add 
 - Parse spoken triage commands into safe action drafts.
 - Require confirmation for archive, unsubscribe, bulk label, snooze, and send.
 - Create disabled rule drafts from spoken natural language.
-- Use `apps/x/packages/core/src/voice/email/actions.ts` as the adapter layer.
+- Use `clients/apps/desktop/packages/core/src/voice/email/actions.ts` as the adapter layer.
 ```
 
 - [ ] **Step 4: Add analytics event contract**
 
-In `apps/x/ANALYTICS.md`, add:
+In `clients/apps/desktop/ANALYTICS.md`, add:
 
 ```md
 ## Voice Product Events
@@ -2456,7 +2456,7 @@ In `apps/x/ANALYTICS.md`, add:
 Run:
 
 ```bash
-cd apps/x/packages/core
+cd clients/apps/desktop/packages/core
 npx vitest run src/voice/transcription-config.test.ts src/voice/whisper/*.test.ts src/voice/commands/*.test.ts src/voice/email/*.test.ts src/voice/meetings/*.test.ts
 ```
 
@@ -2465,7 +2465,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd apps/x
+cd clients/apps/desktop
 npm run quality
 ```
 
@@ -2474,7 +2474,7 @@ Expected: PASS.
 Run:
 
 ```bash
-cd apps/x
+cd clients/apps/desktop
 npm run package
 ```
 
@@ -2483,7 +2483,7 @@ Expected: packaged Electron app builds successfully.
 Run:
 
 ```bash
-cd apps/x/apps/main
+cd clients/apps/desktop/apps/main
 npm run test:e2e
 ```
 
@@ -2505,7 +2505,7 @@ Run each scenario and capture notes in the PR description:
 - [ ] **Step 7: Final commit**
 
 ```bash
-git add apps/rfc/009-local-on-device-transcription.md apps/rfc/017-on-device-meeting-diarization.md apps/rfc/email-018-email-product-roadmap-and-build-order.md apps/x/ANALYTICS.md
+git add docs/rfc/009-local-on-device-transcription.md docs/rfc/017-on-device-meeting-diarization.md docs/rfc/email-018-email-product-roadmap-and-build-order.md clients/apps/desktop/ANALYTICS.md
 git commit -m "docs: document expanded local voice rollout"
 ```
 
@@ -2513,15 +2513,15 @@ git commit -m "docs: document expanded local voice rollout"
 
 The implementation is complete only when all of these pass:
 
-- `cd apps/x/packages/core && npx vitest run src/voice/transcription-config.test.ts src/voice/whisper/*.test.ts src/voice/commands/*.test.ts src/voice/email/*.test.ts src/voice/meetings/*.test.ts`
-- `cd apps/x && npm run quality`
-- `cd apps/x && npm run package`
-- `cd apps/x/apps/main && npm run test:e2e`
+- `cd clients/apps/desktop/packages/core && npx vitest run src/voice/transcription-config.test.ts src/voice/whisper/*.test.ts src/voice/commands/*.test.ts src/voice/email/*.test.ts src/voice/meetings/*.test.ts`
+- `cd clients/apps/desktop && npm run quality`
+- `cd clients/apps/desktop && npm run package`
+- `cd clients/apps/desktop/apps/main && npm run test:e2e`
 - Whisper eval on at least one installed local model:
 
 ```bash
-cd apps/x
-ROWBOAT_WHISPER_BIN=apps/x/vendor/whisper/darwin-arm64/whisper-cli ROWBOAT_WHISPER_EVAL_MODEL=base.en-q5_1 npm run test:whisper-eval
+cd clients/apps/desktop
+ROWBOAT_WHISPER_BIN=clients/apps/desktop/vendor/whisper/darwin-arm64/whisper-cli ROWBOAT_WHISPER_EVAL_MODEL=base.en-q5_1 npm run test:whisper-eval
 ```
 
 ## Risk Controls

@@ -1,0 +1,314 @@
+/*
+ * Oppulence design tokens
+ *
+ * The one source for color, type, radius, shadow, and motion on the desktop
+ * app, the web app, and the landing page. A surface imports this file through
+ * Tailwind (`@import "@oppulence/ui/tokens.css";`). App CSS keeps only layout.
+ *
+ * Layers:
+ * 1. Primitives: Polar's color scales, shadows, and radius scale (polar.css),
+ *    plus the few primitives Polar does not have.
+ * 2. Semantic tokens: what components use. Light in `:root`, dark in `.dark`.
+ *    They follow Polar's mapping. Where Polar fails WCAG 2.2 AA (text 4.5:1,
+ *    controls and focus 3:1), a comment names the step we use instead.
+ * 3. Density: type size and layout space. Compact is the default.
+ *    `[data-density="marketing"]` gives the landing page a larger scale.
+ *    Density never changes color, radius, font, or icons.
+ *
+ * Fonts: Polar uses PP Neue Montreal, a licensed font. We use Inter, Polar's
+ * fallback, and Geist Mono. Each app loads them itself: the web app through
+ * next/font (`--font-inter`, `--font-geist-mono`), the desktop app through
+ * @fontsource-variable ("Inter Variable", "Geist Mono Variable").
+ *
+ * Contrast: `clients/apps/web/quality/design-tokens.test.ts` checks the
+ * semantic pairs against WCAG 2.2 AA. Run it when you change a color.
+ */
+@import "./polar.css";
+
+/* ── 1. Primitives Polar does not have ───────────────────────────────────── */
+:root {
+  --color-white: #ffffff;
+  --amber-700: #965a0b;
+  --amber-300: #fdb022;
+
+  --typeface-sans:
+    var(--font-inter, "Inter Variable"), "Inter Variable", "Inter", ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --typeface-mono:
+    var(--font-geist-mono, "Geist Mono Variable"), "Geist Mono Variable", "Geist Mono", ui-monospace,
+    SFMono-Regular, Menlo, Consolas, monospace;
+  --weight-regular: 400;
+  --weight-medium: 500;
+
+  /* Polar's corner radius. Circles keep `rounded-full`. */
+  --radius: 0.6rem;
+
+  --motion-fast: 120ms;
+  --motion-base: 160ms;
+  --motion-slow: 240ms;
+  --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
+}
+
+/* ── 2. Semantic tokens: light (Polar `:root`) ───────────────────────────── */
+:root {
+  color-scheme: light;
+
+  --background: var(--color-gray-50);
+  --background-50: var(--color-gray-50);
+  --background-100: var(--color-gray-100);
+  --background-200: var(--color-gray-100);
+  --background-300: var(--color-gray-200);
+  --background-400: var(--color-gray-300);
+  --background-500: var(--color-gray-300);
+  --background-600: var(--color-gray-400);
+  --background-700: var(--color-gray-400);
+  --surface: var(--color-white);
+  --surface-raised: var(--color-white);
+
+  --foreground: var(--color-gray-900);
+  /* Polar: gray-500 (4.4:1 on gray-100). */
+  --muted-foreground: var(--color-gray-600);
+  --subtle-foreground: var(--color-gray-500);
+
+  --primary: var(--color-blue);
+  --primary-foreground: var(--color-gray-50);
+  --secondary: var(--color-gray-100);
+  --secondary-foreground: var(--color-gray-900);
+  --muted: var(--color-gray-100);
+  /* Polar: blue. Our primitives use accent for hover and focus surfaces. */
+  --accent: var(--color-gray-100);
+  --accent-foreground: var(--color-gray-900);
+
+  --border: var(--color-gray-200);
+  /* Polar: gray-200 for input and ring (1.1:1). */
+  --input: var(--color-gray-500);
+  --ring: var(--color-blue);
+
+  /* Polar: red-500 (3.6:1 as text). */
+  --destructive: var(--color-red-700);
+  --destructive-foreground: var(--color-white);
+  --success: var(--color-green-700);
+  --success-foreground: var(--color-white);
+  --warning: var(--amber-700);
+  --warning-foreground: var(--color-white);
+
+  --chart-1: var(--color-blue-600);
+  --chart-2: var(--color-green-500);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: var(--color-red-500);
+
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--foreground);
+  --sidebar: var(--color-gray-100);
+  --sidebar-foreground: var(--color-gray-900);
+  --sidebar-primary: var(--color-blue);
+  --sidebar-primary-foreground: var(--color-gray-50);
+  --sidebar-accent: var(--color-gray-200);
+  --sidebar-accent-foreground: var(--color-gray-900);
+  --sidebar-border: var(--color-gray-300);
+  --sidebar-ring: var(--ring);
+
+  --elevation-soft: var(--shadow-md);
+  --elevation-overlay: var(--shadow-lg);
+}
+
+/* ── 2. Semantic tokens: dark (Polar `:root.dark`) ───────────────────────── */
+.dark {
+  color-scheme: dark;
+
+  --background: var(--color-polar-800);
+  --background-50: var(--color-polar-950);
+  --background-100: var(--color-polar-900);
+  --background-200: var(--color-polar-700);
+  --background-300: var(--color-polar-700);
+  --background-400: var(--color-polar-600);
+  --background-500: var(--color-polar-600);
+  --background-600: var(--color-polar-500);
+  --background-700: var(--color-polar-400);
+  --surface: var(--color-polar-800);
+  --surface-raised: var(--color-polar-900);
+
+  /* Polar: polar-500 for foreground and muted text (3.5:1). */
+  --foreground: var(--color-polar-50);
+  --muted-foreground: var(--color-polar-300);
+  --subtle-foreground: var(--color-polar-400);
+
+  --primary: var(--color-blue);
+  /* Polar: polar-50 on blue (3.7:1). */
+  --primary-foreground: var(--color-white);
+  --secondary: var(--color-polar-900);
+  --secondary-foreground: var(--color-polar-50);
+  --muted: var(--color-polar-700);
+  --accent: var(--color-polar-700);
+  --accent-foreground: var(--color-polar-50);
+
+  --border: var(--color-polar-700);
+  /* Polar: polar-700 for input and ring (1.0:1). */
+  --input: var(--color-polar-500);
+  --ring: var(--color-blue-500);
+
+  /* Polar: red-500 (4.2:1 as text). */
+  --destructive: var(--color-red-400);
+  --destructive-foreground: var(--color-polar-950);
+  --success: var(--color-green-400);
+  --success-foreground: var(--color-polar-950);
+  --warning: var(--amber-300);
+  --warning-foreground: var(--color-polar-950);
+
+  --sidebar: var(--color-polar-950);
+  --sidebar-foreground: var(--color-polar-50);
+  --sidebar-primary: var(--color-blue);
+  --sidebar-primary-foreground: var(--color-white);
+  --sidebar-accent: var(--color-polar-700);
+  --sidebar-accent-foreground: var(--color-polar-50);
+  --sidebar-border: var(--color-polar-700);
+
+  --elevation-soft: 0 1px 2px rgb(0 0 0 / 0.24), 0 8px 20px rgb(0 0 0 / 0.16);
+  --elevation-overlay: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px rgb(0 0 0 / 0.22);
+}
+
+/* ── 3. Density ──────────────────────────────────────────────────────────── */
+/* Compact: the desktop app and the web app. Four type stops, as in product-system.css. */
+:root,
+[data-density="compact"] {
+  --size-caption: 12px;
+  --size-control: 13px;
+  --size-body: 14px;
+  --size-lead: 14px;
+  --size-title: 18px;
+  --size-heading: 18px;
+  --size-display: 24px;
+  --leading-body: 1.45;
+  --leading-heading: 1.2;
+  --leading-display: 1.1;
+  --tracking-body: -0.15px;
+  --tracking-display: -0.015em;
+  --space-gutter: 16px;
+  --space-section: 24px;
+}
+
+/* Marketing: the landing page. Values come from sim-landing/tokens.ts (HOME_TYPE). */
+[data-density="marketing"] {
+  --size-caption: 14px;
+  --size-control: 15px;
+  --size-body: 16px;
+  --size-lead: 20px;
+  --size-title: 32px;
+  --size-heading: 40px;
+  --size-display: 80px;
+  --leading-body: 1.45;
+  --leading-heading: 1.1;
+  --leading-display: 0.96;
+  --tracking-body: 0;
+  --tracking-display: -0.025em;
+  --space-gutter: 24px;
+  --space-section: 96px;
+}
+
+@media (max-width: 1279px) {
+  [data-density="marketing"] {
+    --size-heading: 34px;
+    --size-display: 64px;
+  }
+}
+
+@media (max-width: 639px) {
+  [data-density="marketing"] {
+    --size-lead: 17px;
+    --size-title: 24px;
+    --size-heading: 28px;
+    --size-display: 42px;
+  }
+}
+
+/* ── Tailwind v4 theme: one mapping, so a utility means the same in each app ─ */
+/* Radius steps come from polar.css (lg = --radius, md = -2px, sm = -4px). */
+@theme inline {
+  --color-background: var(--background);
+  --color-background-50: var(--background-50);
+  --color-background-100: var(--background-100);
+  --color-background-200: var(--background-200);
+  --color-background-300: var(--background-300);
+  --color-background-400: var(--background-400);
+  --color-background-500: var(--background-500);
+  --color-background-600: var(--background-600);
+  --color-background-700: var(--background-700);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--typeface-sans);
+  --font-display: var(--typeface-sans);
+  --font-mono: var(--typeface-mono);
+  --font-weight-normal: var(--weight-regular);
+  --font-weight-medium: var(--weight-medium);
+
+  --text-caption: var(--size-caption);
+  --text-caption--line-height: var(--leading-body);
+  --text-control: var(--size-control);
+  --text-control--line-height: var(--leading-body);
+  --text-body: var(--size-body);
+  --text-body--line-height: var(--leading-body);
+  --text-lead: var(--size-lead);
+  --text-lead--line-height: var(--leading-body);
+  --text-title: var(--size-title);
+  --text-title--line-height: var(--leading-heading);
+  --text-heading: var(--size-heading);
+  --text-heading--line-height: var(--leading-heading);
+  --text-display: var(--size-display);
+  --text-display--line-height: var(--leading-display);
+  --text-display--letter-spacing: var(--tracking-display);
+
+  --shadow-soft: var(--elevation-soft);
+  --shadow-overlay: var(--elevation-overlay);
+
+  --ease-standard: var(--motion-ease);
+  --ease-spring: var(--motion-ease-spring);
+}

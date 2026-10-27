@@ -1,0 +1,12 @@
+# BuildKit applies this when building with -f server/Dockerfile.
+# Context is the repo root; keep only the two Go modules we build.
+*
+!server
+!server/oauth-resource-server
+
+# Drop local build/test artifacts even within the kept trees.
+server/bin
+server/*.db
+**/node_modules
+**/.env*
+.git

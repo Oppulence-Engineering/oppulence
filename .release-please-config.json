@@ -7,7 +7,7 @@
   "draft": false,
   "prerelease": false,
   "packages": {
-    "apps/x": {
+    "clients/apps/desktop": {
       "release-type": "node",
       "package-name": "rowboat",
       "changelog-path": "CHANGELOG.md",

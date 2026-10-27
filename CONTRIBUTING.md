@@ -6,9 +6,12 @@ Thanks for your interest in contributing to Rowboat (Oppulence Engineering fork)
 
 This is a monorepo. The most important paths:
 
-- `apps/x/` — the Electron desktop application maintained by Oppulence Engineering. This is the path that drives releases.
+- `clients/apps/desktop/` — the Electron desktop application maintained by Oppulence Engineering. This is the path that drives releases.
+- `clients/apps/web/` and `clients/packages/` — the web app and marketing site, and the shared TypeScript packages.
+- `server/` — the Go backend (API, worker, scheduler, migrations).
+- `infra/` — Helm charts and the local kind manifests.
 - `.github/workflows/` — CI/CD pipelines, including the release pipeline.
-- `.release-please-config.json` and `.release-please-manifest.json` — configuration for release-please, which is scoped to `apps/x/`.
+- `.release-please-config.json` and `.release-please-manifest.json` — configuration for release-please, which is scoped to `clients/apps/desktop/`.
 
 ## Conventional commits (required)
 
@@ -33,9 +36,9 @@ Version bumps follow these rules:
 
 ## Path scope matters
 
-Release-please only counts commits that touch files under `apps/x/`. A PR that changes only `.github/` or root-level files will **not** trigger a release, even if its title is `feat: ...`.
+Release-please only counts commits that touch files under `clients/apps/desktop/`. A PR that changes only `.github/` or root-level files will **not** trigger a release, even if its title is `feat: ...`.
 
-If you want to force a release without an app-level code change, add a `Release-As: X.Y.Z` footer to the commit body and include at least one file change under `apps/x/` (a comment update is enough).
+If you want to force a release without an app-level code change, add a `Release-As: X.Y.Z` footer to the commit body and include at least one file change under `clients/apps/desktop/` (a comment update is enough).
 
 ## Release flow (what happens after your PR merges)
 
@@ -72,7 +75,7 @@ What runs, and when:
 | -------------- | -------------------------------------------------------------------------- | ----------------------- |
 | **pre-commit** | Prettier + ESLint `--fix` on staged TS/JS; `gofmt` + `go vet` on staged Go | sub-second, staged-only |
 | **commit-msg** | commitlint (Conventional Commits)                                          | instant                 |
-| **pre-push**   | renderer `tsc -b` typecheck + `apps/x` unit tests                          | seconds                 |
+| **pre-push**   | renderer `tsc -b` typecheck + `clients/apps/desktop` unit tests                          | seconds                 |
 
 Bypass in a pinch: `git commit --no-verify`, or `LEFTHOOK=0 git push`. CI is the
 authoritative gate — hooks are just fast local feedback. Run the pre-commit
@@ -84,7 +87,7 @@ checks across the whole tree with `pnpm hooks:run`.
 
 ### CI gates
 
-- **`x CI`** (`.github/workflows/x-smoke-test.yml`, on PRs touching `apps/x/`):
+- **`x CI`** (`.github/workflows/x-smoke-test.yml`, on PRs touching `clients/apps/desktop/`):
   renderer typecheck → lint → unit tests → package → **Playwright-Electron smoke**
   (drives the packaged build via `_electron.launch`).
 - **`x perf-lite`** (`x-perf-lite.yml`): renderer bundle-size budget (backend-less).
@@ -103,7 +106,7 @@ See [`docs/DESKTOP_PERFORMANCE_GATE.md`](./docs/DESKTOP_PERFORMANCE_GATE.md) for
 
 ## Reporting bugs and requesting features
 
-- **Bugs:** open an issue with reproduction steps, your platform, and the app version (visible in About or `apps/x/apps/main/package.json`).
+- **Bugs:** open an issue with reproduction steps, your platform, and the app version (visible in About or `clients/apps/desktop/apps/main/package.json`).
 - **Features:** open an issue describing the use case before opening a PR for a non-trivial change, so we can agree on scope first.
 - **Security vulnerabilities:** do **not** open a public issue. See [`SECURITY.md`](./SECURITY.md).
 

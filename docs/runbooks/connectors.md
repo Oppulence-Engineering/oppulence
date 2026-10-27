@@ -29,12 +29,12 @@ relabel pending rows to make dashboards green.
 
 ```bash
 # Render before changing a release.
-helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-production.yaml > /tmp/rowboat-api.yaml
-charts/rowboat-api/tests/deployment-contract.sh
+helm template rowboat-api infra/charts/rowboat-api -f infra/charts/rowboat-api/values-production.yaml > /tmp/rowboat-api.yaml
+infra/charts/rowboat-api/tests/deployment-contract.sh
 
 # Emergency-disable one or more connectors without deleting grants.
-helm upgrade rowboat-api charts/rowboat-api -n rowboat \
-  -f charts/rowboat-api/values-production.yaml \
+helm upgrade rowboat-api infra/charts/rowboat-api -n rowboat \
+  -f infra/charts/rowboat-api/values-production.yaml \
   --set-string config.CONNECTOR_EMERGENCY_DISABLED=canvas,corinthian --reuse-values --wait
 
 # Observe rollout and retain the prior revision number.
@@ -57,18 +57,18 @@ matching deployment evidence update fails the deployment contract.
 
 ```bash
 # After the approval body exists, compute the policy hash to place in it.
-python3 charts/hydra/product_approval.py \
-  --registry apps/rowboat-api/internal/connectors/default_connectors.json \
+python3 infra/charts/hydra/product_approval.py \
+  --registry server/internal/connectors/default_connectors.json \
   --print-policy-hash cadence
 
 # Then compute the manifest digest to pin in values-production.yaml.
-python3 charts/hydra/product_approval.py \
-  --registry apps/rowboat-api/internal/connectors/default_connectors.json
+python3 infra/charts/hydra/product_approval.py \
+  --registry server/internal/connectors/default_connectors.json
 
 # Both reusable negative/positive conformance tests and chart gates must pass.
-python3 charts/hydra/tests/product-approval.test.py
-charts/rowboat-api/tests/deployment-contract.sh
-charts/hydra/tests/deployment-contract.sh
+python3 infra/charts/hydra/tests/product-approval.test.py
+infra/charts/rowboat-api/tests/deployment-contract.sh
+infra/charts/hydra/tests/deployment-contract.sh
 ```
 
 Do not invent approval metadata to make a render pass. Until a production
@@ -176,7 +176,7 @@ change. Involuntary failures and direct pod deletion cannot be prevented by a PD
 1. Identify the token class before changing any verifier. Hydra access/refresh tokens belong only to the consent-plane flow. Product MCPs accept only short-lived connector resource tokens minted by rowboat-api.
 2. Decode only a redacted test connector resource token locally. Compare `iss`, `aud`, `kid`, `exp`, `nbf`, and `iat` with product configuration. The canonical `iss` is the environment's externally reachable rowboat-api origin.
 3. Fetch `/.well-known/connector-jwks.json` from the rowboat-api origin. Confirm TLS and that the signing `kid` is published. Do not substitute Hydra discovery or Hydra `/.well-known/jwks.json`.
-4. Confirm the product uses the environment-specific issuer, connector JWKS URL, MCP endpoint, and audience from `charts/hydra/contracts/product-resource-servers.json`. The operator example in `docs/deployment-examples/product-resource-server.env.example` must match it, with RS256-only validation.
+4. Confirm the product uses the environment-specific issuer, connector JWKS URL, MCP endpoint, and audience from `infra/charts/hydra/contracts/product-resource-servers.json`. The operator example in `docs/deployment-examples/product-resource-server.env.example` must match it, with RS256-only validation.
 5. Check node clock skew. Do not widen skew beyond policy to hide clock problems.
 6. On unknown `kid`, force one JWKS refresh. Do not disable signature verification or accept arbitrary algorithms.
 7. If a key rotation caused rejection, restore the previous verification key/JWKS publication, then repeat rotation with overlap.
@@ -229,8 +229,8 @@ Record key identifiers and timestamps, never key material.
 The expand/drain rollout is complete. Checked-in staging and production values
 must keep `CONNECTOR_OAUTH_LEGACY_STATE_WRITE=false`. New binaries write
 `state_hash`; the legacy column contains only a `sha256:` sentinel, never the
-bearer state. `charts/rowboat-api/tests/deployment-contract.sh` and
-`charts/hydra/tests/deployment-contract.sh` fail if either rendered environment
+bearer state. `infra/charts/rowboat-api/tests/deployment-contract.sh` and
+`infra/charts/hydra/tests/deployment-contract.sh` fail if either rendered environment
 re-enables legacy writes.
 
 Closure was permitted only after all rowboat-api replicas were hash-aware and

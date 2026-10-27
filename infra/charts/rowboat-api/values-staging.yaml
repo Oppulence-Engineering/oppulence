@@ -1,0 +1,83 @@
+# Staging overrides. Apply with:
+#   helm upgrade --install rowboat-api infra/charts/rowboat-api \
+#     -f infra/charts/rowboat-api/values-staging.yaml -n rowboat-staging
+replicaCount: 1
+
+ingress:
+  host: api.x.staging.oppulence.io
+
+autoscaling:
+  enabled: false
+
+serviceMonitor:
+  enabled: true
+
+observability:
+  prometheusRule:
+    enabled: true
+  grafanaDashboard:
+    enabled: true
+
+config:
+  ENVIRONMENT: staging
+  LOG_LEVEL: debug
+  AUTO_MIGRATE: "true" # staging may auto-migrate for fast iteration
+  APP_URL: https://x.staging.oppulence.io
+  # All three issuer URLs share this origin in staging. AUTH_ISSUER_URL is the
+  # single knob the application falls back to, but the deployment contract
+  # asserts each rendered variable by name, so staging pins them the same way
+  # production does. Pinning here, not in values.yaml, keeps the knob working
+  # for any environment that does not override them.
+  AUTH_ISSUER_URL: https://oauth.staging.oppulence.io
+  OIDC_ISSUER_URL: https://oauth.staging.oppulence.io
+  TOKEN_ISSUER: https://oauth.staging.oppulence.io
+  ORY_PUBLIC_URL: https://oauth.staging.oppulence.io
+  JWKS_URL: https://oauth.staging.oppulence.io/.well-known/jwks.json
+  ORY_ADMIN_URL: http://hydra-admin.ory-staging.svc.cluster.local:4445
+  ORY_BROKER_CLIENT_ID: solomon-connector-broker-staging
+  # Exact broker completion endpoints only. The hosted BFF keeps the eventual
+  # user-facing settings route in its signed state and performs the claim here.
+  CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai://connection-complete,https://x.staging.oppulence.io/api/connectors/oauth/callback
+  CONNECTOR_EMERGENCY_DISABLED: ""
+  # RFC 012 closure steady state. All hash-aware replicas and the pending-state
+  # TTL have drained, so raw bearer state must never be written again.
+  CONNECTOR_OAUTH_LEGACY_STATE_WRITE: "false"
+  CONNECTOR_ENTITLEMENT_URLS_JSON: '{"canvas":"https://api.canvas.staging.solomon-ai.co/v1/internal/entitlements","corinthian":"https://mcp.corinthian.staging.solomon-ai.co/v1/internal/entitlements","cadence":"https://mcp.cadence.staging.solomon-ai.co/v1/internal/entitlements","conduit":"https://mcp.conduit.staging.solomon-ai.co/v1/internal/entitlements","eigen":"https://mcp.eigen.staging.solomon-ai.co/v1/internal/entitlements","wispr":"https://mcp.wispr.staging.solomon-ai.co/v1/internal/entitlements"}'
+  PUBLIC_BASE_URL: https://api.x.staging.oppulence.io
+  # Staging product verifiers use this issuer and the connector JWKS endpoint on
+  # the same rowboat-api origin, never the Hydra JWKS used by the consent flow.
+  BROKER_TOKEN_ISSUER: https://api.x.staging.oppulence.io
+  # Google OAuth broker callback. MUST be the API host (where /oauth/google/callback
+  # is served), not APP_URL — the default falls back to APP_URL, which is the app
+  # host in staging/prod. Register this exact URI in the Google Cloud OAuth client.
+  GOOGLE_REDIRECT_URI: https://api.x.staging.oppulence.io/oauth/google/callback
+  INFISICAL_ENVIRONMENT: staging
+  # Distinguish staging feedback in the shared Plain inbox via the title prefix.
+  # There is one Plain workspace, so staging inherits PLAIN_LABEL_TYPE_IDS from
+  # values.yaml (no override needed).
+  PLAIN_TITLE_PREFIX: "[staging] "
+  # --- Temporal Cloud (API-native background task worker) -------------------
+  # Staging deliberately mirrors the production workflow topology. Promotion
+  # is only safe after this environment has run the exact candidate image with
+  # its API, worker, scheduler, event router, watches, and revenue loops active.
+  # TEMPORAL_API_KEY remains in rowboat-api-secrets / Infisical.
+  TEMPORAL_ENABLED: "true"
+  TEMPORAL_ADDRESS: rowboat-staging.kpisa.tmprl.cloud:7233
+  TEMPORAL_NAMESPACE: rowboat-staging.kpisa
+  TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
+  TEMPORAL_TLS_ENABLED: "true"
+  TEMPORAL_WORKER_ENABLED: "true"
+  CLOUD_EVENTS_ROUTING_ENABLED: "true"
+  GOOGLE_WATCH_ENABLED: "true"
+  REVENUE_AUTO_SCAN_ENABLED: "true"
+  REVENUE_MAIL_PUSH_SYNC_ENABLED: "true"
+
+worker:
+  enabled: true
+  replicaCount: 2
+
+scheduler:
+  enabled: true
+  replicaCount: 2
+
+existingSecret: rowboat-api-secrets

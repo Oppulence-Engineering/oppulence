@@ -62,7 +62,7 @@ Do not reintroduce those filters.
 ## Name spelling
 
 The product is **Oppulence**, with two p's, as `PRODUCT_NAME` in
-`apps/x/packages/shared/src/branding.ts` declares. The delivered brand pack
+`clients/apps/desktop/packages/shared/src/branding.ts` declares. The delivered brand pack
 spelled it "Opulence" in its `site.webmanifest` and filenames; that was a
 mistake in the pack, not a rename, so every in-repo manifest and asset uses
 the two-p spelling. Anything regenerated from a future pack should be checked

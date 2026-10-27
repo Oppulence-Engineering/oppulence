@@ -241,19 +241,19 @@ SMOKE_STARTED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 if [[ "$KEEP_DESKTOP" == 1 ]] && command -v screen >/dev/null 2>&1; then
   screen -dmS "$DESKTOP_SESSION" bash -lc \
     'cd "$1" && API_URL="$2" ROWBOAT_WORKDIR="$3" ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="$4" npm run dev >"$5" 2>&1' \
-    rowboat-desktop-smoke "${ROOT_DIR}/apps/x" "http://localhost:${API_PORT}" "$WORKDIR" "$CDP_PORT" "$LOG_FILE"
+    rowboat-desktop-smoke "${ROOT_DIR}/clients/apps/desktop" "http://localhost:${API_PORT}" "$WORKDIR" "$CDP_PORT" "$LOG_FILE"
   DESKTOP_SESSION_STARTED=1
 elif [[ "$KEEP_DESKTOP" == 1 ]]; then
   nohup env \
     API_URL="http://localhost:${API_PORT}" \
     ROWBOAT_WORKDIR="$WORKDIR" \
     ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="$CDP_PORT" \
-    npm --prefix "${ROOT_DIR}/apps/x" run dev \
+    npm --prefix "${ROOT_DIR}/clients/apps/desktop" run dev \
     >"$LOG_FILE" 2>&1 < /dev/null &
   DESKTOP_PID=$!
 else
   (
-    cd "${ROOT_DIR}/apps/x"
+    cd "${ROOT_DIR}/clients/apps/desktop"
     API_URL="http://localhost:${API_PORT}" \
       ROWBOAT_WORKDIR="$WORKDIR" \
       ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="$CDP_PORT" \

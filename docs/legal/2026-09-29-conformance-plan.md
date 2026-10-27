@@ -20,8 +20,8 @@ This plan does not ask a lawyer to bless new promises. It makes the running code
 
 **Code.**
 
-- Default `shareUsageData` to `false` in `apps/x/packages/shared/src/privacy.ts`. A missing `privacy.json` must not send events. A file that already says `true` stays on.
-- `analytics:bootstrap` returns that flag. `apps/x/apps/renderer/src/main.tsx` does not construct `PostHogProvider` until the flag is true. Direct `posthog-js` calls in the renderer no-op while the flag is false, including the queue that `posthog-js` would otherwise flush on a later `init`.
+- Default `shareUsageData` to `false` in `clients/apps/desktop/packages/shared/src/privacy.ts`. A missing `privacy.json` must not send events. A file that already says `true` stays on.
+- `analytics:bootstrap` returns that flag. `clients/apps/desktop/apps/renderer/src/main.tsx` does not construct `PostHogProvider` until the flag is true. Direct `posthog-js` calls in the renderer no-op while the flag is false, including the queue that `posthog-js` would otherwise flush on a later `init`.
 - Toggling the desktop setting applies immediately to both the Node client and the renderer.
 - `identifyIfSignedIn` does not attach an email address. Account email is account data in the privacy policy, not usage data.
 - Web capture already waits for `shareUsageData`, which defaults to false. Keep that.
@@ -34,7 +34,7 @@ This plan does not ask a lawyer to bless new promises. It makes the running code
 
 **Sentence to satisfy.** Privacy policy, “AI processing” and “Google user data”: model providers are prohibited from using customer data to train their models, and Google user data is not used to train generalized models.
 
-**Code.** One helper used by `ChatComplete`, `Complete`, and the streaming proxy in `apps/rowboat-api/internal/llm`. For every OpenRouter request it sets `provider.data_collection` to `deny` on the JSON body (OpenRouter then limits routing to providers that do not collect prompts) and sets `HTTP-Referer` and `X-Title` to Oppulence (`https://oppulence.io`, `Oppulence`) instead of Solomon AI.
+**Code.** One helper used by `ChatComplete`, `Complete`, and the streaming proxy in `server/internal/llm`. For every OpenRouter request it sets `provider.data_collection` to `deny` on the JSON body (OpenRouter then limits routing to providers that do not collect prompts) and sets `HTTP-Referer` and `X-Title` to Oppulence (`https://oppulence.io`, `Oppulence`) instead of Solomon AI.
 
 **Not in this change.** A gateway redactor for “where feasible,” and the contracts that bind each lab. The request flag is what the repo can enforce. Dashboard-only privacy settings are not sufficient because they can change without a code review.
 
@@ -76,7 +76,7 @@ The Terms used to say that after termination we would keep data for a reasonable
 - On first sign-in, store the Terms effective date and the time of assent on the user. The sign-in page already says “By continuing, you agree.”
 - The sign-in page states that continuing confirms the person is at least 18. Do not collect a date of birth.
 - Add one sentence to the Terms license section: source obtained under the Apache License 2.0 is governed by that license; these Terms govern accounts and the hosted Service. Do not relicense `LICENSE`.
-- Point `apps/docs/docs/getting-started/license.mdx` at this repository’s `LICENSE` and `NOTICE`.
+- Point `clients/apps/docs/docs/getting-started/license.mdx` at this repository’s `LICENSE` and `NOTICE`.
 - Update `NOTICE` so the copyright line is Playbook Media, Inc. and the fork description includes the API and web app, not only the Electron shell. Fill the `LICENSE` appendix so the brackets are gone and the copyright is Playbook Media, Inc., while keeping the Apache 2.0 terms and the Rowboat attribution.
 
 **Not in this change.** An in-product arbitration opt-out. The Terms already specify email to `legal@oppulence.io`. Building a second channel would be a new promise.
@@ -106,4 +106,4 @@ The Terms used to say that after termination we would keep data for a reasonable
 4. Deletion retry, billing retention, disconnect deletion, export (item 4).
 5. Assent record, age sentence, Apache boundary, notices, `security.txt` (items 5 and 6).
 
-Each item lands with tests that fail if the policy control is removed. `make verify` in `apps/rowboat-api` runs after Go edits. Desktop privacy tests run in `apps/x`. Web analytics tests run in `apps/rowboat-www`.
+Each item lands with tests that fail if the policy control is removed. `make verify` in `server` runs after Go edits. Desktop privacy tests run in `clients/apps/desktop`. Web analytics tests run in `clients/apps/web`.

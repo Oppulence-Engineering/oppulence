@@ -21,10 +21,10 @@
 
 ## Release impact
 
-<!-- Fill in if your change touches `apps/x/`. Otherwise it will NOT trigger a release. -->
+<!-- Fill in if your change touches `clients/apps/desktop/`. Otherwise it will NOT trigger a release. -->
 
-- [ ] This PR is intentionally **outside** `apps/x/` and should not bump the version.
-- [ ] This PR **should** trigger a version bump (touches `apps/x/`).
+- [ ] This PR is intentionally **outside** `clients/apps/desktop/` and should not bump the version.
+- [ ] This PR **should** trigger a version bump (touches `clients/apps/desktop/`).
   - Expected bump: <!-- patch / minor / major -->
 
 ## Screenshots / video

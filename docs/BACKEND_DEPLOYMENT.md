@@ -6,9 +6,9 @@ This guide covers the deployed RFC 012 connector authorization plane alongside t
 
 | Artifact | Path |
 |---|---|
-| rowboat-api chart | `charts/rowboat-api/` |
-| Hydra environment values and client Jobs | `charts/hydra/` |
-| consent chart and environment values | `charts/oauth-consent/` |
+| rowboat-api chart | `infra/charts/rowboat-api/` |
+| Hydra environment values and client Jobs | `infra/charts/hydra/` |
+| consent chart and environment values | `infra/charts/oauth-consent/` |
 | connector incident runbooks | `docs/runbooks/connectors.md` |
 | product resource-server example | `docs/deployment-examples/product-resource-server.env.example` |
 
@@ -29,7 +29,7 @@ Generate independent values with `openssl rand -hex 32`. Never place live values
 
 - `rowboat-api-secrets`: existing backend keys plus `ORY_BROKER_CLIENT_SECRET`, `HOOK_HMAC_SECRET`, `DB_ENCRYPTION_KEY`, `BROKER_TOKEN_PRIVATE_KEY_PEM`, and `BROKER_TOKEN_KEYRING_JSON`.
 - `oauth-consent-secrets`: `DATABASE_URL`, `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `HOOK_HMAC_SECRET`, and `COOKIE_SECRET`. `HOOK_HMAC_SECRET` must equal rowboat-api's value so consent context and append-audit hooks authenticate.
-- `hydra-secrets`: `dsn`, `secretsSystem`, and `secretsCookie`. See `charts/hydra/secrets.example.yaml`.
+- `hydra-secrets`: `dsn`, `secretsSystem`, and `secretsCookie`. See `infra/charts/hydra/secrets.example.yaml`.
 
 The HMAC secret authenticates only consent context/audit bodies. Do not reuse it for cookies, database encryption, provider OAuth clients, or approval tokens. Rotate it by accepting old and new verification keys in the application release when supported, deploying verifiers first, switching the signer, waiting at least the 10-minute consent TTL, then removing the old key. If dual verification is unavailable, disable new consent during the coordinated restart.
 
@@ -100,7 +100,7 @@ Before a release, run the mandatory state-machine gate. Unlike ordinary unit
 test collection, it fails if the PostgreSQL suite would be skipped:
 
 ```bash
-cd apps/oauth-consent
+cd clients/apps/oauth-consent
 npm run test:release
 ```
 
@@ -114,7 +114,7 @@ Do not copy the documentation addresses above into a deployment.
 
 ## Hydra Admin network isolation
 
-`charts/hydra/network-policy/` is a companion Helm chart for the upstream Ory
+`infra/charts/hydra/network-policy/` is a companion Helm chart for the upstream Ory
 Hydra release. It default-denies ingress and egress for Hydra Pods, permits
 public port 4444 only from the configured ingress-controller namespace/pod
 selectors, allows DNS and the explicit PostgreSQL CIDRs, and permits Admin port
@@ -206,21 +206,21 @@ DATABASE_URL="$MIGRATION_DATABASE_URL" go run ./apps/rowboat-api/cmd/migrate app
 # 3. Hydra, default-deny policies, and clients. Both network values files are
 # required environment-owned inputs and must contain real private endpoint CIDRs.
 helm upgrade --install hydra ory/hydra -n ory --create-namespace \
-  -f charts/hydra/values-production.yaml --wait
-helm upgrade --install hydra-policy charts/hydra/network-policy -n ory \
-  -f charts/hydra/network-policy/values-production.yaml \
+  -f infra/charts/hydra/values-production.yaml --wait
+helm upgrade --install hydra-policy infra/charts/hydra/network-policy -n ory \
+  -f infra/charts/hydra/network-policy/values-production.yaml \
   -f "$HYDRA_NETWORK_VALUES" --wait
-kubectl apply -n ory -f charts/hydra/clients/rowboat-desktop.yaml
+kubectl apply -n ory -f infra/charts/hydra/clients/rowboat-desktop.yaml
 kubectl -n ory wait --for=condition=complete job/rowboat-oauth-clients --timeout=180s
 
 # 4. Consent app.
-helm upgrade --install oauth-consent charts/oauth-consent -n rowboat --create-namespace \
-  -f charts/oauth-consent/values-production.yaml \
+helm upgrade --install oauth-consent infra/charts/oauth-consent -n rowboat --create-namespace \
+  -f infra/charts/oauth-consent/values-production.yaml \
   -f "$OAUTH_CONSENT_NETWORK_VALUES" --set image.tag=<git-sha> --wait
 
 # 5. Broker API.
-helm upgrade --install rowboat-api charts/rowboat-api -n rowboat \
-  -f charts/rowboat-api/values-production.yaml --set image.tag=<git-sha> --wait
+helm upgrade --install rowboat-api infra/charts/rowboat-api -n rowboat \
+  -f infra/charts/rowboat-api/values-production.yaml --set image.tag=<git-sha> --wait
 ```
 
 Use `ory-staging`, `rowboat-staging`, the staging values, and the staging client Job for staging. Client creation Jobs are intentionally fail-closed if a client already exists. Delete and recreate a client only during a planned change after assessing refresh-token impact.
@@ -291,21 +291,21 @@ Every product MCP must configure its RFC 012 middleware with the exact rowboat-a
 ## Verification and rollback
 
 ```bash
-helm lint charts/oauth-consent
-helm lint charts/oauth-consent -f charts/oauth-consent/values-production.yaml \
+helm lint infra/charts/oauth-consent
+helm lint infra/charts/oauth-consent -f infra/charts/oauth-consent/values-production.yaml \
   -f "$OAUTH_CONSENT_NETWORK_VALUES"
-helm lint charts/hydra/network-policy \
-  -f charts/hydra/network-policy/values-production.yaml \
+helm lint infra/charts/hydra/network-policy \
+  -f infra/charts/hydra/network-policy/values-production.yaml \
   -f "$HYDRA_NETWORK_VALUES"
-helm lint charts/rowboat-api -f charts/rowboat-api/values-production.yaml
-helm template oauth-consent charts/oauth-consent \
-  -f charts/oauth-consent/values-production.yaml \
+helm lint infra/charts/rowboat-api -f infra/charts/rowboat-api/values-production.yaml
+helm template oauth-consent infra/charts/oauth-consent \
+  -f infra/charts/oauth-consent/values-production.yaml \
   -f "$OAUTH_CONSENT_NETWORK_VALUES" >/dev/null
-helm template hydra-policy charts/hydra/network-policy \
-  -f charts/hydra/network-policy/values-production.yaml \
+helm template hydra-policy infra/charts/hydra/network-policy \
+  -f infra/charts/hydra/network-policy/values-production.yaml \
   -f "$HYDRA_NETWORK_VALUES" >/dev/null
-helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-production.yaml >/dev/null
-helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-staging.yaml >/dev/null
+helm template rowboat-api infra/charts/rowboat-api -f infra/charts/rowboat-api/values-production.yaml >/dev/null
+helm template rowboat-api infra/charts/rowboat-api -f infra/charts/rowboat-api/values-staging.yaml >/dev/null
 curl -fsS https://oauth.solomon-ai.co/.well-known/openid-configuration
 curl -fsS https://oauth.solomon-ai.co/.well-known/jwks.json
 curl -fsS https://consent.solomon-ai.co/healthz
@@ -313,11 +313,11 @@ curl -fsS https://api.oppulence.io/healthz
 curl -fsS https://api.oppulence.io/.well-known/connector-jwks.json
 
 # Render-contract and product-verifier configuration probe.
-charts/rowboat-api/tests/deployment-contract.sh
+infra/charts/rowboat-api/tests/deployment-contract.sh
 
 # Docker + kind + Calico: applies real consent migrations, observes /readyz=200,
 # and proves the rendered allow/deny paths while NetworkPolicy is enforced.
-charts/hydra/tests/network-policy-kind.sh
+infra/charts/hydra/tests/network-policy-kind.sh
 ```
 
 Run a staging consent flow for read and money-moving scopes, verify HMAC-authenticated context/audit delivery and entitlement denial copy, then mint a rowboat-api resource token. Confirm its `iss` is the staging API origin, its `kid` exists in the staging connector JWKS, its `aud` is exact, and the product returns the expected 401/403/428 responses. Rollback procedures are in `docs/runbooks/connectors.md#rollback`.

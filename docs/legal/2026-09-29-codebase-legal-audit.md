@@ -2,7 +2,7 @@
 
 **Date:** 29 September 2026
 **Commit reviewed:** `origin/main` at the time this document was written
-**Scope:** Public legal pages in `apps/rowboat-www`, the root `LICENSE` and `NOTICE`, the docs-site license page, and the product code those documents describe (web console, desktop app, Go API).
+**Scope:** Public legal pages in `clients/apps/web`, the root `LICENSE` and `NOTICE`, the docs-site license page, and the product code those documents describe (web console, desktop app, Go API).
 **Method:** Read the published text, then traced the corresponding behavior in source. Findings below are limited to what the repository can prove.
 
 This is an engineering compliance review. It is not a legal opinion, not attorney work product, and not a certification under the GDPR, UK GDPR, CCPA/CPRA, or any other law. A lawyer should decide which items to change in the public documents, the product, or both. Contracts with vendors (DPAs, SCCs, Stripe tax settings, OpenRouter account privacy settings, WorkOS configuration) are outside the repository and are marked unverified.
@@ -13,17 +13,17 @@ Remediation is tracked in `docs/legal/2026-09-29-conformance-plan.md`. Items 1 t
 
 | Surface | Path | Effective date |
 | --- | --- | --- |
-| Privacy Policy | `apps/rowboat-www/app/(legal)/privacy/page.tsx` | 8 September 2026 |
-| Terms of Service | `apps/rowboat-www/app/(legal)/terms/page.tsx` | 8 September 2026 |
-| Responsible Disclosure | `apps/rowboat-www/app/(legal)/responsible-disclosure/page.tsx` | 8 September 2026 |
-| Security and privacy (product description, not a policy) | `apps/rowboat-www/app/(marketing)/sim-landing/subpages/sim-security-page.tsx` | none |
+| Privacy Policy | `clients/apps/web/app/(legal)/privacy/page.tsx` | 8 September 2026 |
+| Terms of Service | `clients/apps/web/app/(legal)/terms/page.tsx` | 8 September 2026 |
+| Responsible Disclosure | `clients/apps/web/app/(legal)/responsible-disclosure/page.tsx` | 8 September 2026 |
+| Security and privacy (product description, not a policy) | `clients/apps/web/app/(marketing)/sim-landing/subpages/sim-security-page.tsx` | none |
 | Apache License 2.0 | `LICENSE` | n/a |
 | Fork notice | `NOTICE` | copyright 2026 |
-| Docs license page | `apps/docs/docs/getting-started/license.mdx` | points at this repository’s `LICENSE` and `NOTICE` |
+| Docs license page | `clients/apps/docs/docs/getting-started/license.mdx` | points at this repository’s `LICENSE` and `NOTICE` |
 
-Footer and sitemap link Privacy, Terms, and Responsible Disclosure (`apps/rowboat-www/app/(marketing)/site.ts`, `apps/rowboat-www/app/sitemap.ts`). There is no public cookie policy, subprocessors page, or data processing addendum. `/.well-known/security.txt` is served by the marketing site and the API.
+Footer and sitemap link Privacy, Terms, and Responsible Disclosure (`clients/apps/web/app/(marketing)/site.ts`, `clients/apps/web/app/sitemap.ts`). There is no public cookie policy, subprocessors page, or data processing addendum. `/.well-known/security.txt` is served by the marketing site and the API.
 
-Sign-in and sign-up show “By continuing, you agree to our Terms and Privacy Policy, and you confirm that you are at least 18 years old” next to the Google button (`apps/rowboat-www/components/auth/auth-shell.tsx`). The API stores the Terms version and the time on first sight of a verified token.
+Sign-in and sign-up show “By continuing, you agree to our Terms and Privacy Policy, and you confirm that you are at least 18 years old” next to the Google button (`clients/apps/web/components/auth/auth-shell.tsx`). The API stores the Terms version and the time on first sight of a verified token.
 
 ## Severity summary
 
@@ -47,15 +47,15 @@ Sign-in and sign-up show “By continuing, you agree to our Terms and Privacy Po
 
 **Security page:** “PostHog analytics is fail-closed until you enable it. You can turn it off.”
 
-**Desktop default is on.** `shareUsageData` defaults to `true`, and the comment says that is intentional so existing installs keep analytics (`apps/x/packages/shared/src/privacy.ts`). A missing `privacy.json` parses to that default (`apps/x/packages/core/src/config/privacy.ts`). Startup then calls `setAnalyticsEnabled(config.shareUsageData)`, so a new install sends analytics as soon as the main-process client is configured.
+**Desktop default is on.** `shareUsageData` defaults to `true`, and the comment says that is intentional so existing installs keep analytics (`clients/apps/desktop/packages/shared/src/privacy.ts`). A missing `privacy.json` parses to that default (`clients/apps/desktop/packages/core/src/config/privacy.ts`). Startup then calls `setAnalyticsEnabled(config.shareUsageData)`, so a new install sends analytics as soon as the main-process client is configured.
 
-The in-memory flag in `apps/x/packages/core/src/analytics/posthog.ts` starts `false`, which is fail-closed only until `applyPrivacyConfig()` runs. After that, the stored default turns it on. That is opt-out, not opt-in.
+The in-memory flag in `clients/apps/desktop/packages/core/src/analytics/posthog.ts` starts `false`, which is fail-closed only until `applyPrivacyConfig()` runs. After that, the stored default turns it on. That is opt-out, not opt-in.
 
-**The renderer client is not behind the switch.** `apps/x/apps/renderer/src/main.tsx` mounts `PostHogProvider` whenever `VITE_PUBLIC_POSTHOG_KEY` is set, with `capture_exceptions: true`. The `analytics:bootstrap` IPC handler returns the installation id, API URL, and app version, and does not read `privacy.json` (`apps/x/apps/main/src/ipc.ts`). Renderer events in `apps/x/apps/renderer/src/lib/analytics.ts` and `useAnalyticsIdentity.ts` call `posthog-js` directly. They record sign-in, OAuth provider connection flags, chat sessions, transcription metadata, and a count of notes in the workspace. Turning off “share usage data” stops the Node client. It does not stop this renderer client.
+**The renderer client is not behind the switch.** `clients/apps/desktop/apps/renderer/src/main.tsx` mounts `PostHogProvider` whenever `VITE_PUBLIC_POSTHOG_KEY` is set, with `capture_exceptions: true`. The `analytics:bootstrap` IPC handler returns the installation id, API URL, and app version, and does not read `privacy.json` (`clients/apps/desktop/apps/main/src/ipc.ts`). Renderer events in `clients/apps/desktop/apps/renderer/src/lib/analytics.ts` and `useAnalyticsIdentity.ts` call `posthog-js` directly. They record sign-in, OAuth provider connection flags, chat sessions, transcription metadata, and a count of notes in the workspace. Turning off “share usage data” stops the Node client. It does not stop this renderer client.
 
-**Identified, not anonymous.** When the main-process client is enabled, `identifyIfSignedIn` sends the account id, email, plan, and subscription status to PostHog (`apps/x/packages/core/src/analytics/identify.ts`). The privacy schema comment calls this “anonymous product analytics.” The events are tied to a person.
+**Identified, not anonymous.** When the main-process client is enabled, `identifyIfSignedIn` sends the account id, email, plan, and subscription status to PostHog (`clients/apps/desktop/packages/core/src/analytics/identify.ts`). The privacy schema comment calls this “anonymous product analytics.” The events are tied to a person.
 
-**Web is closer to opt-in, and the two products disagree.** The Go console default leaves `ShareUsageData` false (`defaultPreferences()` in `apps/rowboat-api/internal/console/service.go`). The web wrapper waits for that flag before capture and strips property keys that look like email, name, prompt, or relationship content (`apps/rowboat-www/lib/analytics/analytics.ts`). The settings control treats a missing value as unchecked (`apps/rowboat-www/components/features/settings/app-settings/app-settings.tsx`). A web user who never opts in should not be captured. A desktop user is captured unless they find the switch, and even then the renderer may keep sending.
+**Web is closer to opt-in, and the two products disagree.** The Go console default leaves `ShareUsageData` false (`defaultPreferences()` in `server/internal/console/service.go`). The web wrapper waits for that flag before capture and strips property keys that look like email, name, prompt, or relationship content (`clients/apps/web/lib/analytics/analytics.ts`). The settings control treats a missing value as unchecked (`clients/apps/web/components/features/settings/app-settings/app-settings.tsx`). A web user who never opts in should not be captured. A desktop user is captured unless they find the switch, and even then the renderer may keep sending.
 
 **Why it matters.** The security page is the page that claims to describe implementation. It currently describes a control the desktop does not implement. In the EEA and UK, non-essential analytics generally needs consent before the identifier is set (ePrivacy), separate from a GDPR legitimate-interest argument. A default-on identified stream that includes email is a weak legitimate-interest case and is not consent. Calling the stream “first-party” is also inaccurate: both clients post to `https://us.i.posthog.com` unless an env override changes the host.
 
@@ -67,7 +67,7 @@ No Meta, Google Ads, Hotjar, FullStory, Segment, Mixpanel, or Amplitude tags sho
 
 **Privacy Policy, “AI processing” and “Google user data”:** relevant content is sent to model providers who “are prohibited from using your data to train their models.” Google user data is not used to train generalized models, and humans do not read it except in the stated cases. The product also says it minimizes context and redacts sensitive values “where feasible.”
 
-**What the gateway does.** Hosted chat completions are routed to OpenRouter (`apps/rowboat-api/internal/llm/router_test.go` documents that `openai/*`, Anthropic, and Google models go to `openrouter.ai`). The outbound request sets `Authorization`, an idempotency key, `HTTP-Referer: https://app.solomon-ai.co`, and `X-Title: Solomon AI` (`apps/rowboat-api/internal/llm/chat.go`). There is no `provider.data_collection: "deny"`, no zero-data-retention route, and no header that tells OpenRouter or the upstream lab to disable prompt logging or training.
+**What the gateway does.** Hosted chat completions are routed to OpenRouter (`server/internal/llm/router_test.go` documents that `openai/*`, Anthropic, and Google models go to `openrouter.ai`). The outbound request sets `Authorization`, an idempotency key, `HTTP-Referer: https://app.solomon-ai.co`, and `X-Title: Solomon AI` (`server/internal/llm/chat.go`). There is no `provider.data_collection: "deny"`, no zero-data-retention route, and no header that tells OpenRouter or the upstream lab to disable prompt logging or training.
 
 OpenRouter’s account-level privacy setting, if one exists in a dashboard this repo cannot see, might still be strict. The code does not enforce it. A dashboard toggle can be changed without a code review. Google’s Limited Use rules also restrict transfer of Google user data to third parties except as needed for the user-facing feature. Sending Gmail or Calendar content through an aggregator that may log prompts is the kind of transfer that needs a written subprocessor term and a technical control, not only a policy sentence.
 
@@ -101,7 +101,7 @@ Copyright notices do not agree:
 
 `NOTICE` also understates the fork. It lists the Electron app, CI, and packaging. The tree contains the Go API, the marketing and product web app, billing, and connectors. A NOTICE that says the modifications are “including but not limited to” three items is not false, but it is a poor record of what a downstream redistributor is supposed to attribute.
 
-**What to change.** Decide whether the public repository stays Apache 2.0. If it does, narrow the Terms so they govern the hosted service and accounts, and add a sentence that source received under Apache 2.0 is governed by that license. If the product is meant to be proprietary, replace `LICENSE` and stop distributing the tree under Apache. Either way, put one legal name in the copyright line, fill the appendix, and update `apps/docs/docs/getting-started/license.mdx` so it does not send readers to the upstream project’s license as if it were this product’s only notice.
+**What to change.** Decide whether the public repository stays Apache 2.0. If it does, narrow the Terms so they govern the hosted service and accounts, and add a sentence that source received under Apache 2.0 is governed by that license. If the product is meant to be proprietary, replace `LICENSE` and stop distributing the tree under Apache. Either way, put one legal name in the copyright line, fill the appendix, and update `clients/apps/docs/docs/getting-started/license.mdx` so it does not send readers to the upstream project’s license as if it were this product’s only notice.
 
 ## L-04 — Processor role is claimed; the processor paperwork is not in the product
 
@@ -129,15 +129,15 @@ That is normal for a policy that points at contracts kept outside git. It is not
 
 **What the code does.**
 
-`DELETE /v1/me` (`apps/rowboat-api/internal/account/handler.go`) is a real deletion path: confirmation word, step-up proof, Stripe subscriptions cancelled first, connector grants revoked, then a database cascade, then WorkOS session revocation and user deletion. Immediate deletion satisfies a “within 30 days” ceiling for rows the cascade actually removes.
+`DELETE /v1/me` (`server/internal/account/handler.go`) is a real deletion path: confirmation word, step-up proof, Stripe subscriptions cancelled first, connector grants revoked, then a database cascade, then WorkOS session revocation and user deletion. Immediate deletion satisfies a “within 30 days” ceiling for rows the cascade actually removes.
 
 Gaps:
 
 1. **WorkOS deletion can fail open.** If `DeleteUser` fails, the handler logs “delete it manually” and still returns success with `identityDeleted: false`. Name and email can remain at the identity provider with no queued retry in this handler. The 30-day promise then depends on someone reading logs.
 2. **Local billing rows are destroyed, not retained.** The handler comment says the subscription is loaded “for the dispute and tax trail” and then notes that the cascade deletes the billing rows. The trail that remains is an application log line containing `plan` and `stripe_customer_id`. The policy says tax and dispute records are kept. The database does not keep them. Stripe may, which is an unverified vendor setting, and it is not disclosed.
-3. **Disconnect revokes the grant and does not delete synced content.** `DELETE /v1/connections/{name}` calls `revokeConnection` and returns 204 (`apps/rowboat-api/internal/connectors/handler.go`). The internal pilot data map says the same thing in plainer language: disconnect stops collection and “does not silently erase historical evidence” (`docs/trustworthy-first-account-beta/pilot-data-map.md`). The privacy policy tells the user the opposite unless they already know to look for a workspace retention setting. This audit did not find a disconnect path that deletes previously synced mail, calendar, Slack, or CRM bodies.
+3. **Disconnect revokes the grant and does not delete synced content.** `DELETE /v1/connections/{name}` calls `revokeConnection` and returns 204 (`server/internal/connectors/handler.go`). The internal pilot data map says the same thing in plainer language: disconnect stops collection and “does not silently erase historical evidence” (`docs/trustworthy-first-account-beta/pilot-data-map.md`). The privacy policy tells the user the opposite unless they already know to look for a workspace retention setting. This audit did not find a disconnect path that deletes previously synced mail, calendar, Slack, or CRM bodies.
 4. **There is no account export.** The export route found is commitment export (`ExportCommitment`), plus local desktop notes. There is no “download my account” API that would meet a portability request for connected-source content without an operator. Email-to-`privacy@oppulence.io` can still be the legal channel. The in-product sentence should not imply a self-serve archive that does not exist.
-5. **Backup purge is not in the repo.** Cryptographic erasure is designed for tenant evidence keys (`apps/rowboat-api/ent/schema/tenant_evidence_key.go`: destroying wrapped keys is meant to make ciphertext and backups unreadable). That is not the same as a job that purges every backup of every table within a stated window. Database snapshot retention is an infrastructure setting this audit cannot see.
+5. **Backup purge is not in the repo.** Cryptographic erasure is designed for tenant evidence keys (`server/ent/schema/tenant_evidence_key.go`: destroying wrapped keys is meant to make ciphertext and backups unreadable). That is not the same as a job that purges every backup of every table within a stated window. Database snapshot retention is an infrastructure setting this audit cannot see.
 
 **What to change.** Rewrite the disconnect sentence to match the data map, or delete synced content on disconnect. Retry WorkOS deletion until it succeeds. Decide whether tax records live in Stripe, in a retained billing table, or both, and say so. Add a self-serve export or narrow the portability sentence to the email request.
 
@@ -185,7 +185,7 @@ The footer says “Playbook Media” without “Inc.” Small, but invoices, the
 
 **Age.** Both documents say the Service is not for anyone under 18. Sign-up does not ask for an age or record an attestation. For a business product that is often enough, because the customer represents they are 18 when they continue. It is not a control. There is also no child-deletion workflow beyond the instruction to email `privacy@oppulence.io`.
 
-**Price changes and auto-renewal.** The Terms say paid plans renew until cancelled, fees are non-refundable except where the law requires, and price changes get 30 days’ notice. The API can open a Stripe billing portal (`PortalSession` in `apps/rowboat-api/internal/billing/stripe.go`) and account deletion cancels live subscriptions immediately. Whether the portal is configured to let a customer cancel in two clicks, and whether checkout shows the auto-renewal terms required by California and other state auto-renewal statutes, depends on the Stripe dashboard and the checkout page copy. This repo does not contain that confirmation.
+**Price changes and auto-renewal.** The Terms say paid plans renew until cancelled, fees are non-refundable except where the law requires, and price changes get 30 days’ notice. The API can open a Stripe billing portal (`PortalSession` in `server/internal/billing/stripe.go`) and account deletion cancels live subscriptions immediately. Whether the portal is configured to let a customer cancel in two clicks, and whether checkout shows the auto-renewal terms required by California and other state auto-renewal statutes, depends on the Stripe dashboard and the checkout page copy. This repo does not contain that confirmation.
 
 **What to change.** Store the Terms version and the time of assent. Offer the arbitration opt-out in the product or accept the email-only path as a legal risk. Add an age attestation if counsel wants more than a browsewrap representation. Confirm the Stripe portal and checkout disclosures against the auto-renewal sentence.
 
@@ -195,7 +195,7 @@ Apache 2.0 section 4 requires the license, modification notices, and retained th
 
 Observed gaps:
 
-- `apps/x/vendor/whisper` builds a static `whisper-cli` from a pinned whisper.cpp tag (MIT). The binary is staged into the Electron app by CI. The Forge config does not copy a whisper.cpp `LICENSE`, and the vendor directory does not contain one.
+- `clients/apps/desktop/vendor/whisper` builds a static `whisper-cli` from a pinned whisper.cpp tag (MIT). The binary is staged into the Electron app by CI. The Forge config does not copy a whisper.cpp `LICENSE`, and the vendor directory does not contain one.
 - `sharp` / `libvips` (LGPL-3.0-or-later) is in the web and other Node lockfiles. Dynamic linking is usually compatible with LGPL; the notice still belongs in a third-party notices file if those binaries ship.
 - Electron and the rest of the desktop dependency tree have their own MIT, BSD, and Apache notices. No `THIRD_PARTY_NOTICES` file and no license-inventory script showed up at the repo root.
 - The docs site duplicates the entire Apache text and attributes it to the upstream GitHub URL, so a correction to `LICENSE` will not reach the docs site.
@@ -218,10 +218,10 @@ These are included so the audit is not only a list of gaps.
 
 - **No ad-tech tags** were found in the web app or desktop renderer. The no-sale and no-advertising-cookie sentences are consistent with that search.
 - **Card numbers** are not stored on Oppulence tables. Billing keeps Stripe customer and subscription ids. That matches “we do not store full payment card numbers.”
-- **Session cookies** are HTTP-only, `SameSite=Lax`, `Secure` in production, and sealed with AES-256-GCM (`apps/rowboat-www/lib/auth/cookies.ts`). The browser does not receive the WorkOS access token. That matches the security page. The cookie is not a `__Host-` cookie; the web app’s own engineering guide already flags that as a follow-up, not as a policy claim.
-- **Security response headers** on the web app include CSP, HSTS, `nosniff`, a referrer policy, and a permissions policy (`apps/rowboat-www/next.config.ts`).
+- **Session cookies** are HTTP-only, `SameSite=Lax`, `Secure` in production, and sealed with AES-256-GCM (`clients/apps/web/lib/auth/cookies.ts`). The browser does not receive the WorkOS access token. That matches the security page. The cookie is not a `__Host-` cookie; the web app’s own engineering guide already flags that as a follow-up, not as a policy claim.
+- **Security response headers** on the web app include CSP, HSTS, `nosniff`, a referrer policy, and a permissions policy (`clients/apps/web/next.config.ts`).
 - **Connector credentials** are stored encrypted, which matches the narrower promise “encryption at rest for sensitive stored credentials and tokens.” The policy does not claim that every database column is encrypted.
-- **Meeting disclosure defaults to off.** Relationship evidence flags for transcripts, attendance, and model contact extraction default to false (`apps/x/packages/core/src/voice/transcription-config.test.ts`). The privacy policy correctly leaves participant-consent law with the customer.
+- **Meeting disclosure defaults to off.** Relationship evidence flags for transcripts, attendance, and model contact extraction default to false (`clients/apps/desktop/packages/core/src/voice/transcription-config.test.ts`). The privacy policy correctly leaves participant-consent law with the customer.
 - **Account deletion exists** and refuses to delete an account whose Stripe subscription cannot be cancelled. That is stronger than a policy that only promises deletion “within 30 days.”
 - **Web analytics** waits for `shareUsageData` and defaults that flag to false. The desktop does not (L-01).
 - **The security page refuses invented compliance marks.** It says the team does not invent a SOC 2 or HIPAA claim. This audit found no such badge in that page. Do not add one until the audit report exists.

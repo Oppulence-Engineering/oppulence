@@ -131,23 +131,23 @@ idempotent, approval-pending email follow-up draft.
   the explicit confirmed-commitment assertion. It does not yet auto-project arbitrary
   model-inferred risks, sentiment, lifecycle, or stakeholder changes.
 - OS-level microphone/system-audio capture and packaged sidecar behavior require the
-  hardware signal-verification runbook in `apps/x/MEETING_CAPTURE.md`; automated tests
+  hardware signal-verification runbook in `clients/apps/desktop/MEETING_CAPTURE.md`; automated tests
   cannot substitute for level assertions on both tracks.
 
 ## Verification
 
 Completed on this branch:
 
-- `cd apps/x && pnpm install --frozen-lockfile`
-- `cd apps/x && pnpm run check:types`
+- `cd clients/apps/desktop && pnpm install --frozen-lockfile`
+- `cd clients/apps/desktop && pnpm run check:types`
   - shared, core, preload, renderer production build, and bundled main process passed.
-- `cd apps/x && pnpm lint`
-- `cd apps/x && pnpm security:electron`
+- `cd clients/apps/desktop && pnpm lint`
+- `cd clients/apps/desktop && pnpm security:electron`
   - Electron security configuration check passed.
-- `cd apps/x/packages/core && pnpm test`
+- `cd clients/apps/desktop/packages/core && pnpm test`
   - 89 test files passed, 4 skipped.
   - 697 tests passed, 4 skipped.
-- `cd apps/x/vendor/audiocap && ./build.sh && swift test`
+- `cd clients/apps/desktop/vendor/audiocap && ./build.sh && swift test`
   - The release helper built for arm64.
   - 16 tests passed.
 - `./out/oppulence-audiocap doctor --json`
@@ -165,7 +165,7 @@ Completed on this branch:
   - macOS TCC logs confirmed the wrapper's bundle identity was the responsible client.
     A direct terminal launch was correctly treated as inconclusive after TCC attributed
     it to Warp and returned timed zero samples.
-- `cd apps/rowboat-api && go test ./internal/revenue`
+- `cd server && go test ./internal/revenue`
   - relationship ingestion, projection, shared commitments, and idempotent replay passed.
 - `git diff --check`
 

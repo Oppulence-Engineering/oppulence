@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const appDir = path.join(repoRoot, "apps/x/apps/main");
+const appDir = path.join(repoRoot, "clients/apps/desktop/apps/main");
 const requireFromApp = createRequire(path.join(appDir, "package.json"));
 
 const packager = requireFromApp("@electron/packager");

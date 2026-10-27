@@ -3,11 +3,11 @@ name: Oppulence API Quality
 on:
   pull_request:
     paths:
-      - "apps/rowboat-api/**"
-      - "apps/oauth-consent/**"
-      - "charts/rowboat-api/**"
-      - "packages/rowboat-api-client-ts/**"
-      - "apps/rowboat-www/lib/api/generated/**"
+      - "server/**"
+      - "clients/apps/oauth-consent/**"
+      - "infra/charts/rowboat-api/**"
+      - "clients/packages/api-client/**"
+      - "clients/apps/web/lib/api/generated/**"
       - "docs/trustworthy-first-account-beta/**"
       - "scripts/rowboat-api-kind.sh"
       - ".gitleaks.toml"
@@ -18,11 +18,11 @@ on:
   push:
     branches: [develop, main]
     paths:
-      - "apps/rowboat-api/**"
-      - "apps/oauth-consent/**"
-      - "charts/rowboat-api/**"
-      - "packages/rowboat-api-client-ts/**"
-      - "apps/rowboat-www/lib/api/generated/**"
+      - "server/**"
+      - "clients/apps/oauth-consent/**"
+      - "infra/charts/rowboat-api/**"
+      - "clients/packages/api-client/**"
+      - "clients/apps/web/lib/api/generated/**"
       - "docs/trustworthy-first-account-beta/**"
       - "scripts/rowboat-api-kind.sh"
       - ".gitleaks.toml"
@@ -42,20 +42,20 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
       - name: Formatting, module, and architecture checks
         run: make fmt-check architecture mod-verify
-        working-directory: apps/rowboat-api
+        working-directory: server
       - name: Verify quality workflow policy
         run: make policy
-        working-directory: apps/rowboat-api
+        working-directory: server
       - name: Test with race detector
         run: go test ./... -race -count=1 -timeout=30m
-        working-directory: apps/rowboat-api
+        working-directory: server
       - name: Vet
         run: go vet ./...
-        working-directory: apps/rowboat-api
+        working-directory: server
 
   # The cloud-scheduler durable lease (RFC 002) relies on Postgres
   # `INSERT ... ON CONFLICT DO NOTHING` semantics, which differ from sqlite, so
@@ -81,13 +81,13 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
       - name: Schedule-lease concurrency (Postgres)
         run: |
           go test -tags=pgconcurrency -race -count=1 ./cmd/migrate
           go test -tags=pgconcurrency -race -count=1 ./internal/backgroundscheduler/...
-        working-directory: apps/rowboat-api
+        working-directory: server
         env:
           ROWBOAT_TEST_PG_DSN: postgres://rowboat:rowboat@localhost:5432/rowboat_test?sslmode=disable
 
@@ -99,16 +99,16 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: apps/oauth-consent/package-lock.json
+          cache-dependency-path: clients/apps/oauth-consent/package-lock.json
       - name: Run required RFC 012 PostgreSQL acceptance topology
         run: ./integration/rfc012/postgres16.sh
-        working-directory: apps/rowboat-api
+        working-directory: server
         env:
           JCODE_SCRATCH_DIR: ${{ github.workspace }}/.artifacts/rfc012
       - name: Upload RFC 012 service logs
@@ -125,12 +125,12 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
       - uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8
         with:
           version: v2.12.2
-          working-directory: apps/rowboat-api
+          working-directory: server
 
   generate-drift:
     runs-on: ubuntu-latest
@@ -138,28 +138,28 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "24"
           cache: npm
           cache-dependency-path: |
-            packages/rowboat-api-client-ts/package-lock.json
-            apps/rowboat-www/package-lock.json
+            clients/packages/api-client/package-lock.json
+            clients/apps/web/package-lock.json
       - name: Install protoc
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
       - name: Install generation tools
         run: make install-tools
-        working-directory: apps/rowboat-api
+        working-directory: server
       - name: Generate API and SDK artifacts
         run: make generate
-        working-directory: apps/rowboat-api
+        working-directory: server
       - name: Install and verify rowboat-www generated contract
         run: npm ci --ignore-scripts && npm run contracts:check
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
       - name: Check generated drift
-        run: git diff --exit-code -- apps/rowboat-api packages/rowboat-api-client-ts apps/rowboat-www/lib/api/generated
+        run: git diff --exit-code -- server clients/packages/api-client clients/apps/web/lib/api/generated
 
   helm:
     runs-on: ubuntu-latest
@@ -175,11 +175,11 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
       - name: Validate governed release evidence schema
         run: make tfa-release-register-validate
-        working-directory: apps/rowboat-api
+        working-directory: server
 
   vulnerability-scan:
     runs-on: ubuntu-latest
@@ -187,13 +187,13 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
       - name: govulncheck
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
           govulncheck ./...
-        working-directory: apps/rowboat-api
+        working-directory: server
 
   secret-scan:
     runs-on: ubuntu-latest
@@ -209,7 +209,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Build container
-        run: docker build -f apps/rowboat-api/Dockerfile -t rowboat-api:${{ github.sha }} .
+        run: docker build -f server/Dockerfile -t rowboat-api:${{ github.sha }} .
       - name: Trivy scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
