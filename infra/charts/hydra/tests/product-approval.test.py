@@ -7,7 +7,7 @@ import sys
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(ROOT / "infra/charts/hydra"))
 
 from product_approval import approval_manifest_digest, production_policy_hash, validate_production_approvals
