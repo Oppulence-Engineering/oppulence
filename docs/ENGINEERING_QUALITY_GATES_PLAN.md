@@ -58,31 +58,33 @@ are incremental.
 ## 2. Where we are today
 
 ### Strengths (keep / build on)
-| Area | What exists | Path |
-|---|---|---|
-| Perf gate | Tiered (commit/full/deep) Go harness: process-tree RSS/CPU sampling, CDP renderer profile + heap/DOM metrics, IPC p50/p95/max, bundle-size budgets, memory-growth loops, machine-local baselines | `tools/desktop-perf/`, `tools/desktop-perf/budget.json` |
-| Perf docs | Thorough operator doc | `docs/DESKTOP_PERFORMANCE_GATE.md` |
-| Perf CI | Nightly (full tier) + weekly (deep) + manual dispatch, under xvfb on a kind stack | `.github/workflows/desktop-perf-nightly.yml` |
-| Perf entrypoints | `make perf-desktop[-full|-deep|-quick|-baseline]` | `Makefile` |
-| Lint | ESLint flat config (root + renderer) | `clients/apps/desktop/eslint.config.mts`, `clients/apps/desktop/apps/renderer/eslint.config.js` |
-| PR-title hygiene | Conventional-commit PR-title check (feat/fix/perf/…) | `.github/workflows/pr-title-lint.yml` |
-| Unit tests | vitest, 4 tests in `packages/core` | `clients/apps/desktop/packages/core/src/**/**.test.ts` |
-| Boot smoke (PR) | install → build shared/core/preload → lint → Forge package → launch 5s under xvfb, assert process alive | `.github/workflows/x-smoke-test.yml` |
-| Release/build CI | Multi-OS Forge build/publish | `electron-build.yml`, `release.yml`, `x-publish.yml` |
+
+| Area             | What exists                                                                                                                                                                                      | Path                                                                                            |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Perf gate        | Tiered (commit/full/deep) Go harness: process-tree RSS/CPU sampling, CDP renderer profile + heap/DOM metrics, IPC p50/p95/max, bundle-size budgets, memory-growth loops, machine-local baselines | `tools/desktop-perf/`, `tools/desktop-perf/budget.json`                                         |
+| Perf docs        | Thorough operator doc                                                                                                                                                                            | `docs/DESKTOP_PERFORMANCE_GATE.md`                                                              |
+| Perf CI          | Nightly (full tier) + weekly (deep) + manual dispatch, under xvfb on a kind stack                                                                                                                | `.github/workflows/desktop-perf-nightly.yml`                                                    |
+| Perf entrypoints | `make perf-desktop[-full                                                                                                                                                                         | -deep                                                                                           | -quick | -baseline]` | `Makefile` |
+| Lint             | ESLint flat config (root + renderer)                                                                                                                                                             | `clients/apps/desktop/eslint.config.mts`, `clients/apps/desktop/apps/renderer/eslint.config.js` |
+| PR-title hygiene | Conventional-commit PR-title check (feat/fix/perf/…)                                                                                                                                             | `.github/workflows/pr-title-lint.yml`                                                           |
+| Unit tests       | vitest, 4 tests in `packages/core`                                                                                                                                                               | `clients/apps/desktop/packages/core/src/**/**.test.ts`                                          |
+| Boot smoke (PR)  | install → build shared/core/preload → lint → Forge package → launch 5s under xvfb, assert process alive                                                                                          | `.github/workflows/x-smoke-test.yml`                                                            |
+| Release/build CI | Multi-OS Forge build/publish                                                                                                                                                                     | `electron-build.yml`, `release.yml`, `x-publish.yml`                                            |
 
 ### Gaps (this plan)
-| Gap | Impact | Severity |
-|---|---|---|
-| **No git hooks** (husky/lefthook/lint-staged) | Lint/format errors only caught in CI or never; noisy diffs | 🔴 High |
-| **No formatter** (no prettier/editorconfig) | Inconsistent style, churny diffs, format debates | 🔴 High |
-| **Renderer typecheck (`tsc -b`) not gated in CI** | `x-smoke-test.yml` builds only shared/core/preload + lints; renderer type errors can merge | 🔴 High |
-| **Regression tests thin** (4 unit tests; boot smoke only asserts "process alive 5s") | UI/IPC regressions ship undetected | 🟠 Medium |
-| **No Electron e2e** (no Playwright driving the app) | No automated coverage of real user flows | 🟠 Medium |
-| **Commit-message linting only on PR titles** | Intermediate commit history unconstrained (acceptable if squash-merging) | 🟡 Low |
-| **Perf gate not in per-PR signal** (nightly/manual only) | Regressions found a day late, not on the PR | 🟡 Low |
+
+| Gap                                                                                  | Impact                                                                                     | Severity  |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | --------- |
+| **No git hooks** (husky/lefthook/lint-staged)                                        | Lint/format errors only caught in CI or never; noisy diffs                                 | 🔴 High   |
+| **No formatter** (no prettier/editorconfig)                                          | Inconsistent style, churny diffs, format debates                                           | 🔴 High   |
+| **Renderer typecheck (`tsc -b`) not gated in CI**                                    | `x-smoke-test.yml` builds only shared/core/preload + lints; renderer type errors can merge | 🔴 High   |
+| **Regression tests thin** (4 unit tests; boot smoke only asserts "process alive 5s") | UI/IPC regressions ship undetected                                                         | 🟠 Medium |
+| **No Electron e2e** (no Playwright driving the app)                                  | No automated coverage of real user flows                                                   | 🟠 Medium |
+| **Commit-message linting only on PR titles**                                         | Intermediate commit history unconstrained (acceptable if squash-merging)                   | 🟡 Low    |
+| **Perf gate not in per-PR signal** (nightly/manual only)                             | Regressions found a day late, not on the PR                                                | 🟡 Low    |
 
 > Repo nuance that shapes tooling choice: **there is no root `package.json`** — the monorepo root
-> is polyglot (Go `server` + `tools/desktop-perf`, Next.js `clients/apps/dashboard`/`rowboat-www`,
+> is polyglot (Go `server` + `tools/desktop-perf`, Next.js `clients/apps/web`,
 > and the nested pnpm workspace `clients/apps/desktop`). Git hooks install at the **git root**, but the JS
 > toolchain lives under `clients/apps/desktop`. This matters for the hook-tool decision (§5).
 
@@ -91,9 +93,10 @@ are incremental.
 ## 3. How the reference projects do it (condensed)
 
 ### VS Code — the gold standard (three-tier model)
+
 - **Hooks (fast, local, staged-only):** legacy husky wires a `precommit` npm script → `build/hygiene.ts`,
   which reads **staged files only** (`git diff --cached`) and checks copyright header, tab
-  indentation, formatting, and a unicode allowlist. **ESLint/typecheck are *not* in the hook** —
+  indentation, formatting, and a unicode allowlist. **ESLint/typecheck are _not_ in the hook** —
   they run in CI. Errors are phrased as machine-fixable ("Run Format Document to fix").
 - **CI (medium):** `.github/workflows/pr.yml` runs `compile + hygiene + eslint + valid-layers-check`
   (architecture import-boundary check) in parallel, then a per-OS reusable test matrix.
@@ -106,6 +109,7 @@ are incremental.
   not per-PR).
 
 ### Cross-cutting patterns from 8 OSS Electron apps (2025)
+
 - **Pre-commit:** **husky 9 + lint-staged 16/17** is the dominant JS pattern (Joplin, Bitwarden,
   Element Desktop, Element Web) running **eslint + prettier on staged files**. The other half
   (Signal, Mattermost, Logseq, Standard Notes) use **no local hooks** and enforce in CI.
@@ -121,17 +125,17 @@ are incremental.
 
 **Reference matrix**
 
-| Project | Hooks | e2e framework | Perf tests |
-|---|---|---|---|
-| VS Code | husky `precommit`→hygiene (staged) | Playwright (packaged build) | marks + vscode-perf + 20% threshold gate |
-| Signal Desktop | none (CI-enforced) | Playwright `_electron` | **yes** (scheduled benchmarks + OTel) |
-| Element Desktop | husky + lint-staged | Playwright `_electron.launch` | none |
-| Joplin | husky + lint-staged (no tsc) | `@playwright/test` | none |
-| Bitwarden (desktop) | husky + lint-staged | jest only (no GUI e2e) | none |
-| Mattermost desktop | none | `@playwright/test` (built app) | none |
-| Logseq | none | Playwright (Java/Clojure) | none |
-| Standard Notes | commitlint cfg unused | mocha-headless / AVA | none |
-| **rowboat `clients/apps/desktop` (us)** | **none → P0** | **boot-smoke only → P1** | **tiered Go gate (ahead)** |
+| Project                                 | Hooks                              | e2e framework                  | Perf tests                               |
+| --------------------------------------- | ---------------------------------- | ------------------------------ | ---------------------------------------- |
+| VS Code                                 | husky `precommit`→hygiene (staged) | Playwright (packaged build)    | marks + vscode-perf + 20% threshold gate |
+| Signal Desktop                          | none (CI-enforced)                 | Playwright `_electron`         | **yes** (scheduled benchmarks + OTel)    |
+| Element Desktop                         | husky + lint-staged                | Playwright `_electron.launch`  | none                                     |
+| Joplin                                  | husky + lint-staged (no tsc)       | `@playwright/test`             | none                                     |
+| Bitwarden (desktop)                     | husky + lint-staged                | jest only (no GUI e2e)         | none                                     |
+| Mattermost desktop                      | none                               | `@playwright/test` (built app) | none                                     |
+| Logseq                                  | none                               | Playwright (Java/Clojure)      | none                                     |
+| Standard Notes                          | commitlint cfg unused              | mocha-headless / AVA           | none                                     |
+| **rowboat `clients/apps/desktop` (us)** | **none → P0**                      | **boot-smoke only → P1**       | **tiered Go gate (ahead)**               |
 
 ---
 
@@ -145,7 +149,7 @@ are incremental.
    and CI (full scope), so they never drift.
 4. **Don't reinvent perf.** Reuse `tools/desktop-perf`; add cheap signal per-PR and a threshold
    regression gate rather than a new system.
-5. **Fail on a *relative* threshold for perf** (VS Code's 20%), not just absolute budgets, so noisy
+5. **Fail on a _relative_ threshold for perf** (VS Code's 20%), not just absolute budgets, so noisy
    machines don't block and real regressions do.
 6. **Make hooks bypassable in emergencies** (`--no-verify`) but enforced in CI, so CI is the real
    gate and the hook is just fast feedback.
@@ -154,47 +158,53 @@ are incremental.
 
 ## 5. Tooling decisions (with rationale)
 
-| Decision | Choice | Why (evidence) |
-|---|---|---|
-| **Hook runner** | **lefthook** at the git root (primary) — or husky+lint-staged scoped to `clients/apps/desktop` (alternative) | The root is **polyglot with no root `package.json`**. lefthook is a single language-agnostic binary that runs per-glob commands (TS *and* Go *and* Next) in parallel without a Node package at the root — a cleaner fit than husky here. *Caveat:* the JS-ecosystem standard is husky+lint-staged (4/8 OSS apps); if we'd rather keep hooks inside `clients/apps/desktop` and stay 100% conventional, use that. **Recommendation: lefthook for the root**, because our root is not a JS package. |
-| **Staged-file lint/format** | **eslint --fix + prettier --write** on staged TS/TSX; `gofmt`/`go vet` on staged Go | Matches the dominant OSS pattern (eslint+prettier on staged). |
-| **Formatter** | **Prettier 3** + `.editorconfig` | We have none today; every husky-using OSS app pairs eslint with prettier. |
-| **Commit messages** | Keep **PR-title lint** as the gate (we squash-merge → PR title *is* the commit). Add local `commit-msg` commitlint only if we want clean intermediate history. | commitlint-via-hook was 0/8; PR-title/CI enforcement is the norm. Low priority. |
-| **Renderer typecheck** | Add `tsc -b` to PR CI (and optionally pre-push) | Currently ungated; Joplin keeps tsc out of pre-commit but it must run *somewhere*. |
-| **e2e** | **Playwright `_electron.launch`** against the Forge-packaged build | 6/7 OSS GUI suites use Playwright; `_electron` is the modern Electron idiom (Signal, Element). Avoid Spectron (dead) and wdio (0/8). |
-| **Unit tests** | Keep **vitest**, expand coverage | Equivalent to the jest majority; already wired. |
-| **Perf** | Keep the **Go gate**; add per-PR perf-lite + threshold regression gate | We're ahead of the field; don't rebuild. |
+| Decision                    | Choice                                                                                                                                                         | Why (evidence)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Hook runner**             | **lefthook** at the git root (primary) — or husky+lint-staged scoped to `clients/apps/desktop` (alternative)                                                   | The root is **polyglot with no root `package.json`**. lefthook is a single language-agnostic binary that runs per-glob commands (TS _and_ Go _and_ Next) in parallel without a Node package at the root — a cleaner fit than husky here. _Caveat:_ the JS-ecosystem standard is husky+lint-staged (4/8 OSS apps); if we'd rather keep hooks inside `clients/apps/desktop` and stay 100% conventional, use that. **Recommendation: lefthook for the root**, because our root is not a JS package. |
+| **Staged-file lint/format** | **eslint --fix + prettier --write** on staged TS/TSX; `gofmt`/`go vet` on staged Go                                                                            | Matches the dominant OSS pattern (eslint+prettier on staged).                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Formatter**               | **Prettier 3** + `.editorconfig`                                                                                                                               | We have none today; every husky-using OSS app pairs eslint with prettier.                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Commit messages**         | Keep **PR-title lint** as the gate (we squash-merge → PR title _is_ the commit). Add local `commit-msg` commitlint only if we want clean intermediate history. | commitlint-via-hook was 0/8; PR-title/CI enforcement is the norm. Low priority.                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Renderer typecheck**      | Add `tsc -b` to PR CI (and optionally pre-push)                                                                                                                | Currently ungated; Joplin keeps tsc out of pre-commit but it must run _somewhere_.                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **e2e**                     | **Playwright `_electron.launch`** against the Forge-packaged build                                                                                             | 6/7 OSS GUI suites use Playwright; `_electron` is the modern Electron idiom (Signal, Element). Avoid Spectron (dead) and wdio (0/8).                                                                                                                                                                                                                                                                                                                                                             |
+| **Unit tests**              | Keep **vitest**, expand coverage                                                                                                                               | Equivalent to the jest majority; already wired.                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Perf**                    | Keep the **Go gate**; add per-PR perf-lite + threshold regression gate                                                                                         | We're ahead of the field; don't rebuild.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ---
 
 ## 6. The plan, by gate layer
 
 ### Layer 0 — Foundations
+
 - [ ] Add **Prettier 3** config + `.prettierignore` and a root **`.editorconfig`** (tabs/spaces, EOL,
       final newline) covering `clients/apps/desktop` (and ideally the Next apps).
 - [ ] Add a single **`scripts/lint-staged-*`** (or `lint-staged.config.mjs` under `clients/apps/desktop`) that is
-      the *one* definition of "format + lint a set of files", callable by the hook and CI.
+      the _one_ definition of "format + lint a set of files", callable by the hook and CI.
 
 ### Layer 1 — Pre-commit hook (fast, staged-only) — **P0**
+
 - [ ] Install **lefthook** at the git root with a `lefthook.yml`:
   - `clients/apps/desktop/**/*.{ts,tsx}` (staged) → `eslint --fix` + `prettier --write`
-  - `clients/apps/dashboard/**`, `clients/apps/web/**` `*.{ts,tsx}` (staged) → prettier/eslint as configured there
+  - `clients/apps/web/**` `*.{ts,tsx}` (staged) → prettier/eslint as configured there
   - `**/*.go` (staged) → `gofmt -w` + `go vet` (scoped to the changed module)
   - Keep total hook time **< ~2s on a typical change**; never run `tsc` or tests here.
 - [ ] Document `git commit --no-verify` as the documented escape hatch.
 
 ### Layer 2 — commit-msg (optional) — **P3**
-- [ ] *Only if we want constrained intermediate history:* add commitlint (`@commitlint/config-conventional`)
+
+- [ ] _Only if we want constrained intermediate history:_ add commitlint (`@commitlint/config-conventional`)
       with the **same types as `pr-title-lint.yml`** (feat/fix/perf/refactor/docs/chore/build/ci/test/revert),
       wired via lefthook `commit-msg`. Otherwise rely on PR-title lint + squash-merge.
 
 ### Layer 3 — pre-push (optional, opt-in) — **P2**
+
 - [ ] lefthook `pre-push`: run **renderer `tsc -b`** (typecheck) + **`clients/apps/desktop` `npm test`** (the
       vitest unit suite). Fast enough for push, too slow for commit (Joplin's split). Make it
       skippable for WIP branches.
 
 ### Layer 4 — PR CI (the real gate) — **P0/P1**
+
 Augment `x-smoke-test.yml` (or split into `x-ci.yml`):
+
 - [ ] **P0: add renderer typecheck** — `cd clients/apps/desktop/apps/renderer && npx tsc -b` (closes the highest-risk gap).
 - [ ] **P0: run unit tests** — `cd clients/apps/desktop && npm test` (currently not in PR CI).
 - [ ] **P1: replace the 5s boot smoke with a real Playwright-Electron smoke** — `_electron.launch`
@@ -209,6 +219,7 @@ Augment `x-smoke-test.yml` (or split into `x-ci.yml`):
       cheapest failures surface first (VS Code ordering).
 
 ### Layer 5 — Nightly / weekly (heavy) — **P2**
+
 - [ ] Keep `desktop-perf-nightly.yml` (full nightly, deep weekly) as-is.
 - [ ] **Add a perf regression gate** (the VS Code `chat-perf.yml` pattern): compare the run against a
       committed/stored baseline and **fail on >X% regression** on key metrics
@@ -223,12 +234,12 @@ Augment `x-smoke-test.yml` (or split into `x-ci.yml`):
 
 ## 7. Phased rollout
 
-| Phase | Goal | Items | Rough effort |
-|---|---|---|---|
-| **P0** (week 1) | Stop bad code merging; fast local feedback | Prettier + editorconfig (L0); lefthook pre-commit (L1); renderer typecheck + unit tests in PR CI (L4) | ~1–2 dev-days |
-| **P1** (week 2–3) | Real automated regression signal | Playwright-Electron smoke replacing boot-smoke; perf-lite PR job (L4) | ~3–5 dev-days |
-| **P2** (month 2) | Depth + heavy gates | pre-push typecheck/tests (L3); nightly e2e matrix; perf threshold regression gate (L5) | ~1–2 dev-weeks |
-| **P3** (opportunistic) | Polish | commit-msg lint (L2); architecture import-boundary check (main/preload/renderer, à la VS Code `layersChecker`); macOS/Windows e2e | as capacity allows |
+| Phase                  | Goal                                       | Items                                                                                                                             | Rough effort       |
+| ---------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| **P0** (week 1)        | Stop bad code merging; fast local feedback | Prettier + editorconfig (L0); lefthook pre-commit (L1); renderer typecheck + unit tests in PR CI (L4)                             | ~1–2 dev-days      |
+| **P1** (week 2–3)      | Real automated regression signal           | Playwright-Electron smoke replacing boot-smoke; perf-lite PR job (L4)                                                             | ~3–5 dev-days      |
+| **P2** (month 2)       | Depth + heavy gates                        | pre-push typecheck/tests (L3); nightly e2e matrix; perf threshold regression gate (L5)                                            | ~1–2 dev-weeks     |
+| **P3** (opportunistic) | Polish                                     | commit-msg lint (L2); architecture import-boundary check (main/preload/renderer, à la VS Code `layersChecker`); macOS/Windows e2e | as capacity allows |
 
 ---
 

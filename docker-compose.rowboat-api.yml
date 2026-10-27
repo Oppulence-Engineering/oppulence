@@ -1,5 +1,5 @@
 # Local end-to-end stack for the rowboat-api backend.
-# Ports are offset to avoid clashing with the legacy docker-compose.yml.
+# Host ports are offset (18080, 5433, …) to stay clear of other local services.
 #
 #   # Keys are read from the gitignored root .env (compose auto-loads it):
 #   #   WORKOS_API_KEY, OPENROUTER_API_KEY, OPENAI_API_KEY,

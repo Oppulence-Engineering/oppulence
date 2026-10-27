@@ -6,7 +6,7 @@ on:
       - "server/**"
       - "clients/apps/oauth-consent/**"
       - "infra/charts/rowboat-api/**"
-      - "clients/packages/api-client/**"
+      - "sdk/typescript/**"
       - "clients/apps/web/lib/api/generated/**"
       - "docs/trustworthy-first-account-beta/**"
       - "scripts/rowboat-api-kind.sh"
@@ -21,7 +21,7 @@ on:
       - "server/**"
       - "clients/apps/oauth-consent/**"
       - "infra/charts/rowboat-api/**"
-      - "clients/packages/api-client/**"
+      - "sdk/typescript/**"
       - "clients/apps/web/lib/api/generated/**"
       - "docs/trustworthy-first-account-beta/**"
       - "scripts/rowboat-api-kind.sh"
@@ -145,7 +145,7 @@ jobs:
           node-version: "24"
           cache: npm
           cache-dependency-path: |
-            clients/packages/api-client/package-lock.json
+            sdk/typescript/package-lock.json
             clients/apps/web/package-lock.json
       - name: Install protoc
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
@@ -159,7 +159,7 @@ jobs:
         run: npm ci --ignore-scripts && npm run contracts:check
         working-directory: clients/apps/web
       - name: Check generated drift
-        run: git diff --exit-code -- server clients/packages/api-client clients/apps/web/lib/api/generated
+        run: git diff --exit-code -- server sdk/typescript clients/apps/web/lib/api/generated
 
   helm:
     runs-on: ubuntu-latest

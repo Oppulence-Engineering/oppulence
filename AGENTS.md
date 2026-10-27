@@ -29,19 +29,19 @@ oppulence/
 │   ├── apps/
 │   │   ├── desktop/            # Electron desktop app (nested pnpm workspace; focus of this doc)
 │   │   ├── web/                # Marketing site and desktop companion web app (Next.js, npm)
-│   │   ├── dashboard/          # Legacy Next.js dashboard
 │   │   ├── oauth-consent/      # Ory Hydra login + consent UI (TS/Express) — DEFERRED (see server/AUTH.md)
 │   │   ├── cli/                # CLI tool
 │   │   ├── docs/               # Documentation site
 │   │   └── experimental/       # Chat widget, simulation runner, tools webhook
 │   └── packages/
 │       ├── ui/                 # Shared design system (@oppulence/ui)
-│       ├── api-client/         # TypeScript client generated from server/api/openapi.json
 │       ├── integration-templates/
 │       ├── relationship-contract/
 │       ├── oauth-resource-server/  # JWT/JWKS verification lib (TS, @oppulence/oauth-resource-server)
 │       └── eslint-plugin-web/  # Lint rules for clients/apps/web
-├── sdk/python/                 # Python SDK
+├── sdk/
+│   ├── python/                 # Python SDK
+│   └── typescript/             # TypeScript SDK (@oppulence/sdk), generated from server/api/openapi.json
 ├── infra/
 │   ├── charts/                 # Helm charts and values
 │   └── deploy/kind/            # Local kind cluster manifests
@@ -117,8 +117,8 @@ pnpm uses symlinks for workspace packages. Electron Forge's dependency walker ca
 
 ## Key Files Reference
 
-| Purpose                  | File                                  |
-| ------------------------ | ------------------------------------- |
+| Purpose                  | File                                                |
+| ------------------------ | --------------------------------------------------- |
 | Electron main entry      | `clients/apps/desktop/apps/main/src/main.ts`        |
 | React app entry          | `clients/apps/desktop/apps/renderer/src/main.tsx`   |
 | Forge config (packaging) | `clients/apps/desktop/apps/main/forge.config.cjs`   |
@@ -135,8 +135,8 @@ Long-form docs for specific features. Read the relevant file before making chang
 
 | Feature                                                                                                                                                                                                | Doc                                        |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| Live Notes — single `live:` frontmatter block (one objective + optional cron / windows / eventMatchCriteria) that turns a note into a self-updating artifact, panel UI, Copilot skill, prompts catalog | `clients/apps/desktop/LIVE_NOTE.md`                      |
-| Analytics — PostHog event catalog, person properties, use-case taxonomy, how to add a new event                                                                                                        | `clients/apps/desktop/ANALYTICS.md`                      |
+| Live Notes — single `live:` frontmatter block (one objective + optional cron / windows / eventMatchCriteria) that turns a note into a self-updating artifact, panel UI, Copilot skill, prompts catalog | `clients/apps/desktop/LIVE_NOTE.md`        |
+| Analytics — PostHog event catalog, person properties, use-case taxonomy, how to add a new event                                                                                                        | `clients/apps/desktop/ANALYTICS.md`        |
 | rowboat-www growth standard — `npm run gen` for pages, components, Zod, hooks, mutations, stores, stories                                                                                              | `clients/apps/web/docs/growth-standard.md` |
 
 ## Common Tasks

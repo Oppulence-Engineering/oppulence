@@ -3,9 +3,9 @@
 |                   |                                                                                                                                                                                                                                                                                                                                                            |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **RFC**           | 036                                                                                                                                                                                                                                                                                                                                                        |
-| **Status**        | Complete — accepted architecture and R1.1 implementation validated; remaining production rollout is tracked by the delivery program                                                                                                                                                                                        |
+| **Status**        | Complete — accepted architecture and R1.1 implementation validated; remaining production rollout is tracked by the delivery program                                                                                                                                                                                                                        |
 | **Track**         | Product foundation — relationship intelligence                                                                                                                                                                                                                                                                                                             |
-| **Owners**        | `server`, `clients/apps/web`, `clients/apps/desktop`                                                                                                                                                                                                                                                                                                           |
+| **Owners**        | `server`, `clients/apps/web`, `clients/apps/desktop`                                                                                                                                                                                                                                                                                                       |
 | **Created**       | 2026-07-26                                                                                                                                                                                                                                                                                                                                                 |
 | **Last updated**  | 2026-08-26                                                                                                                                                                                                                                                                                                                                                 |
 | **Product brief** | [Oppulence relationship-intelligence one-pager](../../docs/one-pager.md)                                                                                                                                                                                                                                                                                   |
@@ -186,8 +186,7 @@ Primary implementation anchors:
 - `clients/apps/desktop/apps/renderer/src/components/relationships-view.tsx`
 - `clients/apps/desktop/packages/core/src/relationships/client.ts`
 - `clients/apps/desktop/packages/shared/src/relationships.ts`
-- `fixtures/relationship-acme.json`
-- `fixtures/relationship-marketing-observations.json`
+- `clients/apps/web/scripts/fixtures/relationship-marketing-observations.json`
 
 ### 4.2 Foundation limitations
 
@@ -1809,10 +1808,10 @@ binding, approval, and auditable outcomes.
 
 Every work package adds links here:
 
-| Evidence                   | Location                                                                                   |
-| -------------------------- | ------------------------------------------------------------------------------------------ |
-| Product contract           | `docs/one-pager.md`                                                                        |
-| RFC contract               | `docs/rfc/036-relationship-state-engine.md`                                                |
+| Evidence                   | Location                                                                         |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| Product contract           | `docs/one-pager.md`                                                              |
+| RFC contract               | `docs/rfc/036-relationship-state-engine.md`                                      |
 | Domain schemas             | `server/ent/schema/relationship*.go`                                             |
 | Migration                  | `server/migrations/20260726114325_relationship_intelligence.sql`                 |
 | Ingestion and projector    | `server/internal/revenue/relationship_state.go`                                  |
@@ -1823,11 +1822,11 @@ Every work package adds links here:
 | Assertion contract tests   | `server/internal/revenue/relationship_assertion_contract_test.go`                |
 | Projection lifecycle tests | `server/internal/revenue/relationship_projection_test.go`                        |
 | R1.1 migration             | `server/migrations/postgres/20260826090000_relationship_assertion_authority.sql` |
-| Web client                 | `clients/apps/web/components/revenue/relationships-view.tsx`                               |
-| Desktop client             | `clients/apps/desktop/apps/renderer/src/components/relationships-view.tsx`                               |
-| Desktop transport          | `clients/apps/desktop/packages/core/src/relationships/client.ts`                                         |
-| Desktop schemas            | `clients/apps/desktop/packages/shared/src/relationships.ts`                                              |
-| Golden fixtures            | `fixtures/relationship-*.json`                                                             |
+| Web client                 | `clients/apps/web/components/revenue/relationships-view.tsx`                     |
+| Desktop client             | `clients/apps/desktop/apps/renderer/src/components/relationships-view.tsx`       |
+| Desktop transport          | `clients/apps/desktop/packages/core/src/relationships/client.ts`                 |
+| Desktop schemas            | `clients/apps/desktop/packages/shared/src/relationships.ts`                      |
+| Golden fixtures            | `clients/apps/web/scripts/fixtures/relationship-*.json`                          |
 
 Phase evidence is incomplete until it includes code, tests, runtime proof,
 security proof, operational proof, and both-client proof.

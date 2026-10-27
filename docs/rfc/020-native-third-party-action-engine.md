@@ -137,7 +137,7 @@ intelligence with a connector substrate capable of broad, dependable coverage.
 | MCP allowlists and trust tiers   | `MCPToolPolicy` in connector registry                                            | Landed seed                                      |
 | Onboarding capability metadata   | `IntegrationTemplateBlock`                                                       | Landed seed                                      |
 | Desktop connector client         | `clients/apps/desktop/packages/core/src/connectors/connectors-backend.ts`                      | Landed                                           |
-| Generated API contract           | `clients/packages/api-client`                                                 | Landed                                           |
+| Generated API contract           | `sdk/typescript`                                                 | Landed                                           |
 | Relationship adapter normalizers | Gmail, Calendar, Slack, HubSpot paths under `internal/revenue`                   | Landed proof, not a generic runtime              |
 | Cloud agent MCP execution        | `internal/backgroundtaskruntime/tools_mcp.go`                                    | Landed transport                                 |
 
@@ -2062,7 +2062,7 @@ assertion, and deterministic projection rules.
 - `server/internal/db/hooks.go`
 - `clients/apps/desktop/packages/core/src/connectors/connectors-backend.ts`
 - `clients/apps/desktop/packages/core/src/mcp/mcp.ts`
-- `clients/packages/api-client/src/generated/schema.ts`
+- `sdk/typescript/src/generated/schema.ts`
 - `server/internal/revenue/relationship_adapters.go`
 - `server/internal/revenue/relationship_state.go`
 

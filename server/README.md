@@ -138,7 +138,7 @@ for provisioning, secrets, deployment, cost, and rollback guidance.
 `api/openapi.json` is the public contract for generated REST SDKs. Ent schemas
 feed the OpenAPI components, `cmd/openapi-enrich` replaces the path surface with
 the mounted runtime API, and the TypeScript SDK in
-[`clients/packages/api-client`](../clients/packages/api-client) is
+[`sdk/typescript`](../sdk/typescript) is
 generated from the resulting document.
 
 Regenerate the SDK after changing public routes, request/response schemas, or
