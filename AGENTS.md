@@ -5,6 +5,11 @@ This file provides context for AI coding agents working on the Rowboat monorepo.
 ## Quick Reference Commands
 
 ```bash
+# Whole local stack (DEVELOPMENT.md); humans run these as `dev <command>`
+node dev/cli.mjs doctor            # Check tools, ports, secrets, git hooks
+node dev/cli.mjs up                # Fill root .env, install deps, start the backend
+node dev/cli.mjs status            # Containers and which endpoints answer
+
 # Electron App (apps/x)
 cd apps/x && pnpm install          # Install dependencies
 cd apps/x && npm run deps          # Build workspace packages (shared → core → preload)
@@ -32,6 +37,7 @@ rowboat/
 │   ├── oauth-resource-server-go/   # JWT/JWKS verification lib (Go)
 │   └── oauth-resource-server-ts/   # JWT/JWKS verification lib (TS, @oppulence/oauth-resource-server)
 ├── charts/                # Helm: rowboat-api, oauth-consent, hydra values
+├── dev/                   # `dev` CLI for the local stack (see DEVELOPMENT.md)
 ├── docs/                  # Operational/product docs; architecture RFCs live in apps/rfc
 ├── AGENTS.md              # This file
 └── README.md              # User-facing readme

@@ -146,14 +146,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # 127.0.0.1 avoids a compose interpolation of $(hostname). The auto-setup
-    # frontend listens on every interface, including loopback.
+    # auto-setup binds the frontend to the container IP only (BIND_ON_IP is
+    # unset), so 127.0.0.1 is refused and the api and worker never start. `$$`
+    # keeps compose from interpolating the shell substitution.
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "tctl --address 127.0.0.1:7233 cluster health | grep -q SERVING",
-        ]
+      test: ["CMD-SHELL", "tctl --address $$(hostname -i):7233 cluster health | grep -q SERVING"]
       interval: 10s
       timeout: 20s
       retries: 30
