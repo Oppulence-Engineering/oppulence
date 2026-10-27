@@ -1,6 +1,10 @@
-# AGENTS.md - AI Coding Agent Context
+# AGENTS.md - Desktop App (`clients/apps/desktop`)
 
-This file provides context for AI coding agents working on the Oppulence monorepo.
+Desktop-specific rules for AI coding agents. The root [AGENTS.md](../../../AGENTS.md) applies here
+too, including **Reuse Before Writing New Code**, the engineering standards, and the handoff
+evidence. Where the two differ, this file wins for `clients/apps/desktop`. Before adding desktop
+code, search `@x/core`, `@x/shared`, `apps/renderer/src/lib`, `@oppulence/ui`, and
+`@oppulence/relationship-contract` for an existing owner.
 
 ## Quick Reference Commands
 
