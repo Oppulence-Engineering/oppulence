@@ -73,7 +73,7 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: clients/apps/desktop
       - name: Run connector deployment-contract acceptance
-        run: ./charts/hydra/tests/deployment-contract.sh
+        run: ./infra/charts/hydra/tests/deployment-contract.sh
 
   network-policy-kind:
     name: Migrations, readiness, and enforced NetworkPolicies
@@ -88,7 +88,7 @@ jobs:
       - name: Install kind
         run: go install sigs.k8s.io/kind@v0.27.0
       - name: Run production-shaped network-policy acceptance
-        run: ./charts/hydra/tests/network-policy-kind.sh
+        run: ./infra/charts/hydra/tests/network-policy-kind.sh
 
   oauth-consent-release-postgres:
     name: oauth-consent release PostgreSQL state machine
