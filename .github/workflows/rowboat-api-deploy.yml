@@ -4,9 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/rowboat-api/**"
-      - "packages/oauth-resource-server-go/**"
-      - "charts/rowboat-api/**"
+      - "server/**"
+      - "server/oauth-resource-server/**"
+      - "infra/charts/rowboat-api/**"
       - "docs/trustworthy-first-account-beta/**"
       - ".github/workflows/rowboat-api-deploy.yml"
   workflow_dispatch:
@@ -42,7 +42,7 @@ env:
   INFISICAL_PATH: /
   KUBE_NAMESPACE: rowboat
   RELEASE_NAME: rowboat-api
-  VALUES_FILE: charts/rowboat-api/values-production.yaml
+  VALUES_FILE: infra/charts/rowboat-api/values-production.yaml
 
 jobs:
   resolve-context:
@@ -84,16 +84,16 @@ jobs:
         with:
           filters: |
             app:
-              - 'apps/rowboat-api/**'
-              - 'packages/oauth-resource-server-go/**'
-              - 'charts/rowboat-api/**'
+              - 'server/**'
+              - 'server/oauth-resource-server/**'
+              - 'infra/charts/rowboat-api/**'
               - '.github/workflows/rowboat-api-deploy.yml'
               - 'docs/trustworthy-first-account-beta/**'
             db:
-              - 'apps/rowboat-api/ent/**'
-              - 'apps/rowboat-api/migrations/**'
-              - 'apps/rowboat-api/cmd/migrate/**'
-              - 'apps/rowboat-api/internal/db/**'
+              - 'server/ent/**'
+              - 'server/migrations/**'
+              - 'server/cmd/migrate/**'
+              - 'server/internal/db/**'
 
       - name: Decide deploy
         id: decision
@@ -132,7 +132,7 @@ jobs:
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
-          file: apps/rowboat-api/Dockerfile
+          file: server/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
@@ -156,14 +156,14 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
       # Structural validation only: every RFC 038 gate present exactly once, no
       # gate claiming "passed" without evidence and a named verifier. Cheap, and
       # it catches a corrupted register before it can mislead anyone.
       - name: Validate release register
         run: make tfa-release-register-validate
-        working-directory: apps/rowboat-api
+        working-directory: server
 
       # NOT the stage authorization check. `tfa-release-governed-check` asks
       # "may the design-partner governed-action ROLLOUT be turned on?", which is
@@ -203,15 +203,15 @@ jobs:
       # the secret and assuming the rest was already correct.
       INFISICAL_ENVIRONMENT: staging
       RELEASE_NAME: rowboat-api
-      VALUES_FILE: charts/rowboat-api/values-staging.yaml
+      VALUES_FILE: infra/charts/rowboat-api/values-staging.yaml
       STAGING_API_URL: https://api.x.staging.solomon-ai.co
       STAGING_SOAK_SECONDS: "600"
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
       - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5
       - uses: azure/setup-kubectl@bda439f5f36b99b262ebdcd3613869bddb064c8e # v5
       - name: Connect to Tailscale
@@ -299,7 +299,7 @@ jobs:
           fi
           test -n "${database_url}" || { echo "staging requires MIGRATION_DATABASE_URL or DATABASE_URL"; exit 1; }
           (
-            cd apps/rowboat-api
+            cd server
             ENVIRONMENT=staging \
               DATABASE_URL="${database_url}" \
               CORS_ALLOWED_ORIGINS=https://x.staging.solomon-ai.co \
@@ -310,8 +310,8 @@ jobs:
         if: steps.staging_secrets.outputs.staging_ready == 'true'
         run: |
           set -euo pipefail
-          helm dependency build charts/rowboat-api || helm dependency update charts/rowboat-api
-          helm upgrade --install "${RELEASE_NAME}" charts/rowboat-api \
+          helm dependency build infra/charts/rowboat-api || helm dependency update infra/charts/rowboat-api
+          helm upgrade --install "${RELEASE_NAME}" infra/charts/rowboat-api \
             -n "${KUBE_NAMESPACE}" \
             --create-namespace \
             -f "${VALUES_FILE}" \
@@ -366,8 +366,8 @@ jobs:
           (needs.resolve-context.outputs.run_db_migration == 'auto' && needs.check-changes.outputs.db_changed == 'true')
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
 
       - name: Set up Helm
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5
@@ -585,7 +585,7 @@ jobs:
           fi
 
           (
-            cd apps/rowboat-api
+            cd server
             ENVIRONMENT=production \
               DATABASE_URL="$database_url" \
               CORS_ALLOWED_ORIGINS=https://oppulence.io \
@@ -605,7 +605,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          helm dependency build charts/rowboat-api || helm dependency update charts/rowboat-api
+          helm dependency build infra/charts/rowboat-api || helm dependency update infra/charts/rowboat-api
 
           release_status="$(
             helm status "${RELEASE_NAME}" -n "${KUBE_NAMESPACE}" -o json 2>/dev/null \
@@ -616,7 +616,7 @@ jobs:
             helm uninstall "${RELEASE_NAME}" -n "${KUBE_NAMESPACE}" --wait --timeout 5m || true
           fi
 
-          helm upgrade --install "${RELEASE_NAME}" charts/rowboat-api \
+          helm upgrade --install "${RELEASE_NAME}" infra/charts/rowboat-api \
             -n "${KUBE_NAMESPACE}" \
             --create-namespace \
             -f "${VALUES_FILE}" \

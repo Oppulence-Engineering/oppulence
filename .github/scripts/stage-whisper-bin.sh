@@ -3,9 +3,9 @@
 # generateAssets hook bundles it as an extraResource (RFC 009 §20, WP 3.x).
 #
 # The whisper-build workflow publishes per-arch binaries to a GitHub Release
-# tagged `whisper-bin-<PIN>` (PIN = the whisper.cpp tag in apps/x/vendor/whisper/PIN).
+# tagged `whisper-bin-<PIN>` (PIN = the whisper.cpp tag in clients/apps/desktop/vendor/whisper/PIN).
 # This script downloads the asset for the requested <plat> <arch> and extracts it
-# into apps/x/vendor/whisper/<plat>-<arch>/, which is otherwise git-ignored. It is
+# into clients/apps/desktop/vendor/whisper/<plat>-<arch>/, which is otherwise git-ignored. It is
 # reused by release.yml and x-e2e-nightly.yml so the staging logic lives in one place.
 #
 # Failing here is deliberate: it converts the old silent "shipping without local
@@ -23,7 +23,7 @@ PLAT="${1:?usage: stage-whisper-bin.sh <plat> <arch>}"
 ARCH="${2:?usage: stage-whisper-bin.sh <plat> <arch>}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-VENDOR="$REPO_ROOT/apps/x/vendor/whisper"
+VENDOR="$REPO_ROOT/clients/apps/desktop/vendor/whisper"
 PIN="$(tr -d '[:space:]' < "$VENDOR/PIN")"
 TAG="whisper-bin-$PIN"
 ASSET="whisper-$PLAT-$ARCH.tar.gz"

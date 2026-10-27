@@ -4,11 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/rowboat-www/**"
-      - "packages/ui/**"
-      - "packages/relationship-contract/**"
-      - "packages/eslint-plugin-oppulence-web/**"
-      - "charts/rowboat-www/**"
+      - "clients/apps/web/**"
+      - "clients/packages/ui/**"
+      - "clients/packages/relationship-contract/**"
+      - "clients/packages/eslint-plugin-web/**"
+      - "infra/charts/rowboat-www/**"
       - "scripts/rowboat-www-smoke.sh"
       - ".github/workflows/rowboat-www-deploy.yml"
   workflow_dispatch:
@@ -39,7 +39,7 @@ concurrency:
 env:
   IMAGE_REPOSITORY: ghcr.io/playbookmediallc/rowboat-www
   RELEASE_NAME: rowboat-www
-  CHART_DIR: charts/rowboat-www
+  CHART_DIR: infra/charts/rowboat-www
 
 jobs:
   resolve-context:
@@ -68,13 +68,13 @@ jobs:
           case "${DEPLOY_ENV}" in
             staging)
               KUBE_NAMESPACE="rowboat-staging"
-              VALUES_FILE="charts/rowboat-www/values-staging.yaml"
+              VALUES_FILE="infra/charts/rowboat-www/values-staging.yaml"
               APP_URL="https://x.staging.oppulence.io"
               GITHUB_ENVIRONMENT="staging"
               ;;
             production)
               KUBE_NAMESPACE="rowboat"
-              VALUES_FILE="charts/rowboat-www/values-production.yaml"
+              VALUES_FILE="infra/charts/rowboat-www/values-production.yaml"
               APP_URL="https://oppulence.io"
               GITHUB_ENVIRONMENT="production"
               ;;
@@ -111,11 +111,11 @@ jobs:
         with:
           filters: |
             app:
-              - 'apps/rowboat-www/**'
-              - 'packages/ui/**'
-              - 'packages/relationship-contract/**'
-              - 'packages/eslint-plugin-oppulence-web/**'
-              - 'charts/rowboat-www/**'
+              - 'clients/apps/web/**'
+              - 'clients/packages/ui/**'
+              - 'clients/packages/relationship-contract/**'
+              - 'clients/packages/eslint-plugin-web/**'
+              - 'infra/charts/rowboat-www/**'
               - 'scripts/rowboat-www-smoke.sh'
               - '.github/workflows/rowboat-www-deploy.yml'
 
@@ -156,7 +156,7 @@ jobs:
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
-          file: apps/rowboat-www/Dockerfile
+          file: clients/apps/web/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |

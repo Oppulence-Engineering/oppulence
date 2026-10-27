@@ -10,50 +10,58 @@ node dev/cli.mjs doctor            # Check tools, ports, secrets, git hooks
 node dev/cli.mjs up                # Fill root .env, install deps, start the backend
 node dev/cli.mjs status            # Containers and which endpoints answer
 
-# Electron App (apps/x)
-cd apps/x && pnpm install          # Install dependencies
-cd apps/x && npm run deps          # Build workspace packages (shared → core → preload)
-cd apps/x && npm run dev           # Development mode (builds deps, runs app)
-cd apps/x && npm run lint          # Lint check
-cd apps/x/apps/main && npm run package   # Production build (.app)
-cd apps/x/apps/main && npm run make      # Create DMG distributable
+# Electron App (clients/apps/desktop)
+cd clients/apps/desktop && pnpm install          # Install dependencies
+cd clients/apps/desktop && npm run deps          # Build workspace packages (shared → core → preload)
+cd clients/apps/desktop && npm run dev           # Development mode (builds deps, runs app)
+cd clients/apps/desktop && npm run lint          # Lint check
+cd clients/apps/desktop/apps/main && npm run package   # Production build (.app)
+cd clients/apps/desktop/apps/main && npm run make      # Create DMG distributable
 ```
 
 ## Monorepo Structure
 
 ```
-rowboat/
-├── apps/
-│   ├── x/                 # Electron desktop app (focus of this doc)
-│   ├── rowboat/           # Next.js web dashboard
-│   ├── rowboat-www/       # Oppulence marketing and desktop companion web app
-│   ├── rowboatx/          # Next.js frontend
-│   ├── rowboat-api/       # Go desktop backend (billing, LLM gateway, OAuth broker)
-│   ├── oauth-consent/     # Ory Hydra login + consent UI (TS/Express) — DEFERRED (see rowboat-api/AUTH.md)
-│   ├── cli/               # CLI tool
-│   ├── python-sdk/        # Python SDK
-│   └── docs/              # Documentation site
-├── packages/
-│   ├── oauth-resource-server-go/   # JWT/JWKS verification lib (Go)
-│   └── oauth-resource-server-ts/   # JWT/JWKS verification lib (TS, @oppulence/oauth-resource-server)
-├── charts/                # Helm: rowboat-api, oauth-consent, hydra values
-├── dev/                   # `dev` CLI for the local stack (see DEVELOPMENT.md)
-├── docs/                  # Operational/product docs; architecture RFCs live in apps/rfc
-├── AGENTS.md              # This file
-└── README.md              # User-facing readme
+oppulence/
+├── server/                     # Go backend: API, worker, scheduler, migrations (billing, LLM gateway, OAuth broker)
+│   └── oauth-resource-server/  # JWT/JWKS verification lib (Go, its own module)
+├── clients/
+│   ├── apps/
+│   │   ├── desktop/            # Electron desktop app (nested pnpm workspace; focus of this doc)
+│   │   ├── web/                # Marketing site and desktop companion web app (Next.js, npm)
+│   │   ├── dashboard/          # Legacy Next.js dashboard
+│   │   ├── oauth-consent/      # Ory Hydra login + consent UI (TS/Express) — DEFERRED (see server/AUTH.md)
+│   │   ├── cli/                # CLI tool
+│   │   ├── docs/               # Documentation site
+│   │   └── experimental/       # Chat widget, simulation runner, tools webhook
+│   └── packages/
+│       ├── ui/                 # Shared design system (@oppulence/ui)
+│       ├── api-client/         # TypeScript client generated from server/api/openapi.json
+│       ├── integration-templates/
+│       ├── relationship-contract/
+│       ├── oauth-resource-server/  # JWT/JWKS verification lib (TS, @oppulence/oauth-resource-server)
+│       └── eslint-plugin-web/  # Lint rules for clients/apps/web
+├── sdk/python/                 # Python SDK
+├── infra/
+│   ├── charts/                 # Helm charts and values
+│   └── deploy/kind/            # Local kind cluster manifests
+├── dev/                        # `dev` CLI for the local stack (see DEVELOPMENT.md)
+├── docs/                       # Operational/product docs; architecture RFCs in docs/rfc
+├── AGENTS.md                   # This file
+└── README.md                   # User-facing readme
 ```
 
-The Go backend (`apps/rowboat-api`) replaces the closed hosted backend the
-desktop used. Architecture lives in [apps/rfc/README.md](apps/rfc/README.md),
+The Go backend (`server`) replaces the closed hosted backend the
+desktop used. Architecture lives in [docs/rfc/README.md](docs/rfc/README.md),
 especially RFCs 010-012; deployment operations live in
 [docs/BACKEND_DEPLOYMENT.md](docs/BACKEND_DEPLOYMENT.md).
 
-## Electron App Architecture (`apps/x`)
+## Electron App Architecture (`clients/apps/desktop`)
 
 The Electron app is a **nested pnpm workspace** with its own package management.
 
 ```
-apps/x/
+clients/apps/desktop/
 ├── package.json           # Workspace root, dev scripts
 ├── pnpm-workspace.yaml    # Defines workspace packages
 ├── pnpm-lock.yaml         # Lockfile
@@ -111,15 +119,15 @@ pnpm uses symlinks for workspace packages. Electron Forge's dependency walker ca
 
 | Purpose                  | File                                  |
 | ------------------------ | ------------------------------------- |
-| Electron main entry      | `apps/x/apps/main/src/main.ts`        |
-| React app entry          | `apps/x/apps/renderer/src/main.tsx`   |
-| Forge config (packaging) | `apps/x/apps/main/forge.config.cjs`   |
-| Main process bundler     | `apps/x/apps/main/bundle.mjs`         |
-| Vite config              | `apps/x/apps/renderer/vite.config.ts` |
-| Shared types             | `apps/x/packages/shared/src/`         |
-| Core business logic      | `apps/x/packages/core/src/`           |
-| Workspace config         | `apps/x/pnpm-workspace.yaml`          |
-| Root scripts             | `apps/x/package.json`                 |
+| Electron main entry      | `clients/apps/desktop/apps/main/src/main.ts`        |
+| React app entry          | `clients/apps/desktop/apps/renderer/src/main.tsx`   |
+| Forge config (packaging) | `clients/apps/desktop/apps/main/forge.config.cjs`   |
+| Main process bundler     | `clients/apps/desktop/apps/main/bundle.mjs`         |
+| Vite config              | `clients/apps/desktop/apps/renderer/vite.config.ts` |
+| Shared types             | `clients/apps/desktop/packages/shared/src/`         |
+| Core business logic      | `clients/apps/desktop/packages/core/src/`           |
+| Workspace config         | `clients/apps/desktop/pnpm-workspace.yaml`          |
+| Root scripts             | `clients/apps/desktop/package.json`                 |
 
 ## Feature Deep-Dives
 
@@ -127,15 +135,15 @@ Long-form docs for specific features. Read the relevant file before making chang
 
 | Feature                                                                                                                                                                                                | Doc                                        |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| Live Notes — single `live:` frontmatter block (one objective + optional cron / windows / eventMatchCriteria) that turns a note into a self-updating artifact, panel UI, Copilot skill, prompts catalog | `apps/x/LIVE_NOTE.md`                      |
-| Analytics — PostHog event catalog, person properties, use-case taxonomy, how to add a new event                                                                                                        | `apps/x/ANALYTICS.md`                      |
-| rowboat-www growth standard — `npm run gen` for pages, components, Zod, hooks, mutations, stores, stories                                                                                              | `apps/rowboat-www/docs/growth-standard.md` |
+| Live Notes — single `live:` frontmatter block (one objective + optional cron / windows / eventMatchCriteria) that turns a note into a self-updating artifact, panel UI, Copilot skill, prompts catalog | `clients/apps/desktop/LIVE_NOTE.md`                      |
+| Analytics — PostHog event catalog, person properties, use-case taxonomy, how to add a new event                                                                                                        | `clients/apps/desktop/ANALYTICS.md`                      |
+| rowboat-www growth standard — `npm run gen` for pages, components, Zod, hooks, mutations, stores, stories                                                                                              | `clients/apps/web/docs/growth-standard.md` |
 
 ## Common Tasks
 
 ### Add a rowboat-www product feature
 
-Do not hand-create the file tree. From `apps/rowboat-www`:
+Do not hand-create the file tree. From `clients/apps/web`:
 
 ```bash
 npm run gen -- feature --domain forecasts --route forecasts --name forecasts --title "Forecasts"
@@ -145,8 +153,8 @@ npm run gen -- mutation --operation createRevenueAction
 
 Then fill the generated `/* implementation */` regions. Do not hand-create the
 tree — WEB029 rejects new product units without `@oppulence-gen`. Agents must
-follow `apps/rowboat-www/AGENTS.md` (**How to add a new product feature**) and
-`apps/rowboat-www/docs/growth-standard.md`. Zod + `z.infer` only; no new naked
+follow `clients/apps/web/AGENTS.md` (**How to add a new product feature**) and
+`clients/apps/web/docs/growth-standard.md`. Zod + `z.infer` only; no new naked
 domain types; no new surfaces in `product-dashboard-client.tsx`. Remote JSON
 goes through Orval + `requestJson`, not tRPC.
 
@@ -158,36 +166,36 @@ goes through Orval + `requestJson`, not tRPC.
 
 ### Add a new shared type
 
-1. Edit `apps/x/packages/shared/src/`
-2. Run `cd apps/x && npm run deps` to rebuild
+1. Edit `clients/apps/desktop/packages/shared/src/`
+2. Run `cd clients/apps/desktop && npm run deps` to rebuild
 
 ### Modify main process
 
-1. Edit `apps/x/apps/main/src/`
+1. Edit `clients/apps/desktop/apps/main/src/`
 2. Restart dev server (main doesn't hot-reload)
 
 ### Modify renderer (React UI)
 
-1. Edit `apps/x/apps/renderer/src/`
+1. Edit `clients/apps/desktop/apps/renderer/src/`
 2. Changes hot-reload automatically in dev mode
 
 ### Add a new dependency to main
 
-1. `cd apps/x/apps/main && pnpm add <package>`
+1. `cd clients/apps/desktop/apps/main && pnpm add <package>`
 2. Import in source - esbuild will bundle it
 
 ### Verify compilation
 
 ```bash
-cd apps/x && npm run deps && npm run lint
+cd clients/apps/desktop && npm run deps && npm run lint
 ```
 
 ## TypeScript Standards
 
 Baseline: the [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html).
 Repo rules override it: this section, app `AGENTS.md` files, the rowboat-www
-[type law](apps/rowboat-www/docs/growth-standard.md#33-the-type-law), and the
-[Electron Architecture Gauntlet](apps/x/docs/ARCHITECTURE_GAUNTLET.md). Lint does not
+[type law](clients/apps/web/docs/growth-standard.md#33-the-type-law), and the
+[Electron Architecture Gauntlet](clients/apps/desktop/docs/ARCHITECTURE_GAUNTLET.md). Lint does not
 enforce every rule below; review must.
 
 ### Data contracts (Zod)

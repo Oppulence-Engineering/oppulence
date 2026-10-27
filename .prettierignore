@@ -5,8 +5,8 @@
 **/.next/
 **/.package/
 **/build/
-apps/x/apps/main/out/
-apps/x/apps/renderer/dist/
+clients/apps/desktop/apps/main/out/
+clients/apps/desktop/apps/renderer/dist/
 
 # Lockfiles & generated artifacts
 **/pnpm-lock.yaml
@@ -14,18 +14,18 @@ apps/x/apps/renderer/dist/
 **/yarn.lock
 **/*.min.*
 **/CHANGELOG.md
-packages/rowboat-api-client-ts/src/generated/schema.ts
+clients/packages/api-client/src/generated/schema.ts
 .release-please-manifest.json
 
 # The nested desktop workspace owns formatting through its own ratchet.
-apps/x/
+clients/apps/desktop/
 
 # Languages Prettier shouldn't own
 **/*.go
 **/*.py
 
 # Templated YAML Prettier would mangle (Helm, k8s manifests)
-charts/
+infra/charts/
 deploy/
 
 # Repo artifacts

@@ -5,7 +5,7 @@
 # The audiocap-build workflow publishes per-arch binaries to a GitHub Release tagged
 # `audiocap-bin-<VERSION>` (VERSION = `audiocapVersion` in main.swift). This script
 # downloads the asset for the requested <plat> <arch> and extracts it into
-# apps/x/vendor/audiocap/<plat>-<arch>/, which is otherwise git-ignored.
+# clients/apps/desktop/vendor/audiocap/<plat>-<arch>/, which is otherwise git-ignored.
 #
 # Unlike stage-whisper-bin.sh this is a **soft** gate: a missing helper costs native
 # meeting capture, and the app falls back to in-app capture — whereas a missing
@@ -21,7 +21,7 @@ ARCH="${2:?usage: stage-audiocap-bin.sh <plat> <arch> [--required]}"
 REQUIRED="${3:-}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-VENDOR="$REPO_ROOT/apps/x/vendor/audiocap"
+VENDOR="$REPO_ROOT/clients/apps/desktop/vendor/audiocap"
 EXE="oppulence-audiocap"
 DEST="$VENDOR/$PLAT-$ARCH"
 

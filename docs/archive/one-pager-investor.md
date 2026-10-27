@@ -27,7 +27,7 @@ The result: every AI surface is rebuilding the same private graph of "who this p
 
 The product ships in two coordinated forms:
 
-|                        | **Rowboat Desktop** (`apps/x`)                                                                                       | **Rowboat Platform** (`apps/rowboat`)                                           |
+|                        | **Rowboat Desktop** (`clients/apps/desktop`)                                                                                       | **Rowboat Platform** (`clients/apps/dashboard`)                                           |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | **What**               | Electron app — daily-driver AI coworker                                                                              | Self-hosted Next.js runtime — visual agent builder, RAG, embeddable chat widget |
 | **For**                | Founders, EAs, sales operators, advisors                                                                             | Developers and companies embedding agents grounded in their own corpus          |

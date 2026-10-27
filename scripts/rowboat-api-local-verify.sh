@@ -42,7 +42,7 @@
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-API_DIR="$ROOT_DIR/apps/rowboat-api"
+API_DIR="$ROOT_DIR/server"
 WORK="${RBV_WORK:-/tmp/rbv}"; BIN="$WORK/bin"; LOGS="$WORK/logs"
 NET=rbv-net; PG=rbv-pg; TMP=rbv-temporal
 PGPORT=55432; TMPPORT=57233; DEVPORT=18190; APIPORT=18180; SRVMET=19190; WRKMET=19191; GRPCPORT=18181

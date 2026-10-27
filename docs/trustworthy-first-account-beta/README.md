@@ -1,13 +1,13 @@
 # Trustworthy First Account beta operations
 
-This directory is the operational companion to [RFC 038](../../apps/rfc/038-trustworthy-first-account-beta.md). The code path can be verified in CI, but a design-partner write is not authorized merely because code merged. The release register remains fail-closed until a named owner attaches current evidence and signs every gate required for that stage.
+This directory is the operational companion to [RFC 038](../rfc/038-trustworthy-first-account-beta.md). The code path can be verified in CI, but a design-partner write is not authorized merely because code merged. The release register remains fail-closed until a named owner attaches current evidence and signs every gate required for that stage.
 
 ## Release workflow
 
-1. Run `make -C apps/rowboat-api tfa-release-register-validate` after editing the register.
+1. Run `make -C server tfa-release-register-validate` after editing the register.
 2. Run the full verification commands in the RFC implementation-evidence section.
 3. Replace a gate's status with `passed` only after attaching durable evidence, `verifiedBy`, and an RFC3339 `verifiedAt` timestamp.
-4. Assign `releaseOwner`, record the decision, and run `make -C apps/rowboat-api tfa-release-governed-check`.
+4. Assign `releaseOwner`, record the decision, and run `make -C server tfa-release-governed-check`.
 5. Only after that check passes may an administrator enable `release_gate_approval` with reason `release_owner_signoff`, followed by one provider action capability at `design_partner_governed_action`.
 
 The runtime separately verifies that the provider is live and carries the exact progressive write scope. A repository signoff cannot override identity ambiguity, stale evidence, policy, revision, approval, destination, or idempotency checks.

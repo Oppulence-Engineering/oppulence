@@ -1,4 +1,4 @@
-# Feature Audit — Rowboat Desktop (`apps/x`)
+# Feature Audit — Rowboat Desktop (`clients/apps/desktop`)
 
 This directory holds the **single canonical feature tracker** for the Rowboat
 Electron desktop app and the artifacts produced while testing and hardening it.
@@ -38,7 +38,7 @@ Electron desktop app and the artifacts produced while testing and hardening it.
 
 - Feature rows: **530** — 55 Verified, 6 Deferred, 469 Tested/Pass.
 - Issues: **62** — Verified 56, Deferred 6, Open 0.
-- Build: `cd apps/x && npm run check:types` → 0 errors (renderer `tsc -b` + vite, core, main process).
+- Build: `cd clients/apps/desktop && npm run check:types` → 0 errors (renderer `tsc -b` + vite, core, main process).
 
 The 6 **Deferred** issues (E42, E43, E47, E48, E55, E56) are unreachable/unshipped feature surfaces or a false-provenance beta toggle. The correct resolution is a product call (wire up the whole surface vs. remove intentional WIP), so they are documented rather than silently changed.
 

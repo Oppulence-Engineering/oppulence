@@ -24,22 +24,22 @@ pre-commit:
   parallel: false
   commands:
     # Lint + autofix staged desktop TypeScript. `root:` rebases {staged_files}
-    # to apps/x and runs there so the local eslint + flat config resolve.
+    # to clients/apps/desktop and runs there so the local eslint + flat config resolve.
     desktop-eslint:
       priority: 10
-      root: "apps/x/"
+      root: "clients/apps/desktop/"
       glob: "*.{ts,tsx,mts,cts}"
       run: pnpm exec eslint --config config/eslint.config.mts --fix --no-warn-ignored {staged_files}
       stage_fixed: true
     rowboat-www-eslint:
       priority: 10
-      root: "apps/rowboat-www/"
+      root: "clients/apps/web/"
       glob: "*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"
       run: npm exec eslint -- --fix --no-warn-ignored {staged_files}
       stage_fixed: true
     rowboat-www-component-contracts:
       priority: 30
-      root: "apps/rowboat-www/"
+      root: "clients/apps/web/"
       glob:
         - "components/**/*.{ts,tsx}"
         - "app/**/_components/**/*.{ts,tsx}"
@@ -48,7 +48,7 @@ pre-commit:
       run: npm test
     rowboat-www-growth-standard:
       priority: 30
-      root: "apps/rowboat-www/"
+      root: "clients/apps/web/"
       glob:
         - "app/(product)/**/*.{ts,tsx}"
         - "components/features/**/*.{ts,tsx}"
@@ -88,13 +88,13 @@ pre-commit:
     # CI-only because it requires protoc and its plugins.
     rowboat-api-contract-drift:
       priority: 1
-      root: "apps/rowboat-api/"
+      root: "server/"
       glob:
-        - "apps/rowboat-api/api/openapi.json"
-        - "apps/rowboat-api/ent/schema/**/*.go"
-        - "apps/rowboat-api/internal/openapidoc/**/*.go"
-        - "apps/rowboat-api/internal/gqlapi/gqlgen.yml"
-        - "apps/rowboat-api/internal/gqlapi/extra.graphql"
+        - "server/api/openapi.json"
+        - "server/ent/schema/**/*.go"
+        - "server/internal/openapidoc/**/*.go"
+        - "server/internal/gqlapi/gqlgen.yml"
+        - "server/internal/gqlapi/extra.graphql"
       run: make contract-generate-check
     # Catch manual edits and generator/configuration changes even when no API
     # source file triggered the auto-generation command above. The checker
@@ -103,20 +103,20 @@ pre-commit:
     rowboat-www-contract-drift:
       priority: 0
       glob:
-        - "apps/rowboat-api/api/openapi.json"
-        - "apps/rowboat-www/config/contracts/**"
-        - "apps/rowboat-www/lib/api/generated/**"
-        - "apps/rowboat-www/scripts/check-generated-contracts.mjs"
-      run: npm --prefix apps/rowboat-www run contracts:check
+        - "server/api/openapi.json"
+        - "clients/apps/web/config/contracts/**"
+        - "clients/apps/web/lib/api/generated/**"
+        - "clients/apps/web/scripts/check-generated-contracts.mjs"
+      run: npm --prefix clients/apps/web run contracts:check
     # Cheap API policy checks run on commits that can alter database contracts.
     # Full verification remains the pre-push gate below.
     rowboat-api-schema-policy:
       priority: 30
-      root: "apps/rowboat-api/"
+      root: "server/"
       glob:
-        - "apps/rowboat-api/ent/schema/**/*.go"
-        - "apps/rowboat-api/migrations/postgres/**"
-        - "apps/rowboat-api/cmd/migrate/**/*.go"
+        - "server/ent/schema/**/*.go"
+        - "server/migrations/postgres/**"
+        - "server/cmd/migrate/**/*.go"
       run: make fmt-check architecture migration-validate
     perf-tool-vet:
       priority: 30
@@ -129,8 +129,8 @@ pre-commit:
       # Lefthook treats priority 0 as +Infinity, so this runs after every
       # explicitly prioritized mutation/check above.
       priority: 0
-      root: "apps/x/"
-      glob: "apps/x/**"
+      root: "clients/apps/desktop/"
+      glob: "clients/apps/desktop/**"
       run: pnpm verify
 
 commit-msg:
@@ -151,14 +151,14 @@ commit-msg:
 pre-push:
   commands:
     desktop-checks:
-      root: "apps/x/"
-      glob: "apps/x/**"
+      root: "clients/apps/desktop/"
+      glob: "clients/apps/desktop/**"
       run: pnpm run verify
     rowboat-api-checks:
-      root: "apps/rowboat-api/"
-      glob: "apps/rowboat-api/**"
+      root: "server/"
+      glob: "server/**"
       run: make verify
     rowboat-www-checks:
-      root: "apps/rowboat-www/"
-      glob: "apps/rowboat-www/**"
+      root: "clients/apps/web/"
+      glob: "clients/apps/web/**"
       run: npm run verify:fast

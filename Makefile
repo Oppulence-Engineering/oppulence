@@ -72,7 +72,7 @@ desktop:
 	$(ROWBOAT_KIND_SCRIPT) desktop
 
 www-up:
-	docker build -f apps/rowboat-www/Dockerfile -t $(ROWBOAT_WWW_IMAGE) .
+	docker build -f clients/apps/web/Dockerfile -t $(ROWBOAT_WWW_IMAGE) .
 	docker rm -f $(ROWBOAT_WWW_CONTAINER) >/dev/null 2>&1 || true
 	docker run --rm -d --name $(ROWBOAT_WWW_CONTAINER) \
 	  --add-host=host.docker.internal:host-gateway \
@@ -90,7 +90,7 @@ www-smoke:
 	scripts/rowboat-www-smoke.sh "$${ROWBOAT_WWW_SMOKE_URL:-http://localhost:$(ROWBOAT_WWW_PORT)}"
 
 www-capture-screenshots:
-	cd apps/rowboat-www && npm run screenshots:capture
+	cd clients/apps/web && npm run screenshots:capture
 
 product-screenshots: www-capture-screenshots
 

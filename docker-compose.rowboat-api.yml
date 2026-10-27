@@ -16,7 +16,7 @@
 # ROWBOAT_COMPOSE_MOCK_LLM=1 only for an offline plumbing check — devstack
 # then answers every turn with "Hello from the mock LLM."
 #
-# AUTH uses real WorkOS. See apps/rowboat-api/AUTH.md.
+# AUTH uses real WorkOS. See server/AUTH.md.
 
 name: rowboat-api-stack
 
@@ -68,7 +68,7 @@ x-rowboat-runtime-env: &rowboat-runtime-env
   GOOGLE_REDIRECT_URI: "http://localhost:18080/oauth/google/callback"
   GOOGLE_WEB_RETURN_URL: "http://localhost:3000/app/settings?settings=connections"
   WORKOS_CLIENT_ID: "client_01JS1THN6FR45322P2CAV2WWB0"
-  WORKOS_API_KEY: "${WORKOS_API_KEY:?set WORKOS_API_KEY in the root .env (see apps/rowboat-api/AUTH.md)}"
+  WORKOS_API_KEY: "${WORKOS_API_KEY:?set WORKOS_API_KEY in the root .env (see server/AUTH.md)}"
   WORKOS_BASE_URL: "https://api.workos.com"
   WORKOS_AUTHORIZE_BASE_URL: "https://api.workos.com"
   TEMPORAL_ENABLED: "true"
@@ -104,7 +104,7 @@ services:
   migrate:
     build:
       context: .
-      dockerfile: apps/rowboat-api/Dockerfile
+      dockerfile: server/Dockerfile
     image: rowboat-api:local
     entrypoint: ["/rowboat-api-migrate"]
     command: ["apply"]
@@ -159,7 +159,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: apps/rowboat-api/Dockerfile
+      dockerfile: server/Dockerfile
     image: rowboat-api:local
     ports:
       # Host ports offset to 18080/18081/19090 so the desktop's own loopback

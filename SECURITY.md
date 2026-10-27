@@ -15,7 +15,7 @@ Please do **not** open a public issue, discussion, or pull request for security 
 A good report contains:
 
 - A description of the vulnerability and the impact you believe it has.
-- - Step-by-step reproduction instructions, including the affected version (look in the app's About dialog or `apps/x/apps/main/package.json`).
+- - Step-by-step reproduction instructions, including the affected version (look in the app's About dialog or `clients/apps/desktop/apps/main/package.json`).
   - - Any proof-of-concept code, logs, screenshots, or network captures that help us verify the issue.
     - - Whether the vulnerability is, to your knowledge, already public.
      
@@ -30,7 +30,7 @@ A good report contains:
              
               - In scope:
              
-              - - The Electron desktop application under `apps/x/`.
+              - - The Electron desktop application under `clients/apps/desktop/`.
                 - - The release and CI pipeline under `.github/workflows/` (e.g., supply-chain issues, signing key handling).
                   - - Build, packaging, and distribution configuration that ships in user-facing artifacts.
                    

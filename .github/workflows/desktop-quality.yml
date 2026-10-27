@@ -3,7 +3,7 @@ name: Desktop Quality Gates
 on:
   pull_request:
     paths:
-      - "apps/x/**"
+      - "clients/apps/desktop/**"
       - ".github/workflows/desktop-quality.yml"
   workflow_dispatch:
 
@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: apps/x/pnpm-lock.yaml
+          cache-dependency-path: clients/apps/desktop/pnpm-lock.yaml
 
       - name: Setup Go for security and policy scanners
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -41,12 +41,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Run desktop quality gates
         run: npm run quality
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Run conversation intelligence evaluation gate
         run: npm run test:conversation-eval
-        working-directory: apps/x/packages/core
+        working-directory: clients/apps/desktop/packages/core

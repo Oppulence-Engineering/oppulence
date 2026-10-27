@@ -11,7 +11,7 @@ volumes:
 services:
   rowboat:
     build:
-      context: ./apps/rowboat
+      context: ./clients/apps/dashboard
       dockerfile: Dockerfile
     ports:
       - "127.0.0.1:${PORT:-3000}:3000"
@@ -99,7 +99,7 @@ services:
 
   # tools_webhook:
   #   build:
-  #     context: ./apps/experimental/tools_webhook
+  #     context: ./clients/apps/experimental/tools_webhook
   #     dockerfile: Dockerfile
   #   ports:
   #     - "3005:3005"
@@ -109,7 +109,7 @@ services:
 
   # simulation_runner:
   #   build:
-  #     context: ./apps/experimental/simulation_runner
+  #     context: ./clients/apps/experimental/simulation_runner
   #     dockerfile: Dockerfile
   #   environment:
   #     - MONGODB_URI=mongodb://mongo:27017/rowboat
@@ -119,7 +119,7 @@ services:
 
   setup_qdrant:
     build:
-      context: ./apps/rowboat
+      context: ./clients/apps/dashboard
       dockerfile: scripts.Dockerfile
     command: ["sh", "-c", "npm run setupQdrant"]
     profiles: [ "setup_qdrant" ]
@@ -134,7 +134,7 @@ services:
 
   delete_qdrant:
     build:
-      context: ./apps/rowboat
+      context: ./clients/apps/dashboard
       dockerfile: scripts.Dockerfile
     command: ["sh", "-c", "npm run deleteQdrant"]
     profiles: [ "delete_qdrant" ]
@@ -148,7 +148,7 @@ services:
 
   rag-worker:
     build:
-      context: ./apps/rowboat
+      context: ./clients/apps/dashboard
       dockerfile: scripts.Dockerfile
     command: ["npm", "run", "rag-worker"]
     profiles: [ "rag-worker" ]
@@ -178,7 +178,7 @@ services:
 
   jobs-worker:
     build:
-      context: ./apps/rowboat
+      context: ./clients/apps/dashboard
       dockerfile: scripts.Dockerfile
     command: ["npm", "run", "jobs-worker"]
     environment:
@@ -198,7 +198,7 @@ services:
 
   # chat_widget:
   #   build:
-  #     context: ./apps/experimental/chat_widget
+  #     context: ./clients/apps/experimental/chat_widget
   #     dockerfile: Dockerfile
   #   profiles: [ "chat_widget" ]
   #   ports:
@@ -226,7 +226,7 @@ services:
 
   docs:
     build:
-      context: ./apps/docs
+      context: ./clients/apps/docs
       dockerfile: Dockerfile
     profiles: [ "docs" ]
     ports:
@@ -234,7 +234,7 @@ services:
 
   # twilio_handler:
   #   build:
-  #     context: ./apps/experimental/twilio_handler
+  #     context: ./clients/apps/experimental/twilio_handler
   #     dockerfile: Dockerfile
   #   ports:
   #     - "4010:4010"

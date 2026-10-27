@@ -7,7 +7,7 @@ name: x perf-lite
 on:
   pull_request:
     paths:
-      - "apps/x/**"
+      - "clients/apps/desktop/**"
       - "tools/desktop-perf/budget.json"
       - "scripts/perf-lite.mjs"
       - ".github/workflows/x-perf-lite.yml"
@@ -30,19 +30,19 @@ jobs:
         with:
           node-version: 22
           cache: "pnpm"
-          cache-dependency-path: "apps/x/pnpm-lock.yaml"
+          cache-dependency-path: "clients/apps/desktop/pnpm-lock.yaml"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Build shared/core/preload (TypeScript)
         run: npm run deps
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Build renderer
         run: pnpm exec vite build
-        working-directory: apps/x/apps/renderer
+        working-directory: clients/apps/desktop/apps/renderer
 
       - name: Check renderer bundle-size budget
         run: node scripts/perf-lite.mjs

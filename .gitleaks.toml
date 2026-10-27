@@ -4,7 +4,7 @@ useDefault = true
 [[allowlists]]
 description = "Documented local-only identity-provider key and deterministic test marker"
 paths = [
-  '''^apps/rowboat-api/cmd/devstack/devkey\.go$''',
+  '''^server/cmd/devstack/devkey\.go$''',
 ]
 regexes = [
   '''idem-hubspot-1''',
@@ -15,7 +15,7 @@ description = "Generated GraphQL field-name tables contain no credential values"
 condition = "AND"
 regexTarget = "line"
 paths = [
-  '''^apps/rowboat-api/internal/gqlapi/generated\.go$''',
+  '''^server/internal/gqlapi/generated\.go$''',
 ]
 regexes = [
   '''fieldsInOrder := \[\.\.\.\]string\{''',

@@ -3,20 +3,20 @@ name: Rowboat API Migrations
 on:
   pull_request:
     paths:
-      - "apps/rowboat-api/ent/schema/**"
-      - "apps/rowboat-api/migrations/postgres/**"
-      - "apps/rowboat-api/cmd/migrate/**"
-      - "apps/rowboat-api/Makefile"
-      - "apps/rowboat-api/policy/**"
+      - "server/ent/schema/**"
+      - "server/migrations/postgres/**"
+      - "server/cmd/migrate/**"
+      - "server/Makefile"
+      - "server/policy/**"
       - ".github/workflows/rowboat-api-migrations.yml"
   push:
     branches: [develop, main]
     paths:
-      - "apps/rowboat-api/ent/schema/**"
-      - "apps/rowboat-api/migrations/postgres/**"
-      - "apps/rowboat-api/cmd/migrate/**"
-      - "apps/rowboat-api/Makefile"
-      - "apps/rowboat-api/policy/**"
+      - "server/ent/schema/**"
+      - "server/migrations/postgres/**"
+      - "server/cmd/migrate/**"
+      - "server/Makefile"
+      - "server/policy/**"
       - ".github/workflows/rowboat-api-migrations.yml"
 
 permissions:
@@ -29,11 +29,11 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version-file: apps/rowboat-api/go.mod
-          cache-dependency-path: apps/rowboat-api/go.sum
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
       - name: Install pinned Atlas Community CLI
         run: make install-atlas
-        working-directory: apps/rowboat-api
+        working-directory: server
       - name: Validate and lint versioned migrations
         run: make migration-validate migration-lint
-        working-directory: apps/rowboat-api
+        working-directory: server

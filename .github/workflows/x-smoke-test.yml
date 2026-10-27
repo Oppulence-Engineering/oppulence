@@ -6,7 +6,7 @@ name: x CI
 on:
   pull_request:
     paths:
-      - "apps/x/**"
+      - "clients/apps/desktop/**"
       - ".github/scripts/x-smoke-package-linux.mjs"
       - ".github/workflows/x-smoke-test.yml"
 
@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: 22
           cache: "pnpm"
-          cache-dependency-path: "apps/x/pnpm-lock.yaml"
+          cache-dependency-path: "clients/apps/desktop/pnpm-lock.yaml"
 
       - name: Cache Electron binaries
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
@@ -37,30 +37,30 @@ jobs:
           path: |
             ~/.cache/electron
             ~/.cache/electron-builder
-          key: ${{ runner.os }}-electron-${{ hashFiles('apps/x/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-electron-${{ hashFiles('clients/apps/desktop/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-electron-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Build shared/core/preload (TypeScript)
         run: npm run deps
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       # ----- cheapest gates first: typecheck → lint → unit -----
       - name: Typecheck renderer
         run: pnpm exec tsc -b
-        working-directory: apps/x/apps/renderer
+        working-directory: clients/apps/desktop/apps/renderer
 
-      - name: Lint apps/x
+      - name: Lint clients/apps/desktop
         run: npm run lint
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Unit tests
         run: npm test
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       # ----- build the product, then drive it -----
       - name: Package electron app (no publish, no signing)
@@ -75,10 +75,10 @@ jobs:
           # matching what release.yml already does. They were hardcoded to the
           # pre-Oppulence product name, so this step could not find the binary after
           # the rename — and no code PR happened to run this workflow in between.
-          APP_NAME="$(node -p "require('./apps/x/apps/main/forge.config.cjs').packagerConfig.name ?? 'Oppulence'")"
-          EXE_NAME="$(node -p "require('./apps/x/apps/main/forge.config.cjs').packagerConfig.executableName ?? 'oppulence'")"
+          APP_NAME="$(node -p "require('./clients/apps/desktop/apps/main/forge.config.cjs').packagerConfig.name ?? 'Oppulence'")"
+          EXE_NAME="$(node -p "require('./clients/apps/desktop/apps/main/forge.config.cjs').packagerConfig.executableName ?? 'oppulence'")"
 
-          EXPECTED_BIN="apps/x/apps/main/out/${APP_NAME}-linux-x64/${EXE_NAME}"
+          EXPECTED_BIN="clients/apps/desktop/apps/main/out/${APP_NAME}-linux-x64/${EXE_NAME}"
           BIN=""
 
           for attempt in $(seq 1 60); do
@@ -104,7 +104,7 @@ jobs:
             exit 1
           fi
 
-          # Emit an absolute path so the e2e step (run from apps/x/apps/main) resolves it.
+          # Emit an absolute path so the e2e step (run from clients/apps/desktop/apps/main) resolves it.
           BIN_ABS="$(cd "$(dirname "$BIN")" && pwd)/$(basename "$BIN")"
           echo "bin=$BIN_ABS" >> "$GITHUB_OUTPUT"
           file "$BIN_ABS"
@@ -118,11 +118,11 @@ jobs:
         # Playwright requires --inspect=0 for its main-process connection. The
         # smoke packager enables that single fuse only in this unsigned CI build.
         run: pnpm fuses:verify -- --allow-node-cli-inspect "${{ steps.packaged-binary.outputs.bin }}"
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Playwright-Electron smoke (xvfb)
         run: xvfb-run -a pnpm exec playwright test
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
         env:
           ELECTRON_APP_BINARY: ${{ steps.packaged-binary.outputs.bin }}
 
@@ -132,7 +132,7 @@ jobs:
         with:
           name: playwright-report
           path: |
-            apps/x/apps/main/playwright-report/
-            apps/x/apps/main/test-results/
+            clients/apps/desktop/apps/main/playwright-report/
+            clients/apps/desktop/apps/main/test-results/
           if-no-files-found: ignore
           retention-days: 7

@@ -29,7 +29,7 @@ services:
     instance_size_slug: apps-s-1vcpu-0.5gb
 ```
 
-For this monorepo, a Dockerfile such as `apps/rowboat-www/Dockerfile` copies shared packages from the repository root, so the caller sets `build_context: .` and `dockerfile_path: apps/rowboat-www/Dockerfile`. Those build paths are workflow inputs, not App Platform component fields. The API app spec also defines background workers and a predeploy migration job; all four components reference the same image. Its encrypted app-level environment values are inherited by all components.
+For this monorepo, a Dockerfile such as `clients/apps/web/Dockerfile` copies shared packages from the repository root, so the caller sets `build_context: .` and `dockerfile_path: clients/apps/web/Dockerfile`. Those build paths are workflow inputs, not App Platform component fields. The API app spec also defines background workers and a predeploy migration job; all four components reference the same image. Its encrypted app-level environment values are inherited by all components.
 
 ## Provisioned production apps
 
@@ -53,11 +53,11 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/rowboat-www/**"
-      - "packages/ui/**"
-      - "packages/relationship-contract/**"
-      - "packages/eslint-plugin-oppulence-web/**"
-      - "charts/rowboat-www/**"
+      - "clients/apps/web/**"
+      - "clients/packages/ui/**"
+      - "clients/packages/relationship-contract/**"
+      - "clients/packages/eslint-plugin-web/**"
+      - "infra/charts/rowboat-www/**"
       - "scripts/rowboat-www-smoke.sh"
       - ".do/rowboat-www-production.yaml"
       - ".github/workflows/deploy-app-platform.yml"
@@ -78,13 +78,13 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: apps/rowboat-www/package-lock.json
+          cache-dependency-path: clients/apps/web/package-lock.json
       - run: npm ci
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
       - run: npx playwright install --with-deps chromium
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
       - run: npm run verify:ci
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
 
   deploy:
     needs: quality
@@ -98,7 +98,7 @@ jobs:
       image_registry_type: GHCR
       image_registry: playbookmediallc
       image_repository: rowboat-www
-      dockerfile_path: apps/rowboat-www/Dockerfile
+      dockerfile_path: clients/apps/web/Dockerfile
       build_context: .
     secrets:
       digitalocean_token: ${{ secrets.DIGITALOCEAN_PRODUCTION_TOKEN }}

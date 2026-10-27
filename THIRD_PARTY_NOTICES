@@ -25,7 +25,7 @@ recorded in the desktop lockfile.
 Polar design primitives
 -----------------------
 
-packages/ui/src/styles/polar.css copies the color scales, shadows, and radius
+clients/packages/ui/src/styles/polar.css copies the color scales, shadows, and radius
 scale from Polar (https://github.com/polarsource/polar), file
 clients/apps/web/src/styles/globals.css at commit
 b116f66b91dd135a4554623c08018ea933cc1234. Polar is licensed under the Apache

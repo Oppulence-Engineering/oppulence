@@ -22,8 +22,8 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const COMPOSE_FILE = path.join(ROOT, "docker-compose.rowboat-api.yml");
 const ENV_FILE = path.join(ROOT, ".env");
-const DESKTOP = path.join(ROOT, "apps/x");
-const WWW = path.join(ROOT, "apps/rowboat-www");
+const DESKTOP = path.join(ROOT, "clients/apps/desktop");
+const WWW = path.join(ROOT, "clients/apps/web");
 const API_URL = "http://localhost:18080";
 const WWW_URL = "http://localhost:18082";
 
@@ -295,7 +295,7 @@ const commands = {
         "--kill-others",
         "--names=www,desktop",
         "--prefix-colors=cyan,magenta",
-        "npm --prefix ../rowboat-www run dev:stack",
+        "npm --prefix ../web run dev:stack",
         "npm run dev",
       ],
       { cwd: DESKTOP, env: { API_URL } },

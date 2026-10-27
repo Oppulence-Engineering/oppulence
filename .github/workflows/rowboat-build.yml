@@ -14,17 +14,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          cache-dependency-path: "apps/rowboat/package-lock.json"
+          cache-dependency-path: "clients/apps/dashboard/package-lock.json"
           node-version: "20"
           cache: "npm"
 
       - name: Install dependencies
         run: npm ci
-        working-directory: apps/rowboat
+        working-directory: clients/apps/dashboard
 
       - name: Build Rowboat
         run: npm run build
-        working-directory: apps/rowboat
+        working-directory: clients/apps/dashboard
 
   build-rowboat-www:
     runs-on: ubuntu-latest
@@ -39,7 +39,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          cache-dependency-path: "apps/rowboat-www/package-lock.json"
+          cache-dependency-path: "clients/apps/web/package-lock.json"
           node-version: "24"
           cache: "npm"
 
@@ -55,12 +55,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
 
       - name: Install browser quality dependencies
         run: npx playwright install --with-deps chromium webkit
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web
 
       - name: Verify rowboat-www
         run: npm run verify:ci
-        working-directory: apps/rowboat-www
+        working-directory: clients/apps/web

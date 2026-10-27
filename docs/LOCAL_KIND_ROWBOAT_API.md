@@ -1,6 +1,6 @@
 # Local kind rowboat-api workflow
 
-This workflow deploys `apps/rowboat-api` into a local kind cluster with the same
+This workflow deploys `server` into a local kind cluster with the same
 Helm chart used for staging/production, plus local-only dependencies:
 
 - Postgres 16 for the ent database.
@@ -65,12 +65,12 @@ scripts/rowboat-api-kind.sh up
 The script:
 
 1. Creates or reuses a `rowboat-api` kind cluster.
-2. Builds `rowboat-api:kind` from `apps/rowboat-api/Dockerfile`.
+2. Builds `rowboat-api:kind` from `server/Dockerfile`.
 3. Loads the image into kind.
-4. Applies `deploy/kind/rowboat-api/dependencies.yaml`.
+4. Applies `infra/deploy/kind/rowboat-api/dependencies.yaml`.
 5. Runs `infisical secrets --output=dotenv` and creates Kubernetes Secret
    `rowboat-api-secrets`.
-6. Installs `charts/rowboat-api` with `charts/rowboat-api/values-kind.yaml`.
+6. Installs `infra/charts/rowboat-api` with `infra/charts/rowboat-api/values-kind.yaml`.
 7. Exposes host ports through kind NodePort mappings:
    - API: `http://localhost:18080`
    - devstack issuer/mock: `http://localhost:18090`
@@ -90,7 +90,7 @@ scripts/rowboat-api-kind.sh desktop
 Or manually:
 
 ```bash
-cd apps/x
+cd clients/apps/desktop
 API_URL=http://localhost:18080 ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT=9222 npm run dev
 ```
 
@@ -147,7 +147,7 @@ scripts/rowboat-api-kind.sh up
 ```
 
 If you override the devstack port, also override `AUTH_ISSUER_URL` in
-`charts/rowboat-api/values-kind.yaml`, because that origin is embedded in
+`infra/charts/rowboat-api/values-kind.yaml`, because that origin is embedded in
 devstack-issued tokens and browser login URLs. It is one knob covering
 `OIDC_ISSUER_URL`, `TOKEN_ISSUER`, `ORY_PUBLIC_URL`, and
 `WORKOS_AUTHORIZE_BASE_URL`; set those individually only to make one of them
@@ -216,7 +216,7 @@ Production and staging values are still rendered separately in CI or locally
 with:
 
 ```bash
-helm lint charts/rowboat-api
-helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-staging.yaml
-helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-production.yaml
+helm lint infra/charts/rowboat-api
+helm template rowboat-api infra/charts/rowboat-api -f infra/charts/rowboat-api/values-staging.yaml
+helm template rowboat-api infra/charts/rowboat-api -f infra/charts/rowboat-api/values-production.yaml
 ```

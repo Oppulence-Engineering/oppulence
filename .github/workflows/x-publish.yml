@@ -25,19 +25,19 @@ jobs:
 
       - name: Install deps
         run: npm ci
-        working-directory: apps/cli
+        working-directory: clients/apps/cli
 
       # optional: run tests
       # - run: npm test
 
       - name: Build
         run: npm run build
-        working-directory: apps/cli
+        working-directory: clients/apps/cli
 
       - name: Pack
         run: npm pack
-        working-directory: apps/cli
+        working-directory: clients/apps/cli
 
       - name: Publish to npm
         run: npm publish --access public
-        working-directory: apps/cli
+        working-directory: clients/apps/cli

@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: 24.15.0
           cache: "pnpm"
-          cache-dependency-path: "apps/x/pnpm-lock.yaml"
+          cache-dependency-path: "clients/apps/desktop/pnpm-lock.yaml"
 
       - name: Extract version from tag
         id: version
@@ -58,15 +58,15 @@ jobs:
             const fs = require('fs');
             const version = '${{ steps.version.outputs.version }}';
 
-            // Update apps/x/package.json
-            const rootPackage = JSON.parse(fs.readFileSync('apps/x/package.json', 'utf8'));
+            // Update clients/apps/desktop/package.json
+            const rootPackage = JSON.parse(fs.readFileSync('clients/apps/desktop/package.json', 'utf8'));
             rootPackage.version = version;
-            fs.writeFileSync('apps/x/package.json', JSON.stringify(rootPackage, null, 2) + '\n');
+            fs.writeFileSync('clients/apps/desktop/package.json', JSON.stringify(rootPackage, null, 2) + '\n');
 
-            // Update apps/x/apps/main/package.json
-            const mainPackage = JSON.parse(fs.readFileSync('apps/x/apps/main/package.json', 'utf8'));
+            // Update clients/apps/desktop/apps/main/package.json
+            const mainPackage = JSON.parse(fs.readFileSync('clients/apps/desktop/apps/main/package.json', 'utf8'));
             mainPackage.version = version;
-            fs.writeFileSync('apps/x/apps/main/package.json', JSON.stringify(mainPackage, null, 2) + '\n');
+            fs.writeFileSync('clients/apps/desktop/apps/main/package.json', JSON.stringify(mainPackage, null, 2) + '\n');
 
             console.log('Updated version to:', version);
           "
@@ -90,7 +90,7 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Build electron distributables
         env:
@@ -113,7 +113,7 @@ jobs:
         # verification step could only report the problem after users could
         # already download it. Build locally, prove it is good, then upload.
         run: npx electron-forge make --arch=arm64,x64 --platform=darwin
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
 
       # forge's osxSign/osxNotarize cover the .app INSIDE the disk image. The .dmg
       # itself is produced afterwards by maker-dmg and is never signed by forge, so
@@ -121,7 +121,7 @@ jobs:
       # certificate is. release.yml has always had this step; this workflow did not,
       # which is why it could never produce an installable macOS build.
       - name: Sign + notarize + staple DMGs
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -155,7 +155,7 @@ jobs:
       # Only now, with every disk image proven notarized, does anything become
       # publicly downloadable.
       - name: Attach release assets
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag }}
@@ -177,7 +177,7 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: distributables-macos
-          path: apps/x/apps/main/out/make/*
+          path: clients/apps/desktop/apps/main/out/make/*
           if-no-files-found: error
           retention-days: 30
 
@@ -202,7 +202,7 @@ jobs:
         with:
           node-version: 24.15.0
           cache: "pnpm"
-          cache-dependency-path: "apps/x/pnpm-lock.yaml"
+          cache-dependency-path: "clients/apps/desktop/pnpm-lock.yaml"
 
       - name: Extract version from tag
         id: version
@@ -218,22 +218,22 @@ jobs:
             const fs = require('fs');
             const version = '${{ steps.version.outputs.version }}';
 
-            // Update apps/x/package.json
-            const rootPackage = JSON.parse(fs.readFileSync('apps/x/package.json', 'utf8'));
+            // Update clients/apps/desktop/package.json
+            const rootPackage = JSON.parse(fs.readFileSync('clients/apps/desktop/package.json', 'utf8'));
             rootPackage.version = version;
-            fs.writeFileSync('apps/x/package.json', JSON.stringify(rootPackage, null, 2) + '\n');
+            fs.writeFileSync('clients/apps/desktop/package.json', JSON.stringify(rootPackage, null, 2) + '\n');
 
-            // Update apps/x/apps/main/package.json
-            const mainPackage = JSON.parse(fs.readFileSync('apps/x/apps/main/package.json', 'utf8'));
+            // Update clients/apps/desktop/apps/main/package.json
+            const mainPackage = JSON.parse(fs.readFileSync('clients/apps/desktop/apps/main/package.json', 'utf8'));
             mainPackage.version = version;
-            fs.writeFileSync('apps/x/apps/main/package.json', JSON.stringify(mainPackage, null, 2) + '\n');
+            fs.writeFileSync('clients/apps/desktop/apps/main/package.json', JSON.stringify(mainPackage, null, 2) + '\n');
 
             console.log('Updated version to:', version);
           "
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Build and publish electron app
         env:
@@ -241,13 +241,13 @@ jobs:
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-forge publish --arch=x64,arm64 --platform=linux
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: distributables-linux
-          path: apps/x/apps/main/out/make/*
+          path: clients/apps/desktop/apps/main/out/make/*
           if-no-files-found: error
           retention-days: 30
 
@@ -272,7 +272,7 @@ jobs:
         with:
           node-version: 24.15.0
           cache: "pnpm"
-          cache-dependency-path: "apps/x/pnpm-lock.yaml"
+          cache-dependency-path: "clients/apps/desktop/pnpm-lock.yaml"
 
       - name: Extract version from tag
         id: version
@@ -290,22 +290,22 @@ jobs:
             const fs = require('fs');
             const version = '${{ steps.version.outputs.version }}';
 
-            // Update apps/x/package.json
-            const rootPackage = JSON.parse(fs.readFileSync('apps/x/package.json', 'utf8'));
+            // Update clients/apps/desktop/package.json
+            const rootPackage = JSON.parse(fs.readFileSync('clients/apps/desktop/package.json', 'utf8'));
             rootPackage.version = version;
-            fs.writeFileSync('apps/x/package.json', JSON.stringify(rootPackage, null, 2) + '\n');
+            fs.writeFileSync('clients/apps/desktop/package.json', JSON.stringify(rootPackage, null, 2) + '\n');
 
-            // Update apps/x/apps/main/package.json
-            const mainPackage = JSON.parse(fs.readFileSync('apps/x/apps/main/package.json', 'utf8'));
+            // Update clients/apps/desktop/apps/main/package.json
+            const mainPackage = JSON.parse(fs.readFileSync('clients/apps/desktop/apps/main/package.json', 'utf8'));
             mainPackage.version = version;
-            fs.writeFileSync('apps/x/apps/main/package.json', JSON.stringify(mainPackage, null, 2) + '\n');
+            fs.writeFileSync('clients/apps/desktop/apps/main/package.json', JSON.stringify(mainPackage, null, 2) + '\n');
 
             console.log('Updated version to:', version);
           "
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: apps/x
+        working-directory: clients/apps/desktop
 
       - name: Build and publish electron app
         env:
@@ -313,12 +313,12 @@ jobs:
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-forge publish --arch=x64 --platform=win32
-        working-directory: apps/x/apps/main
+        working-directory: clients/apps/desktop/apps/main
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: distributables-windows
-          path: apps/x/apps/main/out/make/*
+          path: clients/apps/desktop/apps/main/out/make/*
           if-no-files-found: error
           retention-days: 30

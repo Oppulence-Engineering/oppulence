@@ -1,0 +1,11 @@
+# @oppulence/eslint-plugin-web
+
+Repository-specific architectural rules for the Oppulence Next.js product.
+
+The rule IDs intentionally match the `WEB###` policy catalog documented in
+`clients/apps/web/quality/README.md`. Rules `WEB015` through `WEB018` inspect
+repository-wide artifacts and therefore run as Vitest policy tests instead of
+per-file ESLint rules. `WEB019` reserves standardized ownership roots for all
+new React components. `WEB022` (`require-api-route-zod`) requires every
+`app/api/**/route.ts` handler to import Zod validation helpers or schemas; static
+redirects can be exempted via `allowFiles`.

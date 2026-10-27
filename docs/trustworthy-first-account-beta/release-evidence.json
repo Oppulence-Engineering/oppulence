@@ -17,7 +17,7 @@
         "design_partner_governed_action",
         "beta"
       ],
-      "evidence": ["apps/rowboat-api/internal/revenue/relationship_projection_test.go"],
+      "evidence": ["server/internal/revenue/relationship_projection_test.go"],
       "verifiedBy": "",
       "verifiedAt": ""
     },
@@ -34,8 +34,8 @@
         "beta"
       ],
       "evidence": [
-        "apps/rowboat-api/internal/revenue/workspace_authorization_test.go",
-        "apps/rowboat-api/internal/revenue/tenant_evidence_keys_test.go"
+        "server/internal/revenue/workspace_authorization_test.go",
+        "server/internal/revenue/tenant_evidence_keys_test.go"
       ],
       "verifiedBy": "",
       "verifiedAt": ""
@@ -53,8 +53,8 @@
         "beta"
       ],
       "evidence": [
-        "apps/rowboat-api/internal/revenue/source_lifecycle_test.go",
-        "apps/rowboat-api/internal/revenue/source_backfill_test.go"
+        "server/internal/revenue/source_lifecycle_test.go",
+        "server/internal/revenue/source_backfill_test.go"
       ],
       "verifiedBy": "",
       "verifiedAt": ""
@@ -71,7 +71,7 @@
         "design_partner_governed_action",
         "beta"
       ],
-      "evidence": ["apps/rowboat-api/internal/revenue/relationship_identity_review_test.go"],
+      "evidence": ["server/internal/revenue/relationship_identity_review_test.go"],
       "verifiedBy": "",
       "verifiedAt": ""
     },
@@ -88,8 +88,8 @@
         "beta"
       ],
       "evidence": [
-        "apps/rowboat-api/internal/revenue/mission_control_test.go",
-        "packages/relationship-contract"
+        "server/internal/revenue/mission_control_test.go",
+        "clients/packages/relationship-contract"
       ],
       "verifiedBy": "",
       "verifiedAt": ""
@@ -106,7 +106,7 @@
         "design_partner_governed_action",
         "beta"
       ],
-      "evidence": ["apps/rowboat-api/internal/revenue/trustworthy_first_account_beta_test.go"],
+      "evidence": ["server/internal/revenue/trustworthy_first_account_beta_test.go"],
       "verifiedBy": "",
       "verifiedAt": ""
     },
@@ -123,8 +123,8 @@
         "beta"
       ],
       "evidence": [
-        "apps/rowboat-api/internal/revenue/relationship_projection_test.go",
-        "apps/rowboat-api/internal/revenue/mission_control_test.go"
+        "server/internal/revenue/relationship_projection_test.go",
+        "server/internal/revenue/mission_control_test.go"
       ],
       "verifiedBy": "",
       "verifiedAt": ""
@@ -141,7 +141,7 @@
         "design_partner_governed_action",
         "beta"
       ],
-      "evidence": ["apps/rowboat-api/internal/revenue/relationship_attention_corpus_test.go"],
+      "evidence": ["server/internal/revenue/relationship_attention_corpus_test.go"],
       "verifiedBy": "",
       "verifiedAt": ""
     },
@@ -152,8 +152,8 @@
       "status": "ready_for_verification",
       "requiredStages": ["internal_governed_action", "design_partner_governed_action", "beta"],
       "evidence": [
-        "apps/rowboat-api/internal/revenue/service_test.go",
-        "apps/rowboat-api/internal/revenue/executor_channels_test.go"
+        "server/internal/revenue/service_test.go",
+        "server/internal/revenue/executor_channels_test.go"
       ],
       "verifiedBy": "",
       "verifiedAt": ""
@@ -164,7 +164,7 @@
       "owner": "Actions",
       "status": "ready_for_verification",
       "requiredStages": ["internal_governed_action", "design_partner_governed_action", "beta"],
-      "evidence": ["apps/rowboat-api/internal/revenue/service_test.go"],
+      "evidence": ["server/internal/revenue/service_test.go"],
       "verifiedBy": "",
       "verifiedAt": ""
     },
@@ -175,8 +175,8 @@
       "status": "ready_for_verification",
       "requiredStages": ["internal_governed_action", "design_partner_governed_action", "beta"],
       "evidence": [
-        "apps/rowboat-api/internal/revenue/trustworthy_first_account_beta_test.go",
-        "apps/rowboat-api/internal/revenue/outcome_learning_test.go"
+        "server/internal/revenue/trustworthy_first_account_beta_test.go",
+        "server/internal/revenue/outcome_learning_test.go"
       ],
       "verifiedBy": "",
       "verifiedAt": ""
@@ -194,9 +194,9 @@
         "beta"
       ],
       "evidence": [
-        "apps/x/packages/core/src/relationships/meeting-evidence.test.ts",
-        "apps/x/packages/core/src/relationships/evidence-outbox.test.ts",
-        "apps/x/packages/core/src/relationships/trustworthy-meeting-journey.test.ts"
+        "clients/apps/desktop/packages/core/src/relationships/meeting-evidence.test.ts",
+        "clients/apps/desktop/packages/core/src/relationships/evidence-outbox.test.ts",
+        "clients/apps/desktop/packages/core/src/relationships/trustworthy-meeting-journey.test.ts"
       ],
       "verifiedBy": "",
       "verifiedAt": ""

@@ -1,0 +1,22 @@
+{
+  "clients/apps/web/app/(marketing)/sim-landing/edge-fade.module.css": 6,
+  "clients/apps/web/app/(marketing)/sim-landing/sim-landing.css": 31,
+  "clients/apps/web/app/(marketing)/styles/catalog.css": 9,
+  "clients/apps/web/app/(marketing)/styles/home-attio.css": 20,
+  "clients/apps/web/app/(marketing)/styles/home.css": 12,
+  "clients/apps/web/app/(marketing)/styles/product-pages.css": 1,
+  "clients/apps/web/app/(marketing)/styles/relationship.css": 14,
+  "clients/apps/web/app/(marketing)/styles/site.css": 74,
+  "clients/apps/web/app/globals.css": 2,
+  "clients/apps/web/components/auth/auth-showcase.module.css": 4,
+  "clients/apps/web/components/features/editors/json-editor/json-editor.css": 37,
+  "clients/apps/web/components/features/editors/markdown-viewer/markdown-viewer.css": 12,
+  "clients/apps/web/components/features/editors/tiptap-markdown-editor/tiptap-markdown-editor.css": 49,
+  "clients/apps/web/components/sim/shimmer-text.module.css": 6,
+  "clients/apps/web/components/sim/thinking-loader.module.css": 4,
+  "clients/apps/desktop/apps/renderer/src/App.css": 121,
+  "clients/apps/desktop/apps/renderer/src/styles/editor.css": 60,
+  "clients/apps/desktop/apps/renderer/src/styles/live-note-panel.css": 24,
+  "clients/packages/ui/src/styles/globals.css": 16,
+  "clients/packages/ui/src/styles/product-theme.css": 35
+}

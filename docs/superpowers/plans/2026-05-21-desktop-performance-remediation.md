@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Reduce Rowboat desktop startup delay, renderer jank, and disk/IPC amplification in the Electron app under `apps/x`.
+**Goal:** Reduce Rowboat desktop startup delay, renderer jank, and disk/IPC amplification in the Electron app under `clients/apps/desktop`.
 
 **Architecture:** Keep the app's current Electron + Vite + React + local `~/.rowboat` workspace design. Move non-critical startup work out of the first-window path, keep expensive filesystem scans bounded or coalesced, and cap UI-thread work for large local datasets.
 
@@ -13,7 +13,7 @@
 ## Audit Findings
 
 1. Main startup blocks on environment and global CLI work before the window is usable.
-   `apps/x/apps/main/src/main.ts` synchronously spawns the login shell in `initializeExecutionEnvironment()`, then `app.whenReady()` checks `agent-slack --version` and may run `npm install -g agent-slack` before `createWindow()`. On a missing CLI or slow shell profile this can add seconds or a full minute to cold launch.
+   `clients/apps/desktop/apps/main/src/main.ts` synchronously spawns the login shell in `initializeExecutionEnvironment()`, then `app.whenReady()` checks `agent-slack --version` and may run `npm install -g agent-slack` before `createWindow()`. On a missing CLI or slow shell profile this can add seconds or a full minute to cold launch.
 
 2. Every background service starts immediately after the window is created.
    Gmail, Calendar, Fireflies, Granola, graph building, email labeling, note tagging, inline tasks, agent runners, schedulers, event processors, Chrome sync, and local sites all start in one block. Some initializers perform disk scans or immediate first ticks, competing with first render and user input.
@@ -47,9 +47,9 @@
 ### Task 1: Remove Blocking Startup Work
 
 **Files:**
-- Modify: `apps/x/apps/main/src/main.ts`
-- Create: `apps/x/apps/main/src/agent-slack.ts`
-- Modify: `apps/x/apps/main/src/ipc.ts`
+- Modify: `clients/apps/desktop/apps/main/src/main.ts`
+- Create: `clients/apps/desktop/apps/main/src/agent-slack.ts`
+- Modify: `clients/apps/desktop/apps/main/src/ipc.ts`
 
 - [ ] Convert shell environment hydration from `execFileSync` to a memoized async function.
 - [ ] Schedule environment hydration after the first window is created instead of before `app.whenReady()` creates UI.
@@ -60,13 +60,13 @@
 ### Task 2: Bound Run History Loading
 
 **Files:**
-- Modify: `apps/x/packages/shared/src/runs.ts`
-- Modify: `apps/x/packages/shared/src/ipc.ts`
-- Modify: `apps/x/packages/core/src/runs/repo.ts`
-- Modify: `apps/x/packages/core/src/runs/runs.ts`
-- Modify: `apps/x/apps/main/src/ipc.ts`
-- Modify: `apps/x/apps/renderer/src/App.tsx`
-- Test: `apps/x/packages/core/test/runs-list.test.mjs`
+- Modify: `clients/apps/desktop/packages/shared/src/runs.ts`
+- Modify: `clients/apps/desktop/packages/shared/src/ipc.ts`
+- Modify: `clients/apps/desktop/packages/core/src/runs/repo.ts`
+- Modify: `clients/apps/desktop/packages/core/src/runs/runs.ts`
+- Modify: `clients/apps/desktop/apps/main/src/ipc.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/App.tsx`
+- Test: `clients/apps/desktop/packages/core/test/runs-list.test.mjs`
 
 - [ ] Add a `ListRunsOptions` schema with `cursor`, `limit`, and `agentId`.
 - [ ] Make `FSRunsRepo.list()` read until it has `limit` matching rows, using the last examined filename as `nextCursor`.
@@ -77,8 +77,8 @@
 ### Task 3: Coalesce Workspace Tree Refreshes
 
 **Files:**
-- Modify: `apps/x/apps/renderer/src/App.tsx`
-- Modify: `apps/x/packages/core/src/workspace/workspace.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/App.tsx`
+- Modify: `clients/apps/desktop/packages/core/src/workspace/workspace.ts`
 
 - [ ] Add a small renderer-side scheduler that allows one immediate tree refresh, coalesces follow-up filesystem bursts, and prevents overlapping `loadDirectory()` calls.
 - [ ] Replace the direct `loadDirectory().then(setTree)` inside `workspace:didChange`.
@@ -88,8 +88,8 @@
 ### Task 4: Reduce Renderer Hot-Loop Work
 
 **Files:**
-- Modify: `apps/x/apps/renderer/src/App.tsx`
-- Modify: `apps/x/apps/renderer/src/components/graph-view.tsx`
+- Modify: `clients/apps/desktop/apps/renderer/src/App.tsx`
+- Modify: `clients/apps/desktop/apps/renderer/src/components/graph-view.tsx`
 
 - [ ] Buffer active run text deltas and flush them to React state at animation-frame cadence.
 - [ ] Use the buffered text when the final assistant message arrives so the last delta is not lost.
@@ -101,8 +101,8 @@
 ### Task 5: Bound Search Fan-Out
 
 **Files:**
-- Modify: `apps/x/packages/core/src/search/search.ts`
-- Test: `apps/x/packages/core/test/search-limit.test.mjs`
+- Modify: `clients/apps/desktop/packages/core/src/search/search.ts`
+- Test: `clients/apps/desktop/packages/core/test/search-limit.test.mjs`
 
 - [ ] Pass the requested result limit down to `grepFiles()`.
 - [ ] Slice matched file paths before opening preview streams.
@@ -111,7 +111,7 @@
 ### Task 6: Defer Non-Critical Analytics Work
 
 **Files:**
-- Modify: `apps/x/apps/renderer/src/hooks/useAnalyticsIdentity.ts`
+- Modify: `clients/apps/desktop/apps/renderer/src/hooks/useAnalyticsIdentity.ts`
 
 - [ ] Keep sign-in/provider identity updates on mount.
 - [ ] Move `total_notes` calculation to idle time with a hard cap on directory reads.
@@ -120,12 +120,12 @@
 ### Task 7: Verify and Publish
 
 **Files:**
-- Modify: `apps/x/package.json`
+- Modify: `clients/apps/desktop/package.json`
 
 - [ ] Add a desktop `test` script that builds the needed packages and runs `node --test`.
-- [ ] Run `pnpm --dir apps/x install` only if lockfile changes are required.
-- [ ] Run `pnpm --dir apps/x test`.
-- [ ] Run `pnpm --dir apps/x lint`.
-- [ ] Run `pnpm --dir apps/x --filter @x/renderer build`.
+- [ ] Run `pnpm --dir clients/apps/desktop install` only if lockfile changes are required.
+- [ ] Run `pnpm --dir clients/apps/desktop test`.
+- [ ] Run `pnpm --dir clients/apps/desktop lint`.
+- [ ] Run `pnpm --dir clients/apps/desktop --filter @x/renderer build`.
 - [ ] Review `git diff` and stage only intended desktop performance files plus this plan.
 - [ ] Commit, push the current branch, and open a draft PR.
