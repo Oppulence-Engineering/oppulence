@@ -51,6 +51,6 @@ export interface GenericWebhookEventRequest {
    * @nullable
    */
   text?: string | null;
-  /** Rowboat user id (UUID) owning the event. */
+  /** Oppulence user id (UUID) owning the event. */
   userId: string;
 }

@@ -53,7 +53,7 @@ func seedWorkspace(cfg config) (string, error) {
 	}
 	for i := 0; i < cfg.SeedNotes; i++ {
 		name := filepath.Join(cfg.WorkDir, "knowledge", "PerfSeed", fmt.Sprintf("seed-%03d.md", i))
-		body := fmt.Sprintf("# Seed Note %03d\n\nrowboatperf seed corpus note %03d.\n\n- account: Acme %03d\n- status: active\n", i, i, i%17)
+		body := fmt.Sprintf("# Seed Note %03d\n\noppulenceperf seed corpus note %03d.\n\n- account: Acme %03d\n- status: active\n", i, i, i%17)
 		if err := os.WriteFile(name, []byte(body), 0o644); err != nil {
 			return "", err
 		}

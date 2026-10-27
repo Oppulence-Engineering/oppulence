@@ -7,7 +7,7 @@ let tmpDir: string;
 let workspaceDir: string;
 
 beforeEach(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-files-test-"));
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-files-test-"));
   workspaceDir = path.join(tmpDir, "workspace");
   process.env.ROWBOAT_WORKDIR = workspaceDir;
   vi.resetModules();
@@ -58,9 +58,9 @@ describe("filesystem files", () => {
   it("expands home-relative paths", async () => {
     const files = await loadFiles();
 
-    const resolved = files.resolveFilePath("~/rowboat-test.txt");
+    const resolved = files.resolveFilePath("~/oppulence-test.txt");
 
-    expect(resolved.resolvedPath).toBe(path.join(os.homedir(), "rowboat-test.txt"));
+    expect(resolved.resolvedPath).toBe(path.join(os.homedir(), "oppulence-test.txt"));
     expect(resolved.isInsideWorkspace).toBe(false);
   });
 

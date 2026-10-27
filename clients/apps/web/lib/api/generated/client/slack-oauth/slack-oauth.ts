@@ -218,7 +218,7 @@ export const getStartSlackOAuthUrl = () => {
 };
 
 /**
- * Creates a one-time state ticket bound to the authenticated Rowboat user and returns the Slack install URL for the desktop to open.
+ * Creates a one-time state ticket bound to the authenticated Oppulence user and returns the Slack install URL for the desktop to open.
  * @summary Start Slack workspace install
  */
 export const startSlackOAuth = async (options?: RequestInit): Promise<startSlackOAuthResponse> => {

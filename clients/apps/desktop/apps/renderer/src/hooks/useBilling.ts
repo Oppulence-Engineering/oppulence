@@ -14,13 +14,13 @@ function isAuthUnavailableMessage(message: string) {
   return /AuthUnavailableError|session expired|token expired|not signed into/i.test(message);
 }
 
-export function useBilling(isRowboatConnected: boolean) {
+export function useBilling(isOppulenceConnected: boolean) {
   const [billing, setBilling] = useState<BillingInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<BillingLoadError | null>(null);
 
   const fetchBilling = useCallback(async () => {
-    if (!isRowboatConnected) {
+    if (!isOppulenceConnected) {
       setBilling(null);
       setError(null);
       setIsLoading(false);
@@ -45,20 +45,20 @@ export function useBilling(isRowboatConnected: boolean) {
     } finally {
       setIsLoading(false);
     }
-  }, [isRowboatConnected]);
+  }, [isOppulenceConnected]);
 
   useEffect(() => {
     fetchBilling();
   }, [fetchBilling]);
 
   useEffect(() => {
-    if (!isRowboatConnected) return;
+    if (!isOppulenceConnected) return;
     const handleFocus = () => {
       void fetchBilling();
     };
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, [fetchBilling, isRowboatConnected]);
+  }, [fetchBilling, isOppulenceConnected]);
 
   return { billing, isLoading, error, refresh: fetchBilling };
 }

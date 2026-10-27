@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtask"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskartifact"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskrun"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskrunevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/testsuite"
 	"go.temporal.io/sdk/worker"
@@ -23,7 +23,7 @@ import (
 // newWorkflowTestEnv builds a Temporal test environment running the REAL
 // workflow + activities against the integration harness. Registrations mirror
 // Register (workflow.go) by name — the workflow dispatches activities via the
-// rowboat.background_tasks.*.v1 string constants, so the two lists must stay
+// oppulence.background_tasks.*.v1 string constants, so the two lists must stay
 // in lockstep. ExecuteAPITask is injected so tests can count attempts.
 func newWorkflowTestEnv(t *testing.T, h *integrationHarness,
 	exec func(context.Context, StartInput) (RunOutput, error)) *testsuite.TestWorkflowEnvironment {

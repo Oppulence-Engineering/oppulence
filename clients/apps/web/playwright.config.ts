@@ -40,7 +40,7 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: `ROWBOAT_WWW_API_PROXY_URL=http://127.0.0.1:4318 ROWBOAT_WWW_PUBLIC_API_BASE_URL=http://127.0.0.1:4318 ROWBOAT_WWW_PUBLIC_APP_URL=http://127.0.0.1:${port} ROWBOAT_WWW_SESSION_SECRET=playwright-rowboat-www-session-secret-0001 npm run start -- --hostname 127.0.0.1 --port ${port}`,
+      command: `OPPULENCE_WWW_API_PROXY_URL=http://127.0.0.1:4318 OPPULENCE_WWW_PUBLIC_API_BASE_URL=http://127.0.0.1:4318 OPPULENCE_WWW_PUBLIC_APP_URL=http://127.0.0.1:${port} OPPULENCE_WWW_SESSION_SECRET=playwright-rowboat-www-session-secret-0001 npm run start -- --hostname 127.0.0.1 --port ${port}`,
       url: `http://127.0.0.1:${port}`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

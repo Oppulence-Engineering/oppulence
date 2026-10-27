@@ -8,8 +8,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
 	"go.uber.org/zap"
 )
 

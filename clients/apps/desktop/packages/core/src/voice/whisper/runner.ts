@@ -191,7 +191,7 @@ export function shellQuote(value: string): string {
 function spawnArgsForAttempt(attempt: SpawnAttempt, bin: string, args: string[]): SpawnTarget {
   if (attempt === "env") return { command: "/usr/bin/env", args: [bin, ...args] };
   if (attempt === "script") {
-    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "rowboat-whisper-launch-"));
+    const dir = fsSync.mkdtempSync(path.join(os.tmpdir(), "oppulence-whisper-launch-"));
     const scriptPath = path.join(dir, "run.sh");
     const script = `#!/bin/sh\nexec ${[bin, ...args].map(shellQuote).join(" ")}\n`;
     fsSync.writeFileSync(scriptPath, script, { mode: 0o700 });
@@ -359,7 +359,7 @@ export function spawnWhisper(bin: string, args: string[], timeoutMs: number): Pr
 
 /** Run `whisper-cli` against a WAV file and parse the result. */
 export async function run(wavPath: string, o: RunOpts): Promise<RunResult> {
-  const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-whisper-out-"));
+  const outDir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-whisper-out-"));
   const outPrefix = path.join(outDir, "out");
   try {
     const args = buildArgs(wavPath, outPrefix, o);
@@ -422,7 +422,7 @@ const batchSem = new Semaphore();
 export async function transcribePcm(pcm: Int16Array, opts: RunOpts): Promise<RunResult> {
   if (pcm.length === 0) throw new WhisperError("audio_invalid", "empty audio");
   const release = await batchSem.acquire();
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-whisper-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-whisper-"));
   const wavPath = path.join(dir, "in.wav");
   try {
     const stats = pcmStats(pcm);

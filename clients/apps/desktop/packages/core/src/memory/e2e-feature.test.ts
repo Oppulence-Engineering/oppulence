@@ -9,7 +9,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
-const TEST_WORKDIR = vi.hoisted(() => '/tmp/rowboat-mem-e2e-feature');
+const TEST_WORKDIR = vi.hoisted(() => '/tmp/oppulence-mem-e2e-feature');
 vi.mock('../config/config.js', async (io) => ({
     ...(await io<typeof import('../config/config.js')>()),
     WorkDir: TEST_WORKDIR,

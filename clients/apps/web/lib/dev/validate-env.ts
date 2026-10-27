@@ -20,7 +20,7 @@ export function readDevEnvFromProcess(env: NodeJS.ProcessEnv = process.env): Dev
   const errors: string[] = [];
 
   const sessionSecret =
-    env.ROWBOAT_WWW_SESSION_SECRET ||
+    env.OPPULENCE_WWW_SESSION_SECRET ||
     env.AUTH_SECRET ||
     "dev-only-rowboat-www-session-secret-change-me";
 
@@ -29,15 +29,15 @@ export function readDevEnvFromProcess(env: NodeJS.ProcessEnv = process.env): Dev
   }
 
   const apiProxyUrl =
-    env.ROWBOAT_WWW_API_PROXY_URL ||
-    env.ROWBOAT_WWW_PUBLIC_API_BASE_URL ||
+    env.OPPULENCE_WWW_API_PROXY_URL ||
+    env.OPPULENCE_WWW_PUBLIC_API_BASE_URL ||
     env.ROWBOATX_API_PROXY_URL ||
     "http://localhost:18080";
 
   const publicApiBaseUrl =
-    env.ROWBOAT_WWW_PUBLIC_API_BASE_URL || env.ROWBOATX_PUBLIC_API_BASE_URL || apiProxyUrl;
+    env.OPPULENCE_WWW_PUBLIC_API_BASE_URL || env.ROWBOATX_PUBLIC_API_BASE_URL || apiProxyUrl;
 
-  const publicAppUrl = env.ROWBOAT_WWW_PUBLIC_APP_URL;
+  const publicAppUrl = env.OPPULENCE_WWW_PUBLIC_APP_URL;
 
   const parsed = DevEnvSchema.safeParse({
     sessionSecret,

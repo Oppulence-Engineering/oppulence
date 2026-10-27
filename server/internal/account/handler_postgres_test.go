@@ -12,16 +12,16 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/creditledger"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailthread"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/personinteractionstat"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipparticipant"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/userhistory"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
 )
 
 // TestAccountDeletionOnPostgres proves the cascade on the real migrations.
@@ -29,11 +29,11 @@ import (
 // relationships) at the end of the statement, after the cascade; SQLite cannot
 // prove that. Run against a database migrated with `go run ./cmd/migrate apply`:
 //
-//	ROWBOAT_TEST_PG_DSN=postgres://... go test -tags postgresintegration ./internal/account/
+//	OPPULENCE_TEST_PG_DSN=postgres://... go test -tags postgresintegration ./internal/account/
 func TestAccountDeletionOnPostgres(t *testing.T) {
-	dsn := os.Getenv("ROWBOAT_TEST_PG_DSN")
+	dsn := os.Getenv("OPPULENCE_TEST_PG_DSN")
 	if dsn == "" {
-		t.Skip("ROWBOAT_TEST_PG_DSN is required")
+		t.Skip("OPPULENCE_TEST_PG_DSN is required")
 	}
 	database, err := db.Open(context.Background(), appconfig.Config{DatabaseURL: dsn}, zap.NewNop())
 	if err != nil {

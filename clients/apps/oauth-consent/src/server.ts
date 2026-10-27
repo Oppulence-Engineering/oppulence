@@ -5,7 +5,7 @@ import { safeEqual, signValue, verifySignedValue } from './crypto.js';
 import { AppError, badRequest } from './errors.js';
 import { consentPage, entitlementDeniedPage, errorPage } from './html.js';
 import { OryAdmin, type ConsentDecisionBinding, type ConsentDecisionProbe, type HydraOutcomeProof } from './ory.js';
-import { RowboatHooks, type AuditRequest, type ConsentContext } from './rowboat.js';
+import { OppulenceHooks, type AuditRequest, type ConsentContext } from './rowboat.js';
 import { DrainState } from './shutdown.js';
 import type { ConsentStateStore, ConsentSession, DecisionClaim, StepUpFlowClaim } from './state.js';
 import { WorkOS } from './workos.js';
@@ -20,7 +20,7 @@ const DecisionSchema = z.enum(['approve', 'deny']);
 interface Dependencies {
   ory?: OryAdmin;
   workos?: WorkOS;
-  hooks?: RowboatHooks;
+  hooks?: OppulenceHooks;
   store?: ConsentStateStore;
   drain?: DrainState;
 }
@@ -29,7 +29,7 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
   const app = express();
   const ory = dependencies.ory ?? new OryAdmin(cfg.ory.adminUrl, cfg.upstreamTimeoutMs);
   const workos = dependencies.workos ?? new WorkOS(cfg.workos, cfg.upstreamTimeoutMs);
-  const hooks = dependencies.hooks ?? new RowboatHooks(cfg.rowboatApi, cfg.upstreamTimeoutMs);
+  const hooks = dependencies.hooks ?? new OppulenceHooks(cfg.rowboatApi, cfg.upstreamTimeoutMs);
   const store = dependencies.store;
   if (!store) throw new Error('shared_state_store_required');
   const drain = dependencies.drain ?? new DrainState();
@@ -327,7 +327,7 @@ async function finishApproval(
   session: ConsentSession,
   scopes: string[],
   store: ConsentStateStore,
-  hooks: RowboatHooks,
+  hooks: OppulenceHooks,
   ory: OryAdmin,
   cookieOptions: {
     httpOnly: boolean;
@@ -373,7 +373,7 @@ interface ReconciliationFaults {
 export async function reconcileDecisions(
   store: ConsentStateStore,
   ory: OryAdmin,
-  hooks: RowboatHooks,
+  hooks: OppulenceHooks,
   limit = 25,
   leaseMs = 30_000,
   faults: ReconciliationFaults = {},
@@ -394,7 +394,7 @@ export async function reconcileDecisions(
 async function executeDecision(
   initialClaim: DecisionClaim,
   store: ConsentStateStore,
-  hooks: RowboatHooks,
+  hooks: OppulenceHooks,
   ory: OryAdmin,
   faults: ReconciliationFaults = {},
 ): Promise<string | undefined> {
@@ -521,7 +521,7 @@ function indeterminateOutcomeError(): AppError {
 async function convergeAcceptedDecision(
   initialClaim: DecisionClaim,
   store: ConsentStateStore,
-  hooks: RowboatHooks,
+  hooks: OppulenceHooks,
 ): Promise<string | undefined> {
   let claim = await store.recordAcceptedGrant(initialClaim);
   try {
@@ -567,7 +567,7 @@ async function redirectStepUp(
   res.redirect(await workos.authorizeStepUpURL(replacement.state, replacement.nonce));
 }
 
-async function revalidateApproval(session: ConsentSession, selected: string[], hooks: RowboatHooks): Promise<void> {
+async function revalidateApproval(session: ConsentSession, selected: string[], hooks: OppulenceHooks): Promise<void> {
   const fresh = await hooks.context({
     challenge: session.challenge,
     workosUserId: session.subject,
@@ -618,7 +618,7 @@ function isLoopback(address: string | undefined): boolean {
  * downgrades an outbox record to a log line: retryAudit keeps it durable for a
  * later worker attempt. Request/process logs are best-effort diagnostics only.
  */
-export async function drainAuditOutbox(store: ConsentStateStore, hooks: RowboatHooks, limit = 25): Promise<number> {
+export async function drainAuditOutbox(store: ConsentStateStore, hooks: OppulenceHooks, limit = 25): Promise<number> {
   const items = await store.claimAudits(limit);
   await Promise.all(
     items.map(async (item) => {

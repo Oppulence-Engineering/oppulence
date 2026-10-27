@@ -18,7 +18,7 @@
 
 The agent builder, knowledge graph, MCP layer, model gateway, and Temporal runtime are infrastructure. They matter because they make the product promise credible, but they are not the wedge. The wedge is simpler and sharper:
 
-> Connect the work sources. Rowboat tells you what changed, what matters today, who needs a response, what was promised, and what action is ready for approval.
+> Connect the work sources. Oppulence tells you what changed, what matters today, who needs a response, what was promised, and what action is ready for approval.
 
 This RFC turns that positioning into a product surface and build order.
 
@@ -43,12 +43,12 @@ This RFC defines the first opinionated product layer over the existing runtime:
 | `clients/apps/desktop`                         | Electron desktop app with local Markdown knowledge, Gmail/calendar/meeting sync, voice/meeting notes, live notes, scheduled agents, MCP/model plumbing, and background task views. | This is the daily-driver surface for founder/operator memory.                      |
 | `clients/apps/desktop/LIVE_NOTE.md`            | Live notes can refresh on cron, time windows, events, or manual runs.                                                                                                              | Live notes are the primitive for relationship, deal, project, and topic awareness. |
 | `server`               | Go service plane for billing/credits, LLM gateway, vendor proxies, WorkOS auth, Google/Slack OAuth, connector OAuth, background tasks, event ingestion, and agents.                | This is the always-on execution and connector plane.                               |
-| `server/cmd/worker`    | Temporal worker for API-native background tasks, cloud-event routing, durable agent sessions, and agent tools.                                                                     | This lets Rowboat run critical jobs while the desktop is closed.                   |
+| `server/cmd/worker`    | Temporal worker for API-native background tasks, cloud-event routing, durable agent sessions, and agent tools.                                                                     | This lets Oppulence run critical jobs while the desktop is closed.                   |
 | `server/cmd/scheduler` | API-owned scheduler and Google watch manager.                                                                                                                                      | This supports reliable scheduled and event-driven runs.                            |
 | `clients/apps/dashboard`                   | Older hosted agent-builder product with workflows, RAG ingestion, scheduled/recurring job rules, and widget surfaces.                                                              | Useful infrastructure and reference surface, but not the primary wedge.            |
 | `apps/rowboatx`                  | Next.js UI shell with artifact, task, queue, tool, conversation, and editor components.                                                                                            | Good candidate for the next control-tower UI.                                      |
 
-The repository already contains product one-pagers that describe Rowboat as a local-first AI coworker and Markdown knowledge graph. This RFC narrows the product point: the graph exists to make founder/operator follow-through reliable.
+The repository already contains product one-pagers that describe Oppulence as a local-first AI coworker and Markdown knowledge graph. This RFC narrows the product point: the graph exists to make founder/operator follow-through reliable.
 
 ## Market signal
 
@@ -58,8 +58,8 @@ Public complaints from founders, sellers, and operators cluster around follow-th
 | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | Founders lose deals because follow-up is late or forgotten.                                            | Reddit / r/SaaS: lost deals from not following up, even though the CRM had the data. <https://www.reddit.com/r/SaaS/comments/1rmb9km/i_lost_3_deals_in_one_month_because_i_didnt/>                                                             | Build a follow-up risk queue, not just a CRM sync.                                   |
 | Indie founders build simple pipeline trackers after losing deals.                                      | Indie Hackers: "built a dead simple pipeline tracker after losing a deal because I forgot to follow up." <https://www.indiehackers.com/post/built-a-dead-simple-pipeline-tracker-after-losing-a-deal-because-i-forgot-to-follow-up-7dd824ba48> | The buyer wants enforcement of next action, not complex pipeline management.         |
-| Sales users already connect AI to HubSpot, Gmail, Calendar, Granola, and Slack, but still need review. | Reddit / r/sales: AI workflows across sales tools, with hallucination caveats. <https://www.reddit.com/r/sales/comments/1tsscv6/account_executives_how_do_you_use_ai_in_your/>                                                                 | Rowboat should combine context and draft action, then ask for approval.              |
-| Customer-facing teams complain CRMs are admin systems, not working memory.                             | Reddit / r/CustomerSuccess: CRM work duplicates email, calls, and Slack. <https://www.reddit.com/r/CustomerSuccess/comments/1p8nf8b/does_anyone_else_feel_like_their_crm_is_built_for/>                                                        | Rowboat should sit where work happens and write back selectively.                    |
+| Sales users already connect AI to HubSpot, Gmail, Calendar, Granola, and Slack, but still need review. | Reddit / r/sales: AI workflows across sales tools, with hallucination caveats. <https://www.reddit.com/r/sales/comments/1tsscv6/account_executives_how_do_you_use_ai_in_your/>                                                                 | Oppulence should combine context and draft action, then ask for approval.              |
+| Customer-facing teams complain CRMs are admin systems, not working memory.                             | Reddit / r/CustomerSuccess: CRM work duplicates email, calls, and Slack. <https://www.reddit.com/r/CustomerSuccess/comments/1p8nf8b/does_anyone_else_feel_like_their_crm_is_built_for/>                                                        | Oppulence should sit where work happens and write back selectively.                    |
 | Operators are already making daily briefs over calendars, issues, and important emails.                | Hacker News thread on AI-generated morning/evening briefings. <https://news.ycombinator.com/item?id=47783940>                                                                                                                                  | Daily brief is an obvious wedge and retention loop.                                  |
 | Security concerns rise when agents read email, calendar, and Slack.                                    | Hacker News discussion on risks of agents over private work data. <https://news.ycombinator.com/item?id=47479962>                                                                                                                              | Local-first, provenance, scoped connectors, and approval gates are product features. |
 
@@ -73,7 +73,7 @@ The core buyer language should be:
 
 ## Product thesis
 
-Rowboat becomes the **operating memory for founder-led work**:
+Oppulence becomes the **operating memory for founder-led work**:
 
 - It observes the work stream: email, calendar, meetings, Slack, notes, and eventually CRM/task systems.
 - It maintains source-linked memory: people, companies, projects, decisions, asks, commitments, risks, and follow-ups.
@@ -90,7 +90,7 @@ The phrase "founder operating memory" should be understood as the wedge, not the
 | Founder-led sales                       | Many conversations, informal commitments, weak CRM hygiene, high opportunity cost of missed follow-up. | "Your follow-up queue catches the deals you are about to lose."                  |
 | EA / chief of staff                     | Needs cross-source briefing and context continuity across exec meetings.                               | "Every meeting has a concise brief and source trail."                            |
 | Solo consultant / professional operator | Client work spans email, meetings, docs, invoices, and private notes.                                  | "Your client memory stays current without sacrificing data ownership."           |
-| AE / sales operator                     | Deal context lives across CRM, email, calls, Slack, and notes.                                         | "Rowboat finds stale next steps and drafts the work back into your daily tools." |
+| AE / sales operator                     | Deal context lives across CRM, email, calls, Slack, and notes.                                         | "Oppulence finds stale next steps and drafts the work back into your daily tools." |
 
 ## Goals
 
@@ -146,7 +146,7 @@ Every queue item needs:
 
 ### 3. Relationship and Deal Memory
 
-Rowboat should maintain living pages for:
+Oppulence should maintain living pages for:
 
 - People.
 - Companies.

@@ -11,7 +11,7 @@ export interface RendererEventMap {
   "code-mode-detected": { runId?: string; agent: string };
   "email-block:draft-with-assistant": undefined;
   "models-config-changed": undefined;
-  "rowboat-chat-recent-work-dirs-changed": undefined;
+  "oppulence-chat-recent-work-dirs-changed": undefined;
   "rowboat:open-copilot-edit-live-note": { filePath: string };
   "rowboat:open-copilot-prompt": {
     instruction: string;

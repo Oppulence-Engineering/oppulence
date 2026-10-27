@@ -1,7 +1,7 @@
 {
-  "name": "@oppulence/rowboat-integration-templates",
+  "name": "@oppulence/integration-templates",
   "version": "0.1.0",
-  "description": "Shared Rowboat integration onboarding templates and block schemas.",
+  "description": "Shared Oppulence integration onboarding templates and block schemas.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

@@ -9,7 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/billingretention"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/billingretention"
 	"github.com/google/uuid"
 )
 

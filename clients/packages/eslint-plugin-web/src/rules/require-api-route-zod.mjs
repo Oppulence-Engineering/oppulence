@@ -17,7 +17,7 @@ const VALIDATION_IMPORT_NAMES = new Set([
   "parseSearchParams",
   "parseJsonBody",
   "parseRouteParams",
-  "proxyRowboatAPI",
+  "proxyOppulenceAPI",
 ]);
 
 function isApiRouteFile(filename) {
@@ -86,7 +86,7 @@ export default createRule({
     schema: pathOptionsSchema,
     messages: {
       missing:
-        "WEB022 API route handlers must use Zod validation: import a *Schema, @/lib/api/routes/parse, or delegate to a validated BFF helper such as proxyRowboatAPI.",
+        "WEB022 API route handlers must use Zod validation: import a *Schema, @/lib/api/routes/parse, or delegate to a validated BFF helper such as proxyOppulenceAPI.",
     },
   },
   defaultOptions: [{}],

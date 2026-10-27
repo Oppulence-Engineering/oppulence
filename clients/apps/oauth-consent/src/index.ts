@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 import { loadConfig } from './config.js';
 import { buildApp, drainAuditOutbox, reconcileDecisions } from './server.js';
-import { RowboatHooks } from './rowboat.js';
+import { OppulenceHooks } from './rowboat.js';
 import { PostgresStateStore } from './state.js';
 import { OryAdmin } from './ory.js';
 import { DrainState, installShutdownSignalHandlers, ShutdownCoordinator } from './shutdown.js';
@@ -9,7 +9,7 @@ import { DrainState, installShutdownSignalHandlers, ShutdownCoordinator } from '
 const cfg = loadConfig();
 const pool = new Pool({ connectionString: cfg.databaseUrl, max: 10 });
 const store = new PostgresStateStore(pool, cfg.sessionTtlMs);
-const hooks = new RowboatHooks(cfg.rowboatApi, cfg.upstreamTimeoutMs);
+const hooks = new OppulenceHooks(cfg.rowboatApi, cfg.upstreamTimeoutMs);
 const ory = new OryAdmin(cfg.ory.adminUrl, cfg.upstreamTimeoutMs);
 const drain = new DrainState();
 const app = buildApp(cfg, { store, hooks, ory, drain });

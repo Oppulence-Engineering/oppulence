@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 /**
  * Shared settings design system. Every tab composes these so spacing, borders,
  * and typography stay consistent (the dialog previously reinvented the row/section
- * pattern per tab). The settings dialog is intentionally rounded (`.rowboat-settings`
+ * pattern per tab). The settings dialog is intentionally rounded (`.oppulence-settings`
  * re-rounds inside the portal), so these use soft borders + subtle surfaces.
  */
 

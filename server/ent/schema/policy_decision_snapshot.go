@@ -5,12 +5,12 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/mixin"
 )
 
 // PolicyDecisionSnapshot is one immutable OutboundConsole preflight result for
 // one exact action revision (RFC 030). A new evaluation always creates a new
-// snapshot; nothing updates an existing one. Rowboat never composes the
+// snapshot; nothing updates an existing one. Oppulence never composes the
 // decision itself: suppression, verification, ownership, and policy rules are
 // owned by the facade, and an unavailable facade means no decision (fail
 // closed), never a synthesized pass.

@@ -20,13 +20,13 @@ const SuccessSchema = z.object({
 
 type RunEventType = z.infer<typeof RunEvent>;
 
-export interface RowboatApiOptions {
+export interface OppulenceApiOptions {
     baseUrl?: string;
 }
 
-export class RowboatApi {
+export class OppulenceApi {
     readonly baseUrl: string;
-    constructor({ baseUrl }: RowboatApiOptions = {}) {
+    constructor({ baseUrl }: OppulenceApiOptions = {}) {
         this.baseUrl = baseUrl ?? process.env.ROWBOATX_SERVER_URL ?? "http://127.0.0.1:3000";
     }
 

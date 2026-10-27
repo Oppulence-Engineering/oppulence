@@ -12,7 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/agentdefinitionhistory"
 	"github.com/flume/enthistory"
 	"github.com/google/uuid"
 )

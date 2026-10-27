@@ -475,7 +475,7 @@ export const GenericWebhookBody = zod
       .describe(
         "Human-readable gist used in routing prompts. Defaults to a compact payload summary when omitted.",
       ),
-    userId: zod.string().describe("Rowboat user id (UUID) owning the event."),
+    userId: zod.string().describe("Oppulence user id (UUID) owning the event."),
   })
   .describe(
     "Signed generic webhook event ingestion. Defaults source=webhook; connector/provider gateways may send source=mcp, github, linear, or stripe. The receiver resolves the owner from userId.",
@@ -660,7 +660,7 @@ export const GoogleWebhook500Response = zod
   );
 
 /**
- * Receives Slack Events API deliveries, verified via the X-Slack-Signature HMAC (v0:{ts}:{body} with SLACK_SIGNING_SECRET, ±5 minute replay window). Handles the url_verification handshake; event_callback deliveries for workspaces mapped to a Rowboat user are ingested, others are acknowledged and dropped.
+ * Receives Slack Events API deliveries, verified via the X-Slack-Signature HMAC (v0:{ts}:{body} with SLACK_SIGNING_SECRET, ±5 minute replay window). Handles the url_verification handshake; event_callback deliveries for workspaces mapped to a Oppulence user are ingested, others are acknowledged and dropped.
  * @summary Slack Events API webhook
  */
 export const SlackWebhookBody = zod

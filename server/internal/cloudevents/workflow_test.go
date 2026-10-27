@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/llm"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/quota"
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/temporal"
 	"go.uber.org/zap"

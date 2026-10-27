@@ -1,6 +1,6 @@
 # simulation_runner
 
-Async Python worker that executes Rowboat test runs against a workflow and writes verdicts back to MongoDB.
+Async Python worker that executes Oppulence test runs against a workflow and writes verdicts back to MongoDB.
 
 ## What it does
 
@@ -9,7 +9,7 @@ Async Python worker that executes Rowboat test runs against a workflow and write
 1. Atomically claims the run (`pending` → `running`) via `find_one_and_update`.
 2. Loads the run's `TestSimulation`s and the API key for the `projectId`.
 3. For each simulation, calls `simulate_simulation` (`simulation.py`):
-   - Uses OpenAI (`gpt-4.1`) to role-play a customer against the Rowboat workflow using `StatefulChat`.
+   - Uses OpenAI (`gpt-4.1`) to role-play a customer against the Oppulence workflow using `StatefulChat`.
    - Runs up to `max_iterations` turns (default 5).
    - Evaluates the transcript against `passCriteria` with a JSON-mode call.
    - Persists a `TestResult` (verdict, details, transcript) per simulation.
@@ -43,7 +43,7 @@ Defined in `scenario_types.py` (pydantic):
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `MONGODB_URI` | `mongodb://localhost:27017/rowboat` | Mongo connection string |
-| `ROWBOAT_API_HOST` | `http://127.0.0.1:3000` | Rowboat backend used by the `rowboat` Python client |
+| `OPPULENCE_API_HOST` | `http://127.0.0.1:3000` | Oppulence backend used by the `rowboat` Python client |
 | `OPENAI_API_KEY` | — | Required by the `openai` SDK for both role-play and evaluation calls |
 
 ## Local dev
@@ -61,10 +61,10 @@ The service will idle on a 5-second poll until a `test_runs` document appears in
 ## Docker
 
 ```bash
-docker build -t rowboat-simulation-runner .
+docker build -t oppulence-simulation-runner .
 docker run \
   -e OPENAI_API_KEY=sk-... \
   -e MONGODB_URI=mongodb://host.docker.internal:27017/rowboat \
-  -e ROWBOAT_API_HOST=http://host.docker.internal:3000 \
-  rowboat-simulation-runner
+  -e OPPULENCE_API_HOST=http://host.docker.internal:3000 \
+  oppulence-simulation-runner
 ```

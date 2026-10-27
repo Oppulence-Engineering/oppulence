@@ -12,11 +12,11 @@
 
 ## Summary
 
-Create an evaluation harness and release gates for email AI behavior. Email automation is high-risk because bad classification can hide important messages, bad cleanup can archive wanted mail, and bad drafting can embarrass the user. Inbox Zero includes rule testing and debug surfaces; Rowboat should go further by treating email classification, rule matching, draft generation, cleanup, and assistant mutations as evaluated systems with fixtures, metrics, and rollout gates.
+Create an evaluation harness and release gates for email AI behavior. Email automation is high-risk because bad classification can hide important messages, bad cleanup can archive wanted mail, and bad drafting can embarrass the user. Inbox Zero includes rule testing and debug surfaces; Oppulence should go further by treating email classification, rule matching, draft generation, cleanup, and assistant mutations as evaluated systems with fixtures, metrics, and rollout gates.
 
 ## Inbox Zero Implementation References
 
-Implementation agents should first read then inspect existing Inbox Zero tests before writing Rowboat equivalents:
+Implementation agents should first read then inspect existing Inbox Zero tests before writing Oppulence equivalents:
 
 - `apps/web/utils/ai/choose-rule/*.test.ts`
 - `apps/web/utils/ai/reply/*.test.ts`
@@ -28,7 +28,7 @@ Implementation agents should first read then inspect existing Inbox Zero tests b
 - `apps/web/utils/ai/security.test.ts`
 - `apps/web/utils/braintrust.ts`
 
-Use these for fixture design, edge-case discovery, and prompt/model regression gates. Rowboat should add synthetic fixtures and local-only user-correction fixtures before enabling autonomous actions.
+Use these for fixture design, edge-case discovery, and prompt/model regression gates. Oppulence should add synthetic fixtures and local-only user-correction fixtures before enabling autonomous actions.
 
 ## Goals
 
@@ -140,7 +140,7 @@ Rules should have:
 - Versioned test results.
 - Regression warnings before enabling edited rules.
 
-When a user corrects a rule outcome, Rowboat should offer:
+When a user corrects a rule outcome, Oppulence should offer:
 
 - Add example to eval set.
 - Update static condition.

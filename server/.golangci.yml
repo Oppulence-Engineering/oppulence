@@ -26,7 +26,7 @@ linters:
       - ent/proto # generated protobuf/gRPC bindings (entproto + protoc)
       # These analyzers have their own analysistest suite and run as a vettool;
       # golangci's package loader cannot type-check analyzer testdata stubs.
-      - tools/rowboatlint
+      - tools/oppulencelint
     rules:
       # internal/crypto and internal/version intentionally shadow stdlib names;
       # they are internal packages and never imported as the bare stdlib name.
@@ -66,7 +66,7 @@ linters:
           files:
             - "**/internal/**/*.go"
           deny:
-            - pkg: "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/cmd"
+            - pkg: "github.com/PlaybookMediaLLC/oppulence/server/cmd"
               desc: "RB-ARCH-001: internal packages must not import executable composition roots"
     gosec:
       # G101/G117 flag secret-shaped constant/JSON field names, including the

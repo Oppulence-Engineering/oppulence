@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruns"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/llm"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/quota"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )

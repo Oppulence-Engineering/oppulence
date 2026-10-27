@@ -1,4 +1,4 @@
-// Package qualityguard checks Rowboat-specific architecture invariants that
+// Package qualityguard checks Oppulence-specific architecture invariants that
 // general-purpose Go linters cannot infer.
 package qualityguard
 
@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-const modulePath = "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api"
+const modulePath = "github.com/PlaybookMediaLLC/oppulence/server"
 
 // Violation describes one architecture rule failure.
 type Violation struct {

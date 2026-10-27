@@ -1,7 +1,7 @@
 **Source Visual Truth**
 
 - Structural reference: `/var/folders/bp/77ytmsh11xzd9bjr8kyh60680000gn/T/codex-clipboard-uyIJpE.png`
-- Oppulence product-language reference: `/Users/dyomba/go/src/github.com/Oppulence-Engineering/rowboat/apps/rowboat-www/public/marketing/relationship-desktop.png`
+- Oppulence product-language reference: `clients/apps/web/public/marketing/relationship-desktop.png`
 - User-rejected first pass: `/var/folders/bp/77ytmsh11xzd9bjr8kyh60680000gn/T/codex-clipboard-eD3AFS.png`
 
 **Implementation Evidence**

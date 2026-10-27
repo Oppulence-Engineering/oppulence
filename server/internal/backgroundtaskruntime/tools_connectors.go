@@ -9,12 +9,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthconnection"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/googleapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/secrets"
 	"github.com/google/uuid"
 )
 
@@ -806,7 +806,7 @@ func (t *driveUpdateTool) AuditInfo(args json.RawMessage) ToolAudit {
 	return ToolAudit{TrustTier: TierAct, Connector: "google", Operation: operation, RequiredScopes: []string{ScopeDriveFile}}
 }
 func (t *driveUpdateTool) Description() string {
-	return "Update metadata or replace bounded text content for a Google Drive file accessible to Rowboat. Requires human approval."
+	return "Update metadata or replace bounded text content for a Google Drive file accessible to Oppulence. Requires human approval."
 }
 func (t *driveUpdateTool) JSONSchema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{"fileId":{"type":"string"},"name":{"type":"string"},"description":{"type":"string"},"mimeType":{"type":"string","description":"MIME type for metadata/content updates."},"replaceContent":{"type":"boolean","description":"When true, replace the file content with the provided text content."},"content":{"type":"string","description":"Replacement text content, max 256 KiB."}},"required":["fileId"]}`)

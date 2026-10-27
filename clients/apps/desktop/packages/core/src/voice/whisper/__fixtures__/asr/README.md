@@ -16,13 +16,13 @@ used by `whisper.eval.test.ts` to gate WER regressions across model/binary bumps
 ```
 
 The harness is **skipped** when the manifest is empty or no `whisper-cli` is
-available (`ROWBOAT_WHISPER_BIN` unset), so it never blocks CI before the corpus
+available (`OPPULENCE_WHISPER_BIN` unset), so it never blocks CI before the corpus
 lands. To run it locally: add clips + entries here, build a binary
 (`vendor/whisper/build.sh`), download the eval model, and:
 
 ```bash
-ROWBOAT_WHISPER_BIN=/path/to/whisper-cli \
-ROWBOAT_WHISPER_EVAL_MODEL=~/.solomon-ai/models/ggml-base.en-q5_1.bin \
+OPPULENCE_WHISPER_BIN=/path/to/whisper-cli \
+OPPULENCE_WHISPER_EVAL_MODEL=~/.solomon-ai/models/ggml-base.en-q5_1.bin \
   npx vitest run src/voice/whisper/whisper.eval.test.ts
 ```
 

@@ -6,7 +6,7 @@ import { API_URL } from '../config/env.js';
 // In dev/tsc, fall back to process.env so local runs work too.
 const POSTHOG_KEY = process.env.POSTHOG_KEY ?? process.env.VITE_PUBLIC_POSTHOG_KEY ?? '';
 const POSTHOG_HOST = process.env.POSTHOG_HOST ?? process.env.VITE_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
-const APP_VERSION = (process.env.ROWBOAT_APP_VERSION ?? process.env.npm_package_version ?? '').trim();
+const APP_VERSION = (process.env.OPPULENCE_APP_VERSION ?? process.env.npm_package_version ?? '').trim();
 
 let client: PostHog | null = null;
 let initAttempted = false;
@@ -112,7 +112,7 @@ export function identify(userId: string, properties?: Record<string, unknown>): 
   const ph = getClient();
   if (!ph) return;
   try {
-    // Alias the anonymous installation ID to the rowboat user ID so historical
+    // Alias the anonymous installation ID to the oppulence user ID so historical
     // anonymous events are linked to the identified user.
     ph.alias({ distinctId: userId, alias: getInstallationId() });
     ph.identify({

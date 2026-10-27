@@ -1,7 +1,7 @@
 export const skill = String.raw`
 # Agent and Workflow Authoring
 
-Load this skill whenever a user wants to inspect, create, or update agents inside the Rowboat workspace.
+Load this skill whenever a user wants to inspect, create, or update agents inside the Oppulence workspace.
 
 ## Core Concepts
 
@@ -86,7 +86,7 @@ Agent files MUST conform to this exact schema. Invalid agents will fail to load.
 Tools in agents must follow one of three types. Each has specific required fields.
 
 ### 1. Builtin Tools
-Internal Rowboat tools (executeCommand, file operations, MCP queries, etc.)
+Internal Oppulence tools (executeCommand, file operations, MCP queries, etc.)
 
 **Schema:**
 \`\`\`json

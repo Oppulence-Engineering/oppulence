@@ -2,4 +2,4 @@
 
 package ent
 
-// The schema-stitching logic is generated in github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/runtime/runtime.go
+// The schema-stitching logic is generated in github.com/PlaybookMediaLLC/oppulence/server/ent/runtime/runtime.go

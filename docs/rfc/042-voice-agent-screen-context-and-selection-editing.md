@@ -4,28 +4,28 @@
 | -------------- | -------------------------------------------------------------------------------------------------------------------- |
 | **RFC**        | 042                                                                                                                  |
 | **Status**     | Draft — rescoped by RFC 055                                                                                          |
-| **Track**      | Rowboat desktop assistant · consented context                                                                        |
+| **Track**      | Oppulence desktop assistant · consented context                                                                        |
 | **Owners**     | `clients/apps/desktop` desktop, core assistant, security                                                                           |
 | **Created**    | 2026-08-12                                                                                                           |
 | **Updated**    | 2026-08-21                                                                                                           |
-| **Depends on** | [RFC 034](./034-floating-overlay-assistant.md), [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) |
+| **Depends on** | [RFC 034](./034-floating-overlay-assistant.md), [RFC 055](./055-capture-product-boundary-and-oppulence-integration.md) |
 | **Related**    | [RFC 014](./014-live-note-observability-cost-and-provenance.md), [RFC 036](./036-relationship-state-engine.md)       |
-| **Supersedes** | The Rowboat-owned selection-editing scope in the original RFC 042                                                    |
+| **Supersedes** | The Oppulence-owned selection-editing scope in the original RFC 042                                                    |
 
 ## 1. Decision
 
-Rowboat accepts explicitly consented desktop context for **relationship-aware
+Oppulence accepts explicitly consented desktop context for **relationship-aware
 assistant commands**. Generic dictation, selection rewriting, and local text
 transforms belong to the separate capture product under RFC 055.
 
-Rowboat's remaining desktop-context capability is:
+Oppulence's remaining desktop-context capability is:
 
-- the user invokes Rowboat explicitly;
+- the user invokes Oppulence explicitly;
 - selected text and, optionally, a screenshot are captured for that invocation;
 - the assistant uses that context together with authorized relationship data;
 - context is treated as untrusted input, visibly disclosed, and recorded in
   provenance; and
-- consequential external actions still use Rowboat's approval runtime.
+- consequential external actions still use Oppulence's approval runtime.
 
 ## 2. Current state
 
@@ -38,7 +38,7 @@ inert data through an injection-resistant prompt contract.
 Those are existing compatibility surfaces. RFC 042 does not expand them into a
 second capture-product roadmap.
 
-The Rowboat-specific gap is an opt-in, provenance-aware context envelope for
+The Oppulence-specific gap is an opt-in, provenance-aware context envelope for
 the relationship assistant, especially screenshot context.
 
 ## 3. Context envelope
@@ -70,7 +70,7 @@ command produces an evidence-bearing artifact under RFC 036.
 - A screenshot is downscaled before provider submission and discarded after
   the invocation unless the user explicitly saves it.
 - Provider routing follows the same local/cloud disclosure used by the rest of
-  Rowboat.
+  Oppulence.
 - Provenance records which context types were supplied without logging secret
   content into operational events.
 - Any requested external side effect becomes a proposal; context possession
@@ -79,7 +79,7 @@ command produces an evidence-bearing artifact under RFC 036.
 ## 5. Capture-product boundary
 
 The capture product owns hotkeys for dictation, translation, selection
-rewriting, cursor paste, and local undo. Rowboat may receive a context envelope
+rewriting, cursor paste, and local undo. Oppulence may receive a context envelope
 through a versioned adapter, but it does not reach into capture-product state or
 reuse its database.
 
@@ -94,7 +94,7 @@ combinations and ownership; shortcut implementation remains product-local.
 - The UI shows whether context will stay local or go to a configured provider.
 - No captured context silently becomes durable graph evidence.
 - External actions remain propose-only until approved.
-- Generic selection editing has no new Rowboat roadmap work under this RFC.
+- Generic selection editing has no new Oppulence roadmap work under this RFC.
 
 ## 7. Reference implementation provenance
 

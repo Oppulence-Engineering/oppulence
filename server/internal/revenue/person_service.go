@@ -11,14 +11,14 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/person"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/personattribute"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/personinteractionstat"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/personmergecandidate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipparticipant"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
 )
 
 // PersonFilter narrows a person listing.

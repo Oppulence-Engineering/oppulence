@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	oauthrs "github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server"
 	"github.com/golang-jwt/jwt/v5"
 )
 

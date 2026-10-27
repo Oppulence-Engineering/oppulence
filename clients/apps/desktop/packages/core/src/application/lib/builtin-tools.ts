@@ -105,7 +105,7 @@ const LLMPARSE_MIME_TYPES: Record<string, string> = {
     '.tiff': 'image/tiff',
 };
 
-function rowboatIntegrationServerName(connector: string): string {
+function oppulenceIntegrationServerName(connector: string): string {
     return `rowboat-${connector.toLowerCase().replace(/[^a-z0-9_-]+/g, "-")}`;
 }
 
@@ -1334,11 +1334,11 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
     },
 
     // ========================================================================
-    // Rowboat Integration Meta-Tools
+    // Oppulence Integration Meta-Tools
     // ========================================================================
 
     'rowboat-list-integrations': {
-        description: 'List managed Rowboat integrations and their connection status, MCP tools, and template blocks. Use this before working with external services.',
+        description: 'List managed Oppulence integrations and their connection status, MCP tools, and template blocks. Use this before working with external services.',
         inputSchema: z.object({
             query: z.string().optional().describe('Optional service or capability to filter for, such as "github", "invoices", or "crm".'),
         }),
@@ -1369,7 +1369,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
                         description: connector.description,
                         authType: connector.authType,
                         connected: connector.connected,
-                        serverName: rowboatIntegrationServerName(connector.name),
+                        serverName: oppulenceIntegrationServerName(connector.name),
                         templateBlocks: connector.templateBlocks ?? [],
                         mcpTools: connector.mcpTools ?? [],
                         nativeTools: connector.nativeTools ?? [],
@@ -1394,7 +1394,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
     },
 
     'rowboat-connect-integration': {
-        description: 'Show a user-facing connect card for a managed Rowboat integration. Call this when an integration is not connected yet.',
+        description: 'Show a user-facing connect card for a managed Oppulence integration. Call this when an integration is not connected yet.',
         inputSchema: z.object({
             connector: z.string().describe('Connector name from rowboat-list-integrations, such as "github", "hubspot", "notion", or "canvas".'),
         }),
@@ -1429,7 +1429,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
     },
 
     'rowboat-configure-integration-mcp': {
-        description: 'Mint an MCP credential for a connected Rowboat integration and configure it as a local MCP server. Call listMcpTools next with the returned serverName.',
+        description: 'Mint an MCP credential for a connected Oppulence integration and configure it as a local MCP server. Call listMcpTools next with the returned serverName.',
         inputSchema: z.object({
             connector: z.string().describe('Connector name from rowboat-list-integrations. The connector must already be connected.'),
         }),
@@ -1466,7 +1466,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
 
                 const token = await getConnectorMCPTokenViaBackend(integration.name);
                 const tokenType = token.token_type || 'Bearer';
-                const serverName = rowboatIntegrationServerName(integration.name);
+                const serverName = oppulenceIntegrationServerName(integration.name);
                 const repo = container.resolve<IMcpConfigRepo>('mcpConfigRepo');
                 await repo.upsert(serverName, {
                     type: 'http',

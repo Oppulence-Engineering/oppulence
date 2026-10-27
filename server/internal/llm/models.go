@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
 )
 
 type modelRow struct {

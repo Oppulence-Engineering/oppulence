@@ -11,14 +11,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitment"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/conversationintelligenceartifact"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueaction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueevidence"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -445,7 +445,7 @@ func (s *Service) ShareMutualActionPlan(
 			SetDedupeKey(dedupe).SetRevision(1).SetRevisionHash(actionInput.content(u.ID).Hash()).
 			SetReason("Draft an email to share this plan.").
 			SetRecipientEmail(rel.PrimaryEmail).SetProposedSubject(actionInput.ProposedSubject).
-			SetProposedMessage(message).SetExecutionMode(ExecModeDraft).SetExecutionOwner(OwnerRowboat).
+			SetProposedMessage(message).SetExecutionMode(ExecModeDraft).SetExecutionOwner(OwnerOppulence).
 			SetAssignedUserID(txu.ID).SetPriorityScore(70).AddEvidences(evidences...).Save(ctx)
 		if createErr != nil {
 			return MutualActionPlan{}, "", createErr

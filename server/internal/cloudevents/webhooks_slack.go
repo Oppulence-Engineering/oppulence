@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthconnection"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
 	"go.uber.org/zap"
 )
 
@@ -86,7 +86,7 @@ func (h *Handler) SlackWebhook(w http.ResponseWriter, r *http.Request) {
 
 	owner, ok := h.resolveSlackUser(r, envelope.TeamID)
 	if !ok {
-		// Ack to stop retries; the workspace isn't mapped to a Rowboat user.
+		// Ack to stop retries; the workspace isn't mapped to a Oppulence user.
 		metricUnresolved.WithLabelValues(SourceSlack).Inc()
 		h.log.Warn("slack event for unresolved workspace dropped", zap.String("teamId", envelope.TeamID))
 		w.WriteHeader(http.StatusOK)
@@ -175,7 +175,7 @@ func verifySlackSignature(secret, ts string, body []byte, got string, now time.T
 	return nil
 }
 
-// resolveSlackUser maps a Slack workspace (team_id) to the owning Rowboat
+// resolveSlackUser maps a Slack workspace (team_id) to the owning Oppulence
 // user via OAuthConnection(provider=slack, external_account_id=team_id),
 // written by the self-serve connect flow (internal/slack: /oauth/slack/start
 // → /v1/slack-oauth/claim).

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-import { proxyRowboatAPI } from "@/lib/auth/proxy";
+import { proxyOppulenceAPI } from "@/lib/auth/proxy";
 
 type RouteContext = {
   params: Promise<{ path: string[] }>;
@@ -8,7 +8,7 @@ type RouteContext = {
 
 async function handle(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
-  return proxyRowboatAPI(request, path);
+  return proxyOppulenceAPI(request, path);
 }
 
 export const GET = handle;

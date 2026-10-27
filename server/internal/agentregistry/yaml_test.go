@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentspec"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/agentspec"
 )
 
 func compile(t *testing.T, yaml string) agentspec.Compiled {

@@ -8,7 +8,7 @@
 | **Owners**            | `clients/apps/desktop` (knowledge graph) · `server` (shared entity spine, FGA)                                                                                                                                                                                                                                                                                                                                   |
 | **Created**           | 2026-06-10                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Last updated**      | 2026-08-27                                                                                                                                                                                                                                                                                                                                                                                                   |
-| **Depends on**        | [RFC 011 — Identity & Authorization](./complete-011-identity-and-authorization-plane.md), [RFC 015 — WorkOS FGA](./015-rowboat-platform-workos-fga-and-widget-auth.md) (org scoping)                                                                                                                                                                                                                         |
+| **Depends on**        | [RFC 011 — Identity & Authorization](./complete-011-identity-and-authorization-plane.md), [RFC 015 — WorkOS FGA](./015-oppulence-platform-workos-fga-and-widget-auth.md) (org scoping)                                                                                                                                                                                                                         |
 | **Enables / related** | [RFC 008 — Conduit & Eigen Faculties](./008-conduit-eigen-faculties.md) & [RFC 013 — Product Connector Fabric](./013-oppulence-product-connector-fabric.md) (the Mirror seam writes `resourceRefs`); [RFC 021 — Semantic Index](./complete-021-semantic-memory-index.md); [RFC 023 — Closed-Loop Actions](./023-closed-loop-actions.md); [RFC 026 — Finance Command Center](./026-finance-command-center.md) |
 | **Supersedes**        | none                                                                                                                                                                                                                                                                                                                                                                                                         |
 
@@ -101,7 +101,7 @@ identifiers: # deterministic match keys (for reconciliation)
 <product>:<type>:<externalId>
 product  = lowercase connector id (`[a-z][a-z0-9_-]{0,63}`)
 type     = lowercase product-defined record type (`[a-z][a-z0-9_-]{0,63}`)
-externalId = the product's own stable id (opaque to Rowboat)
+externalId = the product's own stable id (opaque to Oppulence)
 ```
 
 This mirrors the `resourceId` concept already named in [RFC 008](./008-conduit-eigen-faculties.md)/[013](./013-oppulence-product-connector-fabric.md) (e.g. `knowledge/Invoices/INV-456.md` → `resourceId: conduit:invoice:inv_456`) and generalises it to a **set** so one entity spans products. The grammar is connector-extensible rather than hard-coded to five products; product and type remain bounded while `externalId` is opaque and may contain additional colons.
@@ -224,7 +224,7 @@ shared domain can be genuinely ambiguous and must remain reviewable. A merged
 ## Security
 
 - **Privacy boundary is the core control**: only the projection allowlist (`id, kind, displayName, refs, identifiers, summary`) may sync up. Bodies, mirrored financial content, and secrets stay local. Enforced on **both** ends.
-- **FGA org scoping** ([RFC 015](./015-rowboat-platform-workos-fga-and-widget-auth.md)): every spine read/write checks org membership; cross-org access denied. Resolver never links across orgs.
+- **FGA org scoping** ([RFC 015](./015-oppulence-platform-workos-fga-and-widget-auth.md)): every spine read/write checks org membership; cross-org access denied. Resolver never links across orgs.
 - **No automatic identity merges** across deterministic-key collisions that imply different orgs; such cases require user confirmation.
 - Raw identifiers (tax ids, email domains, addresses) never leave the device. The desktop canonicalizes and sends only `sha256:v1:<64 lowercase hex>` fingerprints; the server rejects raw values. Fingerprints remain sensitive, org-scoped, omitted from generated Ent CRUD, and absent from logs/metric labels.
 

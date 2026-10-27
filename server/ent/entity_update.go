@@ -12,10 +12,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/entity"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/entityidentifier"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/entityresourceref"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
 	"github.com/google/uuid"
 )
 

@@ -1128,7 +1128,7 @@ function apiRun({
 function parseArgs(argv: string[]): CliArgs {
   const out: CliArgs = {
     workspaceDir: DEFAULT_WORKSPACE_DIR,
-    apiDb: process.env.ROWBOAT_API_DATABASE_URL || process.env.DATABASE_URL || DEFAULT_API_DB,
+    apiDb: process.env.OPPULENCE_API_DATABASE_URL || process.env.DATABASE_URL || DEFAULT_API_DB,
     skipDesktop: false,
     skipApi: false,
     dryRun: false,

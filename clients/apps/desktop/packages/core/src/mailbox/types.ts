@@ -8,9 +8,9 @@
  * these types on the way in and translate refs back into native ids on the way
  * out.
  *
- * Identity rule: every object carries both a stable Rowboat id (a deterministic
+ * Identity rule: every object carries both a stable Oppulence id (a deterministic
  * hash, see {@link ./ids}) and the opaque provider-native ids required to make
- * API calls. Product state keys on the Rowboat id; provider calls use the native
+ * API calls. Product state keys on the Oppulence id; provider calls use the native
  * ids.
  */
 
@@ -146,7 +146,7 @@ export type MailboxThread = {
   participants: MailboxParticipant[];
   latestMessageAt: number;
   unread: boolean;
-  /** Rowboat system/user category ids applied to the thread. */
+  /** Oppulence system/user category ids applied to the thread. */
   categories: string[];
   labels: string[];
   folderIds: string[];
@@ -171,7 +171,7 @@ export type MailboxFolder = MailboxLabel;
 // --- Queries ---------------------------------------------------------------
 
 /**
- * Product-level queue taxonomy. These are Rowboat concepts, not provider
+ * Product-level queue taxonomy. These are Oppulence concepts, not provider
  * labels; the store maps them onto local state.
  */
 export type MailboxQueue =

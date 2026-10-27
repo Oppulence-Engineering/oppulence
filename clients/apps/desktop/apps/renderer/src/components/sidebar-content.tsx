@@ -980,7 +980,7 @@ export function SidebarContentPanel({
       : null;
 
   return (
-    <Sidebar className="rowboat-sidebar border-r-0" variant="inset" collapsible="icon" {...props}>
+    <Sidebar className="oppulence-sidebar border-r-0" variant="inset" collapsible="icon" {...props}>
       <SidebarHeader className="titlebar-drag-region shrink-0 p-0">
         {/* Keep the sidebar toggle and quick actions in one compact chrome row.
             The icon rail leaves ~50px of content box — the actions cannot fit and

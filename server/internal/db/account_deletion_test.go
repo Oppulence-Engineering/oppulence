@@ -3,7 +3,7 @@ package db
 import (
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
 )
 
 // TestWorkspaceAuthoredTablesCoverTenantMaps keeps account deletion in step with

@@ -42,7 +42,7 @@ test.afterAll(async () => {
 
 test("packaged app boots, opens a window, and mounts the renderer", async () => {
   // Isolate state so the smoke run never touches a real user workspace.
-  const workdir = mkdtempSync(path.join(tmpdir(), "rowboat-e2e-"));
+  const workdir = mkdtempSync(path.join(tmpdir(), "oppulence-e2e-"));
 
   app = await electron.launch({
     executablePath: resolveBinary(),

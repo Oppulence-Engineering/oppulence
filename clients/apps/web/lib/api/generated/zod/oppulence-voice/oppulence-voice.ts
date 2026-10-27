@@ -187,7 +187,7 @@ export const RevokeVoiceAPIKey500Response = zod
   );
 
 /**
- * Validates content hash and idempotency before persisting one explicit Rowboat handoff.
+ * Validates content hash and idempotency before persisting one explicit Oppulence handoff.
  * @summary Ingest consented capture artifact
  */
 export const IngestCaptureArtifactBody = zod

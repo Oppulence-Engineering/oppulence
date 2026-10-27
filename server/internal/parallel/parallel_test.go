@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/parallel"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/parallel"
 )
 
 func testClient(t *testing.T, h http.Handler) *parallel.Client {

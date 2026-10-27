@@ -263,7 +263,7 @@ jobs:
 
       - name: Deploy Helm chart
         env:
-          ROWBOAT_WWW_SESSION_SECRET: ${{ secrets.ROWBOAT_WWW_SESSION_SECRET }}
+          OPPULENCE_WWW_SESSION_SECRET: ${{ secrets.ROWBOAT_WWW_SESSION_SECRET }}
         run: |
           set -euo pipefail
 
@@ -271,10 +271,10 @@ jobs:
           # values (envFrom secretRef). Production refuses to seal auth cookies
           # without it; fail fast rather than deploying a broken sign-in.
           EXTRA_SET=()
-          if [[ -n "${ROWBOAT_WWW_SESSION_SECRET:-}" ]]; then
-            EXTRA_SET+=(--set-string "secrets.ROWBOAT_WWW_SESSION_SECRET=${ROWBOAT_WWW_SESSION_SECRET}")
+          if [[ -n "${OPPULENCE_WWW_SESSION_SECRET:-}" ]]; then
+            EXTRA_SET+=(--set-string "secrets.ROWBOAT_WWW_SESSION_SECRET=${OPPULENCE_WWW_SESSION_SECRET}")
           else
-            echo "ROWBOAT_WWW_SESSION_SECRET repository secret is not set" >&2
+            echo "OPPULENCE_WWW_SESSION_SECRET repository secret is not set" >&2
             exit 1
           fi
 
@@ -344,7 +344,7 @@ jobs:
 
       - name: Smoke test public site
         env:
-          ROWBOAT_WWW_EXPECTED_API_BASE_URL: ${{ needs.resolve-context.outputs.deploy_environment == 'staging' && 'https://api.x.staging.oppulence.io' || 'https://api.oppulence.io' }}
+          OPPULENCE_WWW_EXPECTED_API_BASE_URL: ${{ needs.resolve-context.outputs.deploy_environment == 'staging' && 'https://api.x.staging.oppulence.io' || 'https://api.oppulence.io' }}
         run: scripts/rowboat-www-smoke.sh "${APP_URL}"
 
       - name: Diagnose rollout on failure

@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/connectorauditevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthpending"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/connectors"
 )
 
 func consentContextBody(state, challenge, subject string, scopes []string) string {
@@ -114,7 +114,7 @@ func TestPreConsentExactContractAndStrictRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 	if response.RequestID != requestID || response.Subject != "user_1" || response.Client.ID != "broker" ||
-		response.Client.DisplayName != "Rowboat Desktop" || response.Connector.ID != "canvas" ||
+		response.Client.DisplayName != "Oppulence Desktop" || response.Connector.ID != "canvas" ||
 		response.Connector.Audience != "mcp:canvas" || len(response.Scopes) != 2 {
 		t.Fatalf("unexpected context identities/catalog: %+v", response)
 	}

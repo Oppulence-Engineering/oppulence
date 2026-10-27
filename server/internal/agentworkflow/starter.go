@@ -3,7 +3,7 @@ package agentworkflow
 import (
 	"context"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
 )

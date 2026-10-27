@@ -19,7 +19,7 @@ coordinate across tools, services, and other agents while preserving consent,
 auditability, and user-side control. This RFC defines the boundary for
 agent-to-agent delegation and agent identity. It does not make A2A a near-term
 default runtime. It establishes the identity, permission, protocol, and
-observability primitives needed before Rowboat agents can safely delegate work
+observability primitives needed before Oppulence agents can safely delegate work
 outside a single run.
 
 The core decision: every delegation must be attributable to a user, organization,
@@ -30,10 +30,10 @@ agent, run, scope, and approval policy. No agent gets ambient authority.
 Current RFCs define cloud execution, connector tools, product faculties, and
 trust surfaces. They do not yet define what happens when:
 
-- one Rowboat agent asks another agent to perform a subtask
+- one Oppulence agent asks another agent to perform a subtask
 - a user-side desktop agent delegates to a hosted agent
-- a Rowboat agent calls an external agent over A2A or MCP-like protocols
-- an external agent asks Rowboat for data or action
+- a Oppulence agent calls an external agent over A2A or MCP-like protocols
+- an external agent asks Oppulence for data or action
 - a delegated task needs connector scopes or money-touching approval
 
 Without a first-class delegation model, agent integrations will either be too
@@ -42,7 +42,7 @@ weak to use or too powerful to trust.
 ## Goals
 
 - Define agent identities as auditable actors.
-- Support user-authorized delegation between Rowboat agents.
+- Support user-authorized delegation between Oppulence agents.
 - Provide a protocol adapter boundary for A2A and MCP-style integrations.
 - Bind delegated actions to connector scopes and consent records.
 - Preserve human approval gates for sensitive and money-touching actions.
@@ -65,11 +65,11 @@ weak to use or too powerful to trust.
 | Term             | Meaning                                                                                 |
 | ---------------- | --------------------------------------------------------------------------------------- |
 | User principal   | The human or organization identity from RFC 011.                                        |
-| Agent identity   | A named, versioned Rowboat or external agent actor.                                     |
+| Agent identity   | A named, versioned Oppulence or external agent actor.                                     |
 | Delegation       | A bounded request from one actor to another actor to perform work.                      |
 | Delegation token | A short-lived, scoped credential representing one delegation.                           |
 | Delegation chain | Ordered provenance from user to agent to sub-agent to tool/action.                      |
-| Protocol adapter | Boundary that translates Rowboat delegation semantics to A2A, MCP, or another protocol. |
+| Protocol adapter | Boundary that translates Oppulence delegation semantics to A2A, MCP, or another protocol. |
 
 ## Actor model
 
@@ -165,11 +165,11 @@ flowchart LR
     Delegation --> Adapter[Protocol adapter]
     Adapter --> A2A[A2A peer]
     Adapter --> MCP[MCP server/client]
-    Adapter --> Internal[Rowboat agent]
+    Adapter --> Internal[Oppulence agent]
 ```
 
 Protocol adapters are not trusted policy engines. They translate messages and
-credentials, then call back into Rowboat policy checks for data access and
+credentials, then call back into Oppulence policy checks for data access and
 actions.
 
 Adapters must support:
@@ -287,14 +287,14 @@ apply.
 
 ### Phase 1: Internal delegation
 
-- Allow one Rowboat runtime agent to delegate to another internal Rowboat
+- Allow one Oppulence runtime agent to delegate to another internal Oppulence
   capability behind a flag.
 - Use existing tool scopes and approval policies.
 - No external protocol adapters.
 
 ### Phase 2: Oppulence faculty delegation
 
-- Allow Rowboat agents to delegate scoped work to Conduit/Eigen/Cadence style
+- Allow Oppulence agents to delegate scoped work to Conduit/Eigen/Cadence style
   product faculties.
 - Preserve dual-review policy for action proposals.
 
@@ -724,7 +724,7 @@ Additional tests:
 ## Open questions
 
 - Which protocol should be the first adapter target: A2A, MCP client/server, or
-  a Rowboat-native internal adapter?
+  a Oppulence-native internal adapter?
 - Should agent identities be registered per tenant, globally, or both?
 - Should delegation records live in the Go service plane only, or also be
   mirrored into hosted platform project history?

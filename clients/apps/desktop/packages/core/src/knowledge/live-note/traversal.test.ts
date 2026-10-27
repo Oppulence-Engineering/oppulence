@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-livenote-traversal-test");
+const TEST_WORKDIR = vi.hoisted(() => "/tmp/oppulence-livenote-traversal-test");
 vi.mock("../../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
 import {
@@ -62,8 +62,8 @@ describe("absPath traversal", () => {
   });
 
   it("refuses an absolute path", async () => {
-    await expect(setLiveNote("/tmp/rowboat-absolute.md", LIVE)).rejects.toThrow();
-    expect(fs.existsSync("/tmp/rowboat-absolute.md")).toBe(false);
+    await expect(setLiveNote("/tmp/oppulence-absolute.md", LIVE)).rejects.toThrow();
+    expect(fs.existsSync("/tmp/oppulence-absolute.md")).toBe(false);
   });
 
   it("refuses to delete outside, and the file survives", async () => {

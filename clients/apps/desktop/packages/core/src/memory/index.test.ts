@@ -4,7 +4,7 @@ import path from 'path';
 
 // Isolate WorkDir to a temp dir, capture analytics, and replace the embedder with
 // a deterministic 3-dim fake so the façade can be exercised end-to-end offline.
-const TEST_WORKDIR = vi.hoisted(() => '/tmp/rowboat-mem-index-test');
+const TEST_WORKDIR = vi.hoisted(() => '/tmp/oppulence-mem-index-test');
 const { captureSpy } = vi.hoisted(() => ({ captureSpy: vi.fn() }));
 
 vi.mock('../config/config.js', async (io) => ({

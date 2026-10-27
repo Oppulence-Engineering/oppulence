@@ -12,7 +12,7 @@ import createPresentationsSkill from "./create-presentations/skill.js";
 import appNavigationSkill from "./app-navigation/skill.js";
 import browserControlSkill from "./browser-control/skill.js";
 import codeWithAgentsSkill from "./code-with-agents/skill.js";
-import rowboatIntegrationSkill from "./rowboat-integration/skill.js";
+import oppulenceIntegrationSkill from "./rowboat-integration/skill.js";
 import liveNoteSkill from "./live-note/skill.js";
 import backgroundTaskSkill from "./background-task/skill.js";
 import notifyUserSkill from "./notify-user/skill.js";
@@ -88,9 +88,9 @@ const definitions: SkillDefinition[] = [
   },
   {
     id: "rowboat-integration",
-    title: "Rowboat Integration",
-    summary: "Connect to managed Rowboat integrations and execute their authenticated MCP tools.",
-    content: rowboatIntegrationSkill,
+    title: "Oppulence Integration",
+    summary: "Connect to managed Oppulence integrations and execute their authenticated MCP tools.",
+    content: oppulenceIntegrationSkill,
   },
   {
     id: "deletion-guardrails",

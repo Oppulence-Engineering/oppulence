@@ -11,15 +11,15 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationattachment"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationinteraction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationprivacypolicy"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailbodycache"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailmessagemeta"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 )
 
 const (

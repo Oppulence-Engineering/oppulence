@@ -46,7 +46,7 @@ describe("WhisperService.diagnose", () => {
   });
 
   it("honors the configured model and language", async () => {
-    const service = new WhisperService("/tmp/rowboat-whisper-test", () => {});
+    const service = new WhisperService("/tmp/oppulence-whisper-test", () => {});
     const pcm16 = new Int16Array(32000);
 
     const result = await service.diagnose({
@@ -69,7 +69,7 @@ describe("WhisperService.diagnose", () => {
   });
 
   it("defaults diagnostic language to English", async () => {
-    const service = new WhisperService("/tmp/rowboat-whisper-test", () => {});
+    const service = new WhisperService("/tmp/oppulence-whisper-test", () => {});
 
     await service.diagnose({
       pcm16: new Int16Array(16000),
@@ -99,7 +99,7 @@ describe("WhisperService.benchmark", () => {
       rtf: 8,
       durationMs: 500,
     });
-    const service = new WhisperService("/tmp/rowboat-whisper-test", () => {}, {}, store);
+    const service = new WhisperService("/tmp/oppulence-whisper-test", () => {}, {}, store);
 
     await expect(
       service.benchmark({ model: "base.en-q5_1", sampleSeconds: 10 }),

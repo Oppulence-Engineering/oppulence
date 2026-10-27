@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in contributing to Rowboat (Oppulence Engineering fork). This document covers what you need to know to land changes successfully.
+Thanks for your interest in contributing to Oppulence, Oppulence Engineering's fork of Rowboat. This document covers what you need to know to land changes successfully.
 
 ## Repository layout
 

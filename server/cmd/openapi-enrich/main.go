@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/openapidoc"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/openapidoc"
 )
 
 func main() {

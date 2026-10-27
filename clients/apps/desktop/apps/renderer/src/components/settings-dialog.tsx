@@ -1705,7 +1705,7 @@ export function SettingsDialog({
         // important modifier is required because tailwind-merge does not treat
         // these arbitrary data-variants as conflicting, so animate-out survives
         // in the class list and would otherwise win on source order.
-        className="rowboat-settings settings-workspace inset-0 top-0 left-0 h-svh w-screen max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none border-0 p-0 shadow-none sm:max-w-none data-[state=closed]:[animation:none]!"
+        className="oppulence-settings settings-workspace inset-0 top-0 left-0 h-svh w-screen max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none border-0 p-0 shadow-none sm:max-w-none data-[state=closed]:[animation:none]!"
         showCloseButton={false}
       >
         <DialogTitle className="sr-only">Settings</DialogTitle>

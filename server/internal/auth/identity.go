@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/termsassent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/deletedidentity"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/termsassent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	oauthrs "github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server"
 	"go.uber.org/zap"
 )
 

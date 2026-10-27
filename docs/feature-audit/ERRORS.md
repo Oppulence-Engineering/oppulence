@@ -1,4 +1,4 @@
-# ERRORS — Phase 2 Testing Findings (Rowboat Desktop `clients/apps/desktop`)
+# ERRORS — Phase 2 Testing Findings (Oppulence Desktop `clients/apps/desktop`)
 
 Defects found by tracing every user story in `FEATURE_AUDIT.csv` through renderer -> IPC -> core. Each finding carries `file:line` evidence so it is independently checkable. `Status` tracks Phase 3 fixes.
 
@@ -18,9 +18,9 @@ Defects found by tracing every user story in `FEATURE_AUDIT.csv` through rendere
 ### E40 — legacy integration vendor: Migration qualification · Logistical · _Verified_
 
 - **Feature rows:** F412
-- **Issue:** The "already migrated" early-out checks the legacy literal mode==='rowboat', but native managed Google connects stamp mode='solomon'; a signed-in native-Google user who still has a legacy integration vendor Gmail/Calendar account falls through and has it silently deleted plus a spurious reconnect modal.
+- **Issue:** The "already migrated" early-out checks the legacy literal mode==='oppulence', but native managed Google connects stamp mode='solomon'; a signed-in native-Google user who still has a legacy integration vendor Gmail/Calendar account falls through and has it silently deleted plus a spurious reconnect modal.
 - **Evidence:** clients/apps/desktop/packages/core/src/migrations/legacy-integration-vendor-google-migration.ts:110; clients/apps/desktop/apps/main/src/oauth-handler.ts:579
-- **Proposed fix:** Replace the literal check with isManagedAuthMode(googleConnection.mode) so both solomon and legacy rowboat early-out.
+- **Proposed fix:** Replace the literal check with isManagedAuthMode(googleConnection.mode) so both solomon and legacy oppulence early-out.
 
 ### E55 — Voice Commands: Voice command mode flow · Logistical · _Deferred_
 
@@ -421,7 +421,7 @@ Defects found by tracing every user story in `FEATURE_AUDIT.csv` through rendere
 ### E53 — Onboarding: Completion: summary · UX · _Verified_
 
 - **Feature rows:** F440
-- **Issue:** connectedProviders is derived from all provider keys including the product provider solomon, so after rowboat-path sign-in with no data sources hasConnections is true and the completion step shows a "Connected" card with an empty body.
+- **Issue:** connectedProviders is derived from all provider keys including the product provider solomon, so after oppulence-path sign-in with no data sources hasConnections is true and the completion step shows a "Connected" card with an empty body.
 - **Evidence:** clients/apps/desktop/apps/renderer/src/components/onboarding/steps/completion-step.tsx:10-11,92-113; clients/apps/desktop/packages/core/src/auth/providers.ts:129-131
 - **Proposed fix:** Exclude the product provider from connectedProviders/hasConnections.
 

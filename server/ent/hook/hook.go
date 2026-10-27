@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
 )
 
 // The AccountDeletionChallengeFunc type is an adapter to allow the use of ordinary

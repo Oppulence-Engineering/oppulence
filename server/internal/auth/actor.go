@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	oauthrs "github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server"
 	"github.com/google/uuid"
 )
 

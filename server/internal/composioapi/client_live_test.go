@@ -10,8 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composioapi"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/composioapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
 )
 
 // TestExecuteToolReachesALiveConnectedAccount proves the full brokered path: the

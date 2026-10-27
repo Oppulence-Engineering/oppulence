@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/googlewatch"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
 )
 
 // GoogleWatchDelete is the builder for deleting a GoogleWatch entity.

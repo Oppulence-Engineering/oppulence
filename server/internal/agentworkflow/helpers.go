@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
 )
 
 // seedTranscript builds a turn's starting transcript deterministically: the
@@ -31,7 +31,7 @@ func seedTranscript(start SessionStart, summaries []TurnSummary, input string) [
 // runtime guardrails. Pure string building — deterministic, safe in workflow code.
 func buildAgentSystemPrompt(start SessionStart) string {
 	var b strings.Builder
-	b.WriteString("You are a durable Rowboat agent running in the cloud.\n\n")
+	b.WriteString("You are a durable Oppulence agent running in the cloud.\n\n")
 	if strings.TrimSpace(start.Instructions) != "" {
 		b.WriteString("Instructions:\n")
 		b.WriteString(start.Instructions)

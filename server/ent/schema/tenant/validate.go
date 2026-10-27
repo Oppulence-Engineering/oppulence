@@ -33,7 +33,7 @@ func ValidateHook() gen.Hook {
 				}
 				if !annotated {
 					if len(ownershipEdges) > 0 {
-						return fmt.Errorf("tenant schema %s has an ownership edge but no RowboatTenant annotation", node.Name)
+						return fmt.Errorf("tenant schema %s has an ownership edge but no OppulenceTenant annotation", node.Name)
 					}
 					continue
 				}

@@ -1,7 +1,7 @@
 # rowboat-api — build, test, lint, codegen, migrations.
 
 SHELL := /bin/bash
-MODULE := github.com/Oppulence-Engineering/rowboat/apps/rowboat-api
+MODULE := github.com/PlaybookMediaLLC/oppulence/server
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
 DATE    ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -91,11 +91,11 @@ architecture:
 	go test ./internal/qualityguard -run 'TestRepositoryGuard' -count=1
 	$(ARCH_GO) --color=no
 
-.PHONY: rowboatlint
-rowboatlint:
-	go test ./tools/rowboatlint/... -count=1
-	go build -o /tmp/rowboatlint ./tools/rowboatlint
-	go vet -vettool=/tmp/rowboatlint ./internal/... ./cmd/...
+.PHONY: oppulencelint
+oppulencelint:
+	go test ./tools/oppulencelint/... -count=1
+	go build -o /tmp/oppulencelint ./tools/oppulencelint
+	go vet -vettool=/tmp/oppulencelint ./internal/... ./cmd/...
 
 .PHONY: ruleguard
 ruleguard:
@@ -133,7 +133,7 @@ security:
 	$(GITLEAKS) git .. --config ../.gitleaks.toml --gitleaks-ignore-path ../.gitleaksignore --redact --no-banner
 
 .PHONY: verify
-verify: fmt-check lint architecture rowboatlint ruleguard structural policy migration-validate mod-verify test
+verify: fmt-check lint architecture oppulencelint ruleguard structural policy migration-validate mod-verify test
 
 .PHONY: verify-ci
 verify-ci: verify migration-lint test-race security

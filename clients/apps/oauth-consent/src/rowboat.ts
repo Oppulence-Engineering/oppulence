@@ -41,7 +41,7 @@ export const ConsentContextSchema = z
     client: z
       .object({
         id: z.string().min(1),
-        display_name: z.literal('Rowboat Desktop'),
+        display_name: z.literal('Oppulence Desktop'),
       })
       .strict(),
     connector: z
@@ -98,7 +98,7 @@ export interface AuditRequest {
   result?: string;
 }
 
-export class RowboatHooks {
+export class OppulenceHooks {
   constructor(
     private readonly cfg: Config['rowboatApi'],
     private readonly timeoutMs: number,

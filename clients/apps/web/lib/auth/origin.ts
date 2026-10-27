@@ -8,13 +8,13 @@ import type { NextRequest } from "next/server";
  * Behind the ingress, `request.nextUrl.origin` reflects the container bind
  * address (e.g. https://0.0.0.0:8080), which WorkOS rejects as an invalid
  * redirect_uri. Resolution order, most authoritative first:
- *   1. ROWBOAT_WWW_PUBLIC_APP_URL — a configured canonical origin. Not
+ *   1. OPPULENCE_WWW_PUBLIC_APP_URL — a configured canonical origin. Not
  *      spoofable, always correct; set this in deployed environments.
  *   2. x-forwarded-host / x-forwarded-proto — set by the ingress proxy.
  *   3. request.nextUrl.origin — direct/local requests.
  */
 export function publicOrigin(request: NextRequest): string {
-  const configured = process.env.ROWBOAT_WWW_PUBLIC_APP_URL;
+  const configured = process.env.OPPULENCE_WWW_PUBLIC_APP_URL;
   if (configured) {
     return configured.replace(/\/+$/, "");
   }

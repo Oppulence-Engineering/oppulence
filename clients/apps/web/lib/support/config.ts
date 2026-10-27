@@ -52,10 +52,10 @@ export function isUsableChatSecret(secret: string): boolean {
 }
 
 export function getSupportChatConfig(): SupportChatConfig {
-  const labels = process.env.ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS?.trim();
+  const labels = process.env.OPPULENCE_WWW_PLAIN_CHAT_LABEL_TYPE_IDS?.trim();
   return {
-    appId: process.env.ROWBOAT_WWW_PLAIN_CHAT_APP_ID?.trim() || "",
-    secret: normalizeChatSecret(process.env.ROWBOAT_WWW_PLAIN_CHAT_SECRET || ""),
+    appId: process.env.OPPULENCE_WWW_PLAIN_CHAT_APP_ID?.trim() || "",
+    secret: normalizeChatSecret(process.env.OPPULENCE_WWW_PLAIN_CHAT_SECRET || ""),
     labelTypeIds: (labels ? labels.split(",") : [DEFAULT_LABEL_TYPE_ID])
       .map((id) => id.trim())
       .filter(Boolean),
@@ -67,7 +67,7 @@ export function isPlainChatEnabled(): boolean {
   const { appId } = getSupportChatConfig();
   if (!appId) return false;
   if (isDevelopment()) {
-    return process.env.ROWBOAT_WWW_PLAIN_CHAT_ENABLED === "1";
+    return process.env.OPPULENCE_WWW_PLAIN_CHAT_ENABLED === "1";
   }
   return true;
 }
@@ -81,7 +81,7 @@ export function isPlainChatEnabled(): boolean {
  */
 export function shouldIdentifySupportChatCustomer(): boolean {
   if (!isUsableChatSecret(getSupportChatConfig().secret)) return false;
-  return process.env.ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY === "1";
+  return process.env.OPPULENCE_WWW_PLAIN_CHAT_IDENTIFY === "1";
 }
 
 /**

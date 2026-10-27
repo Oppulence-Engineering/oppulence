@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Turn Rowboat desktop voice from a working local Whisper path into a product-grade speech layer for dogfooding, push-to-talk, commands, meetings, model management, privacy, evaluation, and email workflows.
+**Goal:** Turn Oppulence desktop voice from a working local Whisper path into a product-grade speech layer for dogfooding, push-to-talk, commands, meetings, model management, privacy, evaluation, and email workflows.
 
 **Architecture:** Keep the local engine in main/core and expose typed IPC contracts through `clients/apps/desktop/packages/shared`. Renderer code should stay as thin capture/UI orchestration, while durable behavior such as command parsing, model health, auto-selection, diagnostics, and privacy policy lives in core. Each feature lands behind typed settings and tested seams so local Whisper, Deepgram, and future providers can share the same UX states.
 
-**Tech Stack:** Electron main/renderer, React, TypeScript, Zod IPC schemas, Vitest, whisper.cpp, CoreML/Metal capability probing, MessagePort streaming, existing Rowboat workspace/file IPC, existing email RFCs in `docs/rfc/email-*`.
+**Tech Stack:** Electron main/renderer, React, TypeScript, Zod IPC schemas, Vitest, whisper.cpp, CoreML/Metal capability probing, MessagePort streaming, existing Oppulence workspace/file IPC, existing email RFCs in `docs/rfc/email-*`.
 
 ---
 
@@ -2056,7 +2056,7 @@ describe("createVoiceEmailFileStore", () => {
   let dir: string;
 
   beforeEach(async () => {
-    dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-voice-email-"));
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-voice-email-"));
   });
 
   afterEach(async () => {
@@ -2379,7 +2379,7 @@ Run when a local model is installed:
 
 ```bash
 cd clients/apps/desktop
-ROWBOAT_WHISPER_BIN=clients/apps/desktop/vendor/whisper/darwin-arm64/whisper-cli ROWBOAT_WHISPER_EVAL_MODEL=base.en-q5_1 npm run test:whisper-eval
+OPPULENCE_WHISPER_BIN=clients/apps/desktop/vendor/whisper/darwin-arm64/whisper-cli OPPULENCE_WHISPER_EVAL_MODEL=base.en-q5_1 npm run test:whisper-eval
 ```
 
 Expected: PASS with WER and RTF printed for each fixture.
@@ -2521,7 +2521,7 @@ The implementation is complete only when all of these pass:
 
 ```bash
 cd clients/apps/desktop
-ROWBOAT_WHISPER_BIN=clients/apps/desktop/vendor/whisper/darwin-arm64/whisper-cli ROWBOAT_WHISPER_EVAL_MODEL=base.en-q5_1 npm run test:whisper-eval
+OPPULENCE_WHISPER_BIN=clients/apps/desktop/vendor/whisper/darwin-arm64/whisper-cli OPPULENCE_WHISPER_EVAL_MODEL=base.en-q5_1 npm run test:whisper-eval
 ```
 
 ## Risk Controls

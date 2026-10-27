@@ -220,7 +220,7 @@ export const PreConsentBody = zod
     challenge: zod.string().describe("Hydra consent challenge."),
     hydra_client_id: zod
       .string()
-      .describe("Hydra client id. Must match the configured Rowboat Desktop broker client."),
+      .describe("Hydra client id. Must match the configured Oppulence Desktop broker client."),
     requested_audience: zod
       .array(zod.string().describe("Connector audience."))
       .describe("Exactly one requested connector audience."),

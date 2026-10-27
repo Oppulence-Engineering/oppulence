@@ -58,7 +58,7 @@
     "lib/icon.tsx",
     "lib/api/generated/**",
     "quality/fixtures/**",
-    ".rowboat-contracts-*/**",
+    ".oppulence-contracts-*/**",
     "vendor/**",
     "sim-port/**",
     "lib/sim-port/**",

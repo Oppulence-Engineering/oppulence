@@ -1,4 +1,4 @@
-// Package optimistic defines Rowboat's Ent annotation for compare-and-swap aggregates.
+// Package optimistic defines Oppulence's Ent annotation for compare-and-swap aggregates.
 package optimistic
 
 import "entgo.io/ent/schema"
@@ -10,6 +10,6 @@ type Annotation struct {
 }
 
 // Name implements schema.Annotation.
-func (Annotation) Name() string { return "RowboatOptimisticLock" }
+func (Annotation) Name() string { return "OppulenceOptimisticLock" }
 
 var _ schema.Annotation = Annotation{}

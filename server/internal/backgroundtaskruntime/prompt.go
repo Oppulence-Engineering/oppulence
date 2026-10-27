@@ -16,7 +16,7 @@ const artifactSnapshotCap = 32 << 10 // 32 KiB
 // and cost control — change it only with a PromptVersion bump.
 func buildSystemPrompt(in RunInput) string {
 	var b strings.Builder
-	b.WriteString("You are executing a Rowboat background task in the cloud.\n\n")
+	b.WriteString("You are executing a Oppulence background task in the cloud.\n\n")
 	fmt.Fprintf(&b, "Task:\n- slug: %s\n- name: %s\n- trigger: %s\n", in.Slug, in.TaskName, in.Trigger)
 	if in.RequestedContext != "" {
 		fmt.Fprintf(&b, "- requested context: %s\n", in.RequestedContext)

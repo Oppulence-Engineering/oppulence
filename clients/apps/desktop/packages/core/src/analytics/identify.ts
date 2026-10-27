@@ -3,7 +3,7 @@ import { getBillingInfo } from '../billing/billing.js';
 import { identify } from './posthog.js';
 
 /**
- * If the user has rowboat OAuth tokens, fetch their billing info and
+ * If the user has oppulence OAuth tokens, fetch their billing info and
  * call posthog.identify(). Idempotent — safe to call on every app start.
  * Catches all errors so analytics never blocks app launch.
  */

@@ -91,14 +91,14 @@ Or manually:
 
 ```bash
 cd clients/apps/desktop
-API_URL=http://localhost:18080 ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT=9222 npm run dev
+API_URL=http://localhost:18080 OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT=9222 npm run dev
 ```
 
-Click **Sign in to Rowboat**. The API will return a login URL backed by the
+Click **Sign in to Oppulence**. The API will return a login URL backed by the
 local devstack issuer at `http://localhost:18090`; devstack auto-approves the
 flow and redirects back to the desktop loopback callback on `localhost:8080`.
 
-The `ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT` value is optional, but useful for
+The `OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT` value is optional, but useful for
 local QA. It exposes the Electron renderer to Chrome DevTools Protocol on port
 `9222`, so `agent-browser connect 9222` can inspect the running desktop.
 
@@ -140,9 +140,9 @@ cluster.
 ## Override defaults
 
 ```bash
-KIND_CLUSTER_NAME=rowboat-local \
-ROWBOAT_API_PORT=28080 \
-ROWBOAT_DEVSTACK_PORT=28090 \
+KIND_CLUSTER_NAME=oppulence-local \
+OPPULENCE_API_PORT=28080 \
+OPPULENCE_DEVSTACK_PORT=28090 \
 scripts/rowboat-api-kind.sh up
 ```
 

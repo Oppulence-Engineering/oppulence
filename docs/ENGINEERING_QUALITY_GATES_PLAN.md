@@ -26,7 +26,7 @@ All phases are landed. Files in parentheses.
       replacing the 5s boot.
 - [x] **L4 perf-lite** — `scripts/perf-lite.mjs` + `x-perf-lite.yml` (renderer bundle-size budget).
 - [x] **L5 perf regression gate** — rolling CI baseline wired into `desktop-perf-nightly.yml`
-      (cache + new `ROWBOAT_DESKTOP_PERF_REFRESH_BASELINE_ON_PASS` flag in `tools/desktop-perf`).
+      (cache + new `OPPULENCE_DESKTOP_PERF_REFRESH_BASELINE_ON_PASS` flag in `tools/desktop-perf`).
 - [x] **L5 nightly e2e matrix** — `x-e2e-nightly.yml` (Linux + macOS).
 - [x] **Docs** — `CONTRIBUTING.md` "Quality gates" section (setup, `--no-verify`, what runs where).
 
@@ -125,17 +125,17 @@ are incremental.
 
 **Reference matrix**
 
-| Project                                 | Hooks                              | e2e framework                  | Perf tests                               |
-| --------------------------------------- | ---------------------------------- | ------------------------------ | ---------------------------------------- |
-| VS Code                                 | husky `precommit`→hygiene (staged) | Playwright (packaged build)    | marks + vscode-perf + 20% threshold gate |
-| Signal Desktop                          | none (CI-enforced)                 | Playwright `_electron`         | **yes** (scheduled benchmarks + OTel)    |
-| Element Desktop                         | husky + lint-staged                | Playwright `_electron.launch`  | none                                     |
-| Joplin                                  | husky + lint-staged (no tsc)       | `@playwright/test`             | none                                     |
-| Bitwarden (desktop)                     | husky + lint-staged                | jest only (no GUI e2e)         | none                                     |
-| Mattermost desktop                      | none                               | `@playwright/test` (built app) | none                                     |
-| Logseq                                  | none                               | Playwright (Java/Clojure)      | none                                     |
-| Standard Notes                          | commitlint cfg unused              | mocha-headless / AVA           | none                                     |
-| **rowboat `clients/apps/desktop` (us)** | **none → P0**                      | **boot-smoke only → P1**       | **tiered Go gate (ahead)**               |
+| Project                                   | Hooks                              | e2e framework                  | Perf tests                               |
+| ----------------------------------------- | ---------------------------------- | ------------------------------ | ---------------------------------------- |
+| VS Code                                   | husky `precommit`→hygiene (staged) | Playwright (packaged build)    | marks + vscode-perf + 20% threshold gate |
+| Signal Desktop                            | none (CI-enforced)                 | Playwright `_electron`         | **yes** (scheduled benchmarks + OTel)    |
+| Element Desktop                           | husky + lint-staged                | Playwright `_electron.launch`  | none                                     |
+| Joplin                                    | husky + lint-staged (no tsc)       | `@playwright/test`             | none                                     |
+| Bitwarden (desktop)                       | husky + lint-staged                | jest only (no GUI e2e)         | none                                     |
+| Mattermost desktop                        | none                               | `@playwright/test` (built app) | none                                     |
+| Logseq                                    | none                               | Playwright (Java/Clojure)      | none                                     |
+| Standard Notes                            | commitlint cfg unused              | mocha-headless / AVA           | none                                     |
+| **oppulence `clients/apps/desktop` (us)** | **none → P0**                      | **boot-smoke only → P1**       | **tiered Go gate (ahead)**               |
 
 ---
 

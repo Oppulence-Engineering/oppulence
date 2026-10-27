@@ -3,7 +3,7 @@ package openapidoc
 import (
 	"sort"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/pricing"
 )
 
 const aiModelDescription = "AI model loads the priced list. The request sends no filter. The list is every model this workspace can choose, in order."

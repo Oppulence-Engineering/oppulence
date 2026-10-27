@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 // vi.hoisted runs before imports, so this has to be a literal.
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-scan-cost-test");
+const TEST_WORKDIR = vi.hoisted(() => "/tmp/oppulence-scan-cost-test");
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
 

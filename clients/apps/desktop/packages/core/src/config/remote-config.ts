@@ -3,7 +3,7 @@ import { API_URL } from "./env.js";
 /**
  * Per-process cache of the unauthenticated `GET /v1/config` response from
  * the api. The api returns `{ appUrl, supabaseUrl, websocketApiUrl }` —
- * we use this to discover the webapp host (where the rowboat-mode OAuth
+ * we use this to discover the webapp host (where the oppulence-mode OAuth
  * flow runs) without hardcoding it on the desktop side.
  *
  * Cached as a Promise so concurrent first-callers all await the same fetch

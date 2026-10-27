@@ -11,7 +11,7 @@ import fs from 'fs';
 import path from 'path';
 
 // Isolate the desktop data dir; everything else (embed, auth, retriever) is REAL.
-const TEST_WORKDIR = vi.hoisted(() => '/tmp/rowboat-mem-e2e-metered');
+const TEST_WORKDIR = vi.hoisted(() => '/tmp/oppulence-mem-e2e-metered');
 vi.mock('../config/config.js', async (io) => ({
     ...(await io<typeof import('../config/config.js')>()),
     WorkDir: TEST_WORKDIR,

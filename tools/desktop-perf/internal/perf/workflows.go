@@ -13,14 +13,14 @@ func waitForInteractive(launchStarted time.Time) (float64, error) {
 		"Good morning",
 		"New chat",
 		"Welcome to Solomon AI",
-		"Welcome to Rowboat",
+		"Welcome to Oppulence",
 		"Connect Your Accounts",
 		"You're All Set!",
 	})
 	if err != nil {
 		return 0, err
 	}
-	if strings.Contains(snapshot, "Welcome to Rowboat") || strings.Contains(snapshot, "Welcome to Solomon AI") {
+	if strings.Contains(snapshot, "Welcome to Oppulence") || strings.Contains(snapshot, "Welcome to Solomon AI") {
 		if _, err := runAgent(20*time.Second, "", "find", "role", "button", "click", "--name", "Continue"); err != nil {
 			return 0, fmt.Errorf("failed to continue onboarding: %w", err)
 		}
@@ -33,7 +33,7 @@ func waitForInteractive(launchStarted time.Time) (float64, error) {
 		if _, err := runAgent(30*time.Second, "", "wait", "--text", "You're All Set!"); err != nil {
 			return 0, fmt.Errorf("failed waiting for completion onboarding: %w", err)
 		}
-		if _, err := runAgent(20*time.Second, "", "find", "role", "button", "click", "--name", "Start Using Rowboat"); err != nil {
+		if _, err := runAgent(20*time.Second, "", "find", "role", "button", "click", "--name", "Start Using Oppulence"); err != nil {
 			if _, fallbackErr := runAgent(20*time.Second, "", "find", "role", "button", "click", "--name", "Start Using Solomon AI"); fallbackErr != nil {
 				return 0, fmt.Errorf("failed to finish onboarding: %w", err)
 			}
@@ -165,7 +165,7 @@ func ipcWorkflowJS() string {
   for (let i = 0; i < 60; i += 1) {
     writes.push(timedInvoke('workspace:writeFile', {
       path: 'knowledge/PerfWrite/workflow-' + String(i).padStart(3, '0') + '.md',
-      data: '# Workflow Note ' + i + '\n\nrowboatperf workflow corpus ' + i + '\n\n' + 'body '.repeat(200),
+      data: '# Workflow Note ' + i + '\n\noppulenceperf workflow corpus ' + i + '\n\n' + 'body '.repeat(200),
       opts: { mkdirp: true, atomic: true }
     }, { attempts: 3, delayMs: 250 }));
   }
@@ -174,7 +174,7 @@ func ipcWorkflowJS() string {
   const tree = await timedInvoke('workspace:readdir', { path: 'knowledge', opts: { recursive: true, includeStats: true } }, { attempts: 8, delayMs: 250 });
   const treeMs = performance.now() - treeStartedAt;
   const searchStartedAt = performance.now();
-  const search = await timedInvoke('search:query', { query: 'rowboatperf', limit: 20, types: ['knowledge'] });
+  const search = await timedInvoke('search:query', { query: 'oppulenceperf', limit: 20, types: ['knowledge'] });
   const searchMs = performance.now() - searchStartedAt;
   const runsStartedAt = performance.now();
   const runs = await timedInvoke('runs:list', { limit: 20 }, { attempts: 8, delayMs: 1000 });
@@ -284,14 +284,14 @@ func memoryLoopJS(repeats int) string {
     const iterationStartedAt = performance.now();
     await window.ipc.invoke('workspace:writeFile', {
       path: 'knowledge/PerfMemory/loop-' + String(i).padStart(3, '0') + '.md',
-      data: '# Memory Loop ' + i + '\n\nrowboatperf memory loop ' + i + '\n\n' + 'payload '.repeat(200),
+      data: '# Memory Loop ' + i + '\n\noppulenceperf memory loop ' + i + '\n\n' + 'payload '.repeat(200),
       opts: { mkdirp: true, atomic: true }
     });
     const treeStartedAt = performance.now();
     const tree = await window.ipc.invoke('workspace:readdir', { path: 'knowledge', opts: { recursive: true, includeStats: true } });
     const treeMs = performance.now() - treeStartedAt;
     const searchStartedAt = performance.now();
-    const search = await window.ipc.invoke('search:query', { query: 'rowboatperf', limit: 50, types: ['knowledge'] });
+    const search = await window.ipc.invoke('search:query', { query: 'oppulenceperf', limit: 50, types: ['knowledge'] });
     const searchMs = performance.now() - searchStartedAt;
     const modelsStartedAt = performance.now();
     await window.ipc.invoke('models:list', null);

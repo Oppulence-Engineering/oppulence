@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/hubspotapi"
 )
 
 // NewHubSpotSearchTool builds connector.read.hubspot_search. The private-app

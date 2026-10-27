@@ -1,9 +1,9 @@
 import "server-only";
 
-import { rowboatApiURL, rowboatAuthApiBaseURL, rowboatAuthApiURL } from "@/lib/auth/config";
+import { oppulenceApiURL, oppulenceAuthApiBaseURL, oppulenceAuthApiURL } from "@/lib/auth/config";
 import { decodeUnverifiedWorkOSClaims } from "@/lib/auth/jwt";
 import {
-  RowboatAPIErrorSchema,
+  OppulenceAPIErrorSchema,
   ViewerIdentityResponseSchema,
   ViewerResponseSchema,
   WorkOSLoginURLResponseSchema,
@@ -24,7 +24,7 @@ async function parseJSON(res: Response): Promise<unknown> {
   }
 }
 
-async function rowboatFetch(url: URL, init: RequestInit): Promise<Response> {
+async function oppulenceFetch(url: URL, init: RequestInit): Promise<Response> {
   return fetch(url, {
     ...init,
     cache: "no-store",
@@ -39,7 +39,7 @@ async function rowboatFetch(url: URL, init: RequestInit): Promise<Response> {
 
 async function throwAPIError(res: Response, fallback: string): Promise<never> {
   const body = await parseJSON(res);
-  const parsed = RowboatAPIErrorSchema.safeParse(body);
+  const parsed = OppulenceAPIErrorSchema.safeParse(body);
   const message = parsed.success
     ? parsed.data.message || parsed.data.error || parsed.data.code || fallback
     : fallback;
@@ -60,7 +60,7 @@ export async function getWorkOSLoginURL(input: {
   maxAge?: "0";
   prompt?: "login";
 }): Promise<string> {
-  const url = rowboatAuthApiURL("/v1/auth/workos/login-url");
+  const url = oppulenceAuthApiURL("/v1/auth/workos/login-url");
   url.searchParams.set("redirect_uri", input.redirectURI);
   url.searchParams.set("state", input.state);
   url.searchParams.set("code_challenge", input.codeChallenge);
@@ -82,7 +82,7 @@ export async function getWorkOSLoginURL(input: {
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
-    throw new Error(`Cannot reach the auth API at ${rowboatAuthApiBaseURL()}.`);
+    throw new Error(`Cannot reach the auth API at ${oppulenceAuthApiBaseURL()}.`);
   }
   if (!res.ok) {
     await throwAPIError(res, "could not start WorkOS sign-in");
@@ -94,7 +94,7 @@ export async function exchangeWorkOSCode(input: {
   code: string;
   codeVerifier: string;
 }): Promise<WorkOSTokenBundle> {
-  const res = await rowboatFetch(rowboatAuthApiURL("/v1/auth/workos/exchange"), {
+  const res = await oppulenceFetch(oppulenceAuthApiURL("/v1/auth/workos/exchange"), {
     method: "POST",
     body: JSON.stringify({
       code: input.code,
@@ -109,7 +109,7 @@ export async function exchangeWorkOSCode(input: {
 
 function refreshRequiresReconnect(status: number, body: unknown): boolean {
   if (status === 400 || status === 401 || status === 403 || status === 409) return true;
-  const parsed = RowboatAPIErrorSchema.safeParse(body);
+  const parsed = OppulenceAPIErrorSchema.safeParse(body);
   return parsed.success && parsed.data.code === "reconnect_required";
 }
 
@@ -119,7 +119,7 @@ async function refreshWorkOSSessionOnce(
   for (let attempt = 0; attempt < 2; attempt += 1) {
     let res: Response;
     try {
-      res = await rowboatFetch(rowboatAuthApiURL("/v1/auth/workos/refresh"), {
+      res = await oppulenceFetch(oppulenceAuthApiURL("/v1/auth/workos/refresh"), {
         method: "POST",
         body: JSON.stringify({ refreshToken: session.refreshToken }),
       });
@@ -168,7 +168,7 @@ export function refreshWorkOSSession(
 }
 
 export async function fetchViewer(session: DashboardSessionCookie): Promise<ViewerResponse> {
-  const res = await rowboatFetch(rowboatApiURL("/v1/me"), {
+  const res = await oppulenceFetch(oppulenceApiURL("/v1/me"), {
     method: "GET",
     headers: { Authorization: `${session.tokenType} ${session.accessToken}` },
   });
@@ -181,7 +181,7 @@ export async function fetchViewer(session: DashboardSessionCookie): Promise<View
 export async function fetchViewerIdentity(
   session: DashboardSessionCookie,
 ): Promise<ViewerIdentityResponse> {
-  const res = await rowboatFetch(rowboatApiURL("/api/auth/get-session"), {
+  const res = await oppulenceFetch(oppulenceApiURL("/api/auth/get-session"), {
     method: "GET",
     headers: { Authorization: `${session.tokenType} ${session.accessToken}` },
   });

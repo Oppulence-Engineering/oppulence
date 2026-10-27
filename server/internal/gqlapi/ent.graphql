@@ -4295,7 +4295,7 @@ input BackgroundTaskWhereInput {
   hasScheduleStates: Boolean
   hasScheduleStatesWith: [BackgroundTaskScheduleStateWhereInput!]
 }
-type BillingSubscription implements Node @goModel(model: "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent.Subscription") {
+type BillingSubscription implements Node @goModel(model: "github.com/PlaybookMediaLLC/oppulence/server/ent.Subscription") {
   id: ID!
   createdAt: Time!
   updatedAt: Time!
@@ -8332,7 +8332,7 @@ input MeetingMinuteUsageWhereInput {
 An object with an ID.
 Follows the [Relay Global Object Identification Specification](https://relay.dev/graphql/objectidentification.htm)
 """
-interface Node @goModel(model: "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent.Noder") {
+interface Node @goModel(model: "github.com/PlaybookMediaLLC/oppulence/server/ent.Noder") {
   """
   The id of the object.
   """

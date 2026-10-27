@@ -234,13 +234,13 @@ func TestLoadConfigCloudWorkflowOptIn(t *testing.T) {
 		t.Fatal("cloud workflow should be disabled by default for the commit-level gate")
 	}
 
-	t.Setenv("ROWBOAT_DESKTOP_PERF_INCLUDE_CLOUD", "1")
+	t.Setenv("OPPULENCE_DESKTOP_PERF_INCLUDE_CLOUD", "1")
 	cfg, err = loadConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !cfg.IncludeCloud {
-		t.Fatal("cloud workflow should be enabled when ROWBOAT_DESKTOP_PERF_INCLUDE_CLOUD=1")
+		t.Fatal("cloud workflow should be enabled when OPPULENCE_DESKTOP_PERF_INCLUDE_CLOUD=1")
 	}
 }
 
@@ -255,7 +255,7 @@ func TestLoadConfigTierDefaults(t *testing.T) {
 		t.Fatalf("unexpected commit defaults: tier=%s seed=%d repeats=%d", cfg.Tier, cfg.SeedNotes, cfg.MemoryRepeats)
 	}
 
-	t.Setenv("ROWBOAT_DESKTOP_PERF_TIER", perfTierFull)
+	t.Setenv("OPPULENCE_DESKTOP_PERF_TIER", perfTierFull)
 	cfg, err = loadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -264,9 +264,9 @@ func TestLoadConfigTierDefaults(t *testing.T) {
 		t.Fatalf("unexpected full defaults: tier=%s seed=%d repeats=%d cloud=%v", cfg.Tier, cfg.SeedNotes, cfg.MemoryRepeats, cfg.IncludeCloud)
 	}
 
-	t.Setenv("ROWBOAT_DESKTOP_PERF_INCLUDE_CLOUD", "0")
-	t.Setenv("ROWBOAT_DESKTOP_PERF_SEED_NOTES", "42")
-	t.Setenv("ROWBOAT_DESKTOP_PERF_MEMORY_REPEATS", "2")
+	t.Setenv("OPPULENCE_DESKTOP_PERF_INCLUDE_CLOUD", "0")
+	t.Setenv("OPPULENCE_DESKTOP_PERF_SEED_NOTES", "42")
+	t.Setenv("OPPULENCE_DESKTOP_PERF_MEMORY_REPEATS", "2")
 	cfg, err = loadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -280,30 +280,30 @@ func setLoadConfigTestEnv(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{
 		"API_URL",
-		"ROWBOAT_API_PORT",
-		"ROWBOAT_DEVSTACK_PORT",
-		"ROWBOAT_DESKTOP_PERF_AGENT_SESSION",
-		"ROWBOAT_DESKTOP_PERF_API_URL",
-		"ROWBOAT_DESKTOP_PERF_ARTIFACT_DIR",
-		"ROWBOAT_DESKTOP_PERF_BASELINE",
-		"ROWBOAT_DESKTOP_PERF_BUDGET",
-		"ROWBOAT_DESKTOP_PERF_DEVSTACK_URL",
-		"ROWBOAT_DESKTOP_PERF_IDLE_SECONDS",
-		"ROWBOAT_DESKTOP_PERF_INCLUDE_CLOUD",
-		"ROWBOAT_DESKTOP_PERF_MEMORY_REPEATS",
-		"ROWBOAT_DESKTOP_PERF_MODE",
-		"ROWBOAT_DESKTOP_PERF_PROMPT",
-		"ROWBOAT_DESKTOP_PERF_SEED_NOTES",
-		"ROWBOAT_DESKTOP_PERF_SKIP_PACKAGE",
-		"ROWBOAT_DESKTOP_PERF_TIER",
-		"ROWBOAT_DESKTOP_PERF_UPDATE_BASELINE",
-		"ROWBOAT_DESKTOP_PERF_WORKDIR",
-		"ROWBOAT_DESKTOP_VITE_PORT",
-		"ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT",
+		"OPPULENCE_API_PORT",
+		"OPPULENCE_DEVSTACK_PORT",
+		"OPPULENCE_DESKTOP_PERF_AGENT_SESSION",
+		"OPPULENCE_DESKTOP_PERF_API_URL",
+		"OPPULENCE_DESKTOP_PERF_ARTIFACT_DIR",
+		"OPPULENCE_DESKTOP_PERF_BASELINE",
+		"OPPULENCE_DESKTOP_PERF_BUDGET",
+		"OPPULENCE_DESKTOP_PERF_DEVSTACK_URL",
+		"OPPULENCE_DESKTOP_PERF_IDLE_SECONDS",
+		"OPPULENCE_DESKTOP_PERF_INCLUDE_CLOUD",
+		"OPPULENCE_DESKTOP_PERF_MEMORY_REPEATS",
+		"OPPULENCE_DESKTOP_PERF_MODE",
+		"OPPULENCE_DESKTOP_PERF_PROMPT",
+		"OPPULENCE_DESKTOP_PERF_SEED_NOTES",
+		"OPPULENCE_DESKTOP_PERF_SKIP_PACKAGE",
+		"OPPULENCE_DESKTOP_PERF_TIER",
+		"OPPULENCE_DESKTOP_PERF_UPDATE_BASELINE",
+		"OPPULENCE_DESKTOP_PERF_WORKDIR",
+		"OPPULENCE_DESKTOP_VITE_PORT",
+		"OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT",
 	} {
 		t.Setenv(key, "")
 	}
-	t.Setenv("ROWBOAT_REPO_ROOT", t.TempDir())
+	t.Setenv("OPPULENCE_REPO_ROOT", t.TempDir())
 }
 
 func testBudget() budgetFile {

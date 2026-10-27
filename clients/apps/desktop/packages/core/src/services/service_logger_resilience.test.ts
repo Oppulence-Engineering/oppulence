@@ -3,7 +3,7 @@ import fs from "fs";
 import fsp from "fs/promises";
 import path from "path";
 
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-logger-resilience-test");
+const TEST_WORKDIR = vi.hoisted(() => "/tmp/oppulence-logger-resilience-test");
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 vi.mock("./service_bus.js", () => ({ serviceBus: { publish: async () => {} } }));
 

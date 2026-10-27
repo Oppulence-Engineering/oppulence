@@ -1,6 +1,6 @@
 # chat_widget
 
-Embeddable end-user chat surface for Rowboat. Built with Next.js 16 (App Router), React 19, NextUI, and Tailwind.
+Embeddable end-user chat surface for Oppulence. Built with Next.js 16 (App Router), React 19, NextUI, and Tailwind.
 
 ## What it does
 
@@ -10,7 +10,7 @@ Third-party sites embed a single `<script>` that loads `bootstrap.js`. That scri
 2. Mounts an iframe pointing at this app, which renders the chat UI (`app/app.tsx`).
 3. Persists minimized/maximized state in `localStorage` and the session id in a cookie.
 
-The iframe UI talks to the Rowboat backend through `rowboat-shared` (`apiV1` types) for messages, turns, and chat lifecycle.
+The iframe UI talks to the Oppulence backend through `rowboat-shared` (`apiV1` types) for messages, turns, and chat lifecycle.
 
 ## Key files
 
@@ -23,10 +23,10 @@ The iframe UI talks to the Rowboat backend through `rowboat-shared` (`apiV1` typ
 
 ## Environment
 
-| Variable           | Required | Purpose                                                                      |
-| ------------------ | -------- | ---------------------------------------------------------------------------- |
-| `CHAT_WIDGET_HOST` | yes      | Public origin of this app — interpolated into the loader                     |
-| `ROWBOAT_HOST`     | yes      | Public origin of the Oppulence API — used as `${ROWBOAT_HOST}/api/widget/v1` |
+| Variable           | Required | Purpose                                                                        |
+| ------------------ | -------- | ------------------------------------------------------------------------------ |
+| `CHAT_WIDGET_HOST` | yes      | Public origin of this app — interpolated into the loader                       |
+| `OPPULENCE_HOST`   | yes      | Public origin of the Oppulence API — used as `${OPPULENCE_HOST}/api/widget/v1` |
 
 If `CHAT_WIDGET_HOST` is unset at request time, `/api/bootstrap.js` returns HTTP 500.
 
@@ -34,7 +34,7 @@ If `CHAT_WIDGET_HOST` is unset at request time, `/api/bootstrap.js` returns HTTP
 
 ```bash
 npm install
-CHAT_WIDGET_HOST=http://localhost:3001 ROWBOAT_HOST=http://localhost:3000 npm run dev
+CHAT_WIDGET_HOST=http://localhost:3001 OPPULENCE_HOST=http://localhost:3000 npm run dev
 ```
 
 Then on `http://localhost:3001` you can open the chat directly, or embed the loader from another page:
@@ -50,11 +50,11 @@ Then on `http://localhost:3001` you can open the chat directly, or embed the loa
 
 ```bash
 npm run build           # next build (standalone output)
-docker build -t rowboat-chat-widget .
+docker build -t oppulence-chat-widget .
 docker run -p 3000:3000 \
   -e CHAT_WIDGET_HOST=https://widget.example.com \
-  -e ROWBOAT_HOST=https://rowboat.example.com \
-  rowboat-chat-widget
+  -e OPPULENCE_HOST=https://rowboat.example.com \
+  oppulence-chat-widget
 ```
 
 The Dockerfile produces a standalone Next server (`node server.js`) on port 3000.

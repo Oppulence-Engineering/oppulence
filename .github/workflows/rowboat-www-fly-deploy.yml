@@ -19,9 +19,9 @@ jobs:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       FLY_APP_NAME: ${{ vars.FLY_APP_NAME || 'oppulence-rowboat-www' }}
       FLY_CONFIG: clients/apps/web/config/deployment/fly.toml
-      ROWBOAT_WWW_SESSION_SECRET: ${{ secrets.ROWBOAT_WWW_SESSION_SECRET }}
-      ROWBOAT_WWW_PLAIN_CHAT_APP_ID: ${{ vars.ROWBOAT_WWW_PLAIN_CHAT_APP_ID }}
-      ROWBOAT_WWW_PLAIN_CHAT_SECRET: ${{ secrets.ROWBOAT_WWW_PLAIN_CHAT_SECRET }}
+      OPPULENCE_WWW_SESSION_SECRET: ${{ secrets.ROWBOAT_WWW_SESSION_SECRET }}
+      OPPULENCE_WWW_PLAIN_CHAT_APP_ID: ${{ vars.ROWBOAT_WWW_PLAIN_CHAT_APP_ID }}
+      OPPULENCE_WWW_PLAIN_CHAT_SECRET: ${{ secrets.ROWBOAT_WWW_PLAIN_CHAT_SECRET }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
@@ -35,8 +35,8 @@ jobs:
             echo "FLY_API_TOKEN is required in the production GitHub environment" >&2
             exit 1
           fi
-          if [[ ${#ROWBOAT_WWW_SESSION_SECRET} -lt 32 ]]; then
-            echo "ROWBOAT_WWW_SESSION_SECRET must contain at least 32 characters" >&2
+          if [[ ${#OPPULENCE_WWW_SESSION_SECRET} -lt 32 ]]; then
+            echo "OPPULENCE_WWW_SESSION_SECRET must contain at least 32 characters" >&2
             exit 1
           fi
 
@@ -46,17 +46,17 @@ jobs:
       - name: Stage session secret
         run: >-
           flyctl secrets set --stage --app "${FLY_APP_NAME}"
-          "ROWBOAT_WWW_SESSION_SECRET=${ROWBOAT_WWW_SESSION_SECRET}"
+          "OPPULENCE_WWW_SESSION_SECRET=${OPPULENCE_WWW_SESSION_SECRET}"
 
       # Support chat is optional: when the Plain values are absent the widget
       # stays off rather than failing the deploy. Both are staged together so a
       # signed-in visitor is never offered chat without a usable identity hash.
       - name: Stage support chat configuration
-        if: env.ROWBOAT_WWW_PLAIN_CHAT_APP_ID != '' && env.ROWBOAT_WWW_PLAIN_CHAT_SECRET != ''
+        if: env.OPPULENCE_WWW_PLAIN_CHAT_APP_ID != '' && env.OPPULENCE_WWW_PLAIN_CHAT_SECRET != ''
         run: >-
           flyctl secrets set --stage --app "${FLY_APP_NAME}"
-          "ROWBOAT_WWW_PLAIN_CHAT_APP_ID=${ROWBOAT_WWW_PLAIN_CHAT_APP_ID}"
-          "ROWBOAT_WWW_PLAIN_CHAT_SECRET=${ROWBOAT_WWW_PLAIN_CHAT_SECRET}"
+          "OPPULENCE_WWW_PLAIN_CHAT_APP_ID=${OPPULENCE_WWW_PLAIN_CHAT_APP_ID}"
+          "OPPULENCE_WWW_PLAIN_CHAT_SECRET=${OPPULENCE_WWW_PLAIN_CHAT_SECRET}"
 
       - name: Deploy from the monorepo root
         run: >-
@@ -74,7 +74,7 @@ jobs:
       - name: Smoke test Fly deployment
         env:
           CONFIGURED_SMOKE_URL: ${{ vars.ROWBOAT_WWW_FLY_SMOKE_URL }}
-          ROWBOAT_WWW_EXPECTED_API_BASE_URL: https://api.oppulence.io
+          OPPULENCE_WWW_EXPECTED_API_BASE_URL: https://api.oppulence.io
         run: |
           set -euo pipefail
           SMOKE_URL="${CONFIGURED_SMOKE_URL:-https://${FLY_APP_NAME}.fly.dev}"

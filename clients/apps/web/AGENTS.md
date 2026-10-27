@@ -228,7 +228,7 @@ Choose ownership before generating a component:
 
 | Component ownership | Use when                                     | Destination                                          |
 | ------------------- | -------------------------------------------- | ---------------------------------------------------- |
-| Shared primitive    | Domain-neutral UI reused across applications | `clients/packages/ui/src/components/`                        |
+| Shared primitive    | Domain-neutral UI reused across applications | `clients/packages/ui/src/components/`                |
 | Product feature     | Reusable within one product domain           | `components/features/<domain>/<component>/`          |
 | Route-private       | Used only by one product route subtree       | `app/(product)/app/<route>/_components/<component>/` |
 

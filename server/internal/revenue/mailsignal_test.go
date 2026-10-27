@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailsignal"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
 )
 
 // fakeEmbedder returns a deterministic vector derived from the text so that

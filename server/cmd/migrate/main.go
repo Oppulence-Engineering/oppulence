@@ -1,4 +1,4 @@
-// Command migrate manages Rowboat's database schema.
+// Command migrate manages Oppulence's database schema.
 //
 //	migrate apply              # apply PostgreSQL Atlas files; auto-migrate SQLite
 //	migrate dump [name]        # write a PostgreSQL baseline migration
@@ -19,10 +19,10 @@ import (
 	atlasmigrate "ariga.io/atlas/sql/migrate"
 	"entgo.io/ent/dialect"
 	entschema "entgo.io/ent/dialect/sql/schema"
-	entmigrate "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/migrate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db" // registers sqlite/pgx drivers
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
+	entmigrate "github.com/PlaybookMediaLLC/oppulence/server/ent/migrate"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db" // registers sqlite/pgx drivers
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/telemetry"
 	_ "github.com/lib/pq" // Ent's versioned-diff helper opens the canonical "postgres" driver.
 )
 

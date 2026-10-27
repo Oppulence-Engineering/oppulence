@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	appcrypto "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	appcrypto "github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
 )
 
 type fakeStore struct {

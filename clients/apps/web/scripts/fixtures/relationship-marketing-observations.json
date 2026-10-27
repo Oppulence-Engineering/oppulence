@@ -23,18 +23,14 @@
           "email": "avery@acme.com",
           "role": "champion",
           "title": "VP Operations",
-          "externalRefs": [
-            "hubspot:contact:acme-avery"
-          ]
+          "externalRefs": ["hubspot:contact:acme-avery"]
         },
         {
           "displayName": "Morgan Lee",
           "email": "morgan@acme.com",
           "role": "decision_maker",
           "title": "CFO",
-          "externalRefs": [
-            "hubspot:contact:acme-morgan"
-          ]
+          "externalRefs": ["hubspot:contact:acme-morgan"]
         }
       ],
       "assertions": [
@@ -178,9 +174,7 @@
           "email": "samira@betacorp.com",
           "role": "owner",
           "title": "Controller",
-          "externalRefs": [
-            "stripe:customer:beta"
-          ]
+          "externalRefs": ["stripe:customer:beta"]
         }
       ],
       "assertions": [
@@ -273,9 +267,7 @@
           "email": "dana@northstar.example",
           "role": "champion",
           "title": "Director of Operations",
-          "externalRefs": [
-            "hubspot:contact:northstar-dana"
-          ]
+          "externalRefs": ["hubspot:contact:northstar-dana"]
         }
       ],
       "assertions": [

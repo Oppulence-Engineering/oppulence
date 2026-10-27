@@ -47,7 +47,9 @@ export function VoiceCommandConfirmation({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Confirm voice command</DialogTitle>
-          <DialogDescription>Review the parsed action before Rowboat applies it.</DialogDescription>
+          <DialogDescription>
+            Review the parsed action before Oppulence applies it.
+          </DialogDescription>
         </DialogHeader>
 
         {summary ? (

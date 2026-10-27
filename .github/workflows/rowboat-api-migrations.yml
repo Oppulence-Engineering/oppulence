@@ -1,4 +1,4 @@
-name: Rowboat API Migrations
+name: Oppulence API Migrations
 
 on:
   pull_request:

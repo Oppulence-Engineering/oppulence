@@ -11,9 +11,9 @@ import (
 )
 
 func TestApplyPostgresIsIdempotent(t *testing.T) {
-	dsn := os.Getenv("ROWBOAT_TEST_PG_DSN")
+	dsn := os.Getenv("OPPULENCE_TEST_PG_DSN")
 	if dsn == "" {
-		t.Skip("ROWBOAT_TEST_PG_DSN not set; skipping PostgreSQL migration test")
+		t.Skip("OPPULENCE_TEST_PG_DSN not set; skipping PostgreSQL migration test")
 	}
 	workingDirectory, err := os.Getwd()
 	if err != nil {

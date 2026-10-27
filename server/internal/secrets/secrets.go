@@ -8,7 +8,7 @@ package secrets
 import (
 	"sync"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
 )
 
 // Logical key names. These match Infisical secret keys and env var names.

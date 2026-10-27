@@ -13,7 +13,7 @@ import { createEvent } from "../events/producer.js";
  * draft the follow-up". Without this, a meeting is invisible to everything that is not
  * the meetings UI.
  *
- * The payload is markdown by contract (`RowboatEventSchema.payload`), so it is written to
+ * The payload is markdown by contract (`OppulenceEventSchema.payload`), so it is written to
  * be read by a model: who spoke, for how long, and the transcript itself.
  */
 

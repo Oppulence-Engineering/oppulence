@@ -10,7 +10,7 @@ set -euo pipefail
 
 base_url="${1:-}"
 token="${2:-}"
-timeout_seconds="${ROWBOAT_SMOKE_TIMEOUT_SECONDS:-300}"
+timeout_seconds="${OPPULENCE_SMOKE_TIMEOUT_SECONDS:-300}"
 
 if [[ -z "$base_url" || -z "$token" ]]; then
   echo "usage: $0 <api-base-url> <bearer-token>" >&2

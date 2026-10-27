@@ -34,7 +34,7 @@ Gmail push still does not run. See [Deployment state](#deployment-state-updated-
 | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | Webhook verifies a shared token (query param or `X-Goog-Channel-Token`)                          | `server/internal/cloudevents/webhooks_google.go` (`verifyGoogleToken`)                                                         |
 | Gmail pushes decode `{emailAddress, historyId}`; dedupe key is history-anchored                  | `webhooks_google.go` (`handleGmailPush`)                                                                                                 |
-| Calendar channel ids are Rowboat-minted as `gcal:{email}:{uuid}`                                 | `server/internal/googlewatch/manager.go` (`registerCalendar`)                                                                  |
+| Calendar channel ids are Oppulence-minted as `gcal:{email}:{uuid}`                                 | `server/internal/googlewatch/manager.go` (`registerCalendar`)                                                                  |
 | Watch manager runs in the scheduler pod, gated by `GOOGLE_WATCH_ENABLED`                         | `server/cmd/scheduler/main.go` (`buildWatchManager`)                                                                           |
 | Boot validation requires `PUBLIC_BASE_URL` + `GOOGLE_WEBHOOK_TOKEN` when on                      | `server/internal/appconfig/config.go` (`Validate`)                                                                             |
 | Unresolvable pushes are acked (200) and counted, never stored                                    | `webhooks_google.go`; `cloud_events_unresolved_total{source}`                                                                            |
@@ -153,7 +153,7 @@ Why this is safe under Pub/Sub's at-least-once delivery:
 
 - The webhook dedupes on `gmail:history:{email}:{historyId}` and acks
   duplicates with 200 — redelivery never duplicates events.
-- Pushes for accounts no Rowboat user has connected are acked (200, dropped,
+- Pushes for accounts no Oppulence user has connected are acked (200, dropped,
   counted in `cloud_events_unresolved_total{source="gmail"}`) so Pub/Sub does
   not retry them for the 7-day retention.
 - Optional hardening: `--dead-letter-topic=gmail-push-dlq

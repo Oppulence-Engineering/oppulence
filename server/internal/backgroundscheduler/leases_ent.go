@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
-	btss "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtask"
+	btss "github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskschedulestate"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )

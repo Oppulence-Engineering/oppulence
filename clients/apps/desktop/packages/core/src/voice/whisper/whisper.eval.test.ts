@@ -11,9 +11,9 @@ import { binaryAvailable } from "./bin.js";
  * corpus through the real engine and asserts per-bucket WER stays within budget,
  * catching a model/binary regression.
  *
- * Skipped unless both (a) a whisper-cli is available (`ROWBOAT_WHISPER_BIN`) and
+ * Skipped unless both (a) a whisper-cli is available (`OPPULENCE_WHISPER_BIN`) and
  * (b) the corpus is non-empty — so it never blocks CI before the corpus lands.
- * Point `ROWBOAT_WHISPER_EVAL_MODEL` at a downloaded model to run it.
+ * Point `OPPULENCE_WHISPER_EVAL_MODEL` at a downloaded model to run it.
  */
 
 interface Clip {
@@ -39,7 +39,7 @@ async function loadManifest(): Promise<Clip[]> {
   }
 }
 
-const modelPath = process.env.ROWBOAT_WHISPER_EVAL_MODEL;
+const modelPath = process.env.OPPULENCE_WHISPER_EVAL_MODEL;
 const canRun = binaryAvailable() && !!modelPath;
 
 describe.skipIf(!canRun)("whisper WER eval", () => {
@@ -51,7 +51,7 @@ describe.skipIf(!canRun)("whisper WER eval", () => {
   it("stays within the per-bucket WER budget", async () => {
     expect(
       manifest.length,
-      "ROWBOAT_WHISPER_EVAL_MODEL was set, but the ASR fixture manifest is empty/missing",
+      "OPPULENCE_WHISPER_EVAL_MODEL was set, but the ASR fixture manifest is empty/missing",
     ).toBeGreaterThan(0);
 
     const byBucket: Record<string, number[]> = {};

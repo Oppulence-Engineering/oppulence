@@ -1,7 +1,7 @@
 export const skill = String.raw`
 # Builtin Tools Reference
 
-Load this skill when creating or modifying agents that need access to Rowboat's builtin tools (shell execution, file operations, etc.).
+Load this skill when creating or modifying agents that need access to Oppulence's builtin tools (shell execution, file operations, etc.).
 
 ## Available Builtin Tools
 
@@ -148,11 +148,11 @@ Agents can call other agents as tools to create complex multi-step workflows. Th
 
 ## Additional Builtin Tools
 
-While \`executeCommand\` is the most versatile, other builtin tools exist for specific Rowboat operations (file management, agent inspection, etc.). These are primarily used by the Rowboat copilot itself and are not typically needed in user agents. If you need file operations, consider using bash commands like \`cat\`, \`echo\`, \`tee\`, etc. through \`executeCommand\`.
+While \`executeCommand\` is the most versatile, other builtin tools exist for specific Oppulence operations (file management, agent inspection, etc.). These are primarily used by the Oppulence copilot itself and are not typically needed in user agents. If you need file operations, consider using bash commands like \`cat\`, \`echo\`, \`tee\`, etc. through \`executeCommand\`.
 
 ### Copilot-Specific Builtin Tools
 
-The Rowboat copilot has access to special builtin tools that regular agents don't typically use. These tools help the copilot assist users with workspace management and MCP integration:
+The Oppulence copilot has access to special builtin tools that regular agents don't typically use. These tools help the copilot assist users with workspace management and MCP integration:
 
 #### File & Directory Operations
 - \`exploreDirectory\` - Recursively explore directory structure
@@ -164,7 +164,7 @@ The Rowboat copilot has access to special builtin tools that regular agents don'
 
 #### Agent Operations
 - \`analyzeAgent\` - Read and analyze an agent file structure
-- \`loadSkill\` - Load a Rowboat skill definition into context
+- \`loadSkill\` - Load a Oppulence skill definition into context
 
 #### MCP Operations
 - \`addMcpServer\` - Add or update an MCP server configuration (with validation)

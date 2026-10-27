@@ -146,7 +146,7 @@ export function DictationHistoryPanel() {
   }, [load]);
 
   return (
-    <section className="rowboat-dev-card overflow-hidden" aria-labelledby="dictation-heading">
+    <section className="oppulence-dev-card overflow-hidden" aria-labelledby="dictation-heading">
       <div className="border-b border-border p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>

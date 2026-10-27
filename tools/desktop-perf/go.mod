@@ -1,4 +1,4 @@
-module github.com/Oppulence-Engineering/rowboat/tools/desktop-perf
+module github.com/PlaybookMediaLLC/oppulence/tools/desktop-perf
 
 go 1.24.0
 

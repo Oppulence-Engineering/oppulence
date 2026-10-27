@@ -9,7 +9,7 @@ let tmpDir: string;
 let calendarLink: typeof import("./calendar-link.js");
 
 beforeAll(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-calendar-link-"));
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-calendar-link-"));
   process.env.SOLOMON_WORKDIR = tmpDir;
   vi.resetModules();
   calendarLink = await import("./calendar-link.js");

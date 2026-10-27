@@ -54,7 +54,7 @@ picked up without changing the CLI.
 | `OPENAI_API_KEY`                           | Embeddings                           | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth connections             | A Google Cloud OAuth client; see [google-setup.md](google-setup.md)  |
 
-For an offline plumbing check, set `ROWBOAT_COMPOSE_MOCK_LLM=1`. Chat turns then
+For an offline plumbing check, set `OPPULENCE_COMPOSE_MOCK_LLM=1`. Chat turns then
 get a canned reply from devstack; `OPENROUTER_API_KEY` still needs a value.
 
 The web app reads `clients/apps/web/.env.local`. `dev up` copies it from

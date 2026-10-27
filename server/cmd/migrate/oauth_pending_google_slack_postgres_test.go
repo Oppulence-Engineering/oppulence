@@ -17,15 +17,15 @@ import (
 
 	atlasmigrate "ariga.io/atlas/sql/migrate"
 	"ariga.io/atlas/sql/sqlclient"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	rowboatdb "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/google"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slack"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthpending"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	oppulencedb "github.com/PlaybookMediaLLC/oppulence/server/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/google"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/secrets"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/slack"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
@@ -84,7 +84,7 @@ func TestOAuthPendingGoogleSlackFlowsOnFullyMigratedPostgres(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	database, err := rowboatdb.Open(ctx, appconfig.Config{
+	database, err := oppulencedb.Open(ctx, appconfig.Config{
 		DatabaseURL: dsn,
 		AutoMigrate: false,
 	}, zap.NewNop())

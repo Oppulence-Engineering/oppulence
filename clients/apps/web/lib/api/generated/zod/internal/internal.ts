@@ -272,7 +272,7 @@ export const IngestInternalCloudEventBody = zod
         "internal",
       ])
       .describe("Event source."),
-    userId: zod.string().describe("Rowboat user id (UUID) owning the event."),
+    userId: zod.string().describe("Oppulence user id (UUID) owning the event."),
   })
   .describe("Server-to-server cloud event ingestion: the caller names the event owner explicitly.");
 

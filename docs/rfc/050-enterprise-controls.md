@@ -4,11 +4,11 @@
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
 | **RFC**            | 050                                                                                                                            |
 | **Status**         | Draft                                                                                                                          |
-| **Track**          | Rowboat enterprise readiness · shared company policy                                                                           |
+| **Track**          | Oppulence enterprise readiness · shared company policy                                                                           |
 | **Owners**         | `server`, `clients/apps/desktop` desktop, security, product                                                                        |
 | **Created**        | 2026-08-12                                                                                                                     |
-| **Depends on**     | [RFC 011](./complete-011-identity-and-authorization-plane.md), [RFC 015](./015-rowboat-platform-workos-fga-and-widget-auth.md) |
-| **Related**        | [RFC 051](./051-note-sharing-and-team-spaces.md), [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md)         |
+| **Depends on**     | [RFC 011](./complete-011-identity-and-authorization-plane.md), [RFC 015](./015-oppulence-platform-workos-fga-and-widget-auth.md) |
+| **Related**        | [RFC 051](./051-note-sharing-and-team-spaces.md), [RFC 055](./055-capture-product-boundary-and-oppulence-integration.md)         |
 | **Reference impl** | OpenWhispr (MIT) — see §6                                                                                                      |
 
 ## 1. Decision
@@ -79,7 +79,7 @@ generates support tickets; explained restriction does not.
 SSO/SCIM can proceed independently because the backend foundation already
 exists. Cross-product organization policy uses a shared vocabulary, but each
 product enforces it fail-closed at its own boundary. Capture-provider policy
-belongs to the capture product; Rowboat governs relationship models,
+belongs to the capture product; Oppulence governs relationship models,
 connectors, evidence visibility, retention, and actions.
 
 ## 6. OpenWhispr code references

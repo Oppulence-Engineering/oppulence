@@ -1,4 +1,4 @@
-# Rowboat Python SDK
+# Oppulence Python SDK
 
 A Python SDK for interacting with the Oppulence API.
 
@@ -14,7 +14,7 @@ pip install rowboat
 
 ### Basic Usage
 
-The main way to interact with Rowboat is using the `Client` class, which provides a stateless chat API. You can manage conversation state using the `conversationId` returned in each response.
+The main way to interact with Oppulence is using the `Client` class, which provides a stateless chat API. You can manage conversation state using the `conversationId` returned in each response.
 
 ```python
 from rowboat.client import Client

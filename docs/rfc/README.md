@@ -1,13 +1,13 @@
-# Rowboat RFC Set
+# Oppulence RFC Set
 
-This directory holds Rowboat architecture RFCs. It started with the cloud-native
+This directory holds Oppulence architecture RFCs. It started with the cloud-native
 background workflow set and now also carries the related service plane, auth,
 connector, product-fabric, observability, app-boundary, local-model, product
 strategy, and future agent-delegation tracks. Email feature RFCs use the `email-{number}-{value}`
 prefix so they can evolve as a product track without renumbering the platform
 RFC sequence.
 
-The first set takes Rowboat's background tasks from **cloud-executed but
+The first set takes Oppulence's background tasks from **cloud-executed but
 desktop-driven** to **fully cloud-native** — scheduled, event-driven, and useful
 while the desktop app is closed.
 
@@ -48,7 +48,7 @@ remain reusable foundations.
 | 6    | [023](./023-closed-loop-actions.md)                         | Exact-revision propose → approve → execute → watch semantics for every consequential recommendation.                                                                                                      |
 | 7    | [007](./007-production-cloud-enablement.md)                 | Production Temporal, SLOs, alerts, and runbooks so observation and projection continue while clients are closed.                                                                                          |
 | 8    | [019](./019-google-push-infrastructure.md)                  | Production Gmail and Calendar push delivery for the first high-value observers. **Status check 2026-08-12: Calendar live in staging + production; Gmail still blocked on an unset `GMAIL_PUBSUB_TOPIC`.** |
-| 9    | [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Organization identity, project and relationship authorization, billing, and team-safe sharing.                                                                                                            |
+| 9    | [015](./015-oppulence-platform-workos-fga-and-widget-auth.md) | Organization identity, project and relationship authorization, billing, and team-safe sharing.                                                                                                            |
 | 10   | [025](./025-desktop-runtime-durability.md)                  | Crash-safe desktop observation outbox, backpressure, and multi-workspace behavior.                                                                                                                        |
 | 11   | [014](./014-live-note-observability-cost-and-provenance.md) | Source-to-state provenance, reliability, cost, and trust-facing diagnostics.                                                                                                                              |
 
@@ -148,7 +148,7 @@ write today.
 | [002](./complete-002-durable-schedule-state.md)        | Durable Schedule State & Leases | ent / Postgres  | A `BackgroundTaskScheduleState` entity + atomic lease so N scheduler replicas fire each cycle exactly once.                     |
 | [003](./complete-003-cloud-event-ingestion.md)         | Cloud Event Ingestion           | rowboat-api     | An event envelope + ingestion/routing layer that starts `trigger=event` cloud runs from Gmail/Calendar/Slack/webhooks.          |
 | [004](./complete-004-cloud-agent-runtime.md)           | Cloud-Safe Agent Runtime        | Temporal worker | The first production runtime: LLM access, a scoped/audited tool surface, connector reads, and enforced limits.                  |
-| [005](./complete-005-temporal-schedule-integration.md) | Temporal Schedule Integration   | Temporal        | Exact-cron triggers via durable Temporal Schedules (windows/events stay in Rowboat code).                                       |
+| [005](./complete-005-temporal-schedule-integration.md) | Temporal Schedule Integration   | Temporal        | Exact-cron triggers via durable Temporal Schedules (windows/events stay in Oppulence code).                                       |
 | [006](./complete-006-desktop-cloud-control-plane.md)   | Desktop as Control Plane        | clients/apps/desktop          | Makes cloud-managed schedules legible: next run, schedule health, runs-while-closed, event→run links.                           |
 | [007](./007-production-cloud-enablement.md)            | Production Enablement           | Helm / infra    | Flips Temporal Cloud on in staging→production with SLOs, PromQL alerts, and runbooks.                                           |
 | [008](./008-conduit-eigen-faculties.md)                | Conduit & Eigen Faculties       | cross-portfolio | Plugs the **evidence** (Conduit) and **foresight** (Eigen) planes into the event bus + runtime — the federated financial brain. |
@@ -172,7 +172,7 @@ Not part of the cloud-workflows set above, but living here under the same RFC co
 | [012](./012-connector-suite-and-consent-broker.md)          | Connector Suite and Consent Broker            | rowboat-api / OAuth         | Account linking, scope catalog, consent UI, token broker, resource-server libraries, entitlement gates, money-touching approval tokens, revocation, and connector observability.                                                        |
 | [013](./013-oppulence-product-connector-fabric.md)          | Oppulence Product Connector Fabric            | clients/apps/desktop + products           | Canvas, Cadence, Corinthian, Conduit, and Eigen product connectors using read/mirror/watch/act semantics over the shared connector and cloud-runtime fabric.                                                                            |
 | [014](./014-live-note-observability-cost-and-provenance.md) | Live-Note Observability, Cost, and Provenance | clients/apps/desktop + api                | Per-live-note run history, trigger health, cost, budget controls, provenance sidecars, generated-vs-source-backed labeling, silent-trigger detection, and trust-facing error taxonomy.                                                  |
-| [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Rowboat Platform WorkOS FGA and Widget Auth   | clients/apps/dashboard                | Hosted platform WorkOS migration: AuthKit, organizations, FGA project resources, org/project API key semantics, widget session JWTs, billing hooks, and Auth0 migration.                                                                |
+| [015](./015-oppulence-platform-workos-fga-and-widget-auth.md) | Oppulence Platform WorkOS FGA and Widget Auth   | clients/apps/dashboard                | Hosted platform WorkOS migration: AuthKit, organizations, FGA project resources, org/project API key semantics, widget session JWTs, billing hooks, and Auth0 migration.                                                                |
 | [016](./016-app-family-consolidation.md)                    | App Family Consolidation                      | repo / apps                 | Canonical app tiers and contract ownership across desktop, hosted platform, Go service plane, SDK, CLI, static frontends, widgets, experiments, simulation runner, and docs.                                                            |
 | [017](./complete-017-on-device-meeting-diarization.md)      | On-Device Meeting Diarization                 | clients/apps/desktop                      | A local speaker diarization follow-up to RFC 009: VAD, speaker embeddings, clustering, alignment, provenance, quality gates, and a beta meetings mode that does not replace cloud diarization until it passes product gates.            |
 | [018](./018-a2a-delegation-and-agent-identity.md)           | A2A Delegation and Agent Identity             | future protocol             | User-bound agent identity, scoped delegation tokens, A2A/MCP adapter boundaries, approval policy, connector-scope enforcement, and delegation-chain provenance for future cross-agent workflows.                                        |
@@ -236,31 +236,31 @@ follow-through. Each RFC carries its own current status.
 
 ## Capture-product boundary and integration
 
-[RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) replaces
+[RFC 055](./055-capture-product-boundary-and-oppulence-integration.md) replaces
 the former OpenWhispr parity program. The OpenWhispr fork remains a separate,
-independently useful Oppulence capture product; Rowboat remains the canonical
+independently useful Oppulence capture product; Oppulence remains the canonical
 relationship-intelligence, evidence, and governed-action system.
 
 Capture-only RFCs 040, 041, 043, 045, 046, 047, and 052 were removed from this
 active roadmap and preserved in the capture repository as RFCs 0010–0016.
-RFC 054 was superseded. Split concerns remain here only for their Rowboat-owned
+RFC 054 was superseded. Split concerns remain here only for their Oppulence-owned
 behavior:
 
-| #                                                                | Rowboat-owned scope                                                                                       |
+| #                                                                | Oppulence-owned scope                                                                                       |
 | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | [042](./042-voice-agent-screen-context-and-selection-editing.md) | Consented desktop context for relationship-aware commands; local selection editing belongs to capture.    |
 | [044](./044-cross-meeting-speaker-fingerprinting.md)             | Bind capture-owned voice-profile hints to canonical people with evidence and confidence.                  |
 | [048](./048-public-api-mcp-server-cli.md)                        | Relationship APIs, MCP distribution, and the versioned capture-artifact ingestion surface.                |
-| [049](./049-i18n-and-localization.md)                            | Rowboat localization; the capture product localizes independently.                                        |
-| [050](./050-enterprise-controls.md)                              | Shared organization identity and policy, enforced fail-closed by Rowboat.                                 |
+| [049](./049-i18n-and-localization.md)                            | Oppulence localization; the capture product localizes independently.                                        |
+| [050](./050-enterprise-controls.md)                              | Shared organization identity and policy, enforced fail-closed by Oppulence.                                 |
 | [051](./051-note-sharing-and-team-spaces.md)                     | Relationship/evidence collaboration; transcript sharing belongs to capture.                               |
 | [053](./053-local-llm-runtime.md)                                | Local relationship inference and quality gates, not capture-model management.                             |
-| [055](./055-capture-product-boundary-and-rowboat-integration.md) | Product ownership, integration contract, privacy boundary, code-reuse policy, rollout, and success gates. |
+| [055](./055-capture-product-boundary-and-oppulence-integration.md) | Product ownership, integration contract, privacy boundary, code-reuse policy, rollout, and success gates. |
 
 ## Email feature RFCs
 
 This set translates the email capabilities studied from Inbox Zero into
-Rowboat's desktop-first architecture. The track starts with a source inventory
+Oppulence's desktop-first architecture. The track starts with a source inventory
 and provider-neutral mailbox foundation, then layers the command center,
 automation rules, reply workflows, cleanup, insights, attachment/calendar/channel
 integrations, assistant chat, reliability, privacy, evals, onboarding,
@@ -269,7 +269,7 @@ implementation blueprints with code examples.
 
 | #                                                                           | Title                                                 | Layer                    | What it adds                                                                                                                                                |
 | --------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| | Inbox Zero Agent Reference Map                        | implementation reference | Exact Inbox Zero docs, schema models, utilities, routes, and tests that implementation agents should inspect for each Rowboat email RFC.                    |
+| | Inbox Zero Agent Reference Map                        | implementation reference | Exact Inbox Zero docs, schema models, utilities, routes, and tests that implementation agents should inspect for each Oppulence email RFC.                    |
 | [email-001](./email-001-mailbox-provider-foundation.md)                     | Mailbox Provider Foundation                           | clients/apps/desktop + rowboat-api     | Provider-neutral mailbox accounts, capabilities, sync/watch primitives, local store, and broker API shape over Gmail first and Outlook later.               |
 | | Mailbox Command Center                                | clients/apps/desktop renderer          | A desktop mailbox workspace for triage, reading, composing, queues, inspector context, and provider-neutral actions.                                        |
 | | AI Rules and Mail Action Engine                       | clients/apps/desktop + rowboat-api     | Static/AI/learned email rules, action catalog, delayed actions, webhook/digest actions, audit trails, safety policy, and rule testing.                      |
@@ -278,7 +278,7 @@ implementation blueprints with code examples.
 | | Digests, Analytics, and Mail Insights                 | clients/apps/desktop + optional cloud  | Digest queues/schedules, email analytics, response-time metrics, automation impact reporting, and local-first privacy boundaries.                           |
 | | Attachments, Calendar Context, and Messaging Channels | clients/apps/desktop + connectors      | Attachment filing, local/cloud destinations, calendar availability for drafts, booking links, and Slack/Telegram-style notification routes.                 |
 | | Email Platform API and Ecosystem                      | clients/apps/desktop + rowboat-api     | Scoped API keys, local/broker API surfaces, signed webhooks, assistant chat APIs, import/export, and integration audit controls.                            |
-| | Inbox Zero Source Inventory and Feature Map           | product / architecture   | Source inventory mapping Inbox Zero capabilities to Rowboat RFCs, current Rowboat anchors, ownership, decisions, and milestones.                            |
+| | Inbox Zero Source Inventory and Feature Map           | product / architecture   | Source inventory mapping Inbox Zero capabilities to Oppulence RFCs, current Oppulence anchors, ownership, decisions, and milestones.                            |
 | | AI Mail Assistant Chat                                | clients/apps/desktop + runtime         | Mail-aware assistant tools for search, summaries, drafts, explanations, proposed actions, rule authoring, chat memory, and channel extension.               |
 | | Smart Categories, Tabs, and Labels                    | clients/apps/desktop + core            | Native desktop tabs, query views, smart categories, provider label sync, correction metadata, and reusable category assignments.                            |
 | [email-012](./email-012-mail-search-semantic-memory-and-knowledge.md)       | Mail Search, Semantic Memory, and Knowledge           | clients/apps/desktop + RFC 021         | Exact search, semantic retrieval, summaries, knowledge, learned memory, retention, redaction, and mailbox-specific indexing policy.                         |
@@ -624,7 +624,7 @@ the `TEMPORAL_*` style, surfaced via the Helm ConfigMap.
 | `CLOUD_EVENTS_*`                  | 003     | `ROUTING_ENABLED`, `MATCH_THRESHOLD=0.7`                                                                                                                     |
 | `TEMPORAL_SCHEDULE*`              | 005     | `TEMPORAL_SCHEDULES_ENABLED`, `TEMPORAL_SCHEDULE_CATCHUP=1m`, `TEMPORAL_SCHEDULE_RECONCILE_INTERVAL=5m`                                                      |
 | `FACULTY_* / EIGEN_* / CONDUIT_*` | 008     | `FACULTY_CONDUIT_ENABLED`, `FACULTY_EIGEN_ENABLED`, `EIGEN_BASE_URL`, `CONDUIT_BASE_URL`, `EIGEN_STRESS_SCHEDULE=0 6 * * *`, `EIGEN_LIQUIDITY_FLOOR_WEEKS=8` |
-| `ROWBOAT_API_* / WORKOS_*`        | 010/011 | service-plane public URLs, WorkOS issuer/client/audience, token modes, service auth, and local kind overrides                                                |
+| `OPPULENCE_API_* / WORKOS_*`        | 010/011 | service-plane public URLs, WorkOS issuer/client/audience, token modes, service auth, and local kind overrides                                                |
 | `CONNECTOR_* / OAUTH_*`           | 012/013 | provider client ids/secrets, redirect URLs, consent scopes, revocation settings, product connector enablement                                                |
 | `LIVE_NOTE_* / COST_*`            | 014     | provenance sidecars, budget thresholds, silent-trigger alerts, run-history retention                                                                         |
 | `WIDGET_* / WORKOS_FGA_*`         | 015     | hosted widget session issuer/audience/TTL, WorkOS FGA resource settings, hosted API-key behavior                                                             |

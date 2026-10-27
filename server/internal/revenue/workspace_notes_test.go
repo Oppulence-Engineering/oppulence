@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 )
 
 func TestListWorkspaceNotesCollapsesEditsAndSkipsOtherCompanies(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/slackclient"
 )
 
 const (

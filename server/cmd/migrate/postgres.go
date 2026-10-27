@@ -159,7 +159,7 @@ func executeSQL(ctx context.Context, database *sql.DB, label, source string) (er
 	return nil
 }
 
-// migrationState distinguishes an existing auto-migrated Rowboat database
+// migrationState distinguishes an existing auto-migrated Oppulence database
 // from a genuinely empty schema. It runs before the revision table is
 // initialized so an existing unversioned schema is recorded at the baseline.
 func migrationState(ctx context.Context, database *sql.DB) (baseline, allowDirty bool, err error) {
@@ -170,14 +170,14 @@ func migrationState(ctx context.Context, database *sql.DB) (baseline, allowDirty
 	if revisionTable {
 		return false, false, nil
 	}
-	var rowboatSchema bool
+	var oppulenceSchema bool
 	if err := database.QueryRowContext(ctx, `
 		SELECT to_regclass('users') IS NOT NULL
 		    OR to_regclass('subscriptions') IS NOT NULL
-	`).Scan(&rowboatSchema); err != nil {
+	`).Scan(&oppulenceSchema); err != nil {
 		return false, false, fmt.Errorf("inspect existing PostgreSQL schema: %w", err)
 	}
-	if rowboatSchema {
+	if oppulenceSchema {
 		return true, false, nil
 	}
 	var userTables int

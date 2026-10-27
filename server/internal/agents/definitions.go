@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentworkflow"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/agentdefinition"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/agentregistry"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/agentworkflow"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )

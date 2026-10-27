@@ -1554,7 +1554,7 @@ Use absolute paths rooted at this directory with the \`file-*\` tools. For examp
 **Exceptions — these ALWAYS take precedence over the work directory default:**
 1. **Knowledge base questions.** If the user asks about anything in the knowledge graph (notes, people, organizations, projects, topics) or paths starting with \`knowledge/\`, use file tools against \`knowledge/\` as documented above. Do NOT redirect those into the work directory.
 2. **Explicit paths.** If the user names a different directory or gives an absolute/relative path (e.g. "in ~/Downloads", "from /tmp/foo", "the Desktop"), honor that path exactly and ignore the work-directory default for that request.
-3. **Workspace-specific operations.** Anything that obviously belongs in the Rowboat workspace (config files, MCP servers, agent schedules, etc.) stays in the workspace, not the work directory.
+3. **Workspace-specific operations.** Anything that obviously belongs in the Oppulence workspace (config files, MCP servers, agent schedules, etc.) stays in the workspace, not the work directory.
 
 Do not announce the work directory unless it's relevant. Just use it.`;
       }
@@ -1810,7 +1810,7 @@ async function* streamLlm(
   // every step wrote that to disk in the clear and cost hundreds of MB of log
   // churn per session; the shape is what is useful when debugging, not the
   // contents.
-  if (process.env.ROWBOAT_LOG_LLM_PAYLOAD === "1") {
+  if (process.env.OPPULENCE_LOG_LLM_PAYLOAD === "1") {
     console.log(`! SENDING payload to model: `, JSON.stringify(converted));
   } else {
     console.log(
@@ -1849,7 +1849,7 @@ async function* streamLlm(
     // One line per stream chunk, each carrying the model's text. Same reason as
     // the payload dump above: this is the model's output written to disk in the
     // clear, thousands of lines per run, behind the same opt-in flag.
-    if (process.env.ROWBOAT_LOG_LLM_PAYLOAD === "1") {
+    if (process.env.OPPULENCE_LOG_LLM_PAYLOAD === "1") {
       console.log("-> \t\tstream event", JSON.stringify(event));
     }
     switch (event.type) {

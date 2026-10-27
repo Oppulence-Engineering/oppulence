@@ -7,6 +7,12 @@ import { isDevelopment } from "./lib/environment";
 
 const repoRoot = path.join(__dirname, "../../..");
 
+// Local .env files from before the rename use ROWBOAT_WWW_*; the app reads OPPULENCE_WWW_*.
+for (const [name, value] of Object.entries(process.env)) {
+  if (name.startsWith("ROWBOAT_WWW_"))
+    process.env[name.replace("ROWBOAT_", "OPPULENCE_")] ??= value;
+}
+
 type Bundler = "webpack" | "turbopack";
 
 /**

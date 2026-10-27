@@ -4,7 +4,7 @@ import { GET } from "@/app/readyz/route";
 
 describe("GET /readyz", () => {
   beforeEach(() => {
-    vi.stubEnv("ROWBOAT_WWW_API_PROXY_URL", "https://api.example.test");
+    vi.stubEnv("OPPULENCE_WWW_API_PROXY_URL", "https://api.example.test");
   });
 
   afterEach(() => {
@@ -41,7 +41,7 @@ describe("GET /readyz", () => {
   });
 
   it("reports not ready without exposing configuration errors", async () => {
-    vi.stubEnv("ROWBOAT_WWW_API_PROXY_URL", "not-a-url");
+    vi.stubEnv("OPPULENCE_WWW_API_PROXY_URL", "not-a-url");
     const fetchMock = vi.fn<typeof fetch>();
     vi.stubGlobal("fetch", fetchMock);
 

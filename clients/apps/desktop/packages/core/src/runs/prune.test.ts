@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "fs/promises";
 import path from "path";
 
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-runs-prune-test");
+const TEST_WORKDIR = vi.hoisted(() => "/tmp/oppulence-runs-prune-test");
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
 import { pruneRunLogs } from "./repo.js";

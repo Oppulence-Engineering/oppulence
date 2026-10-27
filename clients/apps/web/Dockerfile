@@ -27,9 +27,8 @@ FROM node:24-alpine AS runtime
 WORKDIR /app/clients/apps/web
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV ROWBOAT_WWW_PUBLIC_API_BASE_URL=https://api.oppulence.io
-ENV ROWBOAT_WWW_API_PROXY_URL=https://api.oppulence.io
-ENV ROWBOAT_WWW_PORT=8080
+# OPPULENCE_WWW_* defaults live in docker-entrypoint.sh so values a deploy sets
+# under the pre-rename ROWBOAT_WWW_* names are not shadowed by image defaults.
 
 COPY --from=build --chown=101:101 /repo/clients/apps/web/.next/standalone /app
 COPY --from=build --chown=101:101 /repo/clients/apps/web/.next/static ./.next/static
@@ -38,7 +37,7 @@ COPY --chown=101:101 clients/apps/web/scripts/docker-entrypoint.sh /docker-entry
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- "http://127.0.0.1:${ROWBOAT_WWW_PORT}/healthz" >/dev/null || exit 1
+  CMD wget -qO- "http://127.0.0.1:${OPPULENCE_WWW_PORT:-${ROWBOAT_WWW_PORT:-8080}}/healthz" >/dev/null || exit 1
 
 USER 101:101
 ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]

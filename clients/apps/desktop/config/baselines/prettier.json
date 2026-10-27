@@ -69,7 +69,7 @@
   "apps/renderer/src/components/onboarding/steps/welcome-step.tsx",
   "apps/renderer/src/components/onboarding/use-onboarding-state.ts",
   "apps/renderer/src/components/rich-markdown-viewer.tsx",
-  "apps/renderer/src/components/rowboat-mention-popover.tsx",
+  "apps/renderer/src/components/oppulence-mention-popover.tsx",
   "apps/renderer/src/components/settings/connected-accounts-settings.tsx",
   "apps/renderer/src/components/settings/dictation-microphone-settings.tsx",
   "apps/renderer/src/components/settings/mcp-settings.tsx",

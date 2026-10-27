@@ -5,7 +5,7 @@ package gqlapi
 
 import (
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
 )
 
 // Resolver is the GraphQL resolver root; it delegates to the ent client.

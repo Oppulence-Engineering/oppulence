@@ -176,19 +176,19 @@ func TestKubernetesSandboxExecutorReturnsFailedJobLogs(t *testing.T) {
 }
 
 func TestKubernetesSandboxExecutorLiveSmoke(t *testing.T) {
-	if os.Getenv("ROWBOAT_K8S_SANDBOX_LIVE") != "1" {
-		t.Skip("set ROWBOAT_K8S_SANDBOX_LIVE=1 to run against a live Kubernetes API")
+	if os.Getenv("OPPULENCE_K8S_SANDBOX_LIVE") != "1" {
+		t.Skip("set OPPULENCE_K8S_SANDBOX_LIVE=1 to run against a live Kubernetes API")
 	}
-	apiServer := os.Getenv("ROWBOAT_K8S_SANDBOX_API_SERVER")
-	namespace := os.Getenv("ROWBOAT_K8S_SANDBOX_NAMESPACE")
+	apiServer := os.Getenv("OPPULENCE_K8S_SANDBOX_API_SERVER")
+	namespace := os.Getenv("OPPULENCE_K8S_SANDBOX_NAMESPACE")
 	if apiServer == "" || namespace == "" {
-		t.Fatal("ROWBOAT_K8S_SANDBOX_API_SERVER and ROWBOAT_K8S_SANDBOX_NAMESPACE are required")
+		t.Fatal("OPPULENCE_K8S_SANDBOX_API_SERVER and OPPULENCE_K8S_SANDBOX_NAMESPACE are required")
 	}
-	image := os.Getenv("ROWBOAT_K8S_SANDBOX_IMAGE")
+	image := os.Getenv("OPPULENCE_K8S_SANDBOX_IMAGE")
 	if image == "" {
 		image = "redis:7-alpine"
 	}
-	token := os.Getenv("ROWBOAT_K8S_SANDBOX_TOKEN")
+	token := os.Getenv("OPPULENCE_K8S_SANDBOX_TOKEN")
 	if token == "" {
 		token = "dummy"
 	}

@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googlechannel"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/googlewatch"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/googlechannel"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
 	"go.uber.org/zap"
 )
 
@@ -239,13 +239,13 @@ func (h *Handler) handleDriveNotification(w http.ResponseWriter, r *http.Request
 	h.respondIngest(w, r, owner, req)
 }
 
-// calendarAccountFromChannelID extracts the account email from a Rowboat-
+// calendarAccountFromChannelID extracts the account email from a Oppulence-
 // minted channel ID, or "" for foreign formats.
 func calendarAccountFromChannelID(channelID string) string {
 	return googleChannelAccountFromID(channelID, "gcal")
 }
 
-// driveAccountFromChannelID extracts the account email from a Rowboat-minted
+// driveAccountFromChannelID extracts the account email from a Oppulence-minted
 // Drive channel ID, or "" for foreign formats.
 func driveAccountFromChannelID(channelID string) string {
 	return googleChannelAccountFromID(channelID, "gdrive")
@@ -255,7 +255,7 @@ func googleChannelAccountFromID(channelID, prefix string) string {
 	return googlechannel.Account(channelID, prefix)
 }
 
-// resolveActiveGoogleWatch binds a push to the exact registration Rowboat
+// resolveActiveGoogleWatch binds a push to the exact registration Oppulence
 // created. A shared webhook token alone is not enough: without this check a
 // holder could forge a channel id containing any connected user's email and
 // inject events into that tenant.

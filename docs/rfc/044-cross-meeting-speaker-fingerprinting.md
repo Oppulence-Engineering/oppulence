@@ -8,30 +8,30 @@
 | **Owners**     | `server`, `clients/apps/desktop` meeting ingestion, relationship graph, privacy                                                                                                |
 | **Created**    | 2026-08-12                                                                                                                                                                 |
 | **Updated**    | 2026-08-21                                                                                                                                                                 |
-| **Depends on** | [RFC 022](./022-unified-entity-graph.md), [RFC 035](./035-meeting-intelligence-commitment-ledger.md), [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) |
+| **Depends on** | [RFC 022](./022-unified-entity-graph.md), [RFC 035](./035-meeting-intelligence-commitment-ledger.md), [RFC 055](./055-capture-product-boundary-and-oppulence-integration.md) |
 | **Related**    | [RFC 036](./036-relationship-state-engine.md)                                                                                                                              |
-| **Supersedes** | The Rowboat-owned embedding, enrollment, and voice-profile store scope in the original RFC 044                                                                             |
+| **Supersedes** | The Oppulence-owned embedding, enrollment, and voice-profile store scope in the original RFC 044                                                                             |
 
 ## 1. Decision
 
 The capture product owns speaker embeddings, persistent local voice profiles,
-enrollment, correction, merge/split, and profile deletion. Rowboat accepts a
+enrollment, correction, merge/split, and profile deletion. Oppulence accepts a
 voice-profile reference only as an identity **hint** and combines it with
 calendar, email, CRM, and prior evidence to resolve a canonical person.
 
-A capture voice-profile ID is never a Rowboat person ID, and a high-confidence
+A capture voice-profile ID is never a Oppulence person ID, and a high-confidence
 voice match alone cannot silently assert a consequential commitment against a
 person without provenance.
 
-## 2. Why Rowboat still needs this RFC
+## 2. Why Oppulence still needs this RFC
 
 RFC 035 attributes spoken commitments and RFC 036 projects relationship state.
-Those systems need durable identity across meetings, but the correct Rowboat
+Those systems need durable identity across meetings, but the correct Oppulence
 problem is evidence-backed identity binding—not running a second biometric
 profile system.
 
 Separating the systems also preserves a legible privacy boundary: biometric
-vectors can remain on-device while Rowboat receives a pseudonymous profile
+vectors can remain on-device while Oppulence receives a pseudonymous profile
 reference, confidence, and user-confirmation state.
 
 ## 3. Capture identity hint
@@ -52,11 +52,11 @@ CaptureSpeakerHint
 
 Raw embeddings are excluded by default. Transferring an embedding requires a
 separate explicit policy and consent decision; it is not implied by connecting
-the capture product to Rowboat.
+the capture product to Oppulence.
 
 ## 4. Resolution policy
 
-Rowboat's identity resolver combines the hint with:
+Oppulence's identity resolver combines the hint with:
 
 - a user-confirmed speaker assignment;
 - calendar attendee identity;
@@ -80,18 +80,18 @@ voice profile, calendar roster, another connector, or a combination.
 
 ## 5. Consent and deletion
 
-Voice profiles are biometric data. Rowboat must ingest the capture product's
+Voice profiles are biometric data. Oppulence must ingest the capture product's
 consent classification, policy version, and deletion events. When a source
-profile is deleted, split, or merged, Rowboat invalidates the source mapping and
+profile is deleted, split, or merged, Oppulence invalidates the source mapping and
 reprojects affected assertions according to policy.
 
-Rowboat settings must show linked capture profiles without implying that
-Rowboat stores their embeddings. Disconnecting the capture product revokes
+Oppulence settings must show linked capture profiles without implying that
+Oppulence stores their embeddings. Disconnecting the capture product revokes
 future access; deletion behavior follows the user's selected retention policy.
 
 ## 6. Definition of done
 
-- Rowboat ingests pseudonymous profile hints without requiring embeddings.
+- Oppulence ingests pseudonymous profile hints without requiring embeddings.
 - Source profile IDs are scoped by product, installation/account, and version.
 - Identity binding uses at least one independent signal or explicit user
   confirmation before automatic canonical assignment.
@@ -105,5 +105,5 @@ future access; deletion behavior follows the user's selected retention policy.
 
 Persistent embeddings, profile matching, threshold policy, and local profile
 management remain in the capture repository, including its RFC 0001. MIT code
-may inform the integration, but Rowboat ports only protocol types, validators,
+may inform the integration, but Oppulence ports only protocol types, validators,
 and evidence-resolution logic required by this RFC.

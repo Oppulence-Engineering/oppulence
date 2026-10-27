@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/creditledger"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 	"go.uber.org/zap"
 )
 

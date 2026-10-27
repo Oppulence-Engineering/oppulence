@@ -40,7 +40,7 @@ async function writeRun(workDir, runId, agentName, title) {
 }
 
 test('FSRunsRepo.list returns bounded filtered pages without skipping older matching runs', async () => {
-  const workDir = await mkdtemp(path.join(os.tmpdir(), 'rowboat-runs-list-'));
+  const workDir = await mkdtemp(path.join(os.tmpdir(), 'oppulence-runs-list-'));
   process.env.ROWBOAT_WORKDIR = workDir;
 
   try {

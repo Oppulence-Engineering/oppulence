@@ -327,7 +327,7 @@ triggers return `temporal_unavailable` through `triggerAPIRun` (`handler.go:1121
 ### 6. Smoke run payload
 
 Use the existing API path, not a Temporal CLI, for validation. The system invariant is the
-full Rowboat path:
+full Oppulence path:
 
 1. Desktop/API creates an `executionTarget=api` background task.
 2. `POST /v1/background-tasks/{slug}/trigger`.

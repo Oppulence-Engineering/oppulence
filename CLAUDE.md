@@ -1,6 +1,6 @@
 # CLAUDE.md - AI Coding Agent Context
 
-This file provides context for AI coding agents working on the Rowboat monorepo.
+This file provides context for AI coding agents working on the Oppulence monorepo.
 
 ## Quick Reference Commands
 

@@ -1,7 +1,7 @@
 /**
  * Draft suggestion lifecycle.
  *
- * Reply drafts live inside Rowboat by default and are only materialized as
+ * Reply drafts live inside Oppulence by default and are only materialized as
  * provider drafts when the user opts in (per email-004). The key correctness
  * property here is dedupe: sync sees the same thread many times, and we must not
  * spawn a new draft on every tick. We fingerprint the thread's message set and

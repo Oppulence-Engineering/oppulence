@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	entmigrate "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/migrate"
+	entmigrate "github.com/PlaybookMediaLLC/oppulence/server/ent/migrate"
 )
 
 func TestConnectorCredentialRecoveryMigrationMatchesEntSchema(t *testing.T) {

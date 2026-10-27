@@ -75,7 +75,7 @@ test.afterAll(async () => {
 test.skip(process.platform !== "darwin", "native capture is macOS-only");
 
 test("packaged audiocap helper is staged and its IPC is reachable", async () => {
-  const workdir = mkdtempSync(path.join(tmpdir(), "rowboat-audiocap-e2e-"));
+  const workdir = mkdtempSync(path.join(tmpdir(), "oppulence-audiocap-e2e-"));
   const appBinary = resolveBinary();
 
   if (EXPECT_BINARY) {

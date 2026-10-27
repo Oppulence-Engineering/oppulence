@@ -13,11 +13,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/agentsession"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/agenttoolcall"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/agentturn"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
 	"github.com/google/uuid"
 )
 

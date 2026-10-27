@@ -4,11 +4,11 @@
 | ------------------ | -------------------------------------------------------------------- |
 | **RFC**            | 049                                                                  |
 | **Status**         | Draft                                                                |
-| **Track**          | Rowboat reach · web and desktop localization                         |
+| **Track**          | Oppulence reach · web and desktop localization                         |
 | **Owners**         | `clients/apps/desktop` renderer, `clients/apps/web`, product                       |
 | **Created**        | 2026-08-12                                                           |
 | **Depends on**     | —                                                                    |
-| **Related**        | [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) |
+| **Related**        | [RFC 055](./055-capture-product-boundary-and-oppulence-integration.md) |
 | **Reference impl** | OpenWhispr (MIT) — see §5                                            |
 
 ## 1. Decision
@@ -65,7 +65,7 @@ translation behavior remain independently owned by the capture product.
 | Main-process i18n | `src/helpers/i18nMain.js`                                                                                  | —     | Translating outside React, per §3.4.                                                 |
 | CI enforcement    | `scripts/check-i18n.js`                                                                                    | 92    | Missing/orphaned key detection. Copy this early; it is what keeps i18n from rotting. |
 | Date formatting   | `src/utils/dateFormatting.ts`, `dateGrouping.ts`, `formatDuration.ts`, `formatAmount.ts`, `formatBytes.ts` | —     | Locale-aware formatting helpers.                                                     |
-| Language metadata | `src/utils/languageSupport.ts`                                                                             | —     | Reference for locale metadata; capture translation remains out of Rowboat scope.     |
+| Language metadata | `src/utils/languageSupport.ts`                                                                             | —     | Reference for locale metadata; capture translation remains out of Oppulence scope.     |
 
 MIT-licensed; carry the notice on any adapted file.
 

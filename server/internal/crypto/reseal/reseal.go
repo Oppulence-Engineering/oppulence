@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	appcrypto "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	appcrypto "github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
 )
 
 // Source identifies one encrypted connector payload class.

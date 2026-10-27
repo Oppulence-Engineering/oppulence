@@ -1,6 +1,6 @@
 # tools_webhook
 
-Reference Flask service that Rowboat workflows can POST to in order to execute tool functions out-of-process. Useful as a template for integrating custom code, business logic, or third-party APIs as Rowboat tools.
+Reference Flask service that Oppulence workflows can POST to in order to execute tool functions out-of-process. Useful as a template for integrating custom code, business logic, or third-party APIs as Oppulence tools.
 
 ## What it does
 
@@ -10,7 +10,7 @@ Exposes a single endpoint:
 POST /tool_call
 ```
 
-The request body is the standard Rowboat tool-call envelope. The handler:
+The request body is the standard Oppulence tool-call envelope. The handler:
 
 1. Optionally verifies the request signature (see below).
 2. Parses `content` (a JSON string) and pulls `toolCall.function.name` + `toolCall.function.arguments`.
@@ -68,8 +68,8 @@ pytest tests/
 ## Docker
 
 ```bash
-docker build -t rowboat-tools-webhook .
+docker build -t oppulence-tools-webhook .
 docker run -p 3005:3005 \
   -e SIGNING_SECRET=my-shared-secret \
-  rowboat-tools-webhook
+  oppulence-tools-webhook
 ```

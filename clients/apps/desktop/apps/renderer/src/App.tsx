@@ -559,7 +559,7 @@ function sortNodes(nodes: TreeNode[]): TreeNode[] {
 /**
  * Organize Meetings/ source folders into date-grouped subfolders.
  *
- * - rowboat:  rowboat/2026-03-20/meeting-xxx.md  → keeps date folders as-is
+ * - oppulence:  oppulence/2026-03-20/meeting-xxx.md  → keeps date folders as-is
  * - granola:  granola/2026/03/18/Title.md         → collapses into "2026-03-18" folders
  * - Files directly under a source folder (no date subfolder) are grouped
  *   by the date prefix in their filename (e.g. meeting-2026-03-17T...).
@@ -788,7 +788,7 @@ function ContentHeader({
 }) {
   return (
     <header
-      className="rowboat-titlebar titlebar-drag-region flex h-10 shrink-0 items-stretch overflow-hidden border-b border-border bg-background"
+      className="oppulence-titlebar titlebar-drag-region flex h-10 shrink-0 items-stretch overflow-hidden border-b border-border bg-background"
       style={{
         paddingLeft: 12,
         paddingRight: 12,
@@ -6763,7 +6763,7 @@ function App() {
                 <img alt="" className="titlebar-brand-mark" src="/logo-only.png" />
               </span>
               Oppulence
-              <span className="rounded-none bg-[var(--rowboat-attention)] px-1.5 py-0.5 text-[10px] font-medium text-white">
+              <span className="rounded-none bg-[var(--oppulence-attention)] px-1.5 py-0.5 text-[10px] font-medium text-white">
                 AI
               </span>
             </span>
@@ -7727,7 +7727,7 @@ function App() {
                         })}
                       </div>
 
-                      <div className="rowboat-composer-dock sticky bottom-0 z-10 bg-background pb-12 pt-0 shadow-lg">
+                      <div className="oppulence-composer-dock sticky bottom-0 z-10 bg-background pb-12 pt-0 shadow-lg">
                         <div className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-linear-to-t from-background to-transparent" />
                         <div className="mx-auto w-full max-w-4xl px-4">
                           {chatTabs.map((tab) => {

@@ -4,7 +4,7 @@
 // Usage:
 //
 //	connector-reencrypt inventory
-//	connector-reencrypt reseal --state-file /var/lib/rowboat/connector-reseal.json
+//	connector-reencrypt reseal --state-file /var/lib/oppulence/connector-reseal.json
 //	connector-reencrypt retirement-gate [--retire-key-id old-key]
 package main
 
@@ -20,11 +20,11 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	appcrypto "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto/reseal"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	appcrypto "github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto/reseal"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/telemetry"
 	redis "github.com/redis/go-redis/v9"
 )
 

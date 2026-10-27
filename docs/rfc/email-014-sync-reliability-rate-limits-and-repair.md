@@ -12,7 +12,7 @@
 
 ## Summary
 
-Make mailbox sync and automation reliable under provider rate limits, webhook duplication, cursor loss, auth failures, crashes, and multi-device concurrency. Inbox Zero has provider webhooks, history processing, Outlook locks, schedule drift tests, cron fallbacks, and debug pages. Rowboat's Gmail desktop sync works today, but the email track needs durability before adding more automation.
+Make mailbox sync and automation reliable under provider rate limits, webhook duplication, cursor loss, auth failures, crashes, and multi-device concurrency. Inbox Zero has provider webhooks, history processing, Outlook locks, schedule drift tests, cron fallbacks, and debug pages. Oppulence's Gmail desktop sync works today, but the email track needs durability before adding more automation.
 
 ## Inbox Zero Implementation References
 
@@ -34,7 +34,7 @@ Implementation agents should first read then inspect:
 - `apps/web/utils/scheduled-actions/scheduler.ts`
 - `apps/web/utils/scheduled-actions/executor.ts`
 
-Use these for provider retry/backoff, webhook idempotency, subscription renewal, and scheduled-action recovery. Rowboat should combine those lessons with RFC 025 durable local queues.
+Use these for provider retry/backoff, webhook idempotency, subscription renewal, and scheduled-action recovery. Oppulence should combine those lessons with RFC 025 durable local queues.
 
 ## Goals
 

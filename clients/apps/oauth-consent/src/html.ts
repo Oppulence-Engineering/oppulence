@@ -29,7 +29,7 @@ export function consentPage(session: ConsentSession): string {
     ? `<label class="confirmation"><input type="checkbox" name="confirm_high" value="yes"> <span>I understand that the selected high-trust access can make consequential changes.</span></label>`
     : '';
   const stepUp = hasStepUp
-    ? '<p class="notice">Money-moving access requires a separate multi-factor verification before Rowboat can approve it.</p>'
+    ? '<p class="notice">Money-moving access requires a separate multi-factor verification before Oppulence can approve it.</p>'
     : '';
   return layout(
     `Connect ${escapeHtml(context.connector.display_name)}`,

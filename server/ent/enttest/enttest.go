@@ -5,12 +5,12 @@ package enttest
 import (
 	"context"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
 	// required by schema hooks.
-	_ "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/runtime"
+	_ "github.com/PlaybookMediaLLC/oppulence/server/ent/runtime"
 
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/migrate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/migrate"
 )
 
 type (

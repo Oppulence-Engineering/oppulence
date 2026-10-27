@@ -9,7 +9,7 @@ import (
 
 	entschema "entgo.io/ent/dialect/sql/schema"
 
-	generated "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/migrate"
+	generated "github.com/PlaybookMediaLLC/oppulence/server/ent/migrate"
 )
 
 const (

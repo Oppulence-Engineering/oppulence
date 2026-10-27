@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
+	oauthrs "github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 

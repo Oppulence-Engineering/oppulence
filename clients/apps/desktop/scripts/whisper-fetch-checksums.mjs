@@ -43,7 +43,7 @@ const coremlFileFor = (id) => `ggml-${id}-encoder.mlmodelc.zip`;
 
 async function fetchTree(repo) {
   const url = `https://huggingface.co/api/models/${repo}/tree/${HF_REVISION}?recursive=true&expand=true`;
-  const res = await fetch(url, { headers: { "User-Agent": "rowboat-whisper-checksums" } });
+  const res = await fetch(url, { headers: { "User-Agent": "oppulence-whisper-checksums" } });
   if (!res.ok) throw new Error(`HF tree fetch failed for ${repo}: ${res.status} ${res.statusText}`);
   return res.json();
 }

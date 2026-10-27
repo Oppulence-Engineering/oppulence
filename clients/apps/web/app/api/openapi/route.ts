@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 
 import { OpenAPIDocumentSchema } from "@/lib/api/routes/schemas/openapi";
 import { isRecord, streamUpstreamResponse } from "@/lib/bff/upstream-response";
-import { publicRowboatApiBaseURL, publicRowboatApiURL } from "@/lib/api/rowboat-public-api";
+import { publicOppulenceApiBaseURL, publicOppulenceApiURL } from "@/lib/api/oppulence-public-api";
 
-const ROWBOAT_API_DESCRIPTION =
-  "Rowboat's API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, Composio proxying, internal webhooks, and admin GraphQL. The documented paths below are the routes mounted by cmd/server/wire.go.";
+const OPPULENCE_API_DESCRIPTION =
+  "Oppulence's API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, Composio proxying, internal webhooks, and admin GraphQL. The documented paths below are the routes mounted by cmd/server/wire.go.";
 
 export async function GET(): Promise<NextResponse> {
   try {
-    const upstream = await fetch(publicRowboatApiURL("/openapi.json"), {
+    const upstream = await fetch(publicOppulenceApiURL("/openapi.json"), {
       cache: "no-store",
       headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(10_000),
@@ -31,13 +31,13 @@ export async function GET(): Promise<NextResponse> {
     }
 
     const document = parsedDocument.data;
-    const apiBase = publicRowboatApiBaseURL().toString().replace(/\/$/, "");
+    const apiBase = publicOppulenceApiBaseURL().toString().replace(/\/$/, "");
     document.servers = [{ description: "Oppulence API", url: apiBase }];
 
     const info = document.info;
     document.info = {
       ...(isRecord(info) ? info : {}),
-      description: ROWBOAT_API_DESCRIPTION,
+      description: OPPULENCE_API_DESCRIPTION,
       title: "Oppulence API",
     };
 

@@ -12,7 +12,7 @@ import type { RevenuePolicyDecisionSuppression } from "./revenuePolicyDecisionSu
 import type { RevenuePolicyDecisionVerification } from "./revenuePolicyDecisionVerification";
 
 /**
- * Immutable OutboundConsole preflight decision for one exact action revision. Rowboat snapshots the decision; it never composes one.
+ * Immutable OutboundConsole preflight decision for one exact action revision. Oppulence snapshots the decision; it never composes one.
  */
 export interface RevenuePolicyDecision {
   /** CRM sub-result snapshot; unknown when the connector is unavailable. */

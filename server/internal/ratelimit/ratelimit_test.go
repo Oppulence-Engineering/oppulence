@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/ratelimit"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/ratelimit"
 	"go.uber.org/zap"
 )
 

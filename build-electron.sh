@@ -6,7 +6,7 @@ set -e
     npm install && \
     npm run build)
 
-# build rowboat server
+# build oppulence server
 (cd clients/apps/cli && \
     npm install && \
     npm run build)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/authmetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/authmetrics"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 )

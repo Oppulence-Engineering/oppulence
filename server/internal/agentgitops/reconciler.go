@@ -15,12 +15,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentspec"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/agentdefinition"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/agentregistry"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/agentspec"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 	"go.uber.org/zap"
 )
 

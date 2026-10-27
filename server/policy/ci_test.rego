@@ -26,7 +26,7 @@ test_rejects_removed_quality_gate if {
 }
 
 complete_migration_workflow := {
-	"name": "Rowboat API Migrations",
+	"name": "Oppulence API Migrations",
 	"jobs": {"migration-policy": {"steps": [
 		{"run": "make install-atlas"},
 		{"run": "make migration-validate migration-lint"},

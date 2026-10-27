@@ -12,7 +12,7 @@
 
 ## Summary
 
-Define how Rowboat email features behave with multiple mailbox accounts and future organization/team contexts. Inbox Zero supports multiple email accounts, organization pages, organization stats, members, and account-scoped settings. Rowboat can start single-user/single-account for dogfood, but the data model and permission checks should not assume that forever. Multi-account mistakes in email are severe: sending from the wrong account, searching the wrong mailbox, or applying a rule to the wrong provider can damage trust immediately.
+Define how Oppulence email features behave with multiple mailbox accounts and future organization/team contexts. Inbox Zero supports multiple email accounts, organization pages, organization stats, members, and account-scoped settings. Oppulence can start single-user/single-account for dogfood, but the data model and permission checks should not assume that forever. Multi-account mistakes in email are severe: sending from the wrong account, searching the wrong mailbox, or applying a rule to the wrong provider can damage trust immediately.
 
 ## Inbox Zero Implementation References
 
@@ -29,7 +29,7 @@ Implementation agents should first read then inspect:
 - `apps/web/app/(app)/[emailAccountId]/organization/page.tsx`
 - `apps/web/app/(app)/organization/[organizationId]/stats/page.tsx`
 
-Use these for account scoping and organization-stat boundaries. Rowboat should start account-scoped by default and add cross-account behavior only through explicit UI/API choices.
+Use these for account scoping and organization-stat boundaries. Oppulence should start account-scoped by default and add cross-account behavior only through explicit UI/API choices.
 
 ## Goals
 
@@ -170,5 +170,5 @@ Default to account-scoped for email APIs.
 
 - Should dogfood support one account only until the command center is stable?
 - Should cross-account learned memory ever be enabled by default?
-- How should Rowboat represent aliases and delegated inboxes?
+- How should Oppulence represent aliases and delegated inboxes?
 - What is the first team/org email use case worth supporting?

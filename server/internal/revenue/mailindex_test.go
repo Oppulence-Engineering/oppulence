@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailmessagemeta"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailthread"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
 )
 
 // A scan populates the Layer-1 mail index (metadata only) for swept threads.

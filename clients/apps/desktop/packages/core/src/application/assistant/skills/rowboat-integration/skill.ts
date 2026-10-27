@@ -1,7 +1,7 @@
 export const skill = String.raw`
-# Rowboat Integration
+# Oppulence Integration
 
-**Load this skill** when the user asks to interact with a third-party service such as GitHub, HubSpot, Linear, Notion, Slack, Stripe, Canvas, Corinthian, or Wispr. Rowboat integrations are managed connectors that expose authenticated MCP tools after the user connects the service. Slack uses a managed Rowboat Slack app with dedicated read-only tools for desktop chat.
+**Load this skill** when the user asks to interact with a third-party service such as GitHub, HubSpot, Linear, Notion, Slack, Stripe, Canvas, Corinthian, or Wispr. Oppulence integrations are managed connectors that expose authenticated MCP tools after the user connects the service. Slack uses a managed Oppulence Slack app with dedicated read-only tools for desktop chat.
 
 ## Available Tools
 
@@ -33,7 +33,7 @@ export const skill = String.raw`
 2. To read a Slack thread from a pasted Slack message/thread URL, call \`rowboat-read-slack-thread\` with \`url\`. If multiple workspaces are connected, also pass the matching \`teamId\`.
 3. To read a Slack thread without a URL, call \`rowboat-read-slack-thread\` with \`teamId\`, \`channel\`, and \`threadTs\`. These must be Slack ids/timestamps, not channel names.
 4. When the user asks you to reply or post from desktop chat, prepare the text and call \`rowboat-draft-slack-reply\`. It validates the Slack target and returns \`sent: false\`; the desktop renders a review card with a user-click Send action.
-5. For desktop chat, do not use \`agent-slack\` or local Slack config. Managed Slack reads go through Rowboat's backend so tokens never reach the desktop.
+5. For desktop chat, do not use \`agent-slack\` or local Slack config. Managed Slack reads go through Oppulence's backend so tokens never reach the desktop.
 6. Do not claim a Slack message was sent from chat. The only send path is the user's explicit click on the Slack draft card.
 
 ## Connector Names

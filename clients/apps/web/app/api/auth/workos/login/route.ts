@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       redirectURI,
       state: pkce.state,
       codeChallenge: pkce.codeChallenge,
-      provider: reauth ? "authkit" : process.env.ROWBOAT_WWW_WORKOS_PROVIDER,
+      provider: reauth ? "authkit" : process.env.OPPULENCE_WWW_WORKOS_PROVIDER,
       maxAge: reauth ? "0" : undefined,
       prompt: reauth ? "login" : undefined,
     });

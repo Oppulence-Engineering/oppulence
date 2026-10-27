@@ -9,7 +9,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/mixin"
 )
 
 // CloudEvent is the normalized envelope for one inbound external/connector
@@ -53,7 +53,7 @@ func (CloudEvent) Fields() []ent.Field {
 		// payload (which may hold PII like email bodies) is sealed below.
 		field.Text("text").Optional(),
 		field.Bytes("payload_ciphertext").Optional().Sensitive(),
-		// routing_json stores Rowboat's own bounded decision summary (threshold,
+		// routing_json stores Oppulence's own bounded decision summary (threshold,
 		// prompt versions, per-task decisions) — never third-party raw payload.
 		field.Text("routing_json").Optional().Validate(validJSON),
 		// dedupe_key is the idempotency anchor; unique per (user, source).

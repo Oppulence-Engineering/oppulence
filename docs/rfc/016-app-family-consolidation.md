@@ -8,9 +8,9 @@
 | **Owners**       | `repo/apps`                                                                                                                                                                                                                       |
 | **Created**      | 2026-06-06                                                                                                                                                                                                                        |
 | **Last updated** | 2026-06-06                                                                                                                                                                                                                        |
-| **Depends on**   | [RFC 010](./complete-010-rowboat-api-service-plane.md), [RFC 015](./015-rowboat-platform-workos-fga-and-widget-auth.md)                                                                                                           |
+| **Depends on**   | [RFC 010](./complete-010-rowboat-api-service-plane.md), [RFC 015](./015-oppulence-platform-workos-fga-and-widget-auth.md)                                                                                                           |
 | **Related**      | [RFC 009](./complete-009-local-on-device-transcription.md), [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 013](./013-oppulence-product-connector-fabric.md), [RFC 018](./018-a2a-delegation-and-agent-identity.md) |
-| **Refs**         | Supersedes the former app architecture map and app-boundary portions of the former backend implementation plan; operational reference: [`docs/LOCAL_KIND_ROWBOAT_API.md`](../../docs/LOCAL_KIND_ROWBOAT_API.md).                  |
+| **Refs**         | Supersedes the former app architecture map and app-boundary portions of the former backend implementation plan; operational reference: [`docs/LOCAL_KIND_OPPULENCE_API.md`](../../docs/LOCAL_KIND_OPPULENCE_API.md).                  |
 
 ## Summary
 
@@ -81,7 +81,7 @@ API compatibility, product positioning, and test coverage.
 | App                | Decision                                                                                                                                                                                    |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `clients/apps/desktop`           | Canonical desktop app. Owns local capture, local models, live notes, desktop control plane, and desktop presentation of Oppulence product connectors.                                       |
-| `clients/apps/dashboard`     | Canonical hosted Rowboat platform. Owns hosted builder, hosted chat, projects, hosted widget APIs, and hosted WorkOS/FGA integration.                                                       |
+| `clients/apps/dashboard`     | Canonical hosted Oppulence platform. Owns hosted builder, hosted chat, projects, hosted widget APIs, and hosted WorkOS/FGA integration.                                                       |
 | `server` | Canonical Go service plane for desktop cloud capabilities. Owns background cloud runs, connector consent broker, desktop cloud API, billing/credit checks, and service-plane observability. |
 
 Tier 1 apps must have owner docs, environment docs, health checks where
@@ -204,7 +204,7 @@ Deprecated app paths are allowed, but they must be obvious:
 The app-family map should be a durable routing document:
 
 ```md
-# Rowboat Apps
+# Oppulence Apps
 
 | App         | Tier   | Owner        | Status              | Primary contract          | RFC             |
 | ----------- | ------ | ------------ | ------------------- | ------------------------- | --------------- |
@@ -310,7 +310,7 @@ Does not own:
 
 Owns:
 
-- hosted Rowboat product
+- hosted Oppulence product
 - hosted project model
 - hosted chat/runtime APIs
 - WorkOS hosted AuthKit/FGA migration
@@ -399,7 +399,7 @@ Docs should route readers by intent:
 | Build product connector   | RFC 012/013 and product MCP docs      |
 | Try an experiment         | experimental README with warning      |
 
-Avoid root docs that say "run Rowboat" without specifying which app family.
+Avoid root docs that say "run Oppulence" without specifying which app family.
 
 ### Migration checklist by app
 

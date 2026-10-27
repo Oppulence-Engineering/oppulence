@@ -4,11 +4,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 FLY_CONFIG="${SCRIPT_DIR}/../fly.toml"
-FLY_APP="${1:-${ROWBOAT_FLY_APP:-}}"
+FLY_APP="${1:-${OPPULENCE_FLY_APP:-}}"
 
 if [[ -z "${FLY_APP}" ]]; then
   echo "usage: $(basename "$0") <fly-app-name>" >&2
-  echo "or set ROWBOAT_FLY_APP" >&2
+  echo "or set OPPULENCE_FLY_APP" >&2
   exit 2
 fi
 if ! command -v flyctl >/dev/null 2>&1; then

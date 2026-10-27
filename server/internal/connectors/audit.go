@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/connectorauditevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )

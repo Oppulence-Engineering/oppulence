@@ -4,7 +4,7 @@ package docs
 import (
 	"net/http"
 
-	rowboatapi "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/api"
+	oppulenceapi "github.com/PlaybookMediaLLC/oppulence/server/api"
 )
 
 // Handler serves the OpenAPI document and Scalar API reference UI.
@@ -20,7 +20,7 @@ func (h *Handler) OpenAPI(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=300")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(rowboatapi.OpenAPIJSON)
+	_, _ = w.Write(oppulenceapi.OpenAPIJSON)
 }
 
 // Scalar serves the Scalar API reference UI.

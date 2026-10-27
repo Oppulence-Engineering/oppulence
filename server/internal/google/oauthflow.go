@@ -5,7 +5,7 @@ package google
 // consent dance (it holds the client secret) and parks the resulting token
 // bundle in OAuthPending keyed by a state ticket. It then deep-links back to the
 // desktop, which redeems the ticket with its bearer via /v1/google-oauth/claim.
-// This replaces the rowboat web-dashboard's /oauth/google/start front door.
+// This replaces the oppulence web-dashboard's /oauth/google/start front door.
 
 import (
 	"context"
@@ -20,9 +20,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
 	"go.uber.org/zap"
 )
 

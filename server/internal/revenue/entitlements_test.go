@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 )
 
 // grantSub gives the fixture user a subscription row with the given plan/status.

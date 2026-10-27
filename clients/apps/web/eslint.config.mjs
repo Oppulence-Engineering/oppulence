@@ -92,7 +92,7 @@ const config = [
       "build/**",
       "coverage/**",
       "lib/api/generated/**",
-      ".rowboat-contracts-*/**",
+      ".oppulence-contracts-*/**",
       "vendor/**",
       "sim-port/**",
       "next-env.d.ts",

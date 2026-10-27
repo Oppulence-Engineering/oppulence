@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/mixin"
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"

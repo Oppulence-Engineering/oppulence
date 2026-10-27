@@ -1,8 +1,8 @@
-# Rowboat Desktop Performance Remediation Implementation Plan
+# Oppulence Desktop Performance Remediation Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Reduce Rowboat desktop startup delay, renderer jank, and disk/IPC amplification in the Electron app under `clients/apps/desktop`.
+**Goal:** Reduce Oppulence desktop startup delay, renderer jank, and disk/IPC amplification in the Electron app under `clients/apps/desktop`.
 
 **Architecture:** Keep the app's current Electron + Vite + React + local `~/.rowboat` workspace design. Move non-critical startup work out of the first-window path, keep expensive filesystem scans bounded or coalesced, and cap UI-thread work for large local datasets.
 

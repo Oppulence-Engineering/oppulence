@@ -11,9 +11,9 @@ export async function GET() {
   // connection() pins it to request time so the env is read per-request.
   await connection();
   const publicApiBaseUrl =
-    process.env.ROWBOAT_WWW_PUBLIC_API_BASE_URL ||
+    process.env.OPPULENCE_WWW_PUBLIC_API_BASE_URL ||
     process.env.ROWBOATX_PUBLIC_API_BASE_URL ||
-    process.env.ROWBOAT_WWW_API_PROXY_URL ||
+    process.env.OPPULENCE_WWW_API_PROXY_URL ||
     process.env.ROWBOATX_API_PROXY_URL ||
     process.env.ROWBOATX_API_BASE_URL ||
     "http://localhost:18080";

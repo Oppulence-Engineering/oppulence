@@ -1,6 +1,6 @@
 package openapidoc
 
-import "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/actions"
+import "github.com/PlaybookMediaLLC/oppulence/server/internal/actions"
 
 const objectAuditDescription = "Audit trail opens this object's proposal, approval, and execution. The page shows the proposal kind, the approval prefix, and the execution result."
 

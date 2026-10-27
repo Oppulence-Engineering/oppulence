@@ -12,7 +12,7 @@
 
 ## Summary
 
-Define privacy, security, retention, model routing, and governance rules for Rowboat email features. Email contains credentials, contracts, financial documents, sensitive personal data, and private relationships. Inbox Zero supports BYO API keys and self-hosted/local model options, but Rowboat's desktop-first architecture should set stricter defaults: local-first full bodies, scoped cloud storage, explicit action approvals, inspectable learned memory, and clear retention controls.
+Define privacy, security, retention, model routing, and governance rules for Oppulence email features. Email contains credentials, contracts, financial documents, sensitive personal data, and private relationships. Inbox Zero supports BYO API keys and self-hosted/local model options, but Oppulence's desktop-first architecture should set stricter defaults: local-first full bodies, scoped cloud storage, explicit action approvals, inspectable learned memory, and clear retention controls.
 
 ## Inbox Zero Implementation References
 
@@ -30,7 +30,7 @@ Implementation agents should first read then inspect:
 - `apps/web/utils/prisma-extensions.ts`
 - `apps/web/utils/braintrust.ts`
 
-Use these for prompt-injection defenses, safe HTML/link rendering, secret redaction, BYO model posture, and observability boundaries. Rowboat should default stricter than Inbox Zero when full bodies or external payloads are involved.
+Use these for prompt-injection defenses, safe HTML/link rendering, secret redaction, BYO model posture, and observability boundaries. Oppulence should default stricter than Inbox Zero when full bodies or external payloads are involved.
 
 ## Goals
 
@@ -64,7 +64,7 @@ Use these for prompt-injection defenses, safe HTML/link rendering, secret redact
 
 Settings:
 
-- Rowboat-hosted model allowed.
+- Oppulence-hosted model allowed.
 - BYO OpenAI/Anthropic/Google/Groq/OpenRouter key.
 - Local model only.
 - Never send raw email bodies to remote models.

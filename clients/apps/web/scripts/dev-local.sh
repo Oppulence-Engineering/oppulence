@@ -20,10 +20,10 @@ if [ ! -d node_modules ]; then
   npm install
 fi
 
-export ROWBOAT_WWW_PORT="${ROWBOAT_WWW_PORT:-18082}"
-export ROWBOAT_WWW_API_PROXY_URL="${ROWBOAT_WWW_API_PROXY_URL:-http://localhost:18080}"
-export ROWBOAT_WWW_PUBLIC_API_BASE_URL="${ROWBOAT_WWW_PUBLIC_API_BASE_URL:-http://localhost:18080}"
-export ROWBOAT_WWW_SESSION_SECRET="${ROWBOAT_WWW_SESSION_SECRET:-dev-only-rowboat-www-session-secret-change-me}"
+export OPPULENCE_WWW_PORT="${OPPULENCE_WWW_PORT:-18082}"
+export OPPULENCE_WWW_API_PROXY_URL="${OPPULENCE_WWW_API_PROXY_URL:-http://localhost:18080}"
+export OPPULENCE_WWW_PUBLIC_API_BASE_URL="${OPPULENCE_WWW_PUBLIC_API_BASE_URL:-http://localhost:18080}"
+export OPPULENCE_WWW_SESSION_SECRET="${OPPULENCE_WWW_SESSION_SECRET:-dev-only-rowboat-www-session-secret-change-me}"
 
-echo "rowboat-www dev → http://localhost:${ROWBOAT_WWW_PORT}"
-exec npx next dev --port "${ROWBOAT_WWW_PORT}"
+echo "rowboat-www dev → http://localhost:${OPPULENCE_WWW_PORT}"
+exec npx next dev --port "${OPPULENCE_WWW_PORT}"

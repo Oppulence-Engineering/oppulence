@@ -13,12 +13,12 @@ Install `flyctl`, authenticate, and run these commands from the monorepo root:
 
 ```bash
 fly apps create oppulence-rowboat-www
-fly secrets set --app oppulence-rowboat-www ROWBOAT_WWW_SESSION_SECRET="$(openssl rand -base64 48)"
+fly secrets set --app oppulence-rowboat-www OPPULENCE_WWW_SESSION_SECRET="$(openssl rand -base64 48)"
 # Optional: Plain support chat (Settings -> Chat -> Oppulence). Without these
 # the widget stays off; the app is otherwise unaffected.
 fly secrets set --app oppulence-rowboat-www \
-  ROWBOAT_WWW_PLAIN_CHAT_APP_ID="liveChatApp_..." \
-  ROWBOAT_WWW_PLAIN_CHAT_SECRET="<chat secret>"
+  OPPULENCE_WWW_PLAIN_CHAT_APP_ID="liveChatApp_..." \
+  OPPULENCE_WWW_PLAIN_CHAT_SECRET="<chat secret>"
 fly deploy . \
   --app oppulence-rowboat-www \
   --config clients/apps/web/config/deployment/fly.toml \
@@ -41,8 +41,8 @@ The `Deploy rowboat-www to Fly.io` workflow deploys automatically when relevant 
 - `FLY_API_TOKEN` secret: an app-scoped deploy token from
   `fly tokens create deploy --app oppulence-rowboat-www --expiry 720h`. Rotate it before the
   30-day expiry.
-- `ROWBOAT_WWW_SESSION_SECRET` secret: the same 32-or-more-character value used for the Fly App.
-- Optional `ROWBOAT_WWW_PLAIN_CHAT_SECRET` secret and `ROWBOAT_WWW_PLAIN_CHAT_APP_ID` variable for
+- `OPPULENCE_WWW_SESSION_SECRET` secret: the same 32-or-more-character value used for the Fly App.
+- Optional `OPPULENCE_WWW_PLAIN_CHAT_SECRET` secret and `OPPULENCE_WWW_PLAIN_CHAT_APP_ID` variable for
   Plain support chat. Both must be present for the workflow to stage them; with either missing the
   step is skipped and the widget stays off rather than failing the deploy.
 - Optional `FLY_APP_NAME` variable when the Fly App is not named `oppulence-rowboat-www`.
@@ -69,7 +69,7 @@ shows before switching traffic.
 After DNS resolves to Fly, verify the public hostname from the monorepo root:
 
 ```bash
-ROWBOAT_WWW_EXPECTED_API_BASE_URL=https://api.oppulence.io \
+OPPULENCE_WWW_EXPECTED_API_BASE_URL=https://api.oppulence.io \
   scripts/rowboat-www-smoke.sh https://oppulence.io
 ```
 

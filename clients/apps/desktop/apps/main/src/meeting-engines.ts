@@ -186,7 +186,7 @@ export async function transcribeParakeetPcm(
   args: { model: ParakeetModel; language?: string },
 ): Promise<ParakeetTranscriptionResult> {
   if (pcm.length === 0) throw new Error("cannot transcribe empty audio");
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-parakeet-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-parakeet-"));
   const wavPath = path.join(dir, "in.wav");
   const startedAt = performance.now();
   try {

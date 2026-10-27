@@ -19,9 +19,9 @@ import (
 	"ariga.io/entcache"
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	_ "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/runtime" // stitch schema defaults, validators, and privacy policies
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	_ "github.com/PlaybookMediaLLC/oppulence/server/ent/runtime" // stitch schema defaults, validators, and privacy policies
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
 	redisv8 "github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
 

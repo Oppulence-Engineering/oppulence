@@ -50,7 +50,7 @@ forecast, the forecast informs the action, the action becomes new evidence.
 | The cockpit's four integration seams (Read/Mirror/Watch/Act)               | [RFC 013](./013-oppulence-product-connector-fabric.md)                                                           |
 | Desktop is an MCP client; servers mounted via `~/.rowboat/config/mcp.json` | `clients/apps/desktop/packages/core/src/mcp/repo.ts:10`; tools called as `mcp:server:tool` (`application/lib/exec-tool.ts:19`) |
 | Vault mirror pattern (factory + loop + `createEvent`)                      | `clients/apps/desktop/packages/core/src/knowledge/sync_gmail.ts`; RFC 013 mirror seam                                          |
-| Event envelope shape `{source, type, payload, target}`                     | `clients/apps/desktop/packages/shared/src/events.ts:25-65` (`RowboatEventSchema`)                                              |
+| Event envelope shape `{source, type, payload, target}`                     | `clients/apps/desktop/packages/shared/src/events.ts:25-65` (`OppulenceEventSchema`)                                              |
 | Event consumers do Pass-1 candidacy → Pass-2 agent                         | `clients/apps/desktop/packages/core/src/knowledge/live-note/event-consumer.ts`; cloud equivalent in RFC 003                    |
 | Cloud event ingestion + routing + `trigger=event` runs                     | [RFC 003](./complete-003-cloud-event-ingestion.md) (`CloudEvent`, `/v1/events`, `rowboat.cloud_events.route.v1`) |
 | Cloud runtime + scoped `ToolRegistry`/`ToolScope`                          | [RFC 004](./complete-004-cloud-agent-runtime.md)                                                                 |
@@ -74,7 +74,7 @@ simulate it, and act on it.**
 ## Non-Goals
 
 - Building Conduit's or Eigen's _internal_ systems (owned by their teams); this RFC defines
-  only how they **plug into** Rowboat's planes.
+  only how they **plug into** Oppulence's planes.
 - Moving money. Eigen simulates; the Act seam (under approval tokens) is where money-moving
   lands, unchanged from the cockpit's Phase 3.
 - A generic analytics engine — Eigen is financial simulation; other compute faculties would
@@ -102,7 +102,7 @@ connector fabric in [RFC 013](./013-oppulence-product-connector-fabric.md):
 The agent immediately gains tools like `mcp:conduit:thread_for_invoice`,
 `mcp:conduit:disputes_open`, `mcp:conduit:followups_due`. Cloud runs reach the same data via
 the runtime tool below. Desktop MCP access is brokered by the connector OAuth path; internal
-cloud-runtime calls use short-lived Rowboat-signed delegation tokens, not static service keys
+cloud-runtime calls use short-lived Oppulence-signed delegation tokens, not static service keys
 ([RFC 003](./complete-003-cloud-event-ingestion.md) / [RFC 012](./012-connector-suite-and-consent-broker.md)), not hand-edited, once Conduit
 joins the connector registry (`GET /v1/connectors`).
 
@@ -161,7 +161,7 @@ The RFC 003 router resolves which task/agent owns the customer/invoice and start
 ### A.4 Act + the audit loop
 
 When an agent sends a follow-up, it goes through the **dual-review Act seam** (cockpit `:73`):
-Rowboat's "reviewable before it lands" + Corinthian's server-side approval tokens for
+Oppulence's "reviewable before it lands" + Corinthian's server-side approval tokens for
 money-touching actions. The outbound message is then **bound back into Conduit** as new
 correspondence on the same invoice, closing the evidence chain:
 
@@ -319,7 +319,7 @@ Logs: `runId`, `taskSlug`, `userId`, `faculty` (`conduit`/`eigen`), `invoiceRef`
 - **Reads are read-only and scoped.** `conduit.read` / `eigen.simulate` resolve credentials
   from `ToolScope` (RFC 004), never from model text; both are deny-by-default registry
   entries.
-- **Actions are double-gated.** No autonomous send/move happens without Rowboat's review UI
+- **Actions are double-gated.** No autonomous send/move happens without Oppulence's review UI
   **and** Corinthian's approval tokens for money-touching actions (cockpit `:73-74`). Eigen
   is simulation-only — it can never move money.
 - **Evidence integrity.** Conduit-bound actions + the append-only `temporal.*` run-event
@@ -614,8 +614,8 @@ Add only small surfaces in RFC 006 UI:
 - Artifact section/link: `Cash position` note from Eigen stress
 - Schedule/control chip for the Eigen stress monitor if modeled as a background task
 
-Do not build a Conduit/Eigen admin console in Rowboat Desktop. Deep inspection remains in
-the source product; Rowboat shows the evidence/foresight relevant to the run.
+Do not build a Conduit/Eigen admin console in Oppulence Desktop. Deep inspection remains in
+the source product; Oppulence shows the evidence/foresight relevant to the run.
 
 ### 9. Metrics and audit details
 

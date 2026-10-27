@@ -6,10 +6,10 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/mixin"
 )
 
-// RevenueWorkspaceMember grants a Rowboat user access to one RevenueWorkspace
+// RevenueWorkspaceMember grants a Oppulence user access to one RevenueWorkspace
 // (RFC 030). Matching email domains is never authorization: membership rows are
 // created only by the owner or the server-verified link handshake.
 type RevenueWorkspaceMember struct{ ent.Schema }

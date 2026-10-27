@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/websearch"
 )
 
 func TestWebSearchRegistered(t *testing.T) {
@@ -52,7 +52,7 @@ func TestWebSearchEmptyArgsGraceful(t *testing.T) {
 
 func TestWebSearchToolReturnsResults(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"results":[{"title":"Rowboat","url":"https://r","content":"docs"}]}`))
+		_, _ = w.Write([]byte(`{"results":[{"title":"Oppulence","url":"https://r","content":"docs"}]}`))
 	}))
 	defer srv.Close()
 	web := websearch.New(srv.URL, "k", outbound.Policy{})
@@ -63,7 +63,7 @@ func TestWebSearchToolReturnsResults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("invoke: %v", err)
 	}
-	if !strings.Contains(string(out), `"title":"Rowboat"`) || !strings.Contains(string(out), "https://r") {
+	if !strings.Contains(string(out), `"title":"Oppulence"`) || !strings.Contains(string(out), "https://r") {
 		t.Fatalf("results = %s", out)
 	}
 }

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { rowboatApiURL } from "@/lib/auth/config";
+import { oppulenceApiURL } from "@/lib/auth/config";
 import { getOptionalSession } from "@/lib/auth/session";
 import {
   DashboardRequestError,
@@ -8,10 +8,10 @@ import {
   type RequestJsonFn,
   type RequestJsonInput,
 } from "@/lib/api/request-json";
-import { RowboatAPIErrorSchema } from "@/lib/auth/schemas";
+import { OppulenceAPIErrorSchema } from "@/lib/auth/schemas";
 
 function errorMessage(body: unknown, status: number): { message: string; code?: string } {
-  const parsed = RowboatAPIErrorSchema.safeParse(body);
+  const parsed = OppulenceAPIErrorSchema.safeParse(body);
   if (parsed.success) {
     return {
       message:
@@ -48,7 +48,7 @@ export const requestUpstreamJson: RequestJsonFn = async <T>(
     throw new DashboardRequestError("unauthenticated", 401, "unauthorized");
   }
   const path = input.path.startsWith("/") ? input.path : `/${input.path}`;
-  const response = await fetch(rowboatApiURL(`/v1${path}`), {
+  const response = await fetch(oppulenceApiURL(`/v1${path}`), {
     method: input.method,
     cache: "no-store",
     signal: input.signal ?? AbortSignal.timeout(15_000),

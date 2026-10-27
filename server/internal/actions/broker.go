@@ -21,11 +21,11 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/actionmetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/actionproposal"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/approvaltoken"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/actionmetrics"
 )
 
 // ProductSources are the CloudEvent sources that carry product Act-seam return

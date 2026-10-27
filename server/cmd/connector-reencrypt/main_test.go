@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto/reseal"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto/reseal"
 )
 
 func TestCheckpointRoundTripAndPermissions(t *testing.T) {

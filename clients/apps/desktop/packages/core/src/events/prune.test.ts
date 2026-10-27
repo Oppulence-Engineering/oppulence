@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-events-prune-test");
+const TEST_WORKDIR = vi.hoisted(() => "/tmp/oppulence-events-prune-test");
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
 import { pruneDoneEvents } from "./processor.js";

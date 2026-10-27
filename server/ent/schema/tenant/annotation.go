@@ -1,4 +1,4 @@
-// Package tenant defines Rowboat-specific Ent schema annotations.
+// Package tenant defines Oppulence-specific Ent schema annotations.
 package tenant
 
 import "entgo.io/ent/schema"
@@ -21,6 +21,6 @@ type Annotation struct {
 }
 
 // Name implements schema.Annotation.
-func (Annotation) Name() string { return "RowboatTenant" }
+func (Annotation) Name() string { return "OppulenceTenant" }
 
 var _ schema.Annotation = Annotation{}

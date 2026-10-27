@@ -94,7 +94,7 @@ test.afterAll(async () => {
 });
 
 test("packaged whisper engine is staged and reachable", async () => {
-  const workdir = mkdtempSync(path.join(tmpdir(), "rowboat-whisper-e2e-"));
+  const workdir = mkdtempSync(path.join(tmpdir(), "oppulence-whisper-e2e-"));
   const appBinary = resolveBinary();
 
   if (EXPECT_BINARY) {

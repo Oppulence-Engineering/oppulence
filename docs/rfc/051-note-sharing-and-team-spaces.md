@@ -4,20 +4,20 @@
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **RFC**        | 051                                                                                                                                                                            |
 | **Status**     | Draft — rescoped by RFC 055                                                                                                                                                    |
-| **Track**      | Rowboat collaboration · relationship evidence                                                                                                                                  |
+| **Track**      | Oppulence collaboration · relationship evidence                                                                                                                                  |
 | **Owners**     | `server`, web, desktop, authorization, product                                                                                                                       |
 | **Created**    | 2026-08-12                                                                                                                                                                     |
 | **Updated**    | 2026-08-21                                                                                                                                                                     |
 | **Depends on** | [RFC 011](./complete-011-identity-and-authorization-plane.md), [RFC 036](./036-relationship-state-engine.md)                                                                   |
-| **Related**    | [RFC 015](./015-rowboat-platform-workos-fga-and-widget-auth.md), [RFC 050](./050-enterprise-controls.md), [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) |
+| **Related**    | [RFC 015](./015-oppulence-platform-workos-fga-and-widget-auth.md), [RFC 050](./050-enterprise-controls.md), [RFC 055](./055-capture-product-boundary-and-oppulence-integration.md) |
 
 ## 1. Decision
 
-Rowboat shares relationship workspaces, evidence-backed views, decisions,
+Oppulence shares relationship workspaces, evidence-backed views, decisions,
 recommendations, and action history. Generic capture-note and transcript sharing
 belongs to the capture product.
 
-A capture transcript may be referenced as source evidence inside a Rowboat
+A capture transcript may be referenced as source evidence inside a Oppulence
 workspace only when its consent and sharing policy permit it. Connecting the
 capture product does not automatically make every transcript visible to a team.
 
@@ -53,19 +53,19 @@ claim appear unsupported.
 ## 4. Capture-product sources
 
 Capture artifacts enter under RFC 055 with consent, retention, and transfer
-classifications. Rowboat must preserve those restrictions when deriving and
+classifications. Oppulence must preserve those restrictions when deriving and
 sharing evidence.
 
 - Raw audio is never shared merely because a relationship workspace is shared.
 - Transcript access requires an allowed capture-artifact policy.
 - Source deletion or revoked consent retracts or tombstones affected evidence.
 - A user may publish a redacted excerpt without publishing the whole transcript.
-- Capture-product team spaces remain distinct from Rowboat relationship
+- Capture-product team spaces remain distinct from Oppulence relationship
   workspaces; cross-product membership is not assumed.
 
 ## 5. Sharing surfaces
 
-Rowboat may support:
+Oppulence may support:
 
 - direct member invitations;
 - organization and domain policy;

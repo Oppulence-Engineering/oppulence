@@ -1,6 +1,6 @@
-# Feature Audit — Rowboat Desktop (`clients/apps/desktop`)
+# Feature Audit — Oppulence Desktop (`clients/apps/desktop`)
 
-This directory holds the **single canonical feature tracker** for the Rowboat
+This directory holds the **single canonical feature tracker** for the Oppulence
 Electron desktop app and the artifacts produced while testing and hardening it.
 
 ## Files

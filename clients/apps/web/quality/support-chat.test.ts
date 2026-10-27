@@ -65,19 +65,19 @@ describe("support chat config route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.unstubAllEnvs();
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_APP_ID", "chat-app-id");
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "chat-secret");
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS", "lt_brand");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_APP_ID", "chat-app-id");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_SECRET", "chat-secret");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_LABEL_TYPE_IDS", "lt_brand");
     mocks.readSessionCookie.mockReturnValue(null);
   });
 
   it("reports unconfigured when no chat app is set, so the script never loads", async () => {
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_APP_ID", "");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_APP_ID", "");
 
     await expect(callJSON()).resolves.toEqual({ configured: false });
   });
 
-  it("skips Plain in development unless ROWBOAT_WWW_PLAIN_CHAT_ENABLED=1", async () => {
+  it("skips Plain in development unless OPPULENCE_WWW_PLAIN_CHAT_ENABLED=1", async () => {
     vi.stubEnv("NODE_ENV", "development");
 
     await expect(callJSON()).resolves.toEqual({ configured: false });
@@ -85,7 +85,7 @@ describe("support chat config route", () => {
 
   it("loads Plain in development when explicitly enabled", async () => {
     vi.stubEnv("NODE_ENV", "development");
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_ENABLED", "1");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_ENABLED", "1");
 
     await expect(callJSON()).resolves.toMatchObject({
       configured: true,
@@ -117,13 +117,13 @@ describe("support chat config route", () => {
   });
 
   it("supports several comma-separated label ids", async () => {
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS", " lt_a , lt_b ,, ");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_LABEL_TYPE_IDS", " lt_a , lt_b ,, ");
 
     expect((await callJSON()).labelTypeIds).toEqual(["lt_a", "lt_b"]);
   });
 
   it("falls back to the Brand: Oppulence label when unset", async () => {
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS", "");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_LABEL_TYPE_IDS", "");
 
     expect((await callJSON()).labelTypeIds).toEqual(["lt_01M20XH6PFZ1F5EY4V19WWP7DG"]);
   });
@@ -144,7 +144,7 @@ describe("support chat config route", () => {
 
   it("omits the email hash in development even when Plain is enabled", async () => {
     vi.stubEnv("NODE_ENV", "development");
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_ENABLED", "1");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_ENABLED", "1");
     mocks.readSessionCookie.mockReturnValue(session);
     mocks.fetchViewerIdentity.mockResolvedValue({
       user: { id: "u1", email: "verified@example.com" },
@@ -160,7 +160,7 @@ describe("support chat config route", () => {
   });
 
   it("adds a signed email only when identify is explicitly enabled", async () => {
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY", "1");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_IDENTIFY", "1");
     mocks.readSessionCookie.mockReturnValue(session);
     mocks.fetchViewerIdentity.mockResolvedValue({
       user: { id: "u1", email: "verified@example.com" },
@@ -189,7 +189,7 @@ describe("support chat config route", () => {
   });
 
   it("never signs the session email when viewer verification fails", async () => {
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY", "1");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_IDENTIFY", "1");
     mocks.readSessionCookie.mockReturnValue(session);
     mocks.fetchViewerIdentity.mockRejectedValue(new Error("api down"));
 
@@ -200,7 +200,7 @@ describe("support chat config route", () => {
   });
 
   it("still links by externalId when no chat secret can sign an email", async () => {
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_SECRET", "");
     mocks.readSessionCookie.mockReturnValue(session);
     mocks.fetchViewerIdentity.mockResolvedValue({
       user: { id: "u1", email: "verified@example.com" },
@@ -222,7 +222,7 @@ describe("support chat config route", () => {
 describe("support chat email hash", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "chat-secret");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_SECRET", "chat-secret");
   });
 
   it("matches Plain's documented HMAC-SHA256 construction", () => {
@@ -240,7 +240,7 @@ describe("support chat email hash", () => {
   });
 
   it("returns null without a secret rather than an unverifiable hash", () => {
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_SECRET", "");
     expect(emailHash("user@example.com")).toBeNull();
   });
 
@@ -248,13 +248,13 @@ describe("support chat email hash", () => {
     expect(isUsableChatSecret("chat-secret")).toBe(true);
     expect(isUsableChatSecret("plainApiKey_not-a-chat-secret")).toBe(false);
     expect(isUsableChatSecret("liveChatApp_01EXAMPLE")).toBe(false);
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "plainApiKey_not-a-chat-secret");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_SECRET", "plainApiKey_not-a-chat-secret");
     expect(emailHash("user@example.com")).toBeNull();
   });
 
   it("strips wrapping quotes and newlines so Fly secrets still verify", () => {
     const expected = emailHash("johndoe@example.com");
-    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "'chat-secret'\n");
+    vi.stubEnv("OPPULENCE_WWW_PLAIN_CHAT_SECRET", "'chat-secret'\n");
     expect(emailHash("johndoe@example.com")).toBe(expected);
   });
 });

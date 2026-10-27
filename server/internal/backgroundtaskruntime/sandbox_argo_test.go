@@ -712,20 +712,20 @@ func TestArgoSandboxExecutorStatusMapping(t *testing.T) {
 
 func newLiveArgoSandboxExecutor(t *testing.T, ttlSeconds int32) (*ArgoSandboxExecutor, string) {
 	t.Helper()
-	if os.Getenv("ROWBOAT_ARGO_SANDBOX_LIVE") != "1" {
-		t.Skip("set ROWBOAT_ARGO_SANDBOX_LIVE=1 to run against a live Argo Workflows API")
+	if os.Getenv("OPPULENCE_ARGO_SANDBOX_LIVE") != "1" {
+		t.Skip("set OPPULENCE_ARGO_SANDBOX_LIVE=1 to run against a live Argo Workflows API")
 	}
-	apiServer := os.Getenv("ROWBOAT_ARGO_SANDBOX_API_SERVER")
-	namespace := os.Getenv("ROWBOAT_ARGO_SANDBOX_NAMESPACE")
-	serviceAccount := os.Getenv("ROWBOAT_ARGO_SANDBOX_SERVICE_ACCOUNT")
+	apiServer := os.Getenv("OPPULENCE_ARGO_SANDBOX_API_SERVER")
+	namespace := os.Getenv("OPPULENCE_ARGO_SANDBOX_NAMESPACE")
+	serviceAccount := os.Getenv("OPPULENCE_ARGO_SANDBOX_SERVICE_ACCOUNT")
 	if apiServer == "" || namespace == "" || serviceAccount == "" {
-		t.Fatal("ROWBOAT_ARGO_SANDBOX_API_SERVER, ROWBOAT_ARGO_SANDBOX_NAMESPACE, and ROWBOAT_ARGO_SANDBOX_SERVICE_ACCOUNT are required")
+		t.Fatal("OPPULENCE_ARGO_SANDBOX_API_SERVER, OPPULENCE_ARGO_SANDBOX_NAMESPACE, and OPPULENCE_ARGO_SANDBOX_SERVICE_ACCOUNT are required")
 	}
-	image := os.Getenv("ROWBOAT_ARGO_SANDBOX_IMAGE")
+	image := os.Getenv("OPPULENCE_ARGO_SANDBOX_IMAGE")
 	if image == "" {
 		image = "redis:7-alpine"
 	}
-	token := os.Getenv("ROWBOAT_ARGO_SANDBOX_TOKEN")
+	token := os.Getenv("OPPULENCE_ARGO_SANDBOX_TOKEN")
 	if token == "" {
 		token = "dummy"
 	}
@@ -734,7 +734,7 @@ func newLiveArgoSandboxExecutor(t *testing.T, ttlSeconds int32) (*ArgoSandboxExe
 		APIServer:          apiServer,
 		BearerToken:        token,
 		Namespace:          namespace,
-		CAFile:             os.Getenv("ROWBOAT_ARGO_SANDBOX_CA_FILE"),
+		CAFile:             os.Getenv("OPPULENCE_ARGO_SANDBOX_CA_FILE"),
 		ServiceAccountName: serviceAccount,
 		ImagePullPolicy:    "IfNotPresent",
 		PollInterval:       time.Second,
@@ -791,8 +791,8 @@ func TestArgoSandboxExecutorLiveScenarios(t *testing.T) {
 		wantTruncated bool
 	}{
 		{
-			name: "env", script: "echo env=$ROWBOAT_TEST_VALUE",
-			env:       map[string]string{"ROWBOAT_TEST_VALUE": "argo-env-ok"},
+			name: "env", script: "echo env=$OPPULENCE_TEST_VALUE",
+			env:       map[string]string{"OPPULENCE_TEST_VALUE": "argo-env-ok"},
 			maxOutput: 4096, wantStatus: "succeeded", wantOutput: "env=argo-env-ok",
 		},
 		{

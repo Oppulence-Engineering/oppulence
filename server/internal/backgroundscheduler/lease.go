@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
 	"github.com/google/uuid"
 )
 

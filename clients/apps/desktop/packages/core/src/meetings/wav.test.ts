@@ -14,7 +14,7 @@ import { SAMPLE_RATE, silence, tone, writeWav } from "./factories.testkit.js";
 let dir: string;
 
 beforeAll(async () => {
-  dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-meetings-wav-"));
+  dir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-meetings-wav-"));
 });
 
 afterAll(async () => {

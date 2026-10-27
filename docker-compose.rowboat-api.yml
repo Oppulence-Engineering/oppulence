@@ -13,7 +13,7 @@
 #
 # Chat calls live OpenRouter (https://openrouter.ai/api/v1). An empty
 # OPENROUTER_BASE_URL is what selects that default. Set
-# ROWBOAT_COMPOSE_MOCK_LLM=1 only for an offline plumbing check — devstack
+# OPPULENCE_COMPOSE_MOCK_LLM=1 only for an offline plumbing check — devstack
 # then answers every turn with "Hello from the mock LLM."
 #
 # AUTH uses real WorkOS. See server/AUTH.md.
@@ -22,7 +22,7 @@ name: rowboat-api-stack
 
 # Shared by the API and the worker. The worker is the process that actually
 # calls OpenRouter, so a key set only on the API still produces silent turns.
-x-rowboat-runtime-env: &rowboat-runtime-env
+x-rowboat-runtime-env: &oppulence-runtime-env
   ENVIRONMENT: development
   LOG_LEVEL: info
   DATABASE_URL: "postgres://rowboat:rowboat@postgres:5432/rowboat?sslmode=disable"
@@ -41,9 +41,9 @@ x-rowboat-runtime-env: &rowboat-runtime-env
   OPENAI_API_KEY: "${OPENAI_API_KEY:?set OPENAI_API_KEY in the root .env}"
   PARALLEL_API_KEY: "${PARALLEL_API_KEY:-}"
   OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:?set OPENROUTER_API_KEY in the root .env so chat calls OpenRouter}"
-  # Empty unless ROWBOAT_COMPOSE_MOCK_LLM is non-empty. Empty keeps the
+  # Empty unless OPPULENCE_COMPOSE_MOCK_LLM is non-empty. Empty keeps the
   # gateway default, https://openrouter.ai/api/v1.
-  OPENROUTER_BASE_URL: "${ROWBOAT_COMPOSE_MOCK_LLM:+http://devstack:8090/v1}"
+  OPENROUTER_BASE_URL: "${OPPULENCE_COMPOSE_MOCK_LLM:+http://devstack:8090/v1}"
   # One knob for the assistant, cloud runtime, and event router. gpt-4.1 is
   # priced in the gateway table and cheaper than the Anthropic default, which
   # matters because the gateway reserves the whole max_tokens up front.
@@ -114,7 +114,7 @@ services:
       postgres:
         condition: service_healthy
 
-  # devstack is not on the chat path. It remains so ROWBOAT_COMPOSE_MOCK_LLM=1
+  # devstack is not on the chat path. It remains so OPPULENCE_COMPOSE_MOCK_LLM=1
   # can point OpenRouter at a canned completion, and so a test can still hit
   # the mock Google token endpoint on purpose.
   devstack:
@@ -168,7 +168,7 @@ services:
       - "127.0.0.1:18081:8081" # gRPC
       - "127.0.0.1:19090:9090" # metrics
     environment:
-      <<: *rowboat-runtime-env
+      <<: *oppulence-runtime-env
     depends_on:
       postgres:
         condition: service_healthy
@@ -185,7 +185,7 @@ services:
     ports:
       - "127.0.0.1:19091:9090" # worker metrics + /readyz
     environment:
-      <<: *rowboat-runtime-env
+      <<: *oppulence-runtime-env
       SERVICE_NAME: rowboat-api-worker
     depends_on:
       postgres:

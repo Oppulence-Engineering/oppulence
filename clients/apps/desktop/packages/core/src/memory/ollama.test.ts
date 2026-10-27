@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 // memory/config.ts is the only importer of ../config/config.js in this graph.
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-mem-ollama-test");
+const TEST_WORKDIR = vi.hoisted(() => "/tmp/oppulence-mem-ollama-test");
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
 import {

@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitment"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipobservation"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipstatesnapshot"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueevidence"
 	"github.com/google/uuid"
 )
 
@@ -514,7 +514,7 @@ func (s *Service) createConversationAction(
 		SetProposedSubject(proposal.ProposedSubject).
 		SetProposedMessage(proposal.ProposedMessage).
 		SetExecutionMode(executionMode).
-		SetExecutionOwner(OwnerRowboat).
+		SetExecutionOwner(OwnerOppulence).
 		SetAssignedUserID(u.ID).
 		SetPriorityScore(priority).
 		SetPriorityComponentsJSON(string(partsJSON)).

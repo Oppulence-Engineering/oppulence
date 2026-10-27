@@ -29,16 +29,16 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/entc"
 	"entgo.io/ent/entc/gen"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/optimistic"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/tenant"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/optimistic"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/tenant"
 	"github.com/flume/enthistory"
 	"github.com/ogen-go/ogen"
 )
 
-type rowboatExtension struct{ entc.DefaultExtension }
+type oppulenceExtension struct{ entc.DefaultExtension }
 
-func (rowboatExtension) Hooks() []gen.Hook {
+func (oppulenceExtension) Hooks() []gen.Hook {
 	return []gen.Hook{tenant.ValidateHook(), optimistic.ValidateHook()}
 }
 
@@ -118,7 +118,7 @@ func main() {
 			},
 		},
 		entc.Extensions(
-			rowboatExtension{},
+			oppulenceExtension{},
 			enthistory.NewHistoryExtension(),
 			oasExt,
 			gqlExt,

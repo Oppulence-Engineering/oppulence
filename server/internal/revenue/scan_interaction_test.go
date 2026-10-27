@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/googleapi"
 )
 
 // The Gmail scanner re-materializes the same thread on every periodic run. Counting

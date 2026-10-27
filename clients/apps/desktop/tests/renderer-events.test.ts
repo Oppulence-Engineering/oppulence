@@ -13,7 +13,7 @@ test("renderer application event names are unique compile-time keys", () => {
     "code-mode-detected",
     "email-block:draft-with-assistant",
     "models-config-changed",
-    "rowboat-chat-recent-work-dirs-changed",
+    "oppulence-chat-recent-work-dirs-changed",
     "rowboat:open-copilot-edit-live-note",
     "rowboat:open-copilot-prompt",
     "rowboat:open-live-note-panel",

@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/llm"
 )
 
 // Promise extraction by model, under the rule from the one-pager §5: AI

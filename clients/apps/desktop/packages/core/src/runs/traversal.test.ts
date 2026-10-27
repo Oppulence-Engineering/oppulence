@@ -7,7 +7,7 @@ import path from "path";
 // delete a directory another was still using. Built from globals only: vi.hoisted
 // runs before the imports above are initialised, so it cannot use fs or os.
 const TEST_WORKDIR = vi.hoisted(
-  () => `/tmp/rowboat-runs-traversal-${process.pid}-${Math.random().toString(36).slice(2)}`,
+  () => `/tmp/oppulence-runs-traversal-${process.pid}-${Math.random().toString(36).slice(2)}`,
 );
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 

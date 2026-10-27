@@ -681,8 +681,8 @@ let whisperUtilityRunner: WhisperUtilityRunner | null = null;
 /** Absolute path to the per-arch `whisper-cli` (packaged extraResource, or dev vendor). */
 function whisperBinaryPath(): string {
   const exe = process.platform === "win32" ? "whisper-cli.exe" : "whisper-cli";
-  if (process.env.ROWBOAT_WHISPER_BIN) return process.env.ROWBOAT_WHISPER_BIN;
-  if (process.env.ROWBOAT_WHISPER_DIR) return path.join(process.env.ROWBOAT_WHISPER_DIR, exe);
+  if (process.env.OPPULENCE_WHISPER_BIN) return process.env.OPPULENCE_WHISPER_BIN;
+  if (process.env.OPPULENCE_WHISPER_DIR) return path.join(process.env.OPPULENCE_WHISPER_DIR, exe);
   if (app.isPackaged) {
     return path.join(process.resourcesPath, "whisper", exe); // extraResource → Resources/whisper/
   }

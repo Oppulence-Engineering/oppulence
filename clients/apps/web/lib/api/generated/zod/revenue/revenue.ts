@@ -1366,7 +1366,7 @@ export const GetRevenueActionAudit200Response = zod
               .describe("Verification sub-result snapshot."),
           })
           .describe(
-            "Immutable OutboundConsole preflight decision for one exact action revision. Rowboat snapshots the decision; it never composes one.",
+            "Immutable OutboundConsole preflight decision for one exact action revision. Oppulence snapshots the decision; it never composes one.",
           ),
       )
       .optional()
@@ -1866,7 +1866,7 @@ export const EvaluateRevenueAction200Response = zod
       .describe("Verification sub-result snapshot."),
   })
   .describe(
-    "Immutable OutboundConsole preflight decision for one exact action revision. Rowboat snapshots the decision; it never composes one.",
+    "Immutable OutboundConsole preflight decision for one exact action revision. Oppulence snapshots the decision; it never composes one.",
   );
 
 export const EvaluateRevenueAction401Response = zod
@@ -3176,7 +3176,7 @@ export const GetRevenueWorkspace200Response = zod
       ),
   })
   .describe(
-    "Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.",
+    "Mapping between the Oppulence tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.",
   );
 
 export const GetRevenueWorkspace401Response = zod
@@ -3295,7 +3295,7 @@ export const LinkRevenueWorkspace200Response = zod
       ),
   })
   .describe(
-    "Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.",
+    "Mapping between the Oppulence tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.",
   );
 
 export const LinkRevenueWorkspace400Response = zod

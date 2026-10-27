@@ -52,7 +52,7 @@ export type EmbedTarget = z.infer<typeof EmbedTarget>;
 
 /**
  * resolveEmbedTarget decides metered vs BYOK from the active chat provider
- * (flavor `solomon`/`rowboat` ⇒ metered), reusing the chat credentials for BYOK.
+ * (flavor `solomon`/`oppulence` ⇒ metered), reusing the chat credentials for BYOK.
  * Falls back to BYOK OpenAI defaults when no chat config exists yet.
  *
  * @param model - The embedding model id to embed with.

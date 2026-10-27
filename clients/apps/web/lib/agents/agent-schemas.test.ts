@@ -78,7 +78,7 @@ describe("agent schemas", () => {
 
   it("describes a maintained agent without its runtime prompt", () => {
     const runtime =
-      "You are a helpful, careful cloud assistant running as a durable Rowboat agent. Use run_history.";
+      "You are a helpful, careful cloud assistant running as a durable Oppulence agent. Use run_history.";
     expect(
       agentInstructionsCopy({ slug: "assistant", source: "builtin", instructions: runtime }),
     ).toBe(
@@ -97,7 +97,7 @@ describe("agent schemas", () => {
         instructions: "Watch renewals and draft the next note.",
       }),
     ).toBe("Watch renewals and draft the next note.");
-    expect(runtime).toContain("Rowboat");
+    expect(runtime).toContain("Oppulence");
     const shown = agentInstructionsCopy({
       slug: "assistant",
       source: "builtin",
