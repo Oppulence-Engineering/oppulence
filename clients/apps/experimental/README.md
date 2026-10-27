@@ -1,6 +1,6 @@
 # experimental
 
-Stand-alone services built for the retired hosted Oppulence platform (its dashboard has been removed). Each one runs on its own; none is wired into the current web, desktop, or API surfaces.
+Stand-alone services built for the retired hosted Rowboat platform (its dashboard has been removed). Each one runs on its own; none is wired into the current web, desktop, or API surfaces.
 
 | App                                        | Stack                          | Purpose                                                                                                                                          |
 | ------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |

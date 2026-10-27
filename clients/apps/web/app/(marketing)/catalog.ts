@@ -654,7 +654,7 @@ export const featurePages: CapabilityPage[] = [
       "Tool calls that touch external systems still go through the same approval boundary when they would send or write. MCP servers you add are your process, running as you configured them.",
     faqs: [
       {
-        question: "Is this the older Oppulence agent builder?",
+        question: "Is this the older Rowboat agent builder?",
         answer:
           "No. The self-hosted visual agent-builder in the legacy rowboat app is a different codebase. This page describes the desktop copilot, MCP, and the web agents/workflows surfaces.",
       },

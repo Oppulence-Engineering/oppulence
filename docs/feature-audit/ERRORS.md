@@ -20,7 +20,7 @@ Defects found by tracing every user story in `FEATURE_AUDIT.csv` through rendere
 - **Feature rows:** F412
 - **Issue:** The "already migrated" early-out checks the legacy literal mode==='oppulence', but native managed Google connects stamp mode='solomon'; a signed-in native-Google user who still has a legacy integration vendor Gmail/Calendar account falls through and has it silently deleted plus a spurious reconnect modal.
 - **Evidence:** clients/apps/desktop/packages/core/src/migrations/legacy-integration-vendor-google-migration.ts:110; clients/apps/desktop/apps/main/src/oauth-handler.ts:579
-- **Proposed fix:** Replace the literal check with isManagedAuthMode(googleConnection.mode) so both solomon and legacy oppulence early-out.
+- **Proposed fix:** Replace the literal check with isManagedAuthMode(googleConnection.mode) so both solomon and legacy rowboat early-out.
 
 ### E55 — Voice Commands: Voice command mode flow · Logistical · _Deferred_
 
