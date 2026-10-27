@@ -376,9 +376,9 @@ goes through Orval + `requestJson`, not tRPC.
 
 ### LLM configuration (single provider)
 
-- Config file: `~/.rowboat/config/models.json`
+- Config file: `~/.oppulence/config/models.json`
 - Schema: `{ provider: { flavor, apiKey?, baseURL?, headers? }, model: string }`
-- Models catalog cache: `~/.rowboat/config/models.dev.json` (OpenAI/Anthropic/Google only)
+- Models catalog cache: `~/.oppulence/config/models.dev.json` (OpenAI/Anthropic/Google only)
 
 ### Add a new shared type
 

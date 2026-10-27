@@ -155,7 +155,7 @@ Install the capabilities you need; the complete Voice-to-memory journey is still
 being integrated.
 
 For desktop Google connections, follow [Google setup](./google-setup.md).
-Optional desktop provider configuration lives under `~/.rowboat/config/`:
+Optional desktop provider configuration lives under `~/.oppulence/config/`:
 
 | Capability                  | Configuration file |
 | --------------------------- | ------------------ |
