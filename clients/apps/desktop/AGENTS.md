@@ -1,6 +1,10 @@
-# AGENTS.md - AI Coding Agent Context
+# AGENTS.md - Desktop App (`clients/apps/desktop`)
 
-This file provides context for AI coding agents working on the Rowboat monorepo.
+Desktop-specific rules for AI coding agents. The root [AGENTS.md](../../../AGENTS.md) applies here
+too, including **Reuse Before Writing New Code**, the engineering standards, and the handoff
+evidence. Where the two differ, this file wins for `clients/apps/desktop`. Before adding desktop
+code, search `@x/core`, `@x/shared`, `apps/renderer/src/lib`, `@oppulence/ui`, and
+`@oppulence/relationship-contract` for an existing owner.
 
 ## Quick Reference Commands
 
@@ -94,8 +98,8 @@ main (depends on shared, core)
 
 ### Key Entry Points
 
-| Component | Entry                                | Output                         |
-| --------- | ------------------------------------ | ------------------------------ |
+| Component | Entry                                              | Output                         |
+| --------- | -------------------------------------------------- | ------------------------------ |
 | main      | `clients/apps/desktop/apps/main/src/main.ts`       | `.package/dist/main.cjs`       |
 | renderer  | `clients/apps/desktop/apps/renderer/src/main.tsx`  | `apps/renderer/dist/`          |
 | preload   | `clients/apps/desktop/apps/preload/src/preload.ts` | `apps/preload/dist/preload.js` |
@@ -114,8 +118,8 @@ pnpm uses symlinks for workspace packages. Electron Forge's dependency walker ca
 
 ## Key Files Reference
 
-| Purpose                  | File                                  |
-| ------------------------ | ------------------------------------- |
+| Purpose                  | File                                                |
+| ------------------------ | --------------------------------------------------- |
 | Electron main entry      | `clients/apps/desktop/apps/main/src/main.ts`        |
 | React app entry          | `clients/apps/desktop/apps/renderer/src/main.tsx`   |
 | Forge config (packaging) | `clients/apps/desktop/apps/main/forge.config.cjs`   |
@@ -130,8 +134,8 @@ pnpm uses symlinks for workspace packages. Electron Forge's dependency walker ca
 
 Long-form docs for specific features. Read the relevant file before making changes in that area — it has the full product flow, technical flows, and (where applicable) a catalog of the LLM prompts involved with exact file:line pointers.
 
-| Feature                                                                                                                                                                                                | Doc                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| Feature                                                                                                                                                                                                | Doc                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | Live Notes — single `live:` frontmatter block (one objective + optional cron / windows / eventMatchCriteria) that turns a note into a self-updating artifact, panel UI, Copilot skill, prompts catalog | `clients/apps/desktop/docs/LIVE_NOTE.md`             |
 | Analytics — PostHog event catalog, person properties, use-case taxonomy, how to add a new event                                                                                                        | `clients/apps/desktop/docs/ANALYTICS.md`             |
 | Meeting capture — local dual-track recording, transcription, recovery, and packaging                                                                                                                   | `clients/apps/desktop/docs/MEETING_CAPTURE.md`       |
