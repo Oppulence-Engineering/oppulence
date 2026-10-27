@@ -237,3 +237,7 @@ Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
 2. Use `detect_changes_tool` for code review.
 3. Use `get_affected_flows_tool` to understand impact.
 4. Use `query_graph_tool` pattern="tests_for" to check coverage.
+
+## Ponytail and code-review-graph
+
+- Load the `ponytail` skill at the start of every coding task and follow it: make the smallest change that fully solves the task. Where it conflicts with the rest of this repository's instructions, those instructions win.
