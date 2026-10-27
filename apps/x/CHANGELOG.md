@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.36](https://github.com/PlaybookMediaLLC/oppulence/compare/v0.1.35...v0.1.36) (2026-10-27)
+
+
+### Bug Fixes
+
+* **x:** promote the macOS and Windows release build fixes to main ([d356f37](https://github.com/PlaybookMediaLLC/oppulence/commit/d356f3794220669399a80ca851f7b23cd9cd8e42))
+* **x:** resolve packages/ui imports in the Windows renderer build ([d871402](https://github.com/PlaybookMediaLLC/oppulence/commit/d871402d3dcf5e1134bf13b2fce77eafde70804e))
+* **x:** unblock the macOS and Windows release builds ([4c92b69](https://github.com/PlaybookMediaLLC/oppulence/commit/4c92b69e4570dc4e840d083a1990419cb9b9225d))
+
 ## [0.1.35](https://github.com/PlaybookMediaLLC/oppulence/compare/v0.1.34...v0.1.35) (2026-10-27)
 
 
