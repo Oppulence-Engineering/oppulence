@@ -184,6 +184,8 @@ jobs:
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
+          # The renderer build needs more than the default heap on the 7 GB macOS runner.
+          NODE_OPTIONS: --max-old-space-size=6144
         run: |
           rm -rf out
           node --input-type=module - darwin arm64,x64 <<'NODE'
