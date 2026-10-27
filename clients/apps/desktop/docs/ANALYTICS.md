@@ -4,7 +4,7 @@
 
 ## Identity model
 
-- **Anonymous distinct_id** = `installationId` from `~/.rowboat/config/installation.json` (auto-generated on first run; see `packages/core/src/analytics/installation.ts`).
+- **Anonymous distinct_id** = `installationId` from `~/.oppulence/config/installation.json` (auto-generated on first run; see `packages/core/src/analytics/installation.ts`).
 - Renderer fetches it from main on startup via the `analytics:bootstrap` IPC channel and passes it as PostHog's `bootstrap.distinctID`. Main uses it directly in `posthog-node`.
 - **On oppulence sign-in**: `posthog.identify(rowboatUserId)` runs in **both** processes.
   - Main does it from `apps/main/src/oauth-handler.ts:285` (after `getBillingInfo()` resolves) — this is the load-bearing call, since main always runs.
@@ -196,7 +196,7 @@ For GitHub Actions / packaged builds: set both as workflow env vars (from secret
 
 If unset, analytics no-op silently — you'll see `[Analytics] POSTHOG_KEY not set; analytics disabled` in main-process logs.
 
-`installationId`: stored in `~/.rowboat/config/installation.json`, generated on first run.
+`installationId`: stored in `~/.oppulence/config/installation.json`, generated on first run.
 
 ## File map
 
