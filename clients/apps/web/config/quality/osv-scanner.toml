@@ -1,0 +1,7 @@
+# Advisories with no published fixed version. Exceptions expire so the scanner
+# forces a fresh review instead of silently becoming permanent policy.
+
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+ignoreUntil = 2026-11-21
+reason = "deepmerge 4.3.1 is the last affected release and has no fix; it arrives only through the dev-only shadcn CLI, not the built app."
