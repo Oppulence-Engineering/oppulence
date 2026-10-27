@@ -48,12 +48,8 @@ See `.github/workflows/release.yml` for the source of truth.
 
 ## Local development
 
-The Electron desktop app lives in `apps/x/`. From that directory:
-
-```bash
-pnpm install
-pnpm dev
-```
+Run `dev up`, then `dev start`. [DEVELOPMENT.md](DEVELOPMENT.md) covers setup,
+secrets, every `dev` command, and the per-surface checks to run before a PR.
 
 ## Quality gates (hooks, tests, performance)
 

@@ -177,34 +177,16 @@ before connecting it, especially when it can send messages or change data.
 
 ## Develop locally
 
-The desktop is a nested pnpm workspace. From the repository root:
-
 ```bash
-cd apps/x
-pnpm install
-npm run deps
-npm run dev
+brew bundle             # Docker Desktop, Node 24, pnpm 10, Go
+./dev/cli.mjs install   # once: adds the `dev` command to your shell
+dev up                  # secrets, dependencies, and the local backend
+dev start               # web app + desktop
 ```
 
-For desktop compilation and lint checks:
-
-```bash
-npm run deps
-npm run lint
-```
-
-For the public site and web application:
-
-```bash
-cd apps/rowboat-www
-npm ci
-npm run dev
-```
-
-See the [web README](./apps/rowboat-www/README.md) for the local API stack and
-[quality checks](./apps/rowboat-www/quality/README.md). Backend setup and deployment
-are covered in the [API README](./apps/rowboat-api/README.md) and
-[deployment guide](./docs/BACKEND_DEPLOYMENT.md).
+[DEVELOPMENT.md](./DEVELOPMENT.md) covers every `dev` command, the secrets the
+backend needs, local ports, and the checks to run before a PR. Deployment is in
+the [deployment guide](./docs/BACKEND_DEPLOYMENT.md).
 
 ---
 
