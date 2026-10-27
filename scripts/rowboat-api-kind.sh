@@ -1460,8 +1460,10 @@ helm_validate() {
     grep -q "host: \"${expected_host}\"" "${rendered_dir}/rowboat-www-${env}.yaml"
     grep -q "cert-manager.io/cluster-issuer: ${expected_issuer}" "${rendered_dir}/rowboat-www-${env}.yaml"
     grep -q "secretName: ${expected_tls_secret}" "${rendered_dir}/rowboat-www-${env}.yaml"
-    grep -q "OPPULENCE_WWW_PUBLIC_API_BASE_URL: \"${expected_api_base}\"" "${rendered_dir}/rowboat-www-${env}.yaml"
-    grep -q "OPPULENCE_WWW_API_PROXY_URL: \"${expected_api_base}\"" "${rendered_dir}/rowboat-www-${env}.yaml"
+    # The chart keeps the ROWBOAT_WWW_* names until the production cutover;
+    # clients/apps/web/scripts/docker-entrypoint.sh maps them to OPPULENCE_WWW_*.
+    grep -q "ROWBOAT_WWW_PUBLIC_API_BASE_URL: \"${expected_api_base}\"" "${rendered_dir}/rowboat-www-${env}.yaml"
+    grep -q "ROWBOAT_WWW_API_PROXY_URL: \"${expected_api_base}\"" "${rendered_dir}/rowboat-www-${env}.yaml"
     if grep -q 'kind: PodDisruptionBudget' "${rendered_dir}/rowboat-www-${env}.yaml"; then
       echo "rowboat-www ${env} values must not render a PDB" >&2
       exit 1
