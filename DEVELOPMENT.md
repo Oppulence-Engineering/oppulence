@@ -26,7 +26,7 @@ lockfile changed, and migrations run every time the backend starts.
 | Command                 | What it does                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------ |
 | `dev up`                | Check tools, fill the root `.env`, install dependencies, build and start the backend |
-| `dev doctor`            | Check tools, secrets, and git hooks without changing anything                        |
+| `dev doctor`            | Check tools, backend ports, secrets, and git hooks; changes nothing                  |
 | `dev start`             | Run the web app and desktop together; starts the backend if it is down               |
 | `dev www`               | Web app only, hot reload on http://localhost:18082                                   |
 | `dev desktop`           | Desktop only, pointed at the local API                                               |

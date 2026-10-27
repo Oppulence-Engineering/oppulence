@@ -6,7 +6,7 @@ This file provides context for AI coding agents working on the Rowboat monorepo.
 
 ```bash
 # Whole local stack (DEVELOPMENT.md); humans run these as `dev <command>`
-node dev/cli.mjs doctor            # Check tools, secrets, git hooks
+node dev/cli.mjs doctor            # Check tools, ports, secrets, git hooks
 node dev/cli.mjs up                # Fill root .env, install deps, start the backend
 node dev/cli.mjs status            # Containers and which endpoints answer
 

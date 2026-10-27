@@ -31,7 +31,7 @@ const HELP = `Usage: dev <command>
 
 Setup
   up                 Check tools, fill the root .env, install deps, start the backend
-  doctor             Check tools, secrets, and git hooks
+  doctor             Check tools, backend ports, secrets, and git hooks
   install            Add the \`dev\` shell function to your shell rc
 
 Run
