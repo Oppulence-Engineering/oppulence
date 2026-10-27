@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.1.35](https://github.com/PlaybookMediaLLC/oppulence/compare/v0.1.34...v0.1.35) (2026-10-27)
+
+
+### Features
+
+* base the desktop and web tokens on Polar's design primitives ([cf35697](https://github.com/PlaybookMediaLLC/oppulence/commit/cf35697998850513750ea51d918ad4a644e47c4a))
+* **lint:** reject raw colors, radii, and fonts in class strings ([99ab4d7](https://github.com/PlaybookMediaLLC/oppulence/commit/99ab4d7ac492c74e8b359603fbccc4b20083046f))
+* load the shared tokens in the desktop and web apps ([93a63ae](https://github.com/PlaybookMediaLLC/oppulence/commit/93a63ae6dae4734d1ff16f41b95fbd67f1af9b61))
+* one radius scale for the desktop app and the web app ([e3d7584](https://github.com/PlaybookMediaLLC/oppulence/commit/e3d7584171176d480b58c06c9210f6db9e532954))
+* one visual system across desktop, web, and the public site (seams and guardrails) ([f624d6b](https://github.com/PlaybookMediaLLC/oppulence/commit/f624d6ba79df36622be77f43c124d7411242eee5))
+* promote the shared visual system and the registry fix to main ([b7fc5bc](https://github.com/PlaybookMediaLLC/oppulence/commit/b7fc5bcf5b19eeda2d9a81ad280bddee9ec0a008))
+* **ui:** add shared design tokens and pass the desktop Gauntlet ([496625f](https://github.com/PlaybookMediaLLC/oppulence/commit/496625f3e76ba6f33c9c9cbc6c42310308b8f499))
+
+
+### Bug Fixes
+
+* **x:** package NOTICE files from the repository root ([418d99d](https://github.com/PlaybookMediaLLC/oppulence/commit/418d99d8691d884ea35374df022451e0b65a4e6e))
+* **x:** pass the desktop Gauntlet on Electron 42 ([3ed23f7](https://github.com/PlaybookMediaLLC/oppulence/commit/3ed23f718df7d8e8004d606d0b4110754e9379b7))
+
+
+### Documentation
+
+* document the shared design system ([cb88c03](https://github.com/PlaybookMediaLLC/oppulence/commit/cb88c03a4785b6844b75551108718ef29e749b60))
+
+
+### Refactors
+
+* replace raw colors and radii in class strings with tokens ([06c6d72](https://github.com/PlaybookMediaLLC/oppulence/commit/06c6d7213e04cf5fcfcdf88bb50bac0690b6e3a9))
+* **x:** use text-foreground for strong text ([d62533b](https://github.com/PlaybookMediaLLC/oppulence/commit/d62533b26c5efde27baa6c3adc1144c5241d913e))
+
 ## [0.1.34](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.33...v0.1.34) (2026-09-18)
 
 
