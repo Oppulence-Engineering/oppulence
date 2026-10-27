@@ -302,7 +302,7 @@ export const getIngestCaptureArtifactUrl = () => {
 };
 
 /**
- * Validates content hash and idempotency before persisting one explicit Rowboat handoff.
+ * Validates content hash and idempotency before persisting one explicit Oppulence handoff.
  * @summary Ingest consented capture artifact
  */
 export const ingestCaptureArtifact = async (

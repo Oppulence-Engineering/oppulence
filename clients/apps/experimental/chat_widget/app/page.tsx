@@ -5,6 +5,6 @@ export const dynamic = 'force-dynamic';
 
 export default function Page() {
   return <Suspense>
-    <App apiUrl={`${process.env.ROWBOAT_HOST}/api/widget/v1`} />
+    <App apiUrl={`${process.env.OPPULENCE_HOST}/api/widget/v1`} />
   </Suspense>
 }

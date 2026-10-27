@@ -12,16 +12,16 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitment"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitmentevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipassertion"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipidentity"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipidentitycandidate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipobservation"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
 )
 
 func acmeObservation(now time.Time) RelationshipObservationInput {

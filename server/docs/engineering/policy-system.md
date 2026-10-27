@@ -10,7 +10,7 @@ Tools are pinned in the Makefile and CI rather than floating at `latest`.
 | --- | --- |
 | `make lint` | golangci-lint correctness/security checks plus depguard import policy |
 | `make architecture` | tenant-owned Ent registry completeness and Arch-Go topology |
-| `make rowboatlint` | type-aware Rowboat analyzers built on `go/analysis` |
+| `make oppulencelint` | type-aware Oppulence analyzers built on `go/analysis` |
 | `make ruleguard` | low-cost Go syntax patterns |
 | `make structural` | ast-grep structural rules |
 | `make policy` | Conftest policy and Rego tests protecting required CI gates |
@@ -20,7 +20,7 @@ Lefthook runs formatting and staged secret scanning at commit time, then
 `make verify` before push. CI repeats the authoritative checks because hooks
 can be bypassed.
 
-## RowboatLint
+## OppulenceLint
 
 | Rule | Detects | Remediation |
 | --- | --- | --- |

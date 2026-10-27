@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-onnx-assets-test");
+const TEST_WORKDIR = vi.hoisted(() => "/tmp/oppulence-onnx-assets-test");
 vi.mock("../../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
 import {

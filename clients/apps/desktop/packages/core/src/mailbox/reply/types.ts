@@ -3,7 +3,7 @@
  *
  * A thread tracker records whether the account owner owes a reply, is waiting
  * on someone else, owes a non-email action, or is done. Draft suggestions are
- * user-editable proposed replies that live in Rowboat until the user chooses to
+ * user-editable proposed replies that live in Oppulence until the user chooses to
  * materialize them as provider drafts or send. Reply memories capture how the
  * user likes to respond to a sender/pattern so future drafts sound like them.
  */
@@ -89,7 +89,7 @@ export type ReplyZeroSettings = {
   needsReplyDays: number;
   /**
    * Confidence at or above which a provider draft may be created automatically.
-   * Below it, the suggestion stays inside Rowboat until the user opens it.
+   * Below it, the suggestion stays inside Oppulence until the user opens it.
    */
   autoProviderDraftConfidence: number;
   /** Never send automatically regardless of confidence unless explicitly enabled. */

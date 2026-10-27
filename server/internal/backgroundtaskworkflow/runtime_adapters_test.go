@@ -9,18 +9,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtask"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskrunevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/faculties"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/googleapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/secrets"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/slackclient"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/websearch"
 )
 
 type fakeSlackTeamTokenResolver struct {
@@ -148,7 +148,7 @@ func TestToolRegistryAddsConfiguredCloudReadTools(t *testing.T) {
 	task := client.BackgroundTask.Query().Where(backgroundtask.IDEQ(taskRow.ID)).WithUser().OnlyX(ctx)
 
 	webSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"results":[{"title":"Rowboat","url":"https://rowboat.test","content":"cloud tasks"}]}`))
+		_, _ = w.Write([]byte(`{"results":[{"title":"Oppulence","url":"https://rowboat.test","content":"cloud tasks"}]}`))
 	}))
 	t.Cleanup(webSrv.Close)
 
@@ -181,7 +181,7 @@ func TestToolRegistryAddsConfiguredCloudReadTools(t *testing.T) {
 		t.Fatalf("web.search lookup: %v", err)
 	}
 	webOut, err := webTool.Invoke(ctx, scope, json.RawMessage(`{"query":"rowboat","max_results":1}`))
-	if err != nil || !strings.Contains(string(webOut), `"title":"Rowboat"`) {
+	if err != nil || !strings.Contains(string(webOut), `"title":"Oppulence"`) {
 		t.Fatalf("web.search out = %s err = %v", webOut, err)
 	}
 

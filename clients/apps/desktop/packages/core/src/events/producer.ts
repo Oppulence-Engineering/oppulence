@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import type { RowboatEvent } from '@x/shared/events';
+import type { OppulenceEvent } from '@x/shared/events';
 import { WorkDir } from '../config/config.js';
 import type { IMonotonicallyIncreasingIdGenerator } from '../application/lib/id-gen.js';
 import container from '../di/container.js';
@@ -11,17 +11,17 @@ export const PENDING_DIR = path.join(EVENTS_DIR, 'pending');
 export const DONE_DIR = path.join(EVENTS_DIR, 'done');
 
 /**
- * Write a RowboatEvent to the events/pending/ directory. The filename is the
+ * Write a OppulenceEvent to the events/pending/ directory. The filename is the
  * monotonically increasing ID so events sort by creation order. Producers
  * (gmail/calendar sync) call this in chronological order within a batch.
  */
-export async function createEvent(event: Omit<RowboatEvent, 'id'>): Promise<void> {
+export async function createEvent(event: Omit<OppulenceEvent, 'id'>): Promise<void> {
     fs.mkdirSync(PENDING_DIR, { recursive: true });
 
     const idGen = container.resolve<IMonotonicallyIncreasingIdGenerator>('idGenerator');
     const id = await idGen.next();
 
-    const fullEvent: RowboatEvent = { id, ...event };
+    const fullEvent: OppulenceEvent = { id, ...event };
     const filePath = path.join(PENDING_DIR, `${id}.json`);
     // Atomic: the processor stubs an unparseable pending event and moves it
     // to done/ — a torn write here is a silently dropped event.

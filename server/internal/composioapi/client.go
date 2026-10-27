@@ -27,7 +27,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
 )
 
 // v3.1 is the version Composio recommends for new code; v3 pins toolkit

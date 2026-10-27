@@ -2,19 +2,19 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-NAMESPACE="${ROWBOAT_API_NAMESPACE:-rowboat-api}"
-API_PORT="${ROWBOAT_API_PORT:-18080}"
-DEVSTACK_PORT="${ROWBOAT_DEVSTACK_PORT:-18090}"
-CDP_PORT="${ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT:-9222}"
-VITE_PORT="${ROWBOAT_DESKTOP_VITE_PORT:-5173}"
-ARTIFACT_DIR="${ROWBOAT_DESKTOP_SMOKE_ARTIFACT_DIR:-${ROOT_DIR}/.rowboat-kind/desktop-smoke}"
-WORKDIR="${ROWBOAT_DESKTOP_SMOKE_WORKDIR:-}"
-KEEP_WORKDIR="${ROWBOAT_DESKTOP_SMOKE_KEEP_WORKDIR:-0}"
-KEEP_DESKTOP="${ROWBOAT_DESKTOP_SMOKE_KEEP_DESKTOP:-0}"
-DESKTOP_SESSION="${ROWBOAT_DESKTOP_SMOKE_KEEP_SESSION:-rowboat-desktop-smoke}"
-BROWSER_SESSION="${ROWBOAT_DESKTOP_SMOKE_BROWSER_SESSION:-rowboat-desktop-smoke}"
-PROMPT="${ROWBOAT_DESKTOP_SMOKE_PROMPT:-Please respond with exactly: local rowboat api smoke passed}"
-SKIP_CLOUD_WORKFLOW="${ROWBOAT_DESKTOP_SMOKE_SKIP_CLOUD_WORKFLOW:-0}"
+NAMESPACE="${OPPULENCE_API_NAMESPACE:-rowboat-api}"
+API_PORT="${OPPULENCE_API_PORT:-18080}"
+DEVSTACK_PORT="${OPPULENCE_DEVSTACK_PORT:-18090}"
+CDP_PORT="${OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT:-9222}"
+VITE_PORT="${OPPULENCE_DESKTOP_VITE_PORT:-5173}"
+ARTIFACT_DIR="${OPPULENCE_DESKTOP_SMOKE_ARTIFACT_DIR:-${ROOT_DIR}/.rowboat-kind/desktop-smoke}"
+WORKDIR="${OPPULENCE_DESKTOP_SMOKE_WORKDIR:-}"
+KEEP_WORKDIR="${OPPULENCE_DESKTOP_SMOKE_KEEP_WORKDIR:-0}"
+KEEP_DESKTOP="${OPPULENCE_DESKTOP_SMOKE_KEEP_DESKTOP:-0}"
+DESKTOP_SESSION="${OPPULENCE_DESKTOP_SMOKE_KEEP_SESSION:-oppulence-desktop-smoke}"
+BROWSER_SESSION="${OPPULENCE_DESKTOP_SMOKE_BROWSER_SESSION:-oppulence-desktop-smoke}"
+PROMPT="${OPPULENCE_DESKTOP_SMOKE_PROMPT:-Please respond with exactly: local rowboat api smoke passed}"
+SKIP_CLOUD_WORKFLOW="${OPPULENCE_DESKTOP_SMOKE_SKIP_CLOUD_WORKFLOW:-0}"
 
 mkdir -p "$ARTIFACT_DIR"
 LOG_FILE="${ARTIFACT_DIR}/desktop.log"
@@ -184,11 +184,11 @@ if port_in_use "$VITE_PORT"; then
   exit 1
 fi
 if port_in_use "$CDP_PORT"; then
-  echo "localhost:${CDP_PORT} is already in use; stop the existing Electron CDP process or set ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT" >&2
+  echo "localhost:${CDP_PORT} is already in use; stop the existing Electron CDP process or set OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT" >&2
   exit 1
 fi
 if [[ "$KEEP_DESKTOP" == 1 ]] && desktop_session_running; then
-  echo "screen session ${DESKTOP_SESSION} is already running; stop it or set ROWBOAT_DESKTOP_SMOKE_KEEP_SESSION" >&2
+  echo "screen session ${DESKTOP_SESSION} is already running; stop it or set OPPULENCE_DESKTOP_SMOKE_KEEP_SESSION" >&2
   exit 1
 fi
 
@@ -240,14 +240,14 @@ SMOKE_STARTED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 if [[ "$KEEP_DESKTOP" == 1 ]] && command -v screen >/dev/null 2>&1; then
   screen -dmS "$DESKTOP_SESSION" bash -lc \
-    'cd "$1" && API_URL="$2" ROWBOAT_WORKDIR="$3" ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="$4" npm run dev >"$5" 2>&1' \
+    'cd "$1" && API_URL="$2" ROWBOAT_WORKDIR="$3" OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT="$4" npm run dev >"$5" 2>&1' \
     rowboat-desktop-smoke "${ROOT_DIR}/clients/apps/desktop" "http://localhost:${API_PORT}" "$WORKDIR" "$CDP_PORT" "$LOG_FILE"
   DESKTOP_SESSION_STARTED=1
 elif [[ "$KEEP_DESKTOP" == 1 ]]; then
   nohup env \
     API_URL="http://localhost:${API_PORT}" \
     ROWBOAT_WORKDIR="$WORKDIR" \
-    ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="$CDP_PORT" \
+    OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT="$CDP_PORT" \
     npm --prefix "${ROOT_DIR}/clients/apps/desktop" run dev \
     >"$LOG_FILE" 2>&1 < /dev/null &
   DESKTOP_PID=$!
@@ -256,7 +256,7 @@ else
     cd "${ROOT_DIR}/clients/apps/desktop"
     API_URL="http://localhost:${API_PORT}" \
       ROWBOAT_WORKDIR="$WORKDIR" \
-      ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="$CDP_PORT" \
+      OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT="$CDP_PORT" \
       npm run dev &
     dev_pid=$!
     trap 'pkill -TERM -P "$dev_pid" >/dev/null 2>&1 || true; kill -TERM "$dev_pid" >/dev/null 2>&1 || true; wait "$dev_pid" 2>/dev/null || true; exit 0' TERM INT
@@ -291,7 +291,7 @@ ab press Enter >/dev/null
 ab wait --text "Hello from the mock LLM." >/dev/null
 
 if [[ "$SKIP_CLOUD_WORKFLOW" == 1 ]]; then
-  printf '%s\n' '{"skipped":true,"reason":"ROWBOAT_DESKTOP_SMOKE_SKIP_CLOUD_WORKFLOW=1"}' >"$CLOUD_WORKFLOW_FILE"
+  printf '%s\n' '{"skipped":true,"reason":"OPPULENCE_DESKTOP_SMOKE_SKIP_CLOUD_WORKFLOW=1"}' >"$CLOUD_WORKFLOW_FILE"
   ab snapshot >"$RESULT_SNAPSHOT_FILE"
   ab screenshot "$RESULT_SCREENSHOT_FILE" >/dev/null
 else

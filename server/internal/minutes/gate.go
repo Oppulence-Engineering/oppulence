@@ -17,9 +17,9 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/meetingminuteusage"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 )
 
 // ErrMinutesExhausted is returned by Reserve when the free allowance can't cover

@@ -82,7 +82,7 @@ export const WorkOSLoginURLResponseSchema = z.object({
   url: z.string().url(),
 });
 
-export const RowboatAPIErrorSchema = z
+export const OppulenceAPIErrorSchema = z
   .object({
     error: z.string().optional(),
     message: z.string().optional(),

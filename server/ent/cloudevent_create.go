@@ -12,9 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskrun"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/cloudevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
 	"github.com/google/uuid"
 )
 

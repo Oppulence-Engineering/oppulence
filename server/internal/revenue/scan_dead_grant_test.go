@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/googleapi"
 )
 
 // The refresh endpoint answers a revoked grant with invalid_grant, which never

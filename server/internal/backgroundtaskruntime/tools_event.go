@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
 	"github.com/google/uuid"
 )
 

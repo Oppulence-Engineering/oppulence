@@ -15,12 +15,12 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/entity"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
 	"go.uber.org/zap"
 )
 
@@ -30,9 +30,9 @@ import (
 //
 //	go test -tags=pgconcurrency -race ./internal/entities -run TestPgConcurrentSameEntity
 func TestPgConcurrentSameEntityUnionsDistinctEvidence(t *testing.T) {
-	dsn := os.Getenv("ROWBOAT_TEST_PG_DSN")
+	dsn := os.Getenv("OPPULENCE_TEST_PG_DSN")
 	if dsn == "" {
-		t.Skip("ROWBOAT_TEST_PG_DSN not set; skipping Postgres entity concurrency test")
+		t.Skip("OPPULENCE_TEST_PG_DSN not set; skipping Postgres entity concurrency test")
 	}
 	sqlDB, err := sql.Open("pgx", dsn)
 	if err != nil {

@@ -8,11 +8,11 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/mixin"
 )
 
 // CaptureArtifact is the explicit, consented handoff from Oppulence Voice to
-// Rowboat. Unlike VoiceSyncItem, its payload is readable because the user chose
+// Oppulence. Unlike VoiceSyncItem, its payload is readable because the user chose
 // to submit it for relationship processing.
 type CaptureArtifact struct{ ent.Schema }
 

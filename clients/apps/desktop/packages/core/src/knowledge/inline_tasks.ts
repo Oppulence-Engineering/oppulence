@@ -618,7 +618,7 @@ export async function processSolomonInstruction(
     return { instruction: refinedInstruction, schedule: null, scheduleLabel: null, response };
 }
 
-export const processRowboatInstruction = processSolomonInstruction;
+export const processOppulenceInstruction = processSolomonInstruction;
 
 /**
  * Classify whether an instruction contains a scheduling intent using the user's configured LLM.

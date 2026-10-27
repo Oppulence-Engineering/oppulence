@@ -8,7 +8,7 @@ import {
 } from "@/lib/api/routes/schemas/connectors";
 import { DownloadQuerySchema } from "@/lib/api/routes/schemas/download";
 import { OpenAPIDocumentSchema } from "@/lib/api/routes/schemas/openapi";
-import { RowboatProxyPathSchema } from "@/lib/api/routes/schemas/proxy";
+import { OppulenceProxyPathSchema } from "@/lib/api/routes/schemas/proxy";
 import { WorkOSLoginQuerySchema } from "@/lib/api/routes/schemas/auth";
 
 describe("api route schemas", () => {
@@ -63,9 +63,9 @@ describe("api route schemas", () => {
   });
 
   it("rejects proxy path segments that could escape /v1", () => {
-    expect(RowboatProxyPathSchema.safeParse(["v1", "me"]).success).toBe(true);
-    expect(RowboatProxyPathSchema.safeParse(["v1", "..", "graphql"]).success).toBe(false);
-    expect(RowboatProxyPathSchema.safeParse(["%2e%2e"]).success).toBe(false);
+    expect(OppulenceProxyPathSchema.safeParse(["v1", "me"]).success).toBe(true);
+    expect(OppulenceProxyPathSchema.safeParse(["v1", "..", "graphql"]).success).toBe(false);
+    expect(OppulenceProxyPathSchema.safeParse(["%2e%2e"]).success).toBe(false);
   });
 
   it("defaults login return_to when omitted", () => {

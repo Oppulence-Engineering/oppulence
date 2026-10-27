@@ -10,17 +10,17 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/billing"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/email"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspacemember"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/subscription"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/billing"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/connectors"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/email"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
 )
 
 // confirmation is the exact value the client must send. It stops a stray or

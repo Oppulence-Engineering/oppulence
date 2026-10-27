@@ -5,12 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/credits"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/credits"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/quota"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthconnection"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipsourcestatus"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
 )
 
 // SourceDescriptor is the user-visible evidence, action, scope, and repair

@@ -16,14 +16,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
 	"go.uber.org/zap"
 )
 
 // Start handles authenticated POST /v1/slack-oauth/start and binds the state
-// ticket to the verified Rowboat user before redirecting to Slack.
+// ticket to the verified Oppulence user before redirecting to Slack.
 func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 	u, ok := auth.UserFromCtx(r.Context())
 	if !ok {
@@ -195,9 +195,9 @@ func (h *Handler) deepLink(w http.ResponseWriter, state, status string) {
 	target := h.deepLinkScheme + "://oauth/slack/done?session=" + url.QueryEscape(state) + "&status=" + status
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'nonce-"+state+"'; base-uri 'none'; frame-ancestors 'none'")
-	_, _ = io.WriteString(w, "<!doctype html><meta charset=utf-8><title>Rowboat</title>"+
+	_, _ = io.WriteString(w, "<!doctype html><meta charset=utf-8><title>Oppulence</title>"+
 		"<script nonce="+jsString(state)+">location.href="+jsString(target)+"</script>"+
-		"<p style=\"font:14px system-ui;margin:3rem\">Returning to Rowboat… "+
+		"<p style=\"font:14px system-ui;margin:3rem\">Returning to Oppulence… "+
 		"<a href="+jsString(target)+">Click here</a> if it doesn't open automatically.</p>")
 }
 
@@ -205,7 +205,7 @@ func (h *Handler) errorPage(w http.ResponseWriter, code int, msg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; base-uri 'none'; frame-ancestors 'none'")
 	w.WriteHeader(code)
-	_, _ = io.WriteString(w, "<!doctype html><meta charset=utf-8><title>Rowboat</title>"+
+	_, _ = io.WriteString(w, "<!doctype html><meta charset=utf-8><title>Oppulence</title>"+
 		"<p style=\"font:14px system-ui;margin:3rem\">"+htmlEscape(msg)+"</p>")
 }
 

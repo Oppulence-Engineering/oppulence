@@ -111,14 +111,14 @@ session tokens in secure HTTP-only cookies rather than browser storage:
 Required production env:
 
 ```bash
-ROWBOAT_WWW_API_PROXY_URL=https://api.oppulence.io
-ROWBOAT_WWW_PUBLIC_API_BASE_URL=https://api.oppulence.io
-ROWBOAT_WWW_AUTH_API_BASE_URL=https://api.oppulence.io
-ROWBOAT_WWW_SESSION_SECRET=<32+ random characters>
+OPPULENCE_WWW_API_PROXY_URL=https://api.oppulence.io
+OPPULENCE_WWW_PUBLIC_API_BASE_URL=https://api.oppulence.io
+OPPULENCE_WWW_AUTH_API_BASE_URL=https://api.oppulence.io
+OPPULENCE_WWW_SESSION_SECRET=<32+ random characters>
 ```
 
 Local development uses an insecure fallback session secret. Production refuses
-to seal or verify auth cookies without `ROWBOAT_WWW_SESSION_SECRET`.
+to seal or verify auth cookies without `OPPULENCE_WWW_SESSION_SECRET`.
 
 ## Support chat
 
@@ -128,15 +128,15 @@ workspace as the desktop app's in-app feedback (`POST /v1/feedback`), so there
 is one support inbox rather than one per surface.
 
 ```bash
-ROWBOAT_WWW_PLAIN_CHAT_APP_ID=<chat app id>
-ROWBOAT_WWW_PLAIN_CHAT_SECRET=<chat secret from Settings → Chat, not the workspace API key>
+OPPULENCE_WWW_PLAIN_CHAT_APP_ID=<chat app id>
+OPPULENCE_WWW_PLAIN_CHAT_SECRET=<chat secret from Settings → Chat, not the workspace API key>
 # Optional. Comma-separated Plain label ids applied to every chat thread.
 # Defaults to the "Brand: Oppulence" label.
-ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS=lt_01M20XH6PFZ1F5EY4V19WWP7DG
+OPPULENCE_WWW_PLAIN_CHAT_LABEL_TYPE_IDS=lt_01M20XH6PFZ1F5EY4V19WWP7DG
 # Local only: load the widget. Email-hash identify is opt-in everywhere —
 # a mismatched Chat secret fails launch with "email hash is invalid".
-# ROWBOAT_WWW_PLAIN_CHAT_ENABLED=1
-# ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY=1
+# OPPULENCE_WWW_PLAIN_CHAT_ENABLED=1
+# OPPULENCE_WWW_PLAIN_CHAT_IDENTIFY=1
 ```
 
 Both come from Plain under **Settings → Chat**. With no app id the widget is
@@ -151,7 +151,7 @@ regardless of which surface they came from.
 
 Signed-in users are linked by their verified viewer id (`externalId`) and
 email. The email is an unverified inbox hint unless
-`ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY=1` also mints the HMAC Plain uses as a
+`OPPULENCE_WWW_PLAIN_CHAT_IDENTIFY=1` also mints the HMAC Plain uses as a
 bearer credential. That hash stays opt-in: a mismatched Chat secret takes
 the widget down. Anonymous visitors chat unauthenticated and Plain's own
 email verification identifies them.

@@ -32,13 +32,13 @@ passes the action policy gate before touching a provider.
 
 ## Design invariants
 
-- **Deterministic ids.** Every object carries a stable Rowboat id (hash of
+- **Deterministic ids.** Every object carries a stable Oppulence id (hash of
   provider + account + native id) so rule runs, action runs, and dedupe keys
   converge instead of duplicating across sync ticks or desktop/cloud workers.
 - **Policy-gated mutations.** Send, forward, spam, trash, and external payloads
   with a body are denied or approval-gated by default; low-risk reversible
   actions run automatically. Assistant and rule sources share one gate.
-- **Local-first drafts.** Reply drafts live in Rowboat and are deduped by a
+- **Local-first drafts.** Reply drafts live in Oppulence and are deduped by a
   thread-message-set fingerprint; a provider draft is only created on opt-in, and
   a user-edited draft is never overwritten.
 - **Fail-safe automation.** A provider 429/5xx backs the account off with jitter

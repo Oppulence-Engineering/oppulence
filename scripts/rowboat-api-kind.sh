@@ -3,15 +3,15 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLUSTER_NAME="${KIND_CLUSTER_NAME:-rowboat-api}"
-NAMESPACE="${ROWBOAT_API_NAMESPACE:-rowboat-api}"
-RELEASE_NAME="${ROWBOAT_API_RELEASE:-rowboat-api}"
-IMAGE="${ROWBOAT_API_IMAGE:-rowboat-api:kind}"
-API_PORT="${ROWBOAT_API_PORT:-18080}"
-DEVSTACK_PORT="${ROWBOAT_DEVSTACK_PORT:-18090}"
-API_PORT_ENV_SET="${ROWBOAT_API_PORT+x}"
-DEVSTACK_PORT_ENV_SET="${ROWBOAT_DEVSTACK_PORT+x}"
-FALLBACK_API_PORT="${ROWBOAT_API_FALLBACK_PORT:-18081}"
-FALLBACK_DEVSTACK_PORT="${ROWBOAT_DEVSTACK_FALLBACK_PORT:-18091}"
+NAMESPACE="${OPPULENCE_API_NAMESPACE:-rowboat-api}"
+RELEASE_NAME="${OPPULENCE_API_RELEASE:-rowboat-api}"
+IMAGE="${OPPULENCE_API_IMAGE:-rowboat-api:kind}"
+API_PORT="${OPPULENCE_API_PORT:-18080}"
+DEVSTACK_PORT="${OPPULENCE_DEVSTACK_PORT:-18090}"
+API_PORT_ENV_SET="${OPPULENCE_API_PORT+x}"
+DEVSTACK_PORT_ENV_SET="${OPPULENCE_DEVSTACK_PORT+x}"
+FALLBACK_API_PORT="${OPPULENCE_API_FALLBACK_PORT:-18081}"
+FALLBACK_DEVSTACK_PORT="${OPPULENCE_DEVSTACK_FALLBACK_PORT:-18091}"
 # Real Google is the local dogfood default. The mock remains an explicit opt-in
 # for hermetic tests that never touch a real mailbox.
 MOCK_GOOGLE="${ROWBOAT_KIND_MOCK_GOOGLE:-}"
@@ -19,9 +19,9 @@ MOCK_GOOGLE="${ROWBOAT_KIND_MOCK_GOOGLE:-}"
 # byte for byte. Only this port is registered, which is why real-Google mode
 # refuses to start on any other one rather than failing later inside Google's
 # consent screen with redirect_uri_mismatch.
-GOOGLE_REDIRECT_PORT="${ROWBOAT_GOOGLE_REDIRECT_PORT:-18080}"
-COREDNS_MEMORY_LIMIT="${ROWBOAT_KIND_COREDNS_MEMORY_LIMIT:-512Mi}"
-STATE_DIR="${ROWBOAT_KIND_STATE_DIR:-${ROOT_DIR}/.rowboat-kind}"
+GOOGLE_REDIRECT_PORT="${OPPULENCE_GOOGLE_REDIRECT_PORT:-18080}"
+COREDNS_MEMORY_LIMIT="${OPPULENCE_KIND_COREDNS_MEMORY_LIMIT:-512Mi}"
+STATE_DIR="${OPPULENCE_KIND_STATE_DIR:-${ROOT_DIR}/.rowboat-kind}"
 DEPS_FILE="${ROOT_DIR}/infra/deploy/kind/rowboat-api/dependencies.yaml"
 KIND_CONFIG_FILE="${ROOT_DIR}/infra/deploy/kind/rowboat-api/kind-config.yaml"
 VALUES_FILE="${ROOT_DIR}/infra/charts/rowboat-api/values-kind.yaml"
@@ -73,16 +73,16 @@ Commands:
 
 Environment overrides:
   KIND_CLUSTER_NAME       default: rowboat-api
-  ROWBOAT_API_NAMESPACE   default: rowboat-api
-  ROWBOAT_API_RELEASE     default: rowboat-api
-  ROWBOAT_API_IMAGE       default: rowboat-api:kind
-  ROWBOAT_API_PORT        default: 18080
-  ROWBOAT_DEVSTACK_PORT   default: 18090
-  ROWBOAT_API_FALLBACK_PORT       default: 18081
-  ROWBOAT_DEVSTACK_FALLBACK_PORT  default: 18091
+  OPPULENCE_API_NAMESPACE   default: rowboat-api
+  OPPULENCE_API_RELEASE     default: rowboat-api
+  OPPULENCE_API_IMAGE       default: rowboat-api:kind
+  OPPULENCE_API_PORT        default: 18080
+  OPPULENCE_DEVSTACK_PORT   default: 18090
+  OPPULENCE_API_FALLBACK_PORT       default: 18081
+  OPPULENCE_DEVSTACK_FALLBACK_PORT  default: 18091
   ROWBOAT_KIND_MOCK_GOOGLE        unset: real accounts.google.com (default).
                                   set:   devstack Google mock for hermetic tests.
-  ROWBOAT_GOOGLE_REDIRECT_PORT    default: 18080 (the registered redirect URI)
+  OPPULENCE_GOOGLE_REDIRECT_PORT    default: 18080 (the registered redirect URI)
   INFISICAL_PROJECT_ID                    required unless .infisical.json exists
   INFISICAL_TOKEN                         optional service/machine token for CI
   INFISICAL_ENVIRONMENT                   default: dev
@@ -273,11 +273,11 @@ rendered_deps_manifest() {
   local image_id
   image_id="$(local_image_id)"
   [[ -n "$image_id" ]] || image_id="unbuilt"
-  ROWBOAT_RENDER_IMAGE_ID="$image_id" python3 -c '
+  OPPULENCE_RENDER_IMAGE_ID="$image_id" python3 -c '
 import os, sys
 sys.stdout.write(
-    open(os.environ["ROWBOAT_DEPS_FILE"]).read().replace(
-        "__ROWBOAT_IMAGE_ID__", os.environ["ROWBOAT_RENDER_IMAGE_ID"]
+    open(os.environ["OPPULENCE_DEPS_FILE"]).read().replace(
+        "__ROWBOAT_IMAGE_ID__", os.environ["OPPULENCE_RENDER_IMAGE_ID"]
     )
 )
 '
@@ -288,7 +288,7 @@ deploy_dependencies() {
   ensure_namespace
   local postgres_pod_before
   postgres_pod_before="$(pod_uid_for_label app.kubernetes.io/name=rowboat-api-postgres)"
-  ROWBOAT_DEPS_FILE="$DEPS_FILE" rendered_deps_manifest | kubectl apply -n "$NAMESPACE" -f -
+  OPPULENCE_DEPS_FILE="$DEPS_FILE" rendered_deps_manifest | kubectl apply -n "$NAMESPACE" -f -
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-postgres --timeout=180s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-redis --timeout=180s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-temporal --timeout=240s
@@ -375,7 +375,7 @@ deploy_chart() {
       echo "real Google needs the API on localhost:${GOOGLE_REDIRECT_PORT}, but it is on ${API_PORT}." >&2
       echo "Only http://localhost:${GOOGLE_REDIRECT_PORT}/oauth/google/callback is registered on the OAuth" >&2
       echo "client; any other port fails inside Google's consent screen with redirect_uri_mismatch." >&2
-      echo "Free that port (or set ROWBOAT_GOOGLE_REDIRECT_PORT if you registered another) and retry." >&2
+      echo "Free that port (or set OPPULENCE_GOOGLE_REDIRECT_PORT if you registered another) and retry." >&2
       exit 1
     fi
     echo "Google OAuth: real accounts.google.com (redirect ${api_origin}/oauth/google/callback)"
@@ -914,8 +914,8 @@ ensure_local_http() {
 write_port_env() {
   mkdir -p "$STATE_DIR"
   cat >"${STATE_DIR}/ports.env" <<EOF
-ROWBOAT_API_PORT=${API_PORT}
-ROWBOAT_DEVSTACK_PORT=${DEVSTACK_PORT}
+OPPULENCE_API_PORT=${API_PORT}
+OPPULENCE_DEVSTACK_PORT=${DEVSTACK_PORT}
 EOF
 }
 
@@ -1021,8 +1021,8 @@ validate_stack() {
   echo
 
   local smoke_workos_id smoke_email smoke_email_q token
-  smoke_workos_id="${ROWBOAT_KIND_SMOKE_WORKOS_ID:-user_kind_smoke_$(date +%s)}"
-  smoke_email="${ROWBOAT_KIND_SMOKE_EMAIL:-kind-${smoke_workos_id}@solomon-ai.co}"
+  smoke_workos_id="${OPPULENCE_KIND_SMOKE_WORKOS_ID:-user_kind_smoke_$(date +%s)}"
+  smoke_email="${OPPULENCE_KIND_SMOKE_EMAIL:-kind-${smoke_workos_id}@solomon-ai.co}"
   smoke_email_q="${smoke_email/@/%40}"
   token="$(curl_smoke "http://localhost:${DEVSTACK_PORT}/mint?workos_user_id=${smoke_workos_id}&email=${smoke_email_q}" | json_token)"
   if [[ -z "$token" ]]; then
@@ -1460,6 +1460,8 @@ helm_validate() {
     grep -q "host: \"${expected_host}\"" "${rendered_dir}/rowboat-www-${env}.yaml"
     grep -q "cert-manager.io/cluster-issuer: ${expected_issuer}" "${rendered_dir}/rowboat-www-${env}.yaml"
     grep -q "secretName: ${expected_tls_secret}" "${rendered_dir}/rowboat-www-${env}.yaml"
+    # The chart keeps the ROWBOAT_WWW_* names until the production cutover;
+    # clients/apps/web/scripts/docker-entrypoint.sh maps them to OPPULENCE_WWW_*.
     grep -q "ROWBOAT_WWW_PUBLIC_API_BASE_URL: \"${expected_api_base}\"" "${rendered_dir}/rowboat-www-${env}.yaml"
     grep -q "ROWBOAT_WWW_API_PROXY_URL: \"${expected_api_base}\"" "${rendered_dir}/rowboat-www-${env}.yaml"
     if grep -q 'kind: PodDisruptionBudget' "${rendered_dir}/rowboat-www-${env}.yaml"; then
@@ -1552,14 +1554,14 @@ run_desktop() {
     gmail_root="http://localhost:${DEVSTACK_PORT}"
   fi
   API_URL="http://localhost:${API_PORT}" \
-    ROWBOAT_GMAIL_ROOT_URL="$gmail_root" \
-    ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="${ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT:-9222}" \
+    OPPULENCE_GMAIL_ROOT_URL="$gmail_root" \
+    OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT="${OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT:-9222}" \
     npm run dev
 }
 
 desktop_smoke() {
   ensure_host_access
-  ROWBOAT_API_PORT="$API_PORT" ROWBOAT_DEVSTACK_PORT="$DEVSTACK_PORT" \
+  OPPULENCE_API_PORT="$API_PORT" OPPULENCE_DEVSTACK_PORT="$DEVSTACK_PORT" \
     "${ROOT_DIR}/scripts/rowboat-desktop-smoke.sh"
 }
 
@@ -1577,7 +1579,7 @@ down() {
   stop_port_forwards
   helm uninstall "$RELEASE_NAME" -n "$NAMESPACE" >/dev/null 2>&1 || true
   kubectl delete secret -n "$NAMESPACE" "$INFISICAL_SYNC_SECRET" --ignore-not-found >/dev/null 2>&1 || true
-  ROWBOAT_DEPS_FILE="$DEPS_FILE" rendered_deps_manifest | kubectl delete -n "$NAMESPACE" -f - --ignore-not-found
+  OPPULENCE_DEPS_FILE="$DEPS_FILE" rendered_deps_manifest | kubectl delete -n "$NAMESPACE" -f - --ignore-not-found
 }
 
 delete_cluster() {
@@ -1604,7 +1606,7 @@ Run the desktop against it with:
   scripts/rowboat-api-kind.sh desktop
 
 Or manually:
-  cd clients/apps/desktop && API_URL=http://localhost:${API_PORT} ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT=9222 npm run dev
+  cd clients/apps/desktop && API_URL=http://localhost:${API_PORT} OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT=9222 npm run dev
 EOF
     ;;
   deploy)

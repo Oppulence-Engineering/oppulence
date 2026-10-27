@@ -45,7 +45,7 @@ func Enrich(spec obj) {
 	}
 	spec["externalDocs"] = obj{
 		"description": "Local kind deployment workflow",
-		"url":         "https://github.com/Oppulence-Engineering/rowboat/blob/main/docs/LOCAL_KIND_ROWBOAT_API.md",
+		"url":         "https://github.com/PlaybookMediaLLC/oppulence/blob/main/docs/LOCAL_KIND_OPPULENCE_API.md",
 	}
 	spec["servers"] = []any{
 		obj{"url": "/", "description": "Current Solomon AI API origin"},
@@ -58,7 +58,7 @@ func Enrich(spec obj) {
 		obj{"name": "Background Tasks", "description": "Authenticated cloud mirror for desktop background task specs, artifacts, run state, JSONL events, and remote trigger queueing."},
 		obj{"name": "LLM", "description": "Credit-gated OpenAI-compatible text, chat, embedding, model-list, and streaming endpoints."},
 		obj{"name": "Voice", "description": "Credit-gated ElevenLabs text-to-speech proxy."},
-		obj{"name": "Oppulence Voice", "description": "WorkOS-backed API keys, opaque encrypted capture synchronization, and explicit Rowboat artifact ingestion."},
+		obj{"name": "Oppulence Voice", "description": "WorkOS-backed API keys, opaque encrypted capture synchronization, and explicit Oppulence artifact ingestion."},
 		obj{"name": "Search", "description": "Credit-gated Exa search proxy."},
 		obj{"name": "Google OAuth", "description": "Browser and desktop handoff endpoints for Google OAuth tokens."},
 		obj{"name": "Connectors", "description": "Connector registry, OAuth start/callback, MCP token minting, and disconnect flows."},
@@ -921,12 +921,12 @@ func addCloudEventSchemas(schemas obj) {
 		"runs": arraySchema("Linked runs.", ref("CloudEventRun")),
 	}, "runs")
 	schemas["InternalCloudEventIngestRequest"] = objectSchema("Server-to-server cloud event ingestion: the caller names the event owner explicitly.", obj{
-		"userId":    stringSchema("Rowboat user id (UUID) owning the event.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
+		"userId":    stringSchema("Oppulence user id (UUID) owning the event.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
 		"source":    stringEnum("Event source.", "internal", "gmail", "google_calendar", "google_drive", "slack", "webhook", "mcp", "github", "linear", "stripe", "internal"),
 		"dedupeKey": stringSchema("Required idempotency anchor.", "internal:job:42"),
 	}, "userId", "source", "dedupeKey")
 	schemas["GenericWebhookEventRequest"] = objectSchema("Signed generic webhook event ingestion. Defaults source=webhook; connector/provider gateways may send source=mcp, github, linear, or stripe. The receiver resolves the owner from userId.", obj{
-		"userId":          stringSchema("Rowboat user id (UUID) owning the event.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
+		"userId":          stringSchema("Oppulence user id (UUID) owning the event.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
 		"source":          stringEnum("Webhook source.", "webhook", "webhook", "mcp", "github", "linear", "stripe"),
 		"sourceEventId":   stringSchema("Provider-side event id. Used to derive dedupeKey when dedupeKey is omitted.", "evt_123", nullable()),
 		"sourceAccountId": stringSchema("External account or webhook integration key.", "zapier-acme-ar", nullable()),
@@ -945,13 +945,13 @@ func addInternalSchemas(schemas obj) {
 		"challenge":          stringSchema("Hydra consent challenge.", "challenge_01HABCDEF"),
 		"state":              stringSchema("Original OAuth state from Hydra request_url. Omitted only when revalidating a challenge already bound to that state.", "state_01HABCDEF"),
 		"workos_user_id":     stringSchema("WorkOS subject that started the connector flow.", "user_01HABCDEF"),
-		"hydra_client_id":    stringSchema("Hydra client id. Must match the configured Rowboat Desktop broker client.", "rowboat-desktop"),
+		"hydra_client_id":    stringSchema("Hydra client id. Must match the configured Oppulence Desktop broker client.", "rowboat-desktop"),
 		"requested_audience": arraySchema("Exactly one requested connector audience.", stringSchema("Connector audience.", "mcp:canvas")),
 		"requested_scopes":   arraySchema("Exact non-empty connector scope set requested from the catalog.", stringSchema("Connector scope.", "canvas:invoices.read")),
 	}, "version", "challenge", "workos_user_id", "hydra_client_id", "requested_audience", "requested_scopes")
 	schemas["ConsentClientIdentity"] = objectSchema("Bound OAuth client identity shown to the user.", obj{
 		"id":           stringSchema("Hydra client id.", "rowboat-desktop"),
-		"display_name": stringSchema("Stable product display name.", "Rowboat Desktop"),
+		"display_name": stringSchema("Stable product display name.", "Oppulence Desktop"),
 	}, "id", "display_name")
 	schemas["ConsentConnectorIdentity"] = objectSchema("Connector identity shown to the user.", obj{
 		"id":           stringSchema("Connector slug.", "canvas"),
@@ -1121,7 +1121,7 @@ func addAgentPaths(paths obj) {
 				"slug":         stringSchema("Short name.", "assistant"),
 				"name":         stringSchema("Display name.", "Assistant"),
 				"source":       stringSchema("Where this agent comes from.", "builtin"),
-				"instructions": stringSchema("Purpose stored for this agent.", "You are a helpful, careful cloud assistant running as a durable Rowboat agent."),
+				"instructions": stringSchema("Purpose stored for this agent.", "You are a helpful, careful cloud assistant running as a durable Oppulence agent."),
 				"enabledTools": arraySchema("Tools this agent can use.", stringSchema("Tool name.", "workspace.read")),
 			}, "slug", "name", "source", "enabledTools")),
 		}, "agents"), documentedAgentList()),
@@ -1402,7 +1402,7 @@ func addVoiceCloudPaths(paths obj) {
 			queryParam("collection", "Optional collection filter.", false, stringSchema("Collection.", "note")), queryParam("limit", "Page size (1-500).", false, intSchema("Page size.", 100)), queryParam("cursor", "Opaque updated-at/id checkpoint from next_cursor.", false, stringSchema("Cursor.", "")),
 		}, nil, obj{"200": jsonResponse("Encrypted item page.", freeFormSchema("Paginated encrypted items."), obj{"data": []any{}, "has_more": false, "next_cursor": nil}), "400": responseRef("400"), "401": responseRef("401"), "500": responseRef("500")}),
 	}
-	paths["/v1/capture-artifacts"] = obj{"post": operation("Oppulence Voice", "Ingest consented capture artifact", "Validates content hash and idempotency before persisting one explicit Rowboat handoff.", "ingestCaptureArtifact", bearer(), nil,
+	paths["/v1/capture-artifacts"] = obj{"post": operation("Oppulence Voice", "Ingest consented capture artifact", "Validates content hash and idempotency before persisting one explicit Oppulence handoff.", "ingestCaptureArtifact", bearer(), nil,
 		jsonRequest("Capture artifact.", ref("CaptureArtifactEnvelope"), obj{}), obj{"202": jsonResponse("Accepted.", freeFormSchema("Artifact acknowledgement."), obj{"data": obj{"status": "accepted", "duplicate": false}}), "200": jsonResponse("Idempotent replay.", freeFormSchema("Artifact acknowledgement."), obj{"data": obj{"status": "accepted", "duplicate": true}}), "400": responseRef("400"), "401": responseRef("401"), "409": responseRef("409"), "500": responseRef("500")})}
 	paths["/v1/capture-artifacts/{eventId}"] = obj{"get": operation("Oppulence Voice", "Get capture ingestion status", "Returns status without exposing submitted content.", "getCaptureArtifactStatus", bearer(), []any{
 		pathParam("eventId", "SHA-256 event id.", stringSchema("Event id.", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
@@ -1467,7 +1467,7 @@ func addCloudEventPaths(paths obj) {
 		"401": responseRef("401"),
 		"500": responseRef("500"),
 	})}
-	paths["/v1/webhooks/slack"] = obj{"post": operation("Cloud Events", "Slack Events API webhook", "Receives Slack Events API deliveries, verified via the X-Slack-Signature HMAC (v0:{ts}:{body} with SLACK_SIGNING_SECRET, ±5 minute replay window). Handles the url_verification handshake; event_callback deliveries for workspaces mapped to a Rowboat user are ingested, others are acknowledged and dropped.", "slackWebhook", nil, nil, jsonRequest("Slack Events API envelope.", freeFormSchema("Slack event envelope."), obj{
+	paths["/v1/webhooks/slack"] = obj{"post": operation("Cloud Events", "Slack Events API webhook", "Receives Slack Events API deliveries, verified via the X-Slack-Signature HMAC (v0:{ts}:{body} with SLACK_SIGNING_SECRET, ±5 minute replay window). Handles the url_verification handshake; event_callback deliveries for workspaces mapped to a Oppulence user are ingested, others are acknowledged and dropped.", "slackWebhook", nil, nil, jsonRequest("Slack Events API envelope.", freeFormSchema("Slack event envelope."), obj{
 		"type": "event_callback", "team_id": "T0EXAMPLE", "event_id": "Ev001",
 		"event": obj{"type": "message", "text": "hello"},
 	}), obj{
@@ -1900,7 +1900,7 @@ func addGoogleOAuthPaths(paths obj) {
 }
 
 func addSlackOAuthPaths(paths obj) {
-	paths["/v1/slack-oauth/start"] = obj{"post": operation("Slack OAuth", "Start Slack workspace install", "Creates a one-time state ticket bound to the authenticated Rowboat user and returns the Slack install URL for the desktop to open.", "startSlackOAuth", bearer(), nil, nil, obj{
+	paths["/v1/slack-oauth/start"] = obj{"post": operation("Slack OAuth", "Start Slack workspace install", "Creates a one-time state ticket bound to the authenticated Oppulence user and returns the Slack install URL for the desktop to open.", "startSlackOAuth", bearer(), nil, nil, obj{
 		"200": jsonResponse("Bound Slack authorization URL.", obj{"type": "object", "required": []any{"authorizeUrl"}, "properties": obj{"authorizeUrl": obj{"type": "string", "format": "uri"}}}, obj{"authorizeUrl": "https://slack.com/oauth/v2/authorize?..."}),
 		"401": responseRef("401"),
 		"500": responseRef("500"),
@@ -1920,7 +1920,7 @@ func addSlackOAuthPaths(paths obj) {
 		"401": responseRef("401"),
 		"403": responseRef("403"),
 		"404": responseRef("404"),
-		"409": obj{"description": "The browser install is incomplete, or the workspace is already owned by another Rowboat account.", "content": obj{"application/problem+json": obj{"schema": ref("ErrorEnvelope")}}},
+		"409": obj{"description": "The browser install is incomplete, or the workspace is already owned by another Oppulence account.", "content": obj{"application/problem+json": obj{"schema": ref("ErrorEnvelope")}}},
 		"410": responseRef("410"),
 		"500": responseRef("500"),
 	})}

@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenue"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitment"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/revenue"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )

@@ -5,7 +5,7 @@
  * exchange must present the WorkOS API key, which the desktop must not hold.
  * So the desktop runs the browser authorize + PKCE itself, then hands the code
  * to rowboat-api, which completes the exchange server-side. This replaces the
- * direct openid-client token exchange for the `rowboat` provider.
+ * direct openid-client token exchange for the `oppulence` provider.
  * See server/AUTH.md.
  */
 import { API_URL } from "../config/env.js";
@@ -117,7 +117,7 @@ export async function exchangeWorkosCode(code: string, codeVerifier: string): Pr
 }
 
 /**
- * Refresh rowboat tokens via the broker, classifying failures so callers can
+ * Refresh oppulence tokens via the broker, classifying failures so callers can
  * tell "sign in again" from "back off and retry" (mirrors the Google path in
  * google-backend-oauth.ts):
  *

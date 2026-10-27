@@ -37,9 +37,9 @@ The default workflow covers:
 - renderer health metrics for script, task, layout, style recalculation, DOM node count, event listener count, resource count, JS heap, and long tasks;
 - idle sampling after the workflow to catch background CPU burn.
 
-`make perf-desktop-full` switches `ROWBOAT_DESKTOP_PERF_TIER=full`, seeds a larger 1,000-note workspace, enables the API-target background task create/run/status/events/artifact pull through the desktop IPC path, runs a short memory-growth loop, and measures warm relaunch against the same workdir. Keep that path for release, nightly, or backend-worker-sensitive changes; it depends on local Temporal health and is intentionally not the default every-change desktop gate.
+`make perf-desktop-full` switches `OPPULENCE_DESKTOP_PERF_TIER=full`, seeds a larger 1,000-note workspace, enables the API-target background task create/run/status/events/artifact pull through the desktop IPC path, runs a short memory-growth loop, and measures warm relaunch against the same workdir. Keep that path for release, nightly, or backend-worker-sensitive changes; it depends on local Temporal health and is intentionally not the default every-change desktop gate.
 
-`make perf-desktop-deep` switches `ROWBOAT_DESKTOP_PERF_TIER=deep`, seeds a 5,000-note workspace, and runs a longer memory-growth loop. Use it for dedicated perf machines or changes likely to affect workspace scale, renderer memory, startup, or bundling.
+`make perf-desktop-deep` switches `OPPULENCE_DESKTOP_PERF_TIER=deep`, seeds a 5,000-note workspace, and runs a longer memory-growth loop. Use it for dedicated perf machines or changes likely to affect workspace scale, renderer memory, startup, or bundling.
 
 ## Nightly CI
 
@@ -76,17 +76,17 @@ Key files:
 
 ## Environment Controls
 
-- `ROWBOAT_DESKTOP_PERF_MODE=package|dev` defaults to `package`.
-- `ROWBOAT_DESKTOP_PERF_TIER=commit|full|deep` defaults to `commit`.
-- `ROWBOAT_DESKTOP_PERF_INCLUDE_CLOUD=1` includes the cloud background-task workflow.
-- `ROWBOAT_DESKTOP_PERF_SKIP_PACKAGE=1` reuses the existing packaged output.
-- `ROWBOAT_DESKTOP_PERF_UPDATE_BASELINE=1` writes the local baseline.
-- `ROWBOAT_DESKTOP_PERF_ARTIFACT_DIR=...` overrides the run output directory.
-- `ROWBOAT_DESKTOP_PERF_AGENT_SESSION=...` overrides the isolated `agent-browser` session name.
-- `ROWBOAT_DESKTOP_PERF_IDLE_SECONDS=10` controls idle sampling duration.
-- `ROWBOAT_DESKTOP_PERF_SEED_NOTES=...` overrides tier-based seed corpus size.
-- `ROWBOAT_DESKTOP_PERF_MEMORY_REPEATS=...` overrides tier-based memory-loop repeats.
-- `ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT=9333` overrides CDP port; the perf gate defaults to `9333` to avoid colliding with the normal desktop smoke/debug port.
+- `OPPULENCE_DESKTOP_PERF_MODE=package|dev` defaults to `package`.
+- `OPPULENCE_DESKTOP_PERF_TIER=commit|full|deep` defaults to `commit`.
+- `OPPULENCE_DESKTOP_PERF_INCLUDE_CLOUD=1` includes the cloud background-task workflow.
+- `OPPULENCE_DESKTOP_PERF_SKIP_PACKAGE=1` reuses the existing packaged output.
+- `OPPULENCE_DESKTOP_PERF_UPDATE_BASELINE=1` writes the local baseline.
+- `OPPULENCE_DESKTOP_PERF_ARTIFACT_DIR=...` overrides the run output directory.
+- `OPPULENCE_DESKTOP_PERF_AGENT_SESSION=...` overrides the isolated `agent-browser` session name.
+- `OPPULENCE_DESKTOP_PERF_IDLE_SECONDS=10` controls idle sampling duration.
+- `OPPULENCE_DESKTOP_PERF_SEED_NOTES=...` overrides tier-based seed corpus size.
+- `OPPULENCE_DESKTOP_PERF_MEMORY_REPEATS=...` overrides tier-based memory-loop repeats.
+- `OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT=9333` overrides CDP port; the perf gate defaults to `9333` to avoid colliding with the normal desktop smoke/debug port.
 
 ## Design Notes
 

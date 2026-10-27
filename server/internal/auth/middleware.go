@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
-	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
+	oauthrs "github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server"
 	"go.uber.org/zap"
 )
 

@@ -10,24 +10,24 @@ import (
 	"time"
 
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtask"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskartifact"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskrun"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskrunevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskmetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/faculties"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/googleapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/hubspotapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/llm"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/secrets"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/slackclient"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/websearch"
 	"github.com/google/uuid"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/activity"
@@ -243,7 +243,7 @@ func BackgroundTaskWorkflow(ctx workflow.Context, in StartInput) error {
 	return workflow.ExecuteActivity(shortCtx, ActivityMarkRunDone, done).Get(shortCtx, nil)
 }
 
-// Activities mutates the Rowboat database from worker executions.
+// Activities mutates the Oppulence database from worker executions.
 type Activities struct {
 	Client *ent.Client
 	Log    *zap.Logger

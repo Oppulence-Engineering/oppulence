@@ -16,7 +16,7 @@
 
 The roadmap identifies pre-scale product gaps that are broader than cloud run
 execution: every live note needs transparent observability, cost visibility,
-source provenance, and user controls. Without those, Rowboat risks the same
+source provenance, and user controls. Without those, Oppulence risks the same
 failure modes customers report in other agent products: silent failures, runaway
 cost, ungrounded claims, and actions users cannot audit.
 
@@ -25,7 +25,7 @@ trustworthy across local and cloud execution.
 
 ## Current state
 
-Rowboat already has:
+Oppulence already has:
 
 - local live-note and background-task schedulers
 - run logs under the desktop workspace
@@ -523,7 +523,7 @@ Generated content should visually distinguish:
 - unknown provenance
 
 The note body remains normal markdown. The UI may decorate it based on sidecar
-anchors but should not make markdown unreadable outside Rowboat.
+anchors but should not make markdown unreadable outside Oppulence.
 
 ### Privacy rules
 

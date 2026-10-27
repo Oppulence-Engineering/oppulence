@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/personsuppression"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
 )
 
 // PersonSuppressionDelete is the builder for deleting a PersonSuppression entity.

@@ -3,7 +3,7 @@ package openapidoc
 import (
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenue"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/revenue"
 )
 
 // Download the report loads GET /v1/revenue-leak-scans/{scanId}/report?format=md.

@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenue"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/revenue"
 )
 
 const (

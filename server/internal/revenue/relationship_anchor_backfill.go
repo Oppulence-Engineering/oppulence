@@ -3,10 +3,10 @@ package revenue
 import (
 	"context"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipidentitycandidate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
 )
 
 // Durable identity anchors for relationships that predate the identity engine.

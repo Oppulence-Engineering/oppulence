@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
 	"go.temporal.io/sdk/temporal"
 )
 

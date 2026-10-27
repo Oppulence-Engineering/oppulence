@@ -13,7 +13,7 @@ import { writeJsonAtomic, writeJsonAtomicSync } from "./atomic_write.js";
  * what these tests pin is the helper's observable behavior around it.
  */
 
-const DIR = "/tmp/rowboat-atomic-write-test";
+const DIR = "/tmp/oppulence-atomic-write-test";
 const FILE = path.join(DIR, "state.json");
 
 beforeEach(async () => {

@@ -12,7 +12,7 @@
 
 ## Summary
 
-Build a provider-neutral mailbox foundation for the desktop app and broker-backed cloud workflows. Rowboat already has a strong Gmail desktop sync path, but it is Gmail-shaped end to end: IPC names, renderer state, local cache paths, thread URLs, and provider actions all assume Gmail. Inbox Zero's email surface is broader: every feature routes through a provider abstraction that supports Gmail and Outlook, then higher-level systems operate on normalized messages, threads, labels, folders, attachments, watches, and actions.
+Build a provider-neutral mailbox foundation for the desktop app and broker-backed cloud workflows. Oppulence already has a strong Gmail desktop sync path, but it is Gmail-shaped end to end: IPC names, renderer state, local cache paths, thread URLs, and provider actions all assume Gmail. Inbox Zero's email surface is broader: every feature routes through a provider abstraction that supports Gmail and Outlook, then higher-level systems operate on normalized messages, threads, labels, folders, attachments, watches, and actions.
 
 This RFC proposes a `MailboxProvider` layer, normalized mailbox data model, account capability model, and sync/watch pipeline that can support Gmail first and Outlook next without rewriting every product feature.
 
@@ -40,7 +40,7 @@ Implementation agents should first read then inspect these Inbox Zero files:
 - `apps/web/utils/outlook/scopes.ts`
 - `apps/web/utils/email/watch-manager.ts`
 
-Translate these into Rowboat's `clients/apps/desktop/packages/core` mailbox interfaces and `server/internal/googleapi`/future provider adapters. Do not copy the Next.js server-action shape.
+Translate these into Oppulence's `clients/apps/desktop/packages/core` mailbox interfaces and `server/internal/googleapi`/future provider adapters. Do not copy the Next.js server-action shape.
 
 ## Source Analysis
 
@@ -49,9 +49,9 @@ Translate these into Rowboat's `clients/apps/desktop/packages/core` mailbox inte
 | Inbox Zero centralizes provider behavior behind an email provider abstraction instead of leaking Gmail/Microsoft details across feature code.                                                                           | `inbox-zero/apps/web/utils/email/provider.ts`, `inbox-zero/apps/web/utils/email/types.ts`                                                                                          |
 | Inbox Zero's provider interface covers read, search, labels, folders, drafts, send/reply/forward, archive/trash, mark read/spam/star, filters, watches, and attachments.                                                | `inbox-zero/apps/web/utils/email/types.ts`                                                                                                                                         |
 | Inbox Zero persists account-level state for watches, history cursors, writing style, rules revision, follow-up thresholds, digests, filing, and channels.                                                               | `inbox-zero/apps/web/prisma/schema.prisma` `EmailAccount`                                                                                                                          |
-| Rowboat desktop currently has a Google-only Gmail sync loop with `gmail.modify`, 30 second sync interval, local markdown/thread snapshots, attachments, reply/send, archive/trash/read actions, and Gmail-specific IPC. | `clients/apps/desktop/packages/core/src/knowledge/sync_gmail.ts`, `clients/apps/desktop/apps/renderer/src/components/email-view.tsx`, `clients/apps/desktop/apps/main/src/ipc.ts`                                            |
-| Rowboat cloud already has normalized cloud events and Google watch infrastructure that can be reused for mailbox watches.                                                                                               | `docs/rfc/complete-003-cloud-event-ingestion.md`, `docs/rfc/019-google-push-infrastructure.md`, `server/ent/schema/cloud_event.go`, `server/ent/schema/google_watch.go` |
-| Rowboat backend currently exposes read-only Gmail snippets to background tools, not full mailbox operations.                                                                                                            | `server/internal/googleapi/gmail.go`, `server/internal/backgroundtaskruntime/tools_connectors.go`                                                              |
+| Oppulence desktop currently has a Google-only Gmail sync loop with `gmail.modify`, 30 second sync interval, local markdown/thread snapshots, attachments, reply/send, archive/trash/read actions, and Gmail-specific IPC. | `clients/apps/desktop/packages/core/src/knowledge/sync_gmail.ts`, `clients/apps/desktop/apps/renderer/src/components/email-view.tsx`, `clients/apps/desktop/apps/main/src/ipc.ts`                                            |
+| Oppulence cloud already has normalized cloud events and Google watch infrastructure that can be reused for mailbox watches.                                                                                               | `docs/rfc/complete-003-cloud-event-ingestion.md`, `docs/rfc/019-google-push-infrastructure.md`, `server/ent/schema/cloud_event.go`, `server/ent/schema/google_watch.go` |
+| Oppulence backend currently exposes read-only Gmail snippets to background tools, not full mailbox operations.                                                                                                            | `server/internal/googleapi/gmail.go`, `server/internal/backgroundtaskruntime/tools_connectors.go`                                                              |
 
 ## Goals
 
@@ -67,7 +67,7 @@ Translate these into Rowboat's `clients/apps/desktop/packages/core` mailbox inte
 - Replacing every Gmail-specific UI in the first milestone.
 - Implementing Microsoft Graph in this RFC. The foundation must make it possible; Gmail remains the first implementation.
 - Building the full automation engine, reply-zero workflow, newsletter cleanup, or analytics. Those are separate RFCs.
-- Moving full raw email bodies into Rowboat cloud by default.
+- Moving full raw email bodies into Oppulence cloud by default.
 
 ## Design
 
@@ -126,7 +126,7 @@ The desktop app can continue requesting the existing Gmail scope during migratio
 
 ### Normalized Identity
 
-Every mailbox object should carry both Rowboat IDs and provider-native refs:
+Every mailbox object should carry both Oppulence IDs and provider-native refs:
 
 ```ts
 export type MailboxProviderRef = {
@@ -147,7 +147,7 @@ export type MailboxMessageRef = MailboxThreadRef & {
 };
 ```
 
-Provider-native IDs remain opaque. Rowboat IDs are stable hashes or database IDs used by local state, rules, analytics, and cloud event dedupe.
+Provider-native IDs remain opaque. Oppulence IDs are stable hashes or database IDs used by local state, rules, analytics, and cloud event dedupe.
 
 ### Local Store
 
@@ -382,9 +382,9 @@ ipcMain.handle("mailbox:archiveThread", async (_event, input) => {
 });
 ```
 
-### Stable Rowboat IDs
+### Stable Oppulence IDs
 
-Provider-native IDs remain opaque; Rowboat IDs are deterministic wrappers:
+Provider-native IDs remain opaque; Oppulence IDs are deterministic wrappers:
 
 ```ts
 export function normalizeMailboxThreadId(input: {
@@ -428,5 +428,5 @@ export function normalizeMailboxThreadId(input: {
 
 - Should the desktop local store use the existing app database layer or a dedicated mailbox SQLite database?
 - Which mailbox features must be available offline versus requiring provider round trips?
-- How much provider payload should be mirrored to Rowboat cloud for cloud-only background tasks?
+- How much provider payload should be mirrored to Oppulence cloud for cloud-only background tasks?
 - Should Outlook support launch as read-only first, or wait until modify/send are available?

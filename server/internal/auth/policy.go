@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
 	"go.uber.org/zap"
 )
 

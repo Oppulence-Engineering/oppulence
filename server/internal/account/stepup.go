@@ -18,12 +18,12 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/accountdeletionchallenge"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/email"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/accountdeletionchallenge"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/email"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
 )
 
 const (

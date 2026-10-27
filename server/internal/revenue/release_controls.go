@@ -10,11 +10,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenuemetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipsourcestatus"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/workspacefeaturecontrol"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/revenuemetrics"
 )
 
 // ErrCapabilityDisabled is returned when a tenant entitlement or kill switch

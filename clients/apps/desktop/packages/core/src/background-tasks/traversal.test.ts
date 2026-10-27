@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-bgtasks-traversal-test");
+const TEST_WORKDIR = vi.hoisted(() => "/tmp/oppulence-bgtasks-traversal-test");
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 // Creating/patching a task fires a best-effort cloud sync; keep the tests local.
 vi.mock("./cloud-sync.js", () => ({

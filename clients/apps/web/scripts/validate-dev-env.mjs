@@ -2,11 +2,11 @@
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 
-const apiUrl = process.env.ROWBOAT_WWW_API_PROXY_URL || "http://localhost:18080";
-const port = process.env.ROWBOAT_WWW_PORT || "18082";
+const apiUrl = process.env.OPPULENCE_WWW_API_PROXY_URL || "http://localhost:18080";
+const port = process.env.OPPULENCE_WWW_PORT || "18082";
 
 const secret =
-  process.env.ROWBOAT_WWW_SESSION_SECRET || "dev-only-rowboat-www-session-secret-change-me";
+  process.env.OPPULENCE_WWW_SESSION_SECRET || "dev-only-rowboat-www-session-secret-change-me";
 
 let exitCode = 0;
 
@@ -22,7 +22,7 @@ function writeLine(stream, message) {
 function healthURL(rawApiURL) {
   const url = new URL(`${rawApiURL.replace(/\/+$/, "")}/healthz`);
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new Error("ROWBOAT_WWW_API_PROXY_URL must use HTTP or HTTPS");
+    throw new Error("OPPULENCE_WWW_API_PROXY_URL must use HTTP or HTTPS");
   }
   return url;
 }

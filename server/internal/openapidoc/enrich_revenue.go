@@ -231,7 +231,7 @@ func priorityBreakdownSchema() obj {
 }
 
 func addRevenueSchemas(schemas obj) {
-	schemas["RevenueWorkspace"] = objectSchema("Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.", obj{
+	schemas["RevenueWorkspace"] = objectSchema("Mapping between the Oppulence tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.", obj{
 		"id":                     uuidSchema("Workspace id.", "0b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"mode":                   stringEnum("Workspace mode.", "local", "local", "linked"),
 		"status":                 stringEnum("Link health.", "active", "active", "disconnected", "repair_required"),
@@ -794,7 +794,7 @@ func addRevenueSchemas(schemas obj) {
 		}, "id", "source", "sourceRecordId", "occurredAt", "externalEvidenceRefs")),
 	}, "id", "actionType", "channel", "detector", "revision", "revisionHash", "reason", "priorityScore", "queueStatus", "policyStatus", "approvalStatus", "executionStatus", "executionOwner", "executionMode", "evidence")
 
-	schemas["RevenuePolicyDecision"] = objectSchema("Immutable OutboundConsole preflight decision for one exact action revision. Rowboat snapshots the decision; it never composes one.", obj{
+	schemas["RevenuePolicyDecision"] = objectSchema("Immutable OutboundConsole preflight decision for one exact action revision. Oppulence snapshots the decision; it never composes one.", obj{
 		"id":           uuidSchema("Decision snapshot id.", "2b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"revision":     intSchema("Action revision the decision is about.", 1),
 		"revisionHash": stringSchema("Revision hash the decision is bound to.", documentedActionRevisionHash),

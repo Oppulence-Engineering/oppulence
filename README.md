@@ -51,7 +51,7 @@ following changes are **in development**:
 Capture ingestion already has a versioned handoff. Accepting a transcript is not
 proof that it has been linked to a person or used in a response. See the current
 implementation status in
-[RFC 055](./docs/rfc/055-capture-product-boundary-and-rowboat-integration.md).
+[RFC 055](./docs/rfc/055-capture-product-boundary-and-oppulence-integration.md).
 
 ## The workflow we are building around
 
@@ -194,7 +194,7 @@ the [deployment guide](./docs/BACKEND_DEPLOYMENT.md).
 
 Web and Desktop share the API in this monorepo. Voice remains a separate
 companion repository, connected through the versioned capture contract in
-[RFC 055](./docs/rfc/055-capture-product-boundary-and-rowboat-integration.md).
+[RFC 055](./docs/rfc/055-capture-product-boundary-and-oppulence-integration.md).
 The shared assistant experience is the product direction; it does not imply
 that every workflow or local artifact already syncs between applications.
 
@@ -296,7 +296,7 @@ OpenRouter, so the root `.env` needs `OPENROUTER_API_KEY`.
 
 ### CI side-jobs
 
-- [`rowboat-build.yml`](./.github/workflows/rowboat-build.yml) — `verify:ci` for `clients/apps/web`.
+- [`oppulence-build.yml`](./.github/workflows/oppulence-build.yml) — `verify:ci` for `clients/apps/web`.
 - [`rowboat-api-quality.yml`](./.github/workflows/rowboat-api-quality.yml) / [`rowboat-api-deploy.yml`](./.github/workflows/rowboat-api-deploy.yml) — Go API quality and deploy gates.
 - [`electron-build.yml`](./.github/workflows/electron-build.yml) / [`x-publish.yml`](./.github/workflows/x-publish.yml) / [`x-smoke-test.yml`](./.github/workflows/x-smoke-test.yml) — desktop CI gates (lint, packaging dry-run, smoke test).
 - [`pr-title-lint.yml`](./.github/workflows/pr-title-lint.yml) — enforces Conventional Commits on PR titles, so release-please works.
@@ -321,7 +321,7 @@ OpenRouter, so the root `.env` needs `OPENROUTER_API_KEY`.
 
 Download installers from the project's releases page:
 
-**Latest release:** https://github.com/Oppulence-Engineering/rowboat/releases/latest
+**Latest release:** https://github.com/PlaybookMediaLLC/oppulence/releases/latest
 
 Each release ships 16 installer assets covering the full Mac/Windows/Linux matrix (macOS `.dmg` and `.zip` for both arm64 and x64; Linux `.deb`, `.rpm`, and `.zip` for arm64 and x86_64; Windows Squirrel `.exe` installer plus a portable `.zip`), plus two supply-chain SBOMs (SPDX 2.3 and CycloneDX 1.5) so consumers can scan dependencies for known CVEs without rebuilding from source.
 

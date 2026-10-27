@@ -14,7 +14,7 @@
 
 ## Summary
 
-Rowboat needs one first-party connector protocol for Canvas, Corinthian, Cadence
+Oppulence needs one first-party connector protocol for Canvas, Corinthian, Cadence
 (Billflow legacy naming), Conduit, Eigen, and future Oppulence products. This RFC
 promotes the connector suite design into the numbered RFC set: OAuth2/PKCE
 account linking, product-scoped audiences, consent UI, scope catalog, resource
@@ -52,14 +52,14 @@ RFCs depend on.
 - Product MCP servers remain independently owned and enforce scopes themselves.
 - rowboat-api stores refresh tokens encrypted and mints short-lived resource tokens.
 - Product-side subscription/entitlement gates happen before consent is granted.
-- Revocation works from Rowboat and from product backends.
+- Revocation works from Oppulence and from product backends.
 
 ## Non-Goals
 
 - Defining each product's MCP tool catalog; see RFC 013 and product-owned RFCs.
 - Proxying MCP traffic through rowboat-api.
 - Replacing WorkOS as human identity.
-- Handling third-party bank/Plaid tokens in Rowboat.
+- Handling third-party bank/Plaid tokens in Oppulence.
 - Defining generic external-provider packages or runtime behavior; RFC 020 owns
   that layer while reusing this RFC's consent and credential controls.
 
@@ -67,7 +67,7 @@ RFCs depend on.
 
 ```mermaid
 flowchart LR
-    D[Rowboat Desktop] -->|start connector| API[rowboat-api]
+    D[Oppulence Desktop] -->|start connector| API[rowboat-api]
     API -->|state + PKCE| O[Hydra/Ory]
     O -->|login if needed| W[WorkOS]
     O --> C[Consent UI]
@@ -170,7 +170,7 @@ Denial reasons:
 The consent app shows:
 
 - Product identity.
-- Client identity (`Rowboat Desktop`).
+- Client identity (`Oppulence Desktop`).
 - Requested scopes grouped by trust tier.
 - Required vs optional scopes.
 - Plan/upsell mode when entitlement fails.
@@ -196,7 +196,7 @@ Responsibilities:
 6. Refetch JWKS once on `kid` miss.
 7. Optional introspection for money-moving scopes.
 
-Product MCP servers must enforce scopes even if Rowboat checked them earlier.
+Product MCP servers must enforce scopes even if Oppulence checked them earlier.
 
 ## Money-moving approval tokens
 
@@ -528,7 +528,7 @@ Resource-token minting uses this algorithm:
     `MCPConnection`, so stale work cannot revoke or tombstone a newer grant.
 13. Reconcile ambiguous callback, claim, refresh, and reconnect commits against
     the stable custody owner before either adopting or revoking a credential.
-14. Recheck ownership before publishing a cached result or minting a Rowboat
+14. Recheck ownership before publishing a cached result or minting a Oppulence
     resource token.
 15. Emit a durable semantic audit event and release only with compare-owner deletion.
 
@@ -615,7 +615,7 @@ The product MCP validates:
 - base connector scope exists
 - product-side audit record is written
 
-Rowboat may initiate or display the approval challenge, but final validation
+Oppulence may initiate or display the approval challenge, but final validation
 lives with the product that owns the risky action.
 
 The browser completion path never returns that bearer through a custom protocol.
@@ -713,7 +713,7 @@ The evidence set includes:
 - **Product tokens are audience-bound.** One token targets one resource server.
 - **rowboat-api does not proxy MCP calls.** It brokers consent and token refresh only.
 - **Scope catalog is structured data.** Prose docs are not the source of truth.
-- **Money-moving approval is product-owned.** Rowboat surfaces the challenge, but the
+- **Money-moving approval is product-owned.** Oppulence surfaces the challenge, but the
   product validates action-specific approval.
 - **Hydra/Ory is introduced only for broker mode.** WorkOS-direct remains the live
   service-plane auth path per RFC 011.

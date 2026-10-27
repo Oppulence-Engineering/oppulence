@@ -45,7 +45,7 @@ const hugeFree = async () => Number.MAX_SAFE_INTEGER;
 describe("ModelManager", () => {
   let dir: string;
   beforeEach(async () => {
-    dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-mm-test-"));
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-mm-test-"));
   });
   afterEach(async () => {
     await fs.rm(dir, { recursive: true, force: true });
@@ -434,7 +434,7 @@ describe("reapStalePartials", () => {
   }
 
   it("removes a partial older than the window and reports the bytes", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-reap-test-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-reap-test-"));
     const now = Date.now();
     const stale = await partial(dir, "ggml-large-v3-q5_0.bin.part", 2048, WEEK + 60_000, now);
     expect(await reapStalePartials(dir, WEEK, now)).toBe(2048);
@@ -443,7 +443,7 @@ describe("reapStalePartials", () => {
 
   // Resume has to keep working; a download paused this morning is not garbage.
   it("keeps a partial that is still within the window", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-reap-test-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-reap-test-"));
     const now = Date.now();
     const fresh = await partial(dir, "ggml-base.en-q5_1.bin.part", 1024, 60_000, now);
     expect(await reapStalePartials(dir, WEEK, now)).toBe(0);
@@ -451,7 +451,7 @@ describe("reapStalePartials", () => {
   });
 
   it("never touches installed models, however old", async () => {
-    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-reap-test-"));
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-reap-test-"));
     const now = Date.now();
     const model = path.join(dir, "ggml-base.en-q5_1.bin");
     await fs.writeFile(model, "weights");
@@ -463,6 +463,6 @@ describe("reapStalePartials", () => {
   });
 
   it("returns zero when the models directory is absent", async () => {
-    expect(await reapStalePartials("/tmp/rowboat-no-such-models-dir")).toBe(0);
+    expect(await reapStalePartials("/tmp/oppulence-no-such-models-dir")).toBe(0);
   });
 });

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/workosauth"
 )
 
 func TestMemoryRefreshLockOwnershipAndRenewal(t *testing.T) {
@@ -14,9 +14,9 @@ func TestMemoryRefreshLockOwnershipAndRenewal(t *testing.T) {
 }
 
 func TestRedisRefreshLockOwnershipAndRenewal(t *testing.T) {
-	redisURL := os.Getenv("ROWBOAT_TEST_REDIS_URL")
+	redisURL := os.Getenv("OPPULENCE_TEST_REDIS_URL")
 	if redisURL == "" {
-		t.Skip("ROWBOAT_TEST_REDIS_URL is not set")
+		t.Skip("OPPULENCE_TEST_REDIS_URL is not set")
 	}
 	cache, err := workosauth.NewRedisRefreshCache(t.Context(), redisURL)
 	if err != nil {

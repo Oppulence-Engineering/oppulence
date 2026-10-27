@@ -16,7 +16,7 @@ let retention: typeof import("./retention.js");
 let session: typeof import("./session.js");
 
 beforeAll(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-meetings-retention-"));
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-meetings-retention-"));
   process.env.SOLOMON_WORKDIR = tmpDir;
   vi.resetModules();
   retention = await import("./retention.js");

@@ -7,13 +7,13 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenuemetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitment"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthconnection"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueleakscan"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/revenuemetrics"
 )
 
 // AutoScanConfig bounds the background revenue-scan sweeper.

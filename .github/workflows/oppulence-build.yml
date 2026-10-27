@@ -1,4 +1,4 @@
-name: Rowboat Build
+name: Oppulence Build
 
 on:
   pull_request:

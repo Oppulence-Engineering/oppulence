@@ -24,7 +24,7 @@ export async function GET() {
 
     const contents = template
       .replace('__CHAT_WIDGET_HOST__', host)
-      .replace('__ROWBOAT_HOST__', process.env.ROWBOAT_HOST || '');
+      .replace('__ROWBOAT_HOST__', process.env.OPPULENCE_HOST || '');
 
     return new Response(contents, {
       headers: {

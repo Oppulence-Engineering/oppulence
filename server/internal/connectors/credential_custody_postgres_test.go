@@ -15,14 +15,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/connectorcredentialcleanupjob"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/connectorcredentialrecovery"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/workosauth"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -31,10 +31,10 @@ func openCredentialCustodyPostgres(t *testing.T) *db.DB {
 	t.Helper()
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		dsn = os.Getenv("ROWBOAT_TEST_PG_DSN")
+		dsn = os.Getenv("OPPULENCE_TEST_PG_DSN")
 	}
 	if dsn == "" {
-		t.Skip("DATABASE_URL or ROWBOAT_TEST_PG_DSN is required")
+		t.Skip("DATABASE_URL or OPPULENCE_TEST_PG_DSN is required")
 	}
 	database, err := db.Open(context.Background(), appconfig.Config{DatabaseURL: dsn}, zap.NewNop())
 	if err != nil {
@@ -107,9 +107,9 @@ func TestReconnectSupersededGrantEscrowIsAtomicPostgres(t *testing.T) {
 }
 
 func TestCredentialRecoveryPostgresRedisRestart(t *testing.T) {
-	redisURL := os.Getenv("ROWBOAT_TEST_REDIS_URL")
+	redisURL := os.Getenv("OPPULENCE_TEST_REDIS_URL")
 	if redisURL == "" {
-		t.Skip("ROWBOAT_TEST_REDIS_URL is required")
+		t.Skip("OPPULENCE_TEST_REDIS_URL is required")
 	}
 	database := openCredentialCustodyPostgres(t)
 	cache, err := workosauth.NewRedisRefreshCache(t.Context(), redisURL)
@@ -184,9 +184,9 @@ func TestCredentialRecoveryPostgresRedisRestart(t *testing.T) {
 }
 
 func TestCredentialCustodyCapacityFloodPostgresRedisDualOutage(t *testing.T) {
-	redisURL := os.Getenv("ROWBOAT_TEST_REDIS_URL")
+	redisURL := os.Getenv("OPPULENCE_TEST_REDIS_URL")
 	if redisURL == "" {
-		t.Skip("ROWBOAT_TEST_REDIS_URL is required")
+		t.Skip("OPPULENCE_TEST_REDIS_URL is required")
 	}
 	database := openCredentialCustodyPostgres(t)
 	cache, err := workosauth.NewRedisRefreshCache(t.Context(), redisURL)

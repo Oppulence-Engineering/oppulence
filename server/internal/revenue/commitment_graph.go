@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitment"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitmentdependency"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitmentevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
 	"github.com/google/uuid"
 )
 

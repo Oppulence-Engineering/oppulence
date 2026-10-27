@@ -4,7 +4,7 @@ New components have one of three owners. Choose the narrowest owner that fits.
 
 | Owner            | Location                                       | Creation command                                                          | May contain                                           |
 | ---------------- | ---------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Shared primitive | `clients/packages/ui/src/components`                   | `npm run ui:add -- <name>`                                                | Reusable presentation and interaction primitives only |
+| Shared primitive | `clients/packages/ui/src/components`           | `npm run ui:add -- <name>`                                                | Reusable presentation and interaction primitives only |
 | Product feature  | `components/features/<domain>/<name>`          | `npm run gen -- component --kind feature --domain <domain> --name <name>` | One domain's reusable product UI                      |
 | Route-private    | `app/(product)/app/<route>/_components/<name>` | `npm run gen -- component --kind route --route <route> --name <name>`     | UI used only by one route subtree                     |
 

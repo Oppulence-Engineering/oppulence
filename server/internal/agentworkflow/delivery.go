@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthconnection"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/slackclient"
 	"go.uber.org/zap"
 )
 

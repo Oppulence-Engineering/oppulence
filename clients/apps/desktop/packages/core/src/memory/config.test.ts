@@ -5,7 +5,7 @@ import path from 'path';
 // Point WorkDir at an isolated temp dir so loadMemoryConfig reads a known file.
 // memory/config.ts is the only importer of ../config/config.js in this test's
 // graph, so a minimal mock is safe.
-const TEST_WORKDIR = vi.hoisted(() => '/tmp/rowboat-mem-cfg-test');
+const TEST_WORKDIR = vi.hoisted(() => '/tmp/oppulence-mem-cfg-test');
 vi.mock('../config/config.js', () => ({ WorkDir: TEST_WORKDIR }));
 
 import { MemoryConfig, loadMemoryConfig, indexDir } from './config.js';

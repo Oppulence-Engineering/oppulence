@@ -1,4 +1,4 @@
-# Rowboat Web Quality Gauntlet
+# Oppulence Web Quality Gauntlet
 
 `npm run verify` is the local merge-readiness command. It combines framework,
 typed, architectural, contract, security, dead-code, test, and production-build checks. CI uses

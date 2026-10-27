@@ -11,7 +11,7 @@ import (
 	"github.com/stripe/stripe-go/v86"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/billing"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/billing"
 )
 
 // TestCancelSubscriptionsAgainstStripeTestMode runs CancelSubscriptions against

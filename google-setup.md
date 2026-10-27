@@ -1,6 +1,6 @@
-# Connecting Google to Rowboat
+# Connecting Google to Oppulence
 
-Rowboat requires Google OAuth credentials (Client ID and Client Secret) to connect to Gmail, Calendar, and Drive. Follow the steps below to generate them.
+Oppulence requires Google OAuth credentials (Client ID and Client Secret) to connect to Gmail, Calendar, and Drive. Follow the steps below to generate them.
 
 ---
 
@@ -21,7 +21,7 @@ Go to:
 https://console.cloud.google.com/projectcreate
 
 - Click **Create Project**
-- Give it a name (e.g. `Rowboat Integration`)
+- Give it a name (e.g. `Oppulence Integration`)
 - Click **Create**
 
 Once created, make sure the new project is selected in the top project dropdown.
@@ -64,7 +64,7 @@ https://console.cloud.google.com/auth/branding
 
 ### App Information
 
-- App name: (e.g. `Rowboat`)
+- App name: (e.g. `Oppulence`)
 - User support email: Your email
 
 ### Audience
@@ -94,7 +94,7 @@ https://console.cloud.google.com/auth/audience
 Under **Test Users**:
 
 - Click **Add Users**
-- Add the email address you plan to connect with Rowboat
+- Add the email address you plan to connect with Oppulence
 
 Save changes.
 
@@ -116,7 +116,7 @@ Select:
 
 **Web application**
 
-- Name it anything (e.g. `Rowboat Desktop`)
+- Name it anything (e.g. `Oppulence Desktop`)
 
 ### Authorized redirect URIs
 
@@ -137,9 +137,9 @@ After creation, Google will show:
 - **Client ID**
 - **Client Secret**
 
-Copy **both values** and paste them into Rowboat when prompted.
+Copy **both values** and paste them into Oppulence when prompted.
 
-![Enter credentials in Rowboat](https://raw.githubusercontent.com/rowboatlabs/rowboat/main/apps/docs/docs/img/google-setup/07-enter-credentials.png)
+![Enter credentials in Oppulence](https://raw.githubusercontent.com/rowboatlabs/rowboat/main/apps/docs/docs/img/google-setup/07-enter-credentials.png)
 
 ---
 

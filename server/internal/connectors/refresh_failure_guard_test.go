@@ -10,12 +10,12 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/connectorauditevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mcpconnection"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/connectors"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
 	"github.com/google/uuid"
 )
 

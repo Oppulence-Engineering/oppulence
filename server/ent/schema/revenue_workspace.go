@@ -10,7 +10,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/mixin"
 )
 
 // oneOfRevenue validates that a revenue-domain enum field holds one of the
@@ -36,8 +36,8 @@ func oneOfRevenueOptional(name string, allowed ...string) func(string) error {
 	}
 }
 
-// RevenueWorkspace maps a Rowboat tenant onto the canonical OutboundConsole
-// commercial workspace (RFC 030). Rowboat stores a mapping, never a second
+// RevenueWorkspace maps a Oppulence tenant onto the canonical OutboundConsole
+// commercial workspace (RFC 030). Oppulence stores a mapping, never a second
 // commercial workspace model. A workspace in "local" mode has no OutboundConsole
 // link yet: observation and draft-only execution work, while preflight,
 // approval of sends, and outcome reporting stay disabled (fail closed).

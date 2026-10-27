@@ -37,8 +37,8 @@ func readEnvironment() map[string]string {
 		"DISPLAY",
 		"GITHUB_ACTIONS",
 		"NODE_ENV",
-		"ROWBOAT_DESKTOP_PERF_MODE",
-		"ROWBOAT_DESKTOP_PERF_INCLUDE_CLOUD",
+		"OPPULENCE_DESKTOP_PERF_MODE",
+		"OPPULENCE_DESKTOP_PERF_INCLUDE_CLOUD",
 		"RUNNER_OS",
 	}
 	out := map[string]string{

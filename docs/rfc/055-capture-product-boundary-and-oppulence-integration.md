@@ -1,4 +1,4 @@
-# RFC 055: Capture Product Boundary and Rowboat Integration
+# RFC 055: Capture Product Boundary and Oppulence Integration
 
 |                       |                                                                                                                                              |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -9,16 +9,16 @@
 | **Created**           | 2026-08-21                                                                                                                                   |
 | **Depends on**        | [RFC 035](./035-meeting-intelligence-commitment-ledger.md), [RFC 036](./036-relationship-state-engine.md)                                    |
 | **Related**           | [RFC 020](./020-native-third-party-action-engine.md), [RFC 048](./048-public-api-mcp-server-cli.md), [RFC 050](./050-enterprise-controls.md) |
-| **Supersedes**        | RFC 054 and the Rowboat-owned OpenWhispr parity program                                                                                      |
+| **Supersedes**        | RFC 054 and the Oppulence-owned OpenWhispr parity program                                                                                      |
 | **Reference product** | Oppulence's MIT-derived OpenWhispr capture-product fork                                                                                      |
 
 ## 1. Decision
 
 Keep the OpenWhispr fork as a **separate capture product and codebase**, make
-Rowboat the relationship-intelligence system it feeds, and selectively port
+Oppulence the relationship-intelligence system it feeds, and selectively port
 only a small number of foundational components.
 
-Do not merge the products or broadly cherry-pick OpenWhispr into Rowboat.
+Do not merge the products or broadly cherry-pick OpenWhispr into Oppulence.
 
 Initially position the capture fork as a companion and acquisition product, not
 as a second company-scale go-to-market motion. It must be independently useful,
@@ -51,9 +51,9 @@ Its product promise is:
 
 > Capture everything you say and hear, privately, on any desktop.
 
-### 2.2 Rowboat
+### 2.2 Oppulence
 
-Rowboat owns:
+Oppulence owns:
 
 - canonical people, organization, and relationship identity;
 - cross-source identity resolution;
@@ -88,10 +88,10 @@ state directly.
 
 ## 3. Why the products remain separate
 
-### 3.1 Rowboat's position stays sharp
+### 3.1 Oppulence's position stays sharp
 
 Meeting capture and dictation are inputs to the relationship model, not
-substitutes for it. Merging every capture capability into Rowboat would make the
+substitutes for it. Merging every capture capability into Oppulence would make the
 product simultaneously a relationship manager, dictation application, meeting
 recorder, local AI client, note editor, provider manager, and cross-platform
 voice utility. That is harder to understand, sell, and prioritize.
@@ -101,7 +101,7 @@ voice utility. That is harder to understand, sell, and prioritize.
 Private dictation has a low-friction activation loop: install, press a hotkey,
 speak, and receive text. Relationship intelligence needs enough evidence before
 its value becomes visible. The capture product creates that evidence and a
-natural progression into Rowboat:
+natural progression into Oppulence:
 
 ```text
 Install capture app
@@ -110,7 +110,7 @@ Dictate and record meetings
         ↓
 Build a trustworthy local corpus
         ↓
-Connect to Rowboat
+Connect to Oppulence
         ↓
 Resolve people and accounts
         ↓
@@ -122,7 +122,7 @@ Generate relationship state and follow-through
 The capture fork already owns native integrations across macOS, Windows, and
 Linux, including X11 and Wayland behavior, paste helpers, global key listeners,
 system audio, transcription engines, and local model management. Rebuilding
-that platform stack in Rowboat would create permanent duplicated maintenance.
+that platform stack in Oppulence would create permanent duplicated maintenance.
 
 ### 3.4 The privacy boundary becomes legible
 
@@ -130,17 +130,17 @@ The capture product remains local-first:
 
 - raw audio stays local by default;
 - transcript storage stays local by default;
-- the user explicitly chooses which artifacts go to Rowboat;
+- the user explicitly chooses which artifacts go to Oppulence;
 - raw audio need not be uploaded; and
-- Rowboat receives only the transcript, evidence spans, participant hints, and
+- Oppulence receives only the transcript, evidence spans, participant hints, and
   provenance required for relationship intelligence.
 
 Each UI must state whether a capability is local, invokes a user-selected
-provider, or sends an artifact to Rowboat.
+provider, or sends an artifact to Oppulence.
 
 ## 4. Versioned integration contract
 
-Rowboat must not read the capture product's SQLite database. The capture product
+Oppulence must not read the capture product's SQLite database. The capture product
 publishes a stable, versioned envelope:
 
 ```text
@@ -167,7 +167,7 @@ The normative schema belongs in a small versioned package such as
 `@oppulence/capture-protocol`. It contains schemas, validators, compatibility
 fixtures, and protocol documentation—not Electron business logic.
 
-Rowboat converts an accepted artifact into:
+Oppulence converts an accepted artifact into:
 
 - canonical people and organizations;
 - evidence records with exact source spans;
@@ -186,13 +186,13 @@ The capture product may know:
 
 > Local speaker profile `speaker_17` produced these segments.
 
-Rowboat determines:
+Oppulence determines:
 
 > This was probably Jane Smith from Acme, based on the voice profile, calendar
 > invitation, email address, prior meetings, and CRM identity.
 
-The capture product owns voice identity. Rowboat owns canonical relationship
-identity. A capture profile ID is an identity hint, never a Rowboat person ID.
+The capture product owns voice identity. Oppulence owns canonical relationship
+identity. A capture profile ID is an identity hint, never a Oppulence person ID.
 
 ### 4.2 Action ownership
 
@@ -203,7 +203,7 @@ The capture product may perform local, reversible actions:
 - translate dictated text; and
 - create or update a local note.
 
-Rowboat owns consequential external actions:
+Oppulence owns consequential external actions:
 
 - send an email;
 - update a CRM;
@@ -211,12 +211,12 @@ Rowboat owns consequential external actions:
 - advance a workflow; and
 - change a financial or customer object.
 
-Rowboat's approval-token, execution, watch, and audit model remains the
+Oppulence's approval-token, execution, watch, and audit model remains the
 authoritative path for external side effects.
 
 ### 4.3 Consent, deletion, and synchronization
 
-Sending capture artifacts to Rowboat is explicit and revocable. The protocol
+Sending capture artifacts to Oppulence is explicit and revocable. The protocol
 must carry:
 
 - recording and biometric consent classifications;
@@ -227,7 +227,7 @@ must carry:
 - voice-profile merge, split, and deletion events.
 
 Deletion propagation is a product requirement, not a best-effort maintenance
-job. Rowboat must remove or tombstone derived data as required by policy while
+job. Oppulence must remove or tombstone derived data as required by policy while
 retaining only the minimal audit proof permitted by that policy.
 
 ### 4.4 Implementation status (2026-08-21)
@@ -247,7 +247,7 @@ The first cloud control-plane slice is implemented in `server`:
 
 This slice provides durable acceptance and deletion acknowledgement. It does
 not yet project accepted artifacts into canonical people, evidence,
-commitments, or relationship state. That work remains an asynchronous Rowboat
+commitments, or relationship state. That work remains an asynchronous Oppulence
 pipeline so capture delivery is not coupled to graph-processing availability.
 
 The server-side opaque sync store is also implemented, but desktop encrypted
@@ -257,7 +257,7 @@ added.
 
 ## 5. Code reuse policy
 
-Do not cherry-pick complete product features into Rowboat. The repositories
+Do not cherry-pick complete product features into Oppulence. The repositories
 have different architectures and state models, so long-running cherry-picked
 branches become difficult to update and audit.
 
@@ -272,7 +272,7 @@ Reasonable candidates include:
 - clipboard-restoration algorithms; and
 - audio-import validation.
 
-Port these only when Rowboat independently needs the behavior. Preserve MIT
+Port these only when Oppulence independently needs the behavior. Preserve MIT
 attribution and record the originating upstream commit.
 
 ### 5.2 Package genuinely shared contracts
@@ -288,8 +288,8 @@ not become a dumping ground for renderer, Electron, or product business logic.
 
 ### 5.3 Keep native voice components in the capture product
 
-Unless an independent Rowboat requirement makes integration impossible, do not
-move these into Rowboat:
+Unless an independent Oppulence requirement makes integration impossible, do not
+move these into Oppulence:
 
 - Windows and Linux hotkey listeners;
 - system-audio helpers;
@@ -298,31 +298,31 @@ move these into Rowboat:
 - media download and import infrastructure; and
 - platform-specific meeting detection.
 
-Rowboat may retain its existing macOS quick-capture behavior for continuity,
+Oppulence may retain its existing macOS quick-capture behavior for continuity,
 but major expansion stops after the companion integration is reliable.
 
 ## 6. RFC ownership after this decision
 
 | Former parity RFC                        | Owner after RFC 055                                                               |
 | ---------------------------------------- | --------------------------------------------------------------------------------- |
-| 040 Dictation core UX                    | Capture product; Rowboat retains only lightweight quick capture                   |
+| 040 Dictation core UX                    | Capture product; Oppulence retains only lightweight quick capture                   |
 | 041 Translation                          | Capture product                                                                   |
-| 042 Screen context and selection editing | Capture product owns local editing; Rowboat owns relationship-aware commands      |
+| 042 Screen context and selection editing | Capture product owns local editing; Oppulence owns relationship-aware commands      |
 | 043 GPU Whisper and Parakeet             | Capture product                                                                   |
-| 044 Speaker fingerprinting               | Capture product owns profiles; Rowboat owns identity binding                      |
+| 044 Speaker fingerprinting               | Capture product owns profiles; Oppulence owns identity binding                      |
 | 045 Audio/video import                   | Capture product                                                                   |
 | 046 Windows/Linux voice stack            | Capture product                                                                   |
 | 047 Dictionary and correction learner    | Capture product                                                                   |
-| 048 API/MCP/CLI                          | Capture product owns its local API; Rowboat owns graph APIs and capture ingestion |
+| 048 API/MCP/CLI                          | Capture product owns its local API; Oppulence owns graph APIs and capture ingestion |
 | 049 Localization                         | Both products, independently                                                      |
 | 050 Enterprise controls                  | Shared identity and policy infrastructure, enforced by each product               |
-| 051 Sharing/team spaces                  | Transcript sharing in capture; relationship collaboration in Rowboat              |
+| 051 Sharing/team spaces                  | Transcript sharing in capture; relationship collaboration in Oppulence              |
 | 052 Transcription providers              | Capture product                                                                   |
-| 053 Local LLM runtime                    | Capture utilities in capture; local relationship processing in Rowboat            |
+| 053 Local LLM runtime                    | Capture utilities in capture; local relationship processing in Oppulence            |
 | 054 OpenWhispr parity program            | Superseded by this RFC                                                            |
 
-Capture-only RFCs are removed from the active Rowboat RFC set and preserved in
-the capture repository. Split RFCs remain here only for their Rowboat-owned
+Capture-only RFCs are removed from the active Oppulence RFC set and preserved in
+the capture repository. Split RFCs remain here only for their Oppulence-owned
 contract and behavior.
 
 ## 7. Brand and licensing
@@ -350,12 +350,12 @@ remain importable:
 
 - maintain an `upstream/main` remote;
 - place Oppulence integrations behind adapters and feature flags;
-- avoid rewriting upstream core modules merely to match Rowboat conventions;
+- avoid rewriting upstream core modules merely to match Oppulence conventions;
 - merge or rebase upstream on a scheduled cadence;
 - maintain automated smoke tests for dictation, paste, meetings, imports, and
-  Rowboat export;
+  Oppulence export;
 - keep a short patch ledger documenting intentional divergence; and
-- do not put Rowboat graph logic inside the capture fork.
+- do not put Oppulence graph logic inside the capture fork.
 
 ## 9. Rollout
 
@@ -363,7 +363,7 @@ remain importable:
 
 - Choose a distinct product name.
 - Define and version the capture-artifact schema.
-- Build an explicit **Send to Rowboat** export.
+- Build an explicit **Send to Oppulence** export.
 - Preserve timestamps, speakers, exact transcript spans, confidence, and
   provenance.
 - Add deletion propagation.
@@ -372,10 +372,10 @@ remain importable:
 ### 9.2 Days 30–60
 
 - Add Oppulence account linking.
-- Create Rowboat's capture connector.
-- Resolve calendar participants into Rowboat identities.
+- Create Oppulence's capture connector.
+- Resolve calendar participants into Oppulence identities.
 - Convert transcripts into evidence and commitments.
-- Link every derived Rowboat claim back to its source transcript.
+- Link every derived Oppulence claim back to its source transcript.
 
 ### 9.3 Days 60–90
 
@@ -388,11 +388,11 @@ remain importable:
 
 Measure:
 
-- percentage of capture users who connect Rowboat;
+- percentage of capture users who connect Oppulence;
 - percentage of meeting artifacts matched to an account or person;
 - percentage producing a commitment, risk, or useful recommendation;
 - seven-day and thirty-day capture retention;
-- Rowboat activation improvement among capture-originated users;
+- Oppulence activation improvement among capture-originated users;
 - synchronization failure rate; and
 - deletion-propagation success and latency.
 
@@ -401,17 +401,17 @@ it demonstrates independent retention, a distinguishable buyer or use case,
 and revenue capable of supporting its native-platform maintenance burden.
 
 Until then, it is a standalone-useful companion and acquisition surface for
-Rowboat.
+Oppulence.
 
 ## 11. Definition of done
 
-- The capture-only RFCs no longer appear in Rowboat's active roadmap.
+- The capture-only RFCs no longer appear in Oppulence's active roadmap.
 - Both repositories document the ownership boundary.
 - A versioned `CaptureArtifact` schema and compatibility fixtures exist.
 - Export is explicit, idempotent, observable, and deletion-aware.
-- Rowboat evidence preserves exact source spans and capture provenance.
+- Oppulence evidence preserves exact source spans and capture provenance.
 - Voice-profile hints cannot silently become canonical person identities.
-- External actions remain behind Rowboat's governed action runtime.
+- External actions remain behind Oppulence's governed action runtime.
 - The fork has independent branding, attribution, and an upstream-sync policy.
-- Product analytics can measure the capture-to-Rowboat funnel and the
+- Product analytics can measure the capture-to-Oppulence funnel and the
   independent-product gate.

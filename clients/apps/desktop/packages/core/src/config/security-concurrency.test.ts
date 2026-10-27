@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-security-concurrency-test");
+const TEST_WORKDIR = vi.hoisted(() => "/tmp/oppulence-security-concurrency-test");
 vi.mock("./config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
 import { addFileAccessGrant, addToSecurityConfig } from "./security.js";

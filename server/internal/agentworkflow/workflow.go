@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/agentregistry"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
@@ -90,7 +90,7 @@ type exec struct {
 }
 
 // SessionWorkflow is the long-lived, idle-between-turns session (RFC 027
-// rowboat.agent.session.v1). It accepts validated turns via the submitTurn
+// oppulence.agent.session.v1). It accepts validated turns via the submitTurn
 // Update, runs each turn's reason→act loop in workflow code, idles at zero cost
 // between turns, and ContinueAsNews to bound history — all under a stable
 // workflow id the client's continuation token resolves.
@@ -586,7 +586,7 @@ func (e *exec) handleSubagent(ctx workflow.Context, turnSeq, callIndex int, tc b
 }
 
 // SubagentWorkflow runs one delegated subtask in isolation (RFC 027
-// rowboat.agent.subagent.v1): it resolves+narrows its own spec, creates its own
+// oppulence.agent.subagent.v1): it resolves+narrows its own spec, creates its own
 // session projection, runs a single reason→act turn, and returns a compact
 // summary to the parent. Its transcript never merges into the parent's history.
 func SubagentWorkflow(ctx workflow.Context, in SubagentInput) (SubagentResult, error) {

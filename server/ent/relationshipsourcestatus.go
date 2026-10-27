@@ -10,9 +10,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipsourcestatus"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
 	"github.com/google/uuid"
 )
 

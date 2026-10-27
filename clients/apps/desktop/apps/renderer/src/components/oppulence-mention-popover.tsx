@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Loader2 } from '@/lib/icons'
 
-interface RowboatMentionPopoverProps {
+interface OppulenceMentionPopoverProps {
   open: boolean
   anchor: { top: number; left: number; width: number } | null
   initialText?: string
@@ -10,7 +10,7 @@ interface RowboatMentionPopoverProps {
   onClose: () => void
 }
 
-export function RowboatMentionPopover({ open, anchor, initialText = '', onAdd, onRemove, onClose }: RowboatMentionPopoverProps) {
+export function OppulenceMentionPopover({ open, anchor, initialText = '', onAdd, onRemove, onClose }: OppulenceMentionPopoverProps) {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)

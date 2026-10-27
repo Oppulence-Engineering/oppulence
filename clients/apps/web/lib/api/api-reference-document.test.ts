@@ -246,17 +246,17 @@ describe("API reference document", () => {
         schemas: {
           RevenueWorkspace: {
             description:
-              "Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link.",
+              "Mapping between the Oppulence tenant and the canonical OutboundConsole workspace. Local mode has no link.",
             properties: {
               outboundOrganizationId: { description: "OutboundConsole organization id." },
               outboundWorkspaceId: { description: "OutboundConsole workspace id." },
               completedAt: { description: "When the deletion finished (RFC 3339)." },
-              userId: { description: "Rowboat user id (UUID) owning the event." },
+              userId: { description: "Oppulence user id (UUID) owning the event." },
             },
           },
           RevenuePolicyDecision: {
             description:
-              "Immutable OutboundConsole preflight decision for one exact action revision. Rowboat snapshots the decision; it never composes one.",
+              "Immutable OutboundConsole preflight decision for one exact action revision. Oppulence snapshots the decision; it never composes one.",
           },
           ErrorEnvelope: {
             description:
@@ -271,7 +271,7 @@ describe("API reference document", () => {
             responses: {
               "409": {
                 description:
-                  "The browser install is incomplete, or the workspace is already owned by another Rowboat account.",
+                  "The browser install is incomplete, or the workspace is already owned by another Oppulence account.",
               },
             },
           },
@@ -279,7 +279,7 @@ describe("API reference document", () => {
         "/v1/webhooks/slack": {
           post: {
             description:
-              "event_callback deliveries for workspaces mapped to a Rowboat user are ingested.",
+              "event_callback deliveries for workspaces mapped to a Oppulence user are ingested.",
           },
         },
       },
@@ -314,7 +314,7 @@ describe("API reference document", () => {
       components: {
         schemas: {
           ConsentClientIdentity: {
-            properties: { display_name: { example: "Rowboat Desktop" } },
+            properties: { display_name: { example: "Oppulence Desktop" } },
           },
           VoiceTextToSpeechRequest: {
             properties: { text: { example: "Hello from Solomon AI." } },
@@ -369,7 +369,7 @@ describe("API reference document", () => {
     const presented = presentApiReferenceDocument({
       externalDocs: {
         description: "Local kind deployment workflow",
-        url: "https://github.com/Oppulence-Engineering/rowboat/blob/main/docs/LOCAL_KIND_ROWBOAT_API.md",
+        url: "https://github.com/PlaybookMediaLLC/oppulence/blob/main/docs/LOCAL_KIND_OPPULENCE_API.md",
       },
       servers: [
         { url: "/", description: "Current Solomon AI API origin" },

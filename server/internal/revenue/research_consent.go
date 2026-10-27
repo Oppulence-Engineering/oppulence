@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
 )
 
 // Cloud research (RFC 039) is refused by three independent gates. They are

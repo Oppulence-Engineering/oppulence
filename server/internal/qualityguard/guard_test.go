@@ -53,7 +53,7 @@ func (Widget) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixi
 func TestDependencyGuardRejectsInternalToCommandImport(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "internal/example/example.go", `package example
-import _ "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/cmd/server"
+import _ "github.com/PlaybookMediaLLC/oppulence/server/cmd/server"
 `)
 	violations, err := checkDependencyDirection(root)
 	if err != nil {

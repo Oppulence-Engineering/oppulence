@@ -12,7 +12,7 @@ import type { OAuth2Client } from "google-auth-library";
  * trash, send) were effectively untestable, because the only way to run them was
  * against mail someone cared about.
  *
- * ROWBOAT_GMAIL_ROOT_URL is read per call rather than cached at module load: the
+ * OPPULENCE_GMAIL_ROOT_URL is read per call rather than cached at module load: the
  * main process sets it from the kind script at launch, and a stale cached value
  * silently sending dogfood traffic to real Gmail is the one failure this must
  * not have.
@@ -32,23 +32,23 @@ export function createGmailClient(auth: OAuth2Client): gmail_v1.Gmail {
  * exfiltration of mail contents and OAuth bearer tokens.
  */
 function gmailRootUrl(): string | undefined {
-  const raw = process.env.ROWBOAT_GMAIL_ROOT_URL?.trim();
+  const raw = process.env.OPPULENCE_GMAIL_ROOT_URL?.trim();
   if (!raw) return undefined;
 
   let parsed: URL;
   try {
     parsed = new URL(raw);
   } catch {
-    console.warn(`[Gmail] ignoring unparseable ROWBOAT_GMAIL_ROOT_URL: ${raw}`);
+    console.warn(`[Gmail] ignoring unparseable OPPULENCE_GMAIL_ROOT_URL: ${raw}`);
     return undefined;
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    console.warn(`[Gmail] ignoring ROWBOAT_GMAIL_ROOT_URL with protocol ${parsed.protocol}`);
+    console.warn(`[Gmail] ignoring OPPULENCE_GMAIL_ROOT_URL with protocol ${parsed.protocol}`);
     return undefined;
   }
   if (!isLoopback(parsed.hostname)) {
     console.warn(
-      `[Gmail] refusing ROWBOAT_GMAIL_ROOT_URL host ${parsed.hostname}; only loopback is allowed`,
+      `[Gmail] refusing OPPULENCE_GMAIL_ROOT_URL host ${parsed.hostname}; only loopback is allowed`,
     );
     return undefined;
   }

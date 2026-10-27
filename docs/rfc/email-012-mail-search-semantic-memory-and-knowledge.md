@@ -12,7 +12,7 @@
 
 ## Summary
 
-Add a mailbox-specific search and memory layer for exact search, semantic retrieval, thread summaries, sender context, and reusable knowledge. Inbox Zero stores knowledge entries, reply memories, chat memories, email metadata, and message history to support assistant chat and drafting. Rowboat already has an RFC for semantic memory indexing across the vault; email needs a privacy-conscious specialization because raw mail is sensitive, high-volume, and action-bearing.
+Add a mailbox-specific search and memory layer for exact search, semantic retrieval, thread summaries, sender context, and reusable knowledge. Inbox Zero stores knowledge entries, reply memories, chat memories, email metadata, and message history to support assistant chat and drafting. Oppulence already has an RFC for semantic memory indexing across the vault; email needs a privacy-conscious specialization because raw mail is sensitive, high-volume, and action-bearing.
 
 ## Inbox Zero Implementation References
 
@@ -30,7 +30,7 @@ Implementation agents should first read then inspect:
 - `apps/web/app/api/knowledge/route.ts`
 - `apps/web/app/api/user/debug/memories/route.ts`
 
-Use these for knowledge extraction, reply/chat memory, and prompt context retrieval. Rowboat should route indexing through RFC 021-style local memory primitives and apply email-015 retention policy.
+Use these for knowledge extraction, reply/chat memory, and prompt context retrieval. Oppulence should route indexing through RFC 021-style local memory primitives and apply email-015 retention policy.
 
 ## Goals
 

@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/actionproposal"
 )
 
 // executeProposal drives a proposal through approve+execute and returns it.

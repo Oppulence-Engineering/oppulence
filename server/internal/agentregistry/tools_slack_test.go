@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/slackclient"
 	"go.uber.org/zap"
 )
 

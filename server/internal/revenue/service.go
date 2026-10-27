@@ -16,43 +16,43 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitment"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitmentdependency"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationinteraction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationparticipant"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationprivacypolicy"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationprivacyrule"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationsharegrant"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/consoleresource"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/embeddings"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenuemetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/conversationintelligenceartifact"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailthread"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/person"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/personattribute"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/policydecisionsnapshot"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipassertion"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipattentionitem"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipidentity"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipidentitycandidate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipobservation"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipparticipant"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipprojectionjob"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipreviewacknowledgement"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipsourcestatus"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipstatesnapshot"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueaction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueevidence"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspacemember"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/embeddings"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/revenuemetrics"
 )
 
 // Lifecycle errors. Handlers map these onto HTTP statuses; each one is a hard
@@ -132,7 +132,7 @@ const (
 	ExecModeDraft = "draft"
 	ExecModeSend  = "send"
 
-	OwnerRowboat = "rowboat"
+	OwnerOppulence = "rowboat"
 
 	DetectorManual = "manual"
 )
@@ -12010,7 +12010,7 @@ func (s *Service) CreateAction(ctx context.Context, u *ent.User, in ActionInput)
 		SetRevisionHash(hash).
 		SetReason(in.Reason).
 		SetExecutionMode(in.ExecutionMode).
-		SetExecutionOwner(OwnerRowboat).
+		SetExecutionOwner(OwnerOppulence).
 		SetAssignedUserID(u.ID).
 		SetPriorityScore(in.PriorityScore)
 	if in.RecipientEmail != "" {

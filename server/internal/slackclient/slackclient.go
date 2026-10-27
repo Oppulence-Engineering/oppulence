@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
 )
 
 // defaultBaseURL is the Slack Web API root.

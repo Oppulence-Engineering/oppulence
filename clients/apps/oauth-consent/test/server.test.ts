@@ -5,7 +5,7 @@ import { exportJWK, generateKeyPair, SignJWT, type JWK, type JWTPayload, type Ke
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Config } from '../src/config.js';
 import { hookSignatureV1, safeEqual } from '../src/crypto.js';
-import { RowboatHooks, type ConsentContext } from '../src/rowboat.js';
+import { OppulenceHooks, type ConsentContext } from '../src/rowboat.js';
 import { buildApp, drainAuditOutbox } from '../src/server.js';
 import { StateStore } from '../src/state.js';
 
@@ -163,7 +163,7 @@ class WorkOSMock {
   }
 }
 
-class RowboatMock {
+class OppulenceMock {
   readonly app = express();
   readonly audits: Array<Record<string, unknown>> = [];
   readonly contextRequests: Array<Record<string, unknown>> = [];
@@ -174,7 +174,7 @@ class RowboatMock {
   contextFactory: (request: Record<string, unknown>) => ConsentContext = (request) =>
     makeContext((request.requested_scopes as string[]).map(scopeByName), {
       subject: String(request.workos_user_id),
-      client: { id: String(request.hydra_client_id), display_name: 'Rowboat Desktop' },
+      client: { id: String(request.hydra_client_id), display_name: 'Oppulence Desktop' },
     });
 
   constructor() {
@@ -288,7 +288,7 @@ function makeContext(scopes: Scope[], overrides: Partial<ConsentContext> = {}): 
   return {
     request_id: 'ctx_123',
     subject: SUBJECT,
-    client: { id: CLIENT_ID, display_name: 'Rowboat Desktop' },
+    client: { id: CLIENT_ID, display_name: 'Oppulence Desktop' },
     connector: { id: 'canvas', display_name: 'Canvas Treasury', audience: AUDIENCE },
     scopes,
     entitlement: { allowed: true },
@@ -317,15 +317,15 @@ function csrf(html: string): string {
   return match[1];
 }
 
-function eventNames(rowboat: RowboatMock): unknown[] {
+function eventNames(rowboat: OppulenceMock): unknown[] {
   return rowboat.audits.map((event) => event.event);
 }
 
 interface Harness {
   ory: OryMock;
   workos: WorkOSMock;
-  rowboat: RowboatMock;
-  hooks: RowboatHooks;
+  rowboat: OppulenceMock;
+  hooks: OppulenceHooks;
   browser: BrowserClient;
   app: RunningServer;
   store: StateStore;
@@ -339,11 +339,11 @@ beforeEach(async () => {
   const ory = new OryMock();
   const workos = new WorkOSMock();
   await workos.initialize();
-  const rowboat = new RowboatMock();
+  const rowboat = new OppulenceMock();
   const oryServer = await listen(ory.app);
   const workosServer = await listen(workos.app);
   workos.setBaseUrl(workosServer.url);
-  const rowboatServer = await listen(rowboat.app);
+  const oppulenceServer = await listen(rowboat.app);
   const cfg: Config = {
     port: 3000,
     cookieSecret: COOKIE_SECRET,
@@ -365,7 +365,7 @@ beforeEach(async () => {
       stepUpAmr: 'mfa',
     },
     rowboatApi: {
-      baseUrl: rowboatServer.url,
+      baseUrl: oppulenceServer.url,
       hookSecret: HOOK_SECRET,
       contextPath: '/oauth-hooks/pre-consent',
       auditPath: '/oauth-hooks/consent-audit',
@@ -373,7 +373,7 @@ beforeEach(async () => {
     },
   };
   const store = new StateStore(cfg.sessionTtlMs);
-  const hooks = new RowboatHooks(cfg.rowboatApi, cfg.upstreamTimeoutMs);
+  const hooks = new OppulenceHooks(cfg.rowboatApi, cfg.upstreamTimeoutMs);
   const app = await listen(buildApp(cfg, { store, hooks }));
   harness = {
     ory,
@@ -383,7 +383,7 @@ beforeEach(async () => {
     browser: new BrowserClient(),
     app,
     store,
-    servers: [app, rowboatServer, workosServer, oryServer],
+    servers: [app, oppulenceServer, workosServer, oryServer],
   };
 });
 
@@ -447,7 +447,7 @@ describe('consent rendering and decisions', () => {
 
     expect(shown.status).toBe(200);
     expect(html).toContain('Canvas Treasury');
-    expect(html).toContain('Rowboat Desktop');
+    expect(html).toContain('Oppulence Desktop');
     expect(html).toContain(lowScope.display_name);
     expect(html).toContain(lowScope.description);
     expect(html.indexOf('data-tier="low"')).toBeLessThan(html.indexOf('data-tier="medium"'));
@@ -795,7 +795,7 @@ describe('consent security rejection paths', () => {
 
   it.each([
     ['subject', { subject: 'user_other' }],
-    ['client', { client: { id: 'other-client', display_name: 'Rowboat Desktop' as const } }],
+    ['client', { client: { id: 'other-client', display_name: 'Oppulence Desktop' as const } }],
   ])('rejects %s identity mismatch from the signed context', async (_label, overrides) => {
     const challenge = `identity_${_label}`;
     harness.ory.setConsent(challenge, [lowScope]);

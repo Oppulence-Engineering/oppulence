@@ -2,7 +2,7 @@
 
 ## System shape
 
-Rowboat API is a modular monolith with shared Ent persistence and multiple
+Oppulence API is a modular monolith with shared Ent persistence and multiple
 explicit process composition roots:
 
 - `cmd/server`: chi HTTP, SSE, GraphQL, gRPC, health, metrics.

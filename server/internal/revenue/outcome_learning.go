@@ -5,10 +5,10 @@ import (
 	"math"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/actionoutcome"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueaction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
 	"github.com/google/uuid"
 )
 

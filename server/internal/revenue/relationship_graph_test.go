@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
 )
 
 func TestRelationshipGraphReturnsVersionedGovernedProjection(t *testing.T) {

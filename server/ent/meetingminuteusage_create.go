@@ -12,8 +12,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/meetingminuteusage"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
 	"github.com/google/uuid"
 )
 

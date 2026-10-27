@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
 	"github.com/google/uuid"
 )
 
@@ -160,7 +160,7 @@ func DriveReadCapability() Capability {
 func DriveUpdateCapability() Capability {
 	return Capability{
 		Name:        "connector.write.drive_update",
-		Description: "Update metadata or replace bounded text content for a Google Drive file accessible to Rowboat. Requires a connected Google account with the drive.file scope, and human approval.",
+		Description: "Update metadata or replace bounded text content for a Google Drive file accessible to Oppulence. Requires a connected Google account with the drive.file scope, and human approval.",
 		Parameters:  json.RawMessage(`{"type":"object","properties":{"fileId":{"type":"string"},"name":{"type":"string"},"description":{"type":"string"},"mimeType":{"type":"string","description":"MIME type for metadata/content updates"},"replaceContent":{"type":"boolean","description":"When true, replace the file content with the provided text content"},"content":{"type":"string","description":"Replacement text content, max 256 KiB"}},"required":["fileId"]}`),
 		TrustTier:   TierAct,
 		Kind:        KindTool,

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/credits"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/credits"
 )
 
 const okCompletion = `{

@@ -43,7 +43,7 @@ created/shown/step_up_pending/processing -> failed
 5. Renders either the consent form or a separate entitlement/upsell denial
    page.
 
-The form renders product identity and the exact `Rowboat Desktop` client
+The form renders product identity and the exact `Oppulence Desktop` client
 identity from the hook. Scope `display_name` and `description` are rendered only
 from structured hook data. Scopes are grouped as `low`, `medium`, `high`, and
 `money_moving`, with required scopes fixed and optional scopes selectable.
@@ -163,7 +163,7 @@ Response:
   "subject": "user_123",
   "client": {
     "id": "rowboat-desktop",
-    "display_name": "Rowboat Desktop"
+    "display_name": "Oppulence Desktop"
   },
   "connector": {
     "id": "canvas",
@@ -250,7 +250,7 @@ The coordinator should align rowboat-api to these explicit assumptions:
    copy.
 3. `subject` is the WorkOS user ID and must equal Hydra's subject.
 4. `client.id` must equal Hydra's client ID and `client.display_name` must be the
-   exact literal `Rowboat Desktop`.
+   exact literal `Oppulence Desktop`.
 5. A `money_moving` scope always has `requires_step_up: true`.
 6. Hook responses are HMAC-signed as well as requests, using the same nonce and
    secret.

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
 )
 
 // ListPersons returns the workspace's canonical people.

@@ -40,7 +40,7 @@ var (
 
 	metricUnresolved = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "cloud_events_unresolved_total",
-		Help: "Provider webhook events dropped because no Rowboat user could be resolved, by source.",
+		Help: "Provider webhook events dropped because no Oppulence user could be resolved, by source.",
 	}, []string{"source"})
 
 	metricRouteLatency = promauto.NewHistogram(prometheus.HistogramOpts{

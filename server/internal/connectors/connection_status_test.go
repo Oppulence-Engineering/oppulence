@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/connectors"
 	"github.com/golang-jwt/jwt/v5"
 )
 

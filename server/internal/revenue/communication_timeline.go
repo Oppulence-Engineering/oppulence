@@ -7,12 +7,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationinteraction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 )
 
 // CommunicationTimelineItem is the server-redacted communication record shown

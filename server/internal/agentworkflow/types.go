@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
 )
 
 // Workflow + activity type names (Temporal registration identities).

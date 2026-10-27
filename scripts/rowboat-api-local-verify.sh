@@ -21,7 +21,7 @@
 # closed because no Act-seam URL is configured.
 #
 # LLM upstream follows the kind script. A real OpenRouter key (sk-or-…) calls
-# https://openrouter.ai/api/v1. Anything else, or ROWBOAT_LOCAL_MOCK_LLM=1,
+# https://openrouter.ai/api/v1. Anything else, or OPPULENCE_LOCAL_MOCK_LLM=1,
 # points the gateway at devstack, which replies "Hello from the mock LLM."
 #
 # The devstack mints RS256 tokens (aud=rowboat-api) the server validates via its
@@ -30,7 +30,7 @@
 #
 # For the production-like path (kind + real secrets) use scripts/rowboat-api-kind.sh
 # instead — that one DOES require Infisical (`infisical init` in the repo root, or
-# INFISICAL_PROJECT_ID) so the rowboat repo is linked to the correct Infisical project.
+# INFISICAL_PROJECT_ID) so the oppulence repo is linked to the correct Infisical project.
 #
 # Usage:
 #   scripts/rowboat-api-local-verify.sh up       # bring the stack up (idempotent)
@@ -104,12 +104,12 @@ wait_http() {
 configure_llm() {
   local key="${OPENROUTER_API_KEY:-}"
   mkdir -p "$WORK"
-  if [[ -n "${ROWBOAT_LOCAL_MOCK_LLM:-}" || "$key" != sk-or-* ]]; then
+  if [[ -n "${OPPULENCE_LOCAL_MOCK_LLM:-}" || "$key" != sk-or-* ]]; then
     export OPENROUTER_API_KEY="dev-openrouter-key"
     export OPENROUTER_BASE_URL="http://localhost:${DEVPORT}/v1"
     printf 'mock\n' >"$WORK/llm-mode"
-    if [[ -n "${ROWBOAT_LOCAL_MOCK_LLM:-}" ]]; then
-      echo "LLM upstream: devstack mock (ROWBOAT_LOCAL_MOCK_LLM set)"
+    if [[ -n "${OPPULENCE_LOCAL_MOCK_LLM:-}" ]]; then
+      echo "LLM upstream: devstack mock (OPPULENCE_LOCAL_MOCK_LLM set)"
     else
       echo "LLM upstream: devstack mock (export an sk-or- OPENROUTER_API_KEY for live OpenRouter)"
     fi
@@ -118,7 +118,7 @@ configure_llm() {
   export OPENROUTER_API_KEY="$key"
   unset OPENROUTER_BASE_URL
   printf 'live\n' >"$WORK/llm-mode"
-  echo "LLM upstream: live OpenRouter (set ROWBOAT_LOCAL_MOCK_LLM=1 to use the mock)"
+  echo "LLM upstream: live OpenRouter (set OPPULENCE_LOCAL_MOCK_LLM=1 to use the mock)"
 }
 
 up() {

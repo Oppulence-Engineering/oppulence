@@ -16,7 +16,7 @@ import { ensureJsonConfig, parseJsonConfig, readJsonConfig } from "./json_config
  * still had the same shape.
  */
 
-const DIR = "/tmp/rowboat-json-config-test";
+const DIR = "/tmp/oppulence-json-config-test";
 const Schema = z.object({ agents: z.record(z.string(), z.number()) });
 const defaults = () => ({ agents: {} });
 const file = path.join(DIR, "conf.json");

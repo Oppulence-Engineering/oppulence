@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailbodycache"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailmessagemeta"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailsignal"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailthread"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
 )
 
 // quietAfter is when a thread with no recent activity is considered dormant.

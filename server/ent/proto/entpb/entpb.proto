@@ -9,7 +9,7 @@ import "google/protobuf/timestamp.proto";
 
 import "google/protobuf/wrappers.proto";
 
-option go_package = "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/proto/entpb";
+option go_package = "github.com/PlaybookMediaLLC/oppulence/server/ent/proto/entpb";
 
 message User {
   bytes id = 1;

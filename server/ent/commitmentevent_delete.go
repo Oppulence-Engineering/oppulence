@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitmentevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
 )
 
 // CommitmentEventDelete is the builder for deleting a CommitmentEvent entity.

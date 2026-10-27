@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "description": "Tiered Rowboat desktop performance budgets. Commit budgets catch startup, renderer, IPC, chat, resource, and bundle regressions; full/deep tiers add cloud, warm launch, scale, and memory-growth checks.",
+  "description": "Tiered Oppulence desktop performance budgets. Commit budgets catch startup, renderer, IPC, chat, resource, and bundle regressions; full/deep tiers add cloud, warm launch, scale, and memory-growth checks.",
   "budgets": {
     "startupInteractiveMs": 20000,
     "launchToCdpMs": 12000,

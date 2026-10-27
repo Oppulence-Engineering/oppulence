@@ -59,7 +59,7 @@ export const PRODUCT_TOUR_STEPS: Record<ProductTourVariant, TourStep[]> = {
       target: "chat-composer",
       eyebrow: "06 · Active context",
       title: "Ask from the context you have gathered",
-      body: "The composer can use the account, meeting, evidence, and connected tools already open in Rowboat.",
+      body: "The composer can use the account, meeting, evidence, and connected tools already open in Oppulence.",
       placement: "top",
     },
     {
@@ -195,7 +195,7 @@ export const PRODUCT_TOUR_STEPS: Record<ProductTourVariant, TourStep[]> = {
     {
       target: "relationship-action",
       eyebrow: "02 · Approval",
-      title: "Review before anything leaves Rowboat",
+      title: "Review before anything leaves Oppulence",
       body: "Inspect the proposed message, policy decision, revision, and evidence before approving it.",
       placement: "right",
     },

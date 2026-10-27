@@ -2,7 +2,7 @@
 # Multi-stage build → small, non-root, distroless runtime image.
 #
 # Build context is the REPO ROOT (not server) so the go.mod replace
-#   github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go
+#   github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server
 #   => ./oauth-resource-server
 # resolves. Build with:
 #   docker build -f server/Dockerfile -t rowboat-api .
@@ -38,9 +38,9 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     set -eu; \
     ldflags="-s -w \
-      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Version=${VERSION} \
-      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Commit=${COMMIT} \
-      -X github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version.Date=${DATE}"; \
+      -X github.com/PlaybookMediaLLC/oppulence/server/internal/version.Version=${VERSION} \
+      -X github.com/PlaybookMediaLLC/oppulence/server/internal/version.Commit=${COMMIT} \
+      -X github.com/PlaybookMediaLLC/oppulence/server/internal/version.Date=${DATE}"; \
     go build -trimpath -ldflags="$ldflags" -o /out/rowboat-api ./cmd/server; \
     go build -trimpath -ldflags="$ldflags" -o /out/rowboat-api-worker ./cmd/worker; \
     go build -trimpath -ldflags="$ldflags" -o /out/rowboat-api-scheduler ./cmd/scheduler; \

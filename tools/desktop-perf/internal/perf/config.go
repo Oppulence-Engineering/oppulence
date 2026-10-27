@@ -11,7 +11,7 @@ import (
 )
 
 func loadConfig() (config, error) {
-	root := os.Getenv("ROWBOAT_REPO_ROOT")
+	root := os.Getenv("OPPULENCE_REPO_ROOT")
 	if root == "" {
 		wd, err := os.Getwd()
 		if err != nil {
@@ -21,32 +21,32 @@ func loadConfig() (config, error) {
 	}
 	root, _ = filepath.Abs(root)
 
-	apiPort := envString("ROWBOAT_API_PORT", "18080")
-	devstackPort := envString("ROWBOAT_DEVSTACK_PORT", "18090")
-	apiURL := envString("ROWBOAT_DESKTOP_PERF_API_URL", envString("API_URL", "http://localhost:"+apiPort))
-	devstackURL := envString("ROWBOAT_DESKTOP_PERF_DEVSTACK_URL", "http://localhost:"+devstackPort)
-	cdpPort, err := envInt("ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT", 9333)
+	apiPort := envString("OPPULENCE_API_PORT", "18080")
+	devstackPort := envString("OPPULENCE_DEVSTACK_PORT", "18090")
+	apiURL := envString("OPPULENCE_DESKTOP_PERF_API_URL", envString("API_URL", "http://localhost:"+apiPort))
+	devstackURL := envString("OPPULENCE_DESKTOP_PERF_DEVSTACK_URL", "http://localhost:"+devstackPort)
+	cdpPort, err := envInt("OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT", 9333)
 	if err != nil {
 		return config{}, err
 	}
-	vitePort, err := envInt("ROWBOAT_DESKTOP_VITE_PORT", 5173)
+	vitePort, err := envInt("OPPULENCE_DESKTOP_VITE_PORT", 5173)
 	if err != nil {
 		return config{}, err
 	}
-	idleSeconds, err := envInt("ROWBOAT_DESKTOP_PERF_IDLE_SECONDS", 10)
+	idleSeconds, err := envInt("OPPULENCE_DESKTOP_PERF_IDLE_SECONDS", 10)
 	if err != nil {
 		return config{}, err
 	}
 
-	mode := strings.ToLower(envString("ROWBOAT_DESKTOP_PERF_MODE", "package"))
+	mode := strings.ToLower(envString("OPPULENCE_DESKTOP_PERF_MODE", "package"))
 	if mode != "package" && mode != "dev" {
-		return config{}, fmt.Errorf("ROWBOAT_DESKTOP_PERF_MODE must be package or dev, got %q", mode)
+		return config{}, fmt.Errorf("OPPULENCE_DESKTOP_PERF_MODE must be package or dev, got %q", mode)
 	}
-	tier := strings.ToLower(envString("ROWBOAT_DESKTOP_PERF_TIER", perfTierCommit))
+	tier := strings.ToLower(envString("OPPULENCE_DESKTOP_PERF_TIER", perfTierCommit))
 	switch tier {
 	case perfTierCommit, perfTierFull, perfTierDeep:
 	default:
-		return config{}, fmt.Errorf("ROWBOAT_DESKTOP_PERF_TIER must be commit, full, or deep, got %q", tier)
+		return config{}, fmt.Errorf("OPPULENCE_DESKTOP_PERF_TIER must be commit, full, or deep, got %q", tier)
 	}
 	seedNotesFallback := 120
 	memoryRepeatsFallback := 0
@@ -58,23 +58,23 @@ func loadConfig() (config, error) {
 		seedNotesFallback = 5000
 		memoryRepeatsFallback = 10
 	}
-	seedNotes, err := envInt("ROWBOAT_DESKTOP_PERF_SEED_NOTES", seedNotesFallback)
+	seedNotes, err := envInt("OPPULENCE_DESKTOP_PERF_SEED_NOTES", seedNotesFallback)
 	if err != nil {
 		return config{}, err
 	}
 	if seedNotes <= 0 {
-		return config{}, fmt.Errorf("ROWBOAT_DESKTOP_PERF_SEED_NOTES must be positive, got %d", seedNotes)
+		return config{}, fmt.Errorf("OPPULENCE_DESKTOP_PERF_SEED_NOTES must be positive, got %d", seedNotes)
 	}
-	memoryRepeats, err := envInt("ROWBOAT_DESKTOP_PERF_MEMORY_REPEATS", memoryRepeatsFallback)
+	memoryRepeats, err := envInt("OPPULENCE_DESKTOP_PERF_MEMORY_REPEATS", memoryRepeatsFallback)
 	if err != nil {
 		return config{}, err
 	}
 	if memoryRepeats < 0 {
-		return config{}, fmt.Errorf("ROWBOAT_DESKTOP_PERF_MEMORY_REPEATS must be non-negative, got %d", memoryRepeats)
+		return config{}, fmt.Errorf("OPPULENCE_DESKTOP_PERF_MEMORY_REPEATS must be non-negative, got %d", memoryRepeats)
 	}
 
 	baseArtifactDir := filepath.Join(root, ".rowboat-kind", "desktop-perf")
-	artifactDir := os.Getenv("ROWBOAT_DESKTOP_PERF_ARTIFACT_DIR")
+	artifactDir := os.Getenv("OPPULENCE_DESKTOP_PERF_ARTIFACT_DIR")
 	if artifactDir == "" {
 		stamp := time.Now().UTC().Format("20060102T150405Z")
 		shortCommit := strings.TrimSpace(runGit(root, "rev-parse", "--short=12", "HEAD"))
@@ -87,36 +87,36 @@ func loadConfig() (config, error) {
 		artifactDir = filepath.Join(root, artifactDir)
 	}
 
-	budgetPath := envString("ROWBOAT_DESKTOP_PERF_BUDGET", filepath.Join(root, "tools", "desktop-perf", "budget.json"))
+	budgetPath := envString("OPPULENCE_DESKTOP_PERF_BUDGET", filepath.Join(root, "tools", "desktop-perf", "budget.json"))
 	baselinePath := envString(
-		"ROWBOAT_DESKTOP_PERF_BASELINE",
+		"OPPULENCE_DESKTOP_PERF_BASELINE",
 		filepath.Join(baseArtifactDir, fmt.Sprintf("baseline-%s-%s-%s-%s.json", mode, tier, runtime.GOOS, runtime.GOARCH)),
 	)
 
 	cfg := config{
-		RepoRoot:       root,
-		ArtifactDir:    artifactDir,
-		WorkDir:        filepath.Join(artifactDir, "workdir"),
-		Mode:           mode,
-		Tier:           tier,
-		APIURL:         strings.TrimRight(apiURL, "/"),
-		DevstackURL:    strings.TrimRight(devstackURL, "/"),
-		CDPPort:        cdpPort,
-		VitePort:       vitePort,
-		Prompt:         envString("ROWBOAT_DESKTOP_PERF_PROMPT", "Please respond with exactly: local rowboat performance gate passed"),
-		BudgetPath:     budgetPath,
-		BaselinePath:   baselinePath,
-		AgentSession:          envString("ROWBOAT_DESKTOP_PERF_AGENT_SESSION", "rowboat-desktop-perf-"+filepath.Base(artifactDir)),
-		UpdateBaseline:        envBool("ROWBOAT_DESKTOP_PERF_UPDATE_BASELINE", false),
-		RefreshBaselineOnPass: envBool("ROWBOAT_DESKTOP_PERF_REFRESH_BASELINE_ON_PASS", false),
-		SkipPackage:           envBool("ROWBOAT_DESKTOP_PERF_SKIP_PACKAGE", false),
-		IncludeCloud:   envBool("ROWBOAT_DESKTOP_PERF_INCLUDE_CLOUD", tier != perfTierCommit),
-		IdleSeconds:    idleSeconds,
-		SeedNotes:      seedNotes,
-		MemoryRepeats:  memoryRepeats,
+		RepoRoot:              root,
+		ArtifactDir:           artifactDir,
+		WorkDir:               filepath.Join(artifactDir, "workdir"),
+		Mode:                  mode,
+		Tier:                  tier,
+		APIURL:                strings.TrimRight(apiURL, "/"),
+		DevstackURL:           strings.TrimRight(devstackURL, "/"),
+		CDPPort:               cdpPort,
+		VitePort:              vitePort,
+		Prompt:                envString("OPPULENCE_DESKTOP_PERF_PROMPT", "Please respond with exactly: local rowboat performance gate passed"),
+		BudgetPath:            budgetPath,
+		BaselinePath:          baselinePath,
+		AgentSession:          envString("OPPULENCE_DESKTOP_PERF_AGENT_SESSION", "rowboat-desktop-perf-"+filepath.Base(artifactDir)),
+		UpdateBaseline:        envBool("OPPULENCE_DESKTOP_PERF_UPDATE_BASELINE", false),
+		RefreshBaselineOnPass: envBool("OPPULENCE_DESKTOP_PERF_REFRESH_BASELINE_ON_PASS", false),
+		SkipPackage:           envBool("OPPULENCE_DESKTOP_PERF_SKIP_PACKAGE", false),
+		IncludeCloud:          envBool("OPPULENCE_DESKTOP_PERF_INCLUDE_CLOUD", tier != perfTierCommit),
+		IdleSeconds:           idleSeconds,
+		SeedNotes:             seedNotes,
+		MemoryRepeats:         memoryRepeats,
 	}
 
-	if customWorkDir := os.Getenv("ROWBOAT_DESKTOP_PERF_WORKDIR"); customWorkDir != "" {
+	if customWorkDir := os.Getenv("OPPULENCE_DESKTOP_PERF_WORKDIR"); customWorkDir != "" {
 		cfg.WorkDir = customWorkDir
 		if !filepath.IsAbs(cfg.WorkDir) {
 			cfg.WorkDir = filepath.Join(root, cfg.WorkDir)

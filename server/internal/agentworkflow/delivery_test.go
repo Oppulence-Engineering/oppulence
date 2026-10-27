@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/agentregistry"
 	"go.temporal.io/sdk/activity"
 )
 

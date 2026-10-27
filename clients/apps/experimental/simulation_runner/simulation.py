@@ -12,7 +12,7 @@ from rowboat import Client, StatefulChat
 
 openai_client = OpenAI()
 MODEL_NAME = "gpt-4.1"
-ROWBOAT_API_HOST = os.environ.get("ROWBOAT_API_HOST", "http://127.0.0.1:3000").strip()
+OPPULENCE_API_HOST = os.environ.get("OPPULENCE_API_HOST", "http://127.0.0.1:3000").strip()
 
 async def simulate_simulation(
     scenario: TestScenario,
@@ -65,7 +65,7 @@ async def simulate_simulation(
 
         simulated_content = simulated_user_response.choices[0].message.content.strip()
         messages.append({"role": "assistant", "content": simulated_content})
-        # Run Rowboat chat in a thread if it's synchronous
+        # Run Oppulence chat in a thread if it's synchronous
         rowboat_response = await loop.run_in_executor(
             None,
             lambda: support_chat.run(simulated_content)
@@ -154,7 +154,7 @@ async def simulate_simulations(
     project_id = simulations[0].projectId
 
     client = Client(
-        host=ROWBOAT_API_HOST,
+        host=OPPULENCE_API_HOST,
         project_id=project_id,
         api_key=api_key
     )

@@ -17,7 +17,7 @@ let recover: typeof import("./recover.js");
 let session: typeof import("./session.js");
 
 beforeAll(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-meetings-recover-"));
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-meetings-recover-"));
   process.env.SOLOMON_WORKDIR = tmpDir;
   vi.resetModules();
   recover = await import("./recover.js");

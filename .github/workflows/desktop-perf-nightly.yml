@@ -40,13 +40,13 @@ jobs:
       # leaving it unset. The secret still wins if someone defines it.
       INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID || '04ebc1cf-0ec5-4e9e-8ab9-4c6da4252574' }}
       INFISICAL_DISABLE_UPDATE_CHECK: 'true'
-      ROWBOAT_DESKTOP_PERF_ARTIFACT_DIR: ${{ github.workspace }}/.rowboat-kind/desktop-perf/nightly
-      ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT: '9333'
+      OPPULENCE_DESKTOP_PERF_ARTIFACT_DIR: ${{ github.workspace }}/.rowboat-kind/desktop-perf/nightly
+      OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT: '9333'
       DISPLAY: ':99'
       # Keep the relative-regression check active AND roll the baseline forward
       # on a green run, so the next night fails on a >maxPercent regression vs
       # this night. Absolute budgets (budget.json) still cap the ceiling.
-      ROWBOAT_DESKTOP_PERF_REFRESH_BASELINE_ON_PASS: '1'
+      OPPULENCE_DESKTOP_PERF_REFRESH_BASELINE_ON_PASS: '1'
 
     steps:
       - name: Checkout code
@@ -83,7 +83,7 @@ jobs:
           echo "target=$target" >> "$GITHUB_OUTPUT"
 
           # Tier-specific rolling baseline path (full/deep gate different metrics).
-          echo "ROWBOAT_DESKTOP_PERF_BASELINE=${{ github.workspace }}/.rowboat-kind/desktop-perf/ci-baseline-$tier.json" >> "$GITHUB_ENV"
+          echo "OPPULENCE_DESKTOP_PERF_BASELINE=${{ github.workspace }}/.rowboat-kind/desktop-perf/ci-baseline-$tier.json" >> "$GITHUB_ENV"
 
       - name: Validate required secrets
         shell: bash

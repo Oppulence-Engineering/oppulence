@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-agent-notes-test");
+const TEST_WORKDIR = vi.hoisted(() => "/tmp/oppulence-agent-notes-test");
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
 // No user email → the email leg of the pass is skipped; these tests are about runs.

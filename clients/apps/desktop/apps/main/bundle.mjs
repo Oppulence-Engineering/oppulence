@@ -65,7 +65,7 @@ await esbuild.build({
     "process.env.POSTHOG_HOST": JSON.stringify(
       process.env.VITE_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
     ),
-    "process.env.ROWBOAT_APP_VERSION": JSON.stringify(pkg.version ?? ""),
+    "process.env.OPPULENCE_APP_VERSION": JSON.stringify(pkg.version ?? ""),
   },
 });
 

@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailsignal"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
 )
 
 // MailSignalDelete is the builder for deleting a MailSignal entity.

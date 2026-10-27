@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-note-tagging-state-test");
+const TEST_WORKDIR = vi.hoisted(() => "/tmp/oppulence-note-tagging-state-test");
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
 import {

@@ -12,7 +12,7 @@
 export interface PreConsentRequest {
   /** Hydra consent challenge. */
   challenge: string;
-  /** Hydra client id. Must match the configured Rowboat Desktop broker client. */
+  /** Hydra client id. Must match the configured Oppulence Desktop broker client. */
   hydra_client_id: string;
   /** Exactly one requested connector audience. */
   requested_audience: string[];

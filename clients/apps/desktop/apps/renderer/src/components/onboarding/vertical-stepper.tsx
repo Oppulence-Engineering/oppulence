@@ -1,6 +1,6 @@
 import { CheckCircle2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { ROWBOAT_STEPS, BYOK_STEPS } from "./step-indicator";
+import { OPPULENCE_STEPS, BYOK_STEPS } from "./step-indicator";
 import type { Step, OnboardingPath } from "./use-onboarding-state";
 
 interface VerticalStepperProps {
@@ -17,7 +17,7 @@ const SUBLABELS: Record<string, string> = {
 };
 
 export function VerticalStepper({ currentStep, path }: VerticalStepperProps) {
-  const steps = path === "byok" ? BYOK_STEPS : ROWBOAT_STEPS;
+  const steps = path === "byok" ? BYOK_STEPS : OPPULENCE_STEPS;
   const currentIndex = steps.findIndex((s) => s.step === currentStep);
 
   return (

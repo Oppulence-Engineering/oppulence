@@ -678,7 +678,7 @@ export function useConnectors(active: boolean) {
     setGoogleClientIdDescription,
     handleGoogleClientIdSubmit,
 
-    // Rowboat integrations
+    // Oppulence integrations
     integrations,
     integrationsLoading,
     integrationConnecting,

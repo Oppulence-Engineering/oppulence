@@ -1,6 +1,6 @@
 # rowboat-api
 
-The Rowboat desktop backend. Replaces the closed hosted backend
+The Oppulence desktop backend. Replaces the closed hosted backend
 (`https://api.x.rowboatlabs.com`) that the Electron desktop (`clients/apps/desktop`) calls.
 It owns billing/credits, the LLM gateway, vendor proxies (voice, search), the
 Google OAuth broker, and the managed connector handshake.
@@ -76,7 +76,7 @@ composer never replies.
 
 Chat calls **live OpenRouter** (`https://openrouter.ai/api/v1`). Put
 `OPENROUTER_API_KEY` in the root `.env` and leave `OPENROUTER_BASE_URL` unset.
-`devstack` is not on that path. Set `ROWBOAT_COMPOSE_MOCK_LLM=1` only for an
+`devstack` is not on that path. Set `OPPULENCE_COMPOSE_MOCK_LLM=1` only for an
 offline plumbing check; devstack then answers every turn with
 `Hello from the mock LLM.`
 
@@ -91,7 +91,7 @@ docker compose -f docker-compose.rowboat-api.yml up --build -d
 cd clients/apps/desktop && API_URL=http://localhost:18080 npm run dev   # point the desktop at the local api
 ```
 
-Then click **“Sign in to Rowboat”** in the desktop sidebar: the desktop asks
+Then click **“Sign in to Oppulence”** in the desktop sidebar: the desktop asks
 rowboat-api for the WorkOS authorize URL, opens it in the browser (the real
 AuthKit login), and on callback hands the code to rowboat-api’s
 `/v1/auth/workos/exchange`, which completes the exchange server-side with the API
@@ -119,7 +119,7 @@ scripts/rowboat-api-kind.sh desktop
 ```
 
 The desktop runs with `API_URL=http://localhost:18080`. See
-[`docs/LOCAL_KIND_ROWBOAT_API.md`](../docs/LOCAL_KIND_ROWBOAT_API.md) for the
+[`docs/LOCAL_KIND_OPPULENCE_API.md`](../docs/LOCAL_KIND_OPPULENCE_API.md) for the
 full workflow and smoke-test coverage.
 
 The Scalar API reference is available at `http://localhost:18080/docs`, backed

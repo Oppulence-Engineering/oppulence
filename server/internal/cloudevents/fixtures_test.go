@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskrun"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )

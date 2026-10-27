@@ -12,7 +12,7 @@
 
 ## Summary
 
-Define the onboarding and permissions flow for Rowboat email features. Inbox Zero has setup, onboarding, permission consent, account linking, feature pages, and settings for automation, calendars, drives, channels, digests, reply tracking, and cleanup. Rowboat needs a desktop-first version that earns trust progressively: connect mailbox, sync read-only context, request additional scopes only when the user enables actions, explain what each feature can do, and show feature health after setup.
+Define the onboarding and permissions flow for Oppulence email features. Inbox Zero has setup, onboarding, permission consent, account linking, feature pages, and settings for automation, calendars, drives, channels, digests, reply tracking, and cleanup. Oppulence needs a desktop-first version that earns trust progressively: connect mailbox, sync read-only context, request additional scopes only when the user enables actions, explain what each feature can do, and show feature health after setup.
 
 ## Inbox Zero Implementation References
 
@@ -32,7 +32,7 @@ Implementation agents should first read then inspect:
 - `apps/web/app/api/user/setup-progress/route.ts`
 - `apps/web/app/api/user/email-account/route.ts`
 
-Use these for account linking, provider permission checks, setup progress, and consent UX. Rowboat should translate this into desktop feature adoption cards and broker OAuth scope upgrades.
+Use these for account linking, provider permission checks, setup progress, and consent UX. Oppulence should translate this into desktop feature adoption cards and broker OAuth scope upgrades.
 
 ## Goals
 
@@ -87,7 +87,7 @@ Capabilities:
 
 User outcome:
 
-- Send from Rowboat.
+- Send from Oppulence.
 - Create provider drafts.
 - AI draft suggestions can be sent after review.
 
@@ -125,7 +125,7 @@ User outcome:
 
 For every scope request, show:
 
-- What Rowboat will be able to do.
+- What Oppulence will be able to do.
 - Which features need it.
 - Whether actions are automatic or require approval.
 - Whether data stays local or can go to cloud.
@@ -134,7 +134,7 @@ For every scope request, show:
 Example:
 
 ```text
-Allow Rowboat to modify mail?
+Allow Oppulence to modify mail?
 
 Needed for: archive, label, move, mark read, cleanup rules.
 Not included: sending email.

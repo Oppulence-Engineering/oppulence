@@ -13,11 +13,11 @@ import (
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/minutes"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/minutes"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/secrets"
 )
 
 func TestWebSocketBearerPromotesProtocolCredential(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"entgo.io/ent/schema/index"
 	"github.com/flume/enthistory"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/mixin"
 )
 
 // MCPConnection is per-(user, product) connector OAuth state. Either an

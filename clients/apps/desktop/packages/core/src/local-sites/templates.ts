@@ -19,7 +19,7 @@ You can embed a local site in a note with:
 Notes:
 
 - The app serves each site with SPA-friendly routing, so client-side routers work
-- Local HTML pages auto-expand inside Rowboat iframe blocks to fit their content height
+- Local HTML pages auto-expand inside Oppulence iframe blocks to fit their content height
 - Put an \`index.html\` file at the site root
 - Remote APIs still need to allow browser requests from a local page
 `,
@@ -40,7 +40,7 @@ Notes:
           <p class="eyebrow">Local iframe sample · external APIs</p>
           <h1>Signal Deck</h1>
           <p class="lede">
-            A locally-served dashboard designed to live inside a Rowboat note. It fetches
+            A locally-served dashboard designed to live inside a Oppulence note. It fetches
             live signals from public APIs and stays readable at note width.
           </p>
         </div>
@@ -410,7 +410,7 @@ h1 {
 const reposConfig = [
   {
     slug: 'rowboatlabs/rowboat',
-    label: 'Rowboat',
+    label: 'Oppulence',
     description: 'AI coworker with memory',
   },
   {
@@ -514,7 +514,7 @@ function renderMetrics(repos, stories) {
 
   const metrics = [
     {
-      label: 'Rowboat stars',
+      label: 'Oppulence stars',
       value: formatter.format(leadRepo.stars),
       detail: formatter.format(leadRepo.forks) + ' forks · ' + leadRepo.issues + ' open issues',
       spark: [leadRepo.stars * 0.58, leadRepo.stars * 0.71, leadRepo.stars * 0.88, leadRepo.stars],

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/agentdefinition"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 )
 
 const yamlAgent = `apiVersion: agent.rowboat.dev/v1

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://app.solomon-ai.co/schemas/agent.rowboat.dev/v1.json",
-  "title": "Rowboat Agent (agent.rowboat.dev/v1)",
+  "title": "Oppulence Agent (agent.rowboat.dev/v1)",
   "description": "RFC 028 declarative agent definition. YAML is a source format that compiles into the canonical AgentDefinition; this schema validates both the YAML file and the /v1/agents JSON body (one schema, three consumers: server, CLI, editor).",
   "type": "object",
   "additionalProperties": false,

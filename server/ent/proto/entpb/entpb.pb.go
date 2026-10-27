@@ -407,7 +407,7 @@ const file_entpb_entpb_proto_rawDesc = "" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2q\n" +
 	"\vUserService\x12)\n" +
 	"\x03Get\x12\x15.entpb.GetUserRequest\x1a\v.entpb.User\x127\n" +
-	"\x04List\x12\x16.entpb.ListUserRequest\x1a\x17.entpb.ListUserResponseBKZIgithub.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/proto/entpbb\x06proto3"
+	"\x04List\x12\x16.entpb.ListUserRequest\x1a\x17.entpb.ListUserResponseB>Z<github.com/PlaybookMediaLLC/oppulence/server/ent/proto/entpbb\x06proto3"
 
 var (
 	file_entpb_entpb_proto_rawDescOnce sync.Once

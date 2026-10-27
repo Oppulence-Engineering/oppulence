@@ -20,7 +20,10 @@ const ROOTS = [
   "clients/packages/ui/src/styles",
   "clients/apps/desktop/apps/renderer/src",
 ];
-const EXEMPT = new Set(["clients/packages/ui/src/styles/tokens.css", "clients/packages/ui/src/styles/polar.css"]);
+const EXEMPT = new Set([
+  "clients/packages/ui/src/styles/tokens.css",
+  "clients/packages/ui/src/styles/polar.css",
+]);
 const BASELINE_FILE = path.join(import.meta.dirname, "css-design-values-baseline.json");
 
 // Hex colors and color functions. Relative colors derived from a token are fine.

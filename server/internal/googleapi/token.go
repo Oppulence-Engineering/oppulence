@@ -9,10 +9,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/secrets"
 )
 
 // ErrReconnectRequired marks a dead refresh token (Google invalid_grant):

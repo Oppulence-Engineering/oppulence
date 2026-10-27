@@ -4,14 +4,14 @@ import {
   presentApiReferenceDocument,
   renderApiReferencePage,
 } from "@/lib/api/api-reference-document";
-import { publicRowboatApiURL } from "@/lib/api/rowboat-public-api";
+import { publicOppulenceApiURL } from "@/lib/api/oppulence-public-api";
 
 /** A slow API renders the page without a spec instead of hanging it. */
 const SPEC_TIMEOUT_MS = 10_000;
 
 async function loadApiReferenceDocument(): Promise<unknown> {
   try {
-    const response = await fetch(publicRowboatApiURL("/openapi.json"), {
+    const response = await fetch(publicOppulenceApiURL("/openapi.json"), {
       cache: "no-store",
       signal: AbortSignal.timeout(SPEC_TIMEOUT_MS),
     });

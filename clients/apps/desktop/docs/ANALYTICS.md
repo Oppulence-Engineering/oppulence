@@ -6,12 +6,12 @@
 
 - **Anonymous distinct_id** = `installationId` from `~/.rowboat/config/installation.json` (auto-generated on first run; see `packages/core/src/analytics/installation.ts`).
 - Renderer fetches it from main on startup via the `analytics:bootstrap` IPC channel and passes it as PostHog's `bootstrap.distinctID`. Main uses it directly in `posthog-node`.
-- **On rowboat sign-in**: `posthog.identify(rowboatUserId)` runs in **both** processes.
+- **On oppulence sign-in**: `posthog.identify(rowboatUserId)` runs in **both** processes.
   - Main does it from `apps/main/src/oauth-handler.ts:285` (after `getBillingInfo()` resolves) — this is the load-bearing call, since main always runs.
   - Renderer mirrors via `apps/renderer/src/hooks/useAnalyticsIdentity.ts` listening on the `oauth:didConnect` IPC event.
   - Main also calls `alias()` so events emitted under the anonymous installation_id are linked to the identified user retroactively.
-- **On every app startup**: main re-identifies if rowboat tokens exist (`packages/core/src/analytics/identify.ts`, called from `apps/main/src/main.ts` whenReady). Idempotent — PostHog merges person properties on duplicate identifies. This catches users who installed before analytics existed, and refreshes person properties (plan/status) on every launch.
-- **On rowboat sign-out**: `posthog.reset()` in both processes; future events resolve to the installation_id again.
+- **On every app startup**: main re-identifies if oppulence tokens exist (`packages/core/src/analytics/identify.ts`, called from `apps/main/src/main.ts` whenReady). Idempotent — PostHog merges person properties on duplicate identifies. This catches users who installed before analytics existed, and refreshes person properties (plan/status) on every launch.
+- **On oppulence sign-out**: `posthog.reset()` in both processes; future events resolve to the installation_id again.
 - **`email`** is set on `identify` from main only (sourced from `/v1/me`). Person properties are server-side, so the renderer's events resolve to the same record without redundantly setting it.
 
 ## Event catalog
@@ -72,7 +72,7 @@ This means a single end-to-end event flow emits both `routing` (Pass 1) and `eve
 
 ### `user_signed_in`
 
-Emitted when rowboat OAuth completes. Properties: `plan`, `status` (subscription state from `/v1/me`).
+Emitted when oppulence OAuth completes. Properties: `plan`, `status` (subscription state from `/v1/me`).
 
 Emitted from **both** processes:
 
@@ -81,7 +81,7 @@ Emitted from **both** processes:
 
 ### `user_signed_out`
 
-Emitted on rowboat disconnect. No properties. Followed immediately by `posthog.reset()`.
+Emitted on oppulence disconnect. No properties. Followed immediately by `posthog.reset()`.
 
 Emit points: `apps/main/src/oauth-handler.ts:369` and `apps/renderer/src/hooks/useAnalyticsIdentity.ts:82`.
 
@@ -157,7 +157,7 @@ Persistent across sessions for the same user. Set via `posthog.people.set` or as
 | `plan`, `status`                    | main on identify                 | Subscription state                                                                                                        |
 | `api_url`                           | both processes (init + identify) | Distinguishes prod / staging / custom — assign meaning in PostHog dashboard. `https://api.x.rowboatlabs.com` = production |
 | `app_version`                       | both processes (init + identify) | Electron app version; also included automatically on every event                                                          |
-| `signed_in`                         | renderer                         | `true` while rowboat OAuth is connected                                                                                   |
+| `signed_in`                         | renderer                         | `true` while oppulence OAuth is connected                                                                                   |
 | `{provider}_connected`              | renderer                         | One of `gmail`, `calendar`, `slack`, `rowboat`                                                                            |
 | `total_notes`                       | renderer (init)                  | Workspace size signal                                                                                                     |
 | `has_used_search`, `has_used_voice` | renderer                         | One-shot first-use flags                                                                                                  |

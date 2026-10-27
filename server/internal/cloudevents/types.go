@@ -102,7 +102,7 @@ type RouteController interface {
 }
 
 // routingJSON is the bounded decision summary stored on the event row. It is
-// Rowboat's own audit record — never third-party raw payload.
+// Oppulence's own audit record — never third-party raw payload.
 type routingJSON struct {
 	Threshold     float64           `json:"threshold,omitempty"`
 	PromptVersion string            `json:"promptVersion,omitempty"`

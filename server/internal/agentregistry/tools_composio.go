@@ -5,10 +5,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
 )
 
-// Composio tools run with the Rowboat user's connected-account scope. Shared
+// Composio tools run with the Oppulence user's connected-account scope. Shared
 // Slack sessions have no requester-to-user mapping, so guard them like the
 // other owner-scoped connectors.
 

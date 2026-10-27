@@ -6,7 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
 )
 
 // Cloud research HTTP surface (RFC 039).

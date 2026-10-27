@@ -12,8 +12,8 @@ import (
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/minutes"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/minutes"
 )
 
 const maxDeepgramFrameBytes = 16 << 20

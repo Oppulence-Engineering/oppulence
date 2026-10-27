@@ -14,7 +14,7 @@ import {
   type HydraOutcomeProof,
   type OryAdmin,
 } from '../src/ory.js';
-import type { AuditRequest, ConsentContext, RowboatHooks } from '../src/rowboat.js';
+import type { AuditRequest, ConsentContext, OppulenceHooks } from '../src/rowboat.js';
 import { buildApp, InjectedPostHydraCrash, reconcileDecisions } from '../src/server.js';
 import { DrainState, installShutdownSignalHandlers, ShutdownCoordinator } from '../src/shutdown.js';
 import { PostgresStateStore } from '../src/state.js';
@@ -28,7 +28,7 @@ const suite = url ? describe : describe.skip;
 const context = {
   request_id: 'ctx_test',
   subject: 'user_test',
-  client: { id: 'desktop', display_name: 'Rowboat Desktop' },
+  client: { id: 'desktop', display_name: 'Oppulence Desktop' },
   connector: { id: 'canvas', display_name: 'Canvas', audience: 'mcp:canvas' },
   scopes: [],
   entitlement: { allowed: true },
@@ -351,7 +351,7 @@ suite('PostgreSQL state store multi-instance behavior', () => {
         buildApp(config, {
           store: a,
           ory: ory as unknown as OryAdmin,
-          hooks: hooks as unknown as RowboatHooks,
+          hooks: hooks as unknown as OppulenceHooks,
           workos,
         }),
       );
@@ -359,7 +359,7 @@ suite('PostgreSQL state store multi-instance behavior', () => {
         buildApp(config, {
           store: b,
           ory: ory as unknown as OryAdmin,
-          hooks: hooks as unknown as RowboatHooks,
+          hooks: hooks as unknown as OppulenceHooks,
           workos,
         }),
       );
@@ -497,7 +497,7 @@ suite('PostgreSQL state store multi-instance behavior', () => {
       buildApp(config, {
         store: terminatingStore,
         ory: ory as unknown as OryAdmin,
-        hooks: hooks as unknown as RowboatHooks,
+        hooks: hooks as unknown as OppulenceHooks,
         drain,
       }),
     );
@@ -549,7 +549,7 @@ suite('PostgreSQL state store multi-instance behavior', () => {
       `UPDATE oauth_consent_sessions SET decision_lease_until=now() - interval '1 second' WHERE challenge=$1`,
       [challenge],
     );
-    expect(await reconcileDecisions(b, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000)).toBe(
+    expect(await reconcileDecisions(b, ory as unknown as OryAdmin, hooks as unknown as OppulenceHooks, 25, 1_000)).toBe(
       1,
     );
     expect(ory.hydraCommits).toBe(1);
@@ -640,8 +640,8 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     );
 
     const reconciled = await Promise.all([
-      reconcileDecisions(a, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000),
-      reconcileDecisions(b, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000),
+      reconcileDecisions(a, ory as unknown as OryAdmin, hooks as unknown as OppulenceHooks, 25, 1_000),
+      reconcileDecisions(b, ory as unknown as OryAdmin, hooks as unknown as OppulenceHooks, 25, 1_000),
     ]);
     expect(reconciled.sort()).toEqual([0, 1]);
     expect(ory.acceptCalls).toBe(1);
@@ -700,8 +700,8 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     );
 
     const reconciled = await Promise.all([
-      reconcileDecisions(a, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000),
-      reconcileDecisions(b, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000),
+      reconcileDecisions(a, ory as unknown as OryAdmin, hooks as unknown as OppulenceHooks, 25, 1_000),
+      reconcileDecisions(b, ory as unknown as OryAdmin, hooks as unknown as OppulenceHooks, 25, 1_000),
     ]);
     expect(reconciled.sort()).toEqual([0, 1]);
     expect(ory.acceptCalls).toBe(1);
@@ -765,7 +765,7 @@ suite('PostgreSQL state store multi-instance behavior', () => {
       [session.id],
     );
 
-    await reconcileDecisions(a, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000, {
+    await reconcileDecisions(a, ory as unknown as OryAdmin, hooks as unknown as OppulenceHooks, 25, 1_000, {
       afterHydra: () => {
         throw new InjectedPostHydraCrash('simulated process death');
       },
@@ -786,8 +786,8 @@ suite('PostgreSQL state store multi-instance behavior', () => {
       [session.id],
     );
     const reconciled = await Promise.all([
-      reconcileDecisions(a, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000),
-      reconcileDecisions(b, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000),
+      reconcileDecisions(a, ory as unknown as OryAdmin, hooks as unknown as OppulenceHooks, 25, 1_000),
+      reconcileDecisions(b, ory as unknown as OryAdmin, hooks as unknown as OppulenceHooks, 25, 1_000),
     ]);
     expect(reconciled.sort()).toEqual([0, 1]);
     expect(ory.hydraCommits).toBe(1);
@@ -873,7 +873,7 @@ suite('PostgreSQL state store multi-instance behavior', () => {
         buildApp(config, {
           store: a,
           ory: ory as unknown as OryAdmin,
-          hooks: hooks as unknown as RowboatHooks,
+          hooks: hooks as unknown as OppulenceHooks,
           workos,
         }),
       );
@@ -881,7 +881,7 @@ suite('PostgreSQL state store multi-instance behavior', () => {
         buildApp(config, {
           store: b,
           ory: ory as unknown as OryAdmin,
-          hooks: hooks as unknown as RowboatHooks,
+          hooks: hooks as unknown as OppulenceHooks,
           workos,
         }),
       );
@@ -958,7 +958,7 @@ suite('PostgreSQL state store multi-instance behavior', () => {
       buildApp(config, {
         store: a,
         ory: ory as unknown as OryAdmin,
-        hooks: hooks as unknown as RowboatHooks,
+        hooks: hooks as unknown as OppulenceHooks,
         workos,
       }),
     );
@@ -966,7 +966,7 @@ suite('PostgreSQL state store multi-instance behavior', () => {
       buildApp(config, {
         store: b,
         ory: ory as unknown as OryAdmin,
-        hooks: hooks as unknown as RowboatHooks,
+        hooks: hooks as unknown as OppulenceHooks,
         workos,
       }),
     );

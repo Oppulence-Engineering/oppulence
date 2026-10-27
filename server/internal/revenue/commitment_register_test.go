@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
 )
 
 // seedCommitment creates one commitment on a relationship, with the fields the

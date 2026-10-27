@@ -6,7 +6,7 @@ import { listConnectorsViaBackend, type ConnectorView } from "../../connectors/c
 
 const runtimeContextPrompt = getRuntimeContextPrompt(getRuntimeContext());
 
-type RowboatIntegrationPromptState = {
+type OppulenceIntegrationPromptState = {
     enabled: boolean;
     prompt: string;
 };
@@ -22,10 +22,10 @@ function formatIntegrationCapabilities(connectors: ConnectorView[]): string {
 }
 
 /**
- * Generate dynamic instructions for Rowboat managed integrations.
+ * Generate dynamic instructions for Oppulence managed integrations.
  * Lists connected integrations and explains the meta-tool discovery flow.
  */
-async function getRowboatIntegrationsPrompt(): Promise<RowboatIntegrationPromptState> {
+async function getOppulenceIntegrationsPrompt(): Promise<OppulenceIntegrationPromptState> {
     try {
         const response = await listConnectorsViaBackend();
         const connected = response.connectors.filter((connector) => connector.connected);
@@ -36,7 +36,7 @@ async function getRowboatIntegrationsPrompt(): Promise<RowboatIntegrationPromptS
         return {
             enabled: response.connectors.length > 0,
             prompt: `
-## Rowboat Integrations
+## Oppulence Integrations
 
 ${connectedSection}
 
@@ -65,7 +65,7 @@ function buildStaticInstructions(integrationsEnabled: boolean, catalog: string, 
         : `For capabilities like web search, file scraping, and audio, use MCP tools via the \`mcp-integration\` skill.`;
 
     const integrationToolsLine = integrationsEnabled
-        ? `- \`rowboat-list-integrations\`, \`rowboat-connect-integration\`, \`rowboat-configure-integration-mcp\`, \`rowboat-search-hubspot\` - managed Rowboat integration tools. HubSpot uses a server-side native SDK; do not try to configure it as MCP. Load the \`rowboat-integration\` skill for usage guidance.\n- \`rowboat-list-slack-workspaces\`, \`rowboat-read-slack-thread\`, \`rowboat-draft-slack-reply\` - managed Slack tools. Use these for desktop-chat Slack thread reading and reply drafting; they accept Slack permalinks or explicit ids, use server-held Slack metadata where needed, and never post automatically. The rendered Slack draft card is the user approval/send surface.\n`
+        ? `- \`rowboat-list-integrations\`, \`rowboat-connect-integration\`, \`rowboat-configure-integration-mcp\`, \`rowboat-search-hubspot\` - managed Oppulence integration tools. HubSpot uses a server-side native SDK; do not try to configure it as MCP. Load the \`rowboat-integration\` skill for usage guidance.\n- \`rowboat-list-slack-workspaces\`, \`rowboat-read-slack-thread\`, \`rowboat-draft-slack-reply\` - managed Slack tools. Use these for desktop-chat Slack thread reading and reply drafting; they accept Slack permalinks or explicit ids, use server-held Slack metadata where needed, and never post automatically. The rendered Slack draft card is the user approval/send surface.\n`
         : '';
 
     return `You are Solomon AI Copilot - an AI assistant for everyday work. You help users with anything they want. For instance, drafting emails, prepping for meetings, tracking projects, or answering questions - with memory that compounds from their emails, calendar, and notes. Everything runs locally on the user's machine. The nerdy coworker who remembers everything.
@@ -339,7 +339,7 @@ export function invalidateCopilotInstructionsCache(): void {
 
 export async function buildCopilotInstructions(): Promise<string> {
     if (cachedInstructions !== null) return cachedInstructions;
-    const integrations = await getRowboatIntegrationsPrompt();
+    const integrations = await getOppulenceIntegrationsPrompt();
     let codeModeEnabled = false;
     try {
         const repo = container.resolve<ICodeModeConfigRepo>('codeModeConfigRepo');

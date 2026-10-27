@@ -7,12 +7,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailbodycache"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mailmessagemeta"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueevidence"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
 )
 
 // ErrBodyUnavailable means the message body could not be produced (no fetcher

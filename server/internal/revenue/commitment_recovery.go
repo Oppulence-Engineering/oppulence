@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitment"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitmentevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipobservation"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipsourcestatus"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueaction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
 	"github.com/google/uuid"
 )
 
@@ -345,7 +345,7 @@ func (s *Service) createRecoveryAction(
 		SetActionType("commitment_rescue").SetChannel(channel).SetDetector("commitment_due").
 		SetDedupeKey(dedupe).SetRevision(1).SetRevisionHash(actionInput.content(u.ID).Hash()).
 		SetReason(evaluation.Explanation).SetProposedSubject(actionInput.ProposedSubject).
-		SetProposedMessage(message).SetExecutionMode(ExecModeDraft).SetExecutionOwner(OwnerRowboat).
+		SetProposedMessage(message).SetExecutionMode(ExecModeDraft).SetExecutionOwner(OwnerOppulence).
 		SetAssignedUserID(u.ID).SetPriorityScore(ranking.FinalScore).
 		SetPriorityComponentsJSON(string(partsJSON)).AddEvidences(evidences...)
 	if recipient != "" {

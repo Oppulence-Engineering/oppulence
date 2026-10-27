@@ -75,8 +75,8 @@ describe("dev toolkit modules", () => {
 
   it("validates dev env with dev session secret fallback", () => {
     const report = readDevEnvFromProcess({
-      ROWBOAT_WWW_API_PROXY_URL: "http://localhost:18080",
-      ROWBOAT_WWW_PUBLIC_API_BASE_URL: "http://localhost:18080",
+      OPPULENCE_WWW_API_PROXY_URL: "http://localhost:18080",
+      OPPULENCE_WWW_PUBLIC_API_BASE_URL: "http://localhost:18080",
     });
     expect(report.ok).toBe(true);
     expect(report.warnings.some((warning) => warning.includes("dev session secret"))).toBe(true);

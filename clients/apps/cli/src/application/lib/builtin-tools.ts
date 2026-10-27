@@ -20,7 +20,7 @@ const BuiltinToolsSchema = z.record(z.string(), z.object({
 
 export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
     loadSkill: {
-        description: "Load a Rowboat skill definition into context by fetching its guidance string",
+        description: "Load a Oppulence skill definition into context by fetching its guidance string",
         inputSchema: z.object({
             skillName: z.string().describe("Skill identifier or path (e.g., 'workflow-run-ops' or 'src/application/assistant/skills/workflow-run-ops/skill.ts')"),
         }),

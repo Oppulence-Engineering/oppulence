@@ -511,7 +511,7 @@ export const getSlackWebhookUrl = () => {
 };
 
 /**
- * Receives Slack Events API deliveries, verified via the X-Slack-Signature HMAC (v0:{ts}:{body} with SLACK_SIGNING_SECRET, ±5 minute replay window). Handles the url_verification handshake; event_callback deliveries for workspaces mapped to a Rowboat user are ingested, others are acknowledged and dropped.
+ * Receives Slack Events API deliveries, verified via the X-Slack-Signature HMAC (v0:{ts}:{body} with SLACK_SIGNING_SECRET, ±5 minute replay window). Handles the url_verification handshake; event_callback deliveries for workspaces mapped to a Oppulence user are ingested, others are acknowledged and dropped.
  * @summary Slack Events API webhook
  */
 export const slackWebhook = async (

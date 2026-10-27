@@ -189,7 +189,7 @@ function triggerMeetingCapture(event: CalEvent, openConference: boolean) {
   emitRendererEvent("calendar-block:join-meeting");
 }
 
-const CARD = "rowboat-dev-card p-4";
+const CARD = "oppulence-dev-card p-4";
 const TOOLKIT_PREVIEW_LIMIT = 8;
 
 let cachedToolkitPreviews: ToolkitPreview[] | null = null;
@@ -442,7 +442,7 @@ export function HomeView({
 
           {/* Relationship-first front door */}
           <section
-            className="rowboat-dev-card border-foreground/20 bg-primary/[0.025] p-[18px]"
+            className="oppulence-dev-card border-foreground/20 bg-primary/[0.025] p-[18px]"
             data-capability="relationship-home mission-control"
             data-tour-target="home-accounts"
           >
@@ -524,7 +524,7 @@ export function HomeView({
 
           {/* Golden path: signal → evidence → impact → recommendation → approval */}
           <section
-            className="rowboat-dev-card p-4"
+            className="oppulence-dev-card p-4"
             data-capability="relationship-golden-path"
             data-tour-target="relationship-action"
           >
@@ -574,7 +574,7 @@ export function HomeView({
 
           {/* Up-next hero */}
           {nextEvent && (
-            <div className="rowboat-dev-card flex items-center gap-[18px] p-[18px]">
+            <div className="oppulence-dev-card flex items-center gap-[18px] p-[18px]">
               <div className="flex size-[52px] shrink-0 items-center justify-center rounded-none bg-muted text-foreground">
                 <Mic className="size-[22px]" />
               </div>
@@ -830,7 +830,7 @@ export function HomeView({
             <button
               type="button"
               onClick={onOpenChat}
-              className="rowboat-dev-card flex items-center gap-3.5 p-4 text-left transition-colors hover:bg-accent"
+              className="oppulence-dev-card flex items-center gap-3.5 p-4 text-left transition-colors hover:bg-accent"
             >
               <div className="flex size-9 shrink-0 items-center justify-center rounded-none border border-border bg-card text-muted-foreground">
                 <MessageSquare className="size-[15px]" />

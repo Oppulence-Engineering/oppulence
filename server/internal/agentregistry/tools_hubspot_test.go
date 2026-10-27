@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
 )
 
 func TestHubSpotCapabilitiesRegisteredWithApprovalTiers(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
 )
 
 // ErrSubscriptionRequired means the caller may observe, scan, review, and draft

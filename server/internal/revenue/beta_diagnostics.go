@@ -7,14 +7,14 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipattentionitem"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipidentitycandidate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipprojectionjob"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueaction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenuetrustevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
 )
 
 const betaDiagnosticsSchemaVersion = "tfa-support-v1"

@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/actions"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/actions"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/cloudevents"
 )
 
 // actionWatcherAdapter adapts the RFC 023 broker to the cloud-event router's

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/agentregistry"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/testsuite"
 	"go.temporal.io/sdk/worker"
@@ -17,7 +17,7 @@ import (
 
 // wfHarness wires the REAL session + subagent workflows against stub activities
 // in a Temporal test environment. The workflow dispatches activities by the
-// rowboat.agent.*.v1 name constants, so the stubs are registered by name — the
+// oppulence.agent.*.v1 name constants, so the stubs are registered by name — the
 // Register-by-name mirror the RFC test plan calls for, kept in lockstep with
 // Register (workflow.go).
 type wfHarness struct {

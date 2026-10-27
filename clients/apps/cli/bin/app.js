@@ -39,11 +39,11 @@ yargs(hideBin(process.argv))
     )
     .command(
         "ui",
-        "Launch the interactive Rowboat dashboard",
+        "Launch the interactive Oppulence dashboard",
         (y) => y
             .option("server-url", {
                 type: "string",
-                description: "Rowboat server base URL",
+                description: "Oppulence server base URL",
             }),
         (argv) => {
             runTui({

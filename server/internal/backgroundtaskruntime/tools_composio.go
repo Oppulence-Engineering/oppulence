@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composioapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/composioapi"
 )
 
 // Composio covers the governed long tail: products Oppulence does not model as

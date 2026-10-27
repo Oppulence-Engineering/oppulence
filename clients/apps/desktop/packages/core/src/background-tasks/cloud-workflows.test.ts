@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { stringify as stringifyYaml } from "yaml";
 import type { BackgroundTask, BackgroundTaskCloudRunType } from "@x/shared/background-task";
-import type { RowboatEvent } from "@x/shared/events";
+import type { OppulenceEvent } from "@x/shared/events";
 
 let tmpDir: string;
 let workDir: string;
@@ -469,7 +469,7 @@ describe("background task cloud workflows", () => {
       executionTarget: "api",
       triggers: { eventMatchCriteria: "important events" },
     });
-    const event: RowboatEvent = {
+    const event: OppulenceEvent = {
       id: "event-1",
       source: "test",
       type: "cloud.workflow.requested",

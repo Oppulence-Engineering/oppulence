@@ -16,10 +16,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectormetrics"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
-	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/connectormetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
+	oauthrs "github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server"
 )
 
 const entitlementTimeout = 3 * time.Second

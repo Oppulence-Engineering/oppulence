@@ -8,7 +8,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
 )
 
 // Stable domain errors are translated to RFC 9457 responses by the handler.

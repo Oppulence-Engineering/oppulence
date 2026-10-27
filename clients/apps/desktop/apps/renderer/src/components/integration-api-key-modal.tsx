@@ -48,7 +48,7 @@ export function IntegrationApiKeyModal({
         <DialogHeader>
           <DialogTitle>Connect {integrationName}</DialogTitle>
           <DialogDescription>
-            Enter the API key for {integrationName}. Rowboat stores it sealed server-side and uses it
+            Enter the API key for {integrationName}. Oppulence stores it sealed server-side and uses it
             only to call this integration.
           </DialogDescription>
         </DialogHeader>

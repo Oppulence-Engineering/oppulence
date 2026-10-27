@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/server"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/version"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/server"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/telemetry"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/version"
 	"go.uber.org/zap"
 )
 

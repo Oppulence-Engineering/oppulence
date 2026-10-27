@@ -29,7 +29,7 @@ migration_required_fragments := {
 }
 
 deny contains message if {
-	input.name == "Rowboat API Migrations"
+	input.name == "Oppulence API Migrations"
 	fragment := migration_required_fragments[_]
 	not workflow_contains(fragment)
 	message := sprintf("rowboat-api migration workflow must retain %q", [fragment])

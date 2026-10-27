@@ -12,9 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/conversationintelligenceartifact"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
 	"github.com/google/uuid"
 )
 

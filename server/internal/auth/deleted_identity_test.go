@@ -16,11 +16,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/authmetrics"
-	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/authmetrics"
+	oauthrs "github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server"
 )
 
 // newJWTMiddlewareFor builds a verifying middleware on the given client, so a

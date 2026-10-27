@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { events, PrefixLogger } from '@x/shared';
-import type { RowboatEvent, ConsumerResult } from '@x/shared/events';
+import type { OppulenceEvent, ConsumerResult } from '@x/shared/events';
 import type { EventConsumer } from './consumer.js';
 import { PENDING_DIR, DONE_DIR, ensureEventDirs } from './producer.js';
 import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
@@ -58,7 +58,7 @@ export function pruneDoneEvents(now: number = Date.now()): number {
     return removed;
 }
 
-function moveEventToDone(filename: string, enriched: RowboatEvent): void {
+function moveEventToDone(filename: string, enriched: OppulenceEvent): void {
     const donePath = path.join(DONE_DIR, filename);
     const pendingPath = path.join(PENDING_DIR, filename);
     writeJsonAtomicSync(donePath, enriched);
@@ -74,7 +74,7 @@ function moveEventToDone(filename: string, enriched: RowboatEvent): void {
  * pre-rename code carry the flat field; the new processor reads it as a
  * live-note targeted re-run.
  */
-function migrateLegacyTarget(event: RowboatEvent): RowboatEvent {
+function migrateLegacyTarget(event: OppulenceEvent): OppulenceEvent {
     if (event.target || !event.targetFilePath) return event;
     return { ...event, target: { consumer: 'live-note', id: event.targetFilePath } };
 }
@@ -82,16 +82,16 @@ function migrateLegacyTarget(event: RowboatEvent): RowboatEvent {
 async function processOneEvent(filename: string): Promise<void> {
     const pendingPath = path.join(PENDING_DIR, filename);
 
-    let event: RowboatEvent;
+    let event: OppulenceEvent;
     try {
         const raw = fs.readFileSync(pendingPath, 'utf-8');
         const parsed = JSON.parse(raw);
-        event = events.RowboatEventSchema.parse(parsed);
+        event = events.OppulenceEventSchema.parse(parsed);
         event = migrateLegacyTarget(event);
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         log.log(`event:${filename} — malformed, moving to done with error: ${msg}`);
-        const stub: RowboatEvent = {
+        const stub: OppulenceEvent = {
             id: filename.replace(/\.json$/, ''),
             source: 'unknown',
             type: 'unknown',
@@ -108,7 +108,7 @@ async function processOneEvent(filename: string): Promise<void> {
 
     if (registeredConsumers.length === 0) {
         // No consumers — drop with a note in `done/` so the dir doesn't fill.
-        const enriched: RowboatEvent = {
+        const enriched: OppulenceEvent = {
             ...event,
             processedAt: new Date().toISOString(),
             consumers: {},
@@ -169,7 +169,7 @@ async function processOneEvent(filename: string): Promise<void> {
         consumersMap[name] = result;
     }
 
-    const enriched: RowboatEvent = {
+    const enriched: OppulenceEvent = {
         ...event,
         processedAt: new Date().toISOString(),
         consumers: consumersMap,

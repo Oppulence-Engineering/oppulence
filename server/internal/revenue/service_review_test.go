@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueleakscan"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/googleapi"
 )
 
 // These tests lock in the fixes from the 10-round review. Each is named for

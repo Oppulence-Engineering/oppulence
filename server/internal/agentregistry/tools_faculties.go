@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/faculties"
 )
 
 // Portfolio faculty capabilities (RFC 008). The cloud agent reaches each faculty

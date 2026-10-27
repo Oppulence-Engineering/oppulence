@@ -1,4 +1,4 @@
-module github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go
+module github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server
 
 go 1.24.0
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskmetrics"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/testsuite"

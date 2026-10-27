@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
 )
 
 const workerAuthoritativeRegistry = `[{

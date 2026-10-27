@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googlechannel"
-	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/googlechannel"
+	oauthrs "github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )

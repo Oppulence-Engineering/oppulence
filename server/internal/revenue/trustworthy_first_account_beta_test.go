@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipidentitycandidate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipobservation"
 )
 
 // TestTrustworthyFirstAccountGoldenJourney is the named production-shaped

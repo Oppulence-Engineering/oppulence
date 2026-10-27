@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/conversationintelligenceartifact"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueaction"
 )
 
 func TestRelationshipNeedsDatedNextStep(t *testing.T) {

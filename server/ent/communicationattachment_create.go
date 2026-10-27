@@ -12,9 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationattachment"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationinteraction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
 	"github.com/google/uuid"
 )
 

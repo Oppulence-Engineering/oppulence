@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/proto/entpb"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/proto/entpb"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
 	"go.uber.org/zap"
 )
 

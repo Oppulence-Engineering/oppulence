@@ -3,7 +3,7 @@ import { getAccessToken } from "./tokens.js";
 import { OAuthTokens } from "./types.js";
 
 /**
- * Client for the rowboat-mode Google OAuth endpoints on the api:
+ * Client for the oppulence-mode Google OAuth endpoints on the api:
  *   POST /v1/google-oauth/start   — mint a state ticket bound to this user and
  *                                   return Google's authorize URL to open
  *   POST /v1/google-oauth/claim   — one-shot retrieval of tokens parked by
@@ -12,7 +12,7 @@ import { OAuthTokens } from "./types.js";
  *                                   (the secret-requiring step that can't
  *                                   happen on the desktop)
  *
- * All three are called with the user's Rowboat bearer (via getAccessToken).
+ * All three are called with the user's Oppulence bearer (via getAccessToken).
  *
  * The callback lives on the api (`GET /oauth/google/callback`), not the webapp.
  * It used to be a webapp route, and the desktop went on opening

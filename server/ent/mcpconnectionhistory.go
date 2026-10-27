@@ -10,7 +10,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mcpconnectionhistory"
 	"github.com/flume/enthistory"
 	"github.com/google/uuid"
 )

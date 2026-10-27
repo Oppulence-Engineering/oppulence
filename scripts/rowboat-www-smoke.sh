@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="${1:-${ROWBOAT_WWW_SMOKE_URL:-https://oppulence.io}}"
+BASE_URL="${1:-${OPPULENCE_WWW_SMOKE_URL:-https://oppulence.io}}"
 BASE_URL="${BASE_URL%/}"
-EXPECTED_API_BASE="${ROWBOAT_WWW_EXPECTED_API_BASE_URL:-}"
+EXPECTED_API_BASE="${OPPULENCE_WWW_EXPECTED_API_BASE_URL:-}"
 
 need() {
   if ! command -v "$1" >/dev/null 2>&1; then

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 	"github.com/google/uuid"
 )
 

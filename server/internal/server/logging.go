@@ -6,7 +6,7 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"

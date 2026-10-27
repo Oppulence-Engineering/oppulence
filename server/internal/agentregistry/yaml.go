@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentspec"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/agentspec"
 )
 
 // LoadYAML decodes + compiles an agent document (YAML or JSON) into a resolved

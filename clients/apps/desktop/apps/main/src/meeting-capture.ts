@@ -52,8 +52,8 @@ export interface StartCaptureArgs extends CaptureEvents {
  */
 export function audiocapBinaryPath(): string {
   const exe = "oppulence-audiocap";
-  if (process.env.ROWBOAT_AUDIOCAP_BIN) return process.env.ROWBOAT_AUDIOCAP_BIN;
-  if (process.env.ROWBOAT_AUDIOCAP_DIR) return path.join(process.env.ROWBOAT_AUDIOCAP_DIR, exe);
+  if (process.env.OPPULENCE_AUDIOCAP_BIN) return process.env.OPPULENCE_AUDIOCAP_BIN;
+  if (process.env.OPPULENCE_AUDIOCAP_DIR) return path.join(process.env.OPPULENCE_AUDIOCAP_DIR, exe);
   if (app.isPackaged) {
     return path.join(process.resourcesPath, "audiocap", exe); // → Resources/audiocap/
   }

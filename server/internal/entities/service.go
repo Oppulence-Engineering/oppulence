@@ -9,14 +9,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	entitypred "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
-	identifierpred "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
-	refpred "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	workspacepred "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/entitymetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	entitypred "github.com/PlaybookMediaLLC/oppulence/server/ent/entity"
+	identifierpred "github.com/PlaybookMediaLLC/oppulence/server/ent/entityidentifier"
+	refpred "github.com/PlaybookMediaLLC/oppulence/server/ent/entityresourceref"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
+	workspacepred "github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/entitymetrics"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 

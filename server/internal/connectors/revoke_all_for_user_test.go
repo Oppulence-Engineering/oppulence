@@ -10,11 +10,11 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/connectorrevocationjob"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mcpconnection"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
 )
 
 // revocationProvider stands in for the OAuth provider's revocation endpoint.

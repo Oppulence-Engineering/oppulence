@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskmetrics"
 )
 
 // toolResultCap bounds each tool result before it re-enters the transcript so

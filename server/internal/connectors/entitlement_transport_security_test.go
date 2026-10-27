@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
 )
 
 type sequenceResolver struct {

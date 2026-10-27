@@ -329,14 +329,14 @@ import {
   wikiLabel,
 } from "@/lib/wiki-links";
 import { extractAllFrontmatterValues, buildFrontmatter } from "@/lib/frontmatter";
-import { RowboatMentionPopover } from "./rowboat-mention-popover";
+import { OppulenceMentionPopover } from "./oppulence-mention-popover";
 import "@/styles/editor.css";
 
-type RowboatMentionMatch = {
+type OppulenceMentionMatch = {
   range: { from: number; to: number };
 };
 
-type RowboatBlockEdit = {
+type OppulenceBlockEdit = {
   /** ProseMirror position of the taskBlock node */
   nodePos: number;
   /** Existing instruction text */
@@ -708,16 +708,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       value: "",
     });
     const handleSelectWikiLinkRef = useRef<(path: string) => void>(() => {});
-    const [activeRowboatMention, setActiveRowboatMention] = useState<RowboatMentionMatch | null>(
-      null,
-    );
-    const [rowboatBlockEdit, setRowboatBlockEdit] = useState<RowboatBlockEdit | null>(null);
-    const [rowboatAnchorTop, setRowboatAnchorTop] = useState<{
+    const [activeOppulenceMention, setActiveOppulenceMention] =
+      useState<OppulenceMentionMatch | null>(null);
+    const [oppulenceBlockEdit, setOppulenceBlockEdit] = useState<OppulenceBlockEdit | null>(null);
+    const [oppulenceAnchorTop, setOppulenceAnchorTop] = useState<{
       top: number;
       left: number;
       width: number;
     } | null>(null);
-    const rowboatBlockEditRef = useRef<RowboatBlockEdit | null>(null);
+    const oppulenceBlockEditRef = useRef<OppulenceBlockEdit | null>(null);
 
     // @ mention autocomplete state (analogous to wiki-link state)
     const [activeAtMention, setActiveAtMention] = useState<{
@@ -1135,19 +1134,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       [notePath, editor],
     );
 
-    const updateRowboatMentionState = useCallback(() => {
+    const updateOppulenceMentionState = useCallback(() => {
       if (!editor) return;
       const { selection } = editor.state;
       if (!selection.empty) {
-        setActiveRowboatMention(null);
-        setRowboatAnchorTop(null);
+        setActiveOppulenceMention(null);
+        setOppulenceAnchorTop(null);
         return;
       }
 
       const { $from } = selection;
       if ($from.parent.type.spec.code) {
-        setActiveRowboatMention(null);
-        setRowboatAnchorTop(null);
+        setActiveOppulenceMention(null);
+        setOppulenceAnchorTop(null);
         return;
       }
 
@@ -1157,8 +1156,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       // Match the current @solomon trigger, with @rowboat kept as a legacy trigger.
       const match = textBefore.match(/(^|\s)@(solomon|rowboat)$/);
       if (!match) {
-        setActiveRowboatMention(null);
-        setRowboatAnchorTop(null);
+        setActiveOppulenceMention(null);
+        setOppulenceAnchorTop(null);
         return;
       }
 
@@ -1166,11 +1165,11 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const triggerStart = textBefore.length - triggerLength;
       const from = selection.from - (textBefore.length - triggerStart);
       const to = selection.from;
-      setActiveRowboatMention({ range: { from, to } });
+      setActiveOppulenceMention({ range: { from, to } });
 
       const wrapper = wrapperRef.current;
       if (!wrapper) {
-        setRowboatAnchorTop(null);
+        setOppulenceAnchorTop(null);
         return;
       }
 
@@ -1178,7 +1177,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const wrapperRect = wrapper.getBoundingClientRect();
       const proseMirrorEl = wrapper.querySelector(".ProseMirror") as HTMLElement | null;
       const pmRect = proseMirrorEl?.getBoundingClientRect();
-      setRowboatAnchorTop({
+      setOppulenceAnchorTop({
         top: coords.top - wrapperRect.top + wrapper.scrollTop,
         left: pmRect ? pmRect.left - wrapperRect.left : 0,
         width: pmRect ? pmRect.width : wrapperRect.width,
@@ -1222,7 +1221,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
       const query = atMatch[2]; // text after @
 
-      // If the full product mention is already typed, let updateRowboatMentionState handle it.
+      // If the full product mention is already typed, let updateOppulenceMentionState handle it.
       if (query === "solomon" || query === "rowboat") {
         setActiveAtMention(null);
         setAtAnchorPosition(null);
@@ -1260,13 +1259,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     useEffect(() => {
       if (!editor) return;
-      editor.on("update", updateRowboatMentionState);
-      editor.on("selectionUpdate", updateRowboatMentionState);
+      editor.on("update", updateOppulenceMentionState);
+      editor.on("selectionUpdate", updateOppulenceMentionState);
       return () => {
-        editor.off("update", updateRowboatMentionState);
-        editor.off("selectionUpdate", updateRowboatMentionState);
+        editor.off("update", updateOppulenceMentionState);
+        editor.off("selectionUpdate", updateOppulenceMentionState);
       };
-    }, [editor, updateRowboatMentionState]);
+    }, [editor, updateOppulenceMentionState]);
 
     useEffect(() => {
       if (!editor) return;
@@ -1280,19 +1279,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     // When an inline task block is clicked, compute anchor and open popover
     useEffect(() => {
-      if (!rowboatBlockEdit || !editor) return;
+      if (!oppulenceBlockEdit || !editor) return;
       const wrapper = wrapperRef.current;
       if (!wrapper) return;
-      const coords = editor.view.coordsAtPos(rowboatBlockEdit.nodePos);
+      const coords = editor.view.coordsAtPos(oppulenceBlockEdit.nodePos);
       const wrapperRect = wrapper.getBoundingClientRect();
       const proseMirrorEl = wrapper.querySelector(".ProseMirror") as HTMLElement | null;
       const pmRect = proseMirrorEl?.getBoundingClientRect();
-      setRowboatAnchorTop({
+      setOppulenceAnchorTop({
         top: coords.top - wrapperRect.top + wrapper.scrollTop,
         left: pmRect ? pmRect.left - wrapperRect.left : 0,
         width: pmRect ? pmRect.width : wrapperRect.width,
       });
-    }, [editor, rowboatBlockEdit]);
+    }, [editor, oppulenceBlockEdit]);
 
     // Fresh untitled notes: move focus from the New-note button into the title
     // and select the placeholder so typing renames the note. Without this the
@@ -1451,13 +1450,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       handleSelectWikiLinkRef.current = handleSelectWikiLink;
     }, [handleSelectWikiLink]);
 
-    const handleRowboatAdd = useCallback(
+    const handleOppulenceAdd = useCallback(
       async (instruction: string) => {
         if (!editor) return;
 
-        if (rowboatBlockEdit) {
+        if (oppulenceBlockEdit) {
           // Editing existing taskBlock — update its data attribute
-          const { nodePos } = rowboatBlockEdit;
+          const { nodePos } = oppulenceBlockEdit;
           const node = editor.state.doc.nodeAt(nodePos);
           if (node && node.type.name === "taskBlock") {
             // Preserve existing schedule data
@@ -1473,18 +1472,18 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             });
             editor.view.dispatch(tr);
           }
-          setRowboatBlockEdit(null);
-          rowboatBlockEditRef.current = null;
-          setRowboatAnchorTop(null);
+          setOppulenceBlockEdit(null);
+          oppulenceBlockEditRef.current = null;
+          setOppulenceAnchorTop(null);
           return;
         }
 
-        if (activeRowboatMention) {
+        if (activeOppulenceMention) {
           // Insert a temporary processing block
           const blockData: Record<string, unknown> = { instruction, processing: true };
 
-          const insertFrom = activeRowboatMention.range.from;
-          const insertTo = activeRowboatMention.range.to;
+          const insertFrom = activeOppulenceMention.range.from;
+          const insertTo = activeOppulenceMention.range.to;
 
           editor
             .chain()
@@ -1495,8 +1494,8 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             ])
             .run();
 
-          setActiveRowboatMention(null);
-          setRowboatAnchorTop(null);
+          setActiveOppulenceMention(null);
+          setOppulenceAnchorTop(null);
 
           // Get editor content for the agent
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1588,7 +1587,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
                       }
                     }
                   } catch (err) {
-                    console.error("[RowboatAdd] Failed to write target tags:", err);
+                    console.error("[OppulenceAdd] Failed to write target tags:", err);
                   }
                 }, 500);
               }
@@ -1603,7 +1602,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               }
             }
           } catch (error) {
-            console.error("[RowboatAdd] Processing failed:", error);
+            console.error("[OppulenceAdd] Processing failed:", error);
 
             // Remove the processing block on error
             const currentPos = findProcessingBlock();
@@ -1620,12 +1619,19 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           }
         }
       },
-      [editor, activeRowboatMention, rowboatBlockEdit, frontmatter, onFrontmatterChange, notePath],
+      [
+        editor,
+        activeOppulenceMention,
+        oppulenceBlockEdit,
+        frontmatter,
+        onFrontmatterChange,
+        notePath,
+      ],
     );
 
-    const handleRowboatRemove = useCallback(() => {
-      if (!editor || !rowboatBlockEdit) return;
-      const { nodePos } = rowboatBlockEdit;
+    const handleOppulenceRemove = useCallback(() => {
+      if (!editor || !oppulenceBlockEdit) return;
+      const { nodePos } = oppulenceBlockEdit;
       const node = editor.state.doc.nodeAt(nodePos);
       if (node) {
         editor
@@ -1634,10 +1640,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           .deleteRange({ from: nodePos, to: nodePos + node.nodeSize })
           .run();
       }
-      setRowboatBlockEdit(null);
-      rowboatBlockEditRef.current = null;
-      setRowboatAnchorTop(null);
-    }, [editor, rowboatBlockEdit]);
+      setOppulenceBlockEdit(null);
+      oppulenceBlockEditRef.current = null;
+      setOppulenceAnchorTop(null);
+    }, [editor, oppulenceBlockEdit]);
 
     const handleScroll = useCallback(() => {
       updateWikiLinkState();
@@ -1728,7 +1734,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         if (!editor || !activeAtMention) return;
 
         if (value === "solomon") {
-          // Replace "@<partial>" with "@solomon" — this triggers updateRowboatMentionState
+          // Replace "@<partial>" with "@solomon" — this triggers updateOppulenceMentionState
           editor
             .chain()
             .focus()
@@ -1930,17 +1936,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
               </Command>
             </PopoverContent>
           </Popover>
-          <RowboatMentionPopover
-            open={Boolean((activeRowboatMention || rowboatBlockEdit) && rowboatAnchorTop)}
-            anchor={rowboatAnchorTop}
-            initialText={rowboatBlockEdit?.existingText ?? ""}
-            onAdd={handleRowboatAdd}
-            onRemove={rowboatBlockEdit ? handleRowboatRemove : undefined}
+          <OppulenceMentionPopover
+            open={Boolean((activeOppulenceMention || oppulenceBlockEdit) && oppulenceAnchorTop)}
+            anchor={oppulenceAnchorTop}
+            initialText={oppulenceBlockEdit?.existingText ?? ""}
+            onAdd={handleOppulenceAdd}
+            onRemove={oppulenceBlockEdit ? handleOppulenceRemove : undefined}
             onClose={() => {
-              setActiveRowboatMention(null);
-              setRowboatBlockEdit(null);
-              rowboatBlockEditRef.current = null;
-              setRowboatAnchorTop(null);
+              setActiveOppulenceMention(null);
+              setOppulenceBlockEdit(null);
+              oppulenceBlockEditRef.current = null;
+              setOppulenceAnchorTop(null);
             }}
           />
         </div>

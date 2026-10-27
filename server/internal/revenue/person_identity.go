@@ -12,10 +12,10 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/personidentity"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/personmergecandidate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
 )
 
 // Canonical person resolution.

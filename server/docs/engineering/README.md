@@ -1,6 +1,6 @@
 # Engineering standards
 
-These documents turn Rowboat API's existing architecture into reviewable and
+These documents turn Oppulence API's existing architecture into reviewable and
 automated rules. Normative words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD
 NOT**, and **MAY** are interpreted as requirement levels. `AGENTS.md` is the
 concise agent contract; these files provide rationale and examples.
@@ -13,7 +13,7 @@ concise agent contract; these files provide rationale and examples.
 - [API design](api-design.md): routing, validation, DTOs, RFC 9457, compatibility.
 - [Testing](testing.md): risk-based test expectations and race coverage.
 - [Code review](code-review.md): review questions, exceptions, suppression policy, quality gates.
-- [Executable policy](policy-system.md): tool layers, RowboatLint rules, and extension guidance.
+- [Executable policy](policy-system.md): tool layers, OppulenceLint rules, and extension guidance.
 - [Audit baseline](audit-2026-08-21.md): findings and actions from the standards audit.
 
 ## Enforcement tiers

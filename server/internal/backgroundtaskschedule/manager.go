@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskmetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskworkflow"
 	commonpb "go.temporal.io/api/common/v1"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// schedulePrefix namespaces every Rowboat task schedule in the Temporal
+// schedulePrefix namespaces every Oppulence task schedule in the Temporal
 // namespace, so the reconciler's orphan sweep can list exactly ours.
 const schedulePrefix = "background-task-schedule/"
 
@@ -64,7 +64,7 @@ func Desired(userID string, task *ent.BackgroundTask, cronExpr string, cfg appco
 	}
 }
 
-// MemoFields is the Rowboat metadata stored on every schedule. It is the
+// MemoFields is the Oppulence metadata stored on every schedule. It is the
 // authoritative diff source: Temporal normalizes CronExpressions into calendar
 // specs server-side, so the original expression is only recoverable from here.
 // Never include task names/instructions — memos may not carry user data.
@@ -124,7 +124,7 @@ type Manager interface {
 	DeleteTaskCron(ctx context.Context, userID, slug string) error
 	// DescribeTaskCron reports current state; Exists=false when missing.
 	DescribeTaskCron(ctx context.Context, userID, slug string) (Description, error)
-	// ListTaskSchedules lists every Rowboat task schedule in the namespace.
+	// ListTaskSchedules lists every Oppulence task schedule in the namespace.
 	ListTaskSchedules(ctx context.Context) ([]ListedSchedule, error)
 }
 
@@ -186,7 +186,7 @@ func (m *TemporalManager) options(d DesiredCronSchedule) client.ScheduleOptions 
 
 // UpsertTaskCron converges the live schedule to the desired state. Spec
 // changes delete+recreate: ScheduleHandle.Update cannot rewrite the memo, and
-// a schedule with a stale memo would mis-diff forever. Rowboat schedules are
+// a schedule with a stale memo would mis-diff forever. Oppulence schedules are
 // stateless (run history lives in our DB), so recreation loses nothing.
 func (m *TemporalManager) UpsertTaskCron(ctx context.Context, d DesiredCronSchedule) (string, error) {
 	return m.upsertTaskCron(ctx, d, false)
@@ -286,7 +286,7 @@ func (m *TemporalManager) DescribeTaskCron(ctx context.Context, userID, slug str
 	}, nil
 }
 
-// ListTaskSchedules returns every schedule under the Rowboat prefix. The
+// ListTaskSchedules returns every schedule under the Oppulence prefix. The
 // prefix filter is client-side: visibility queries are eventually consistent
 // and not uniformly available across server versions.
 func (m *TemporalManager) ListTaskSchedules(ctx context.Context) ([]ListedSchedule, error) {
@@ -319,7 +319,7 @@ func isNotFound(err error) bool {
 }
 
 // decodeMemo extracts MemoFields from a Temporal memo. Missing or undecodable
-// fields stay zero — a schedule with no Rowboat memo diffs as fully stale,
+// fields stay zero — a schedule with no Oppulence memo diffs as fully stale,
 // which is exactly the repair we want.
 func decodeMemo(memo *commonpb.Memo) MemoFields {
 	var out MemoFields

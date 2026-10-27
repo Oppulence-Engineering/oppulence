@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/agentsession"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/slackclient"
 )
 
 // Slack-native capabilities (RFC 027 channels / RFC 012 connector tools). They

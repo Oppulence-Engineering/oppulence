@@ -3,7 +3,7 @@ package revenue
 import (
 	"context"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
 )
 
 // IngestRelationshipObservations preserves the package's trusted test fixture

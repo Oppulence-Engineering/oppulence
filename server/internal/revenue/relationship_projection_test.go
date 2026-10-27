@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipassertion"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipprojectionjob"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipstatesnapshot"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 )
 
 func timePointer(value time.Time) *time.Time { return &value }

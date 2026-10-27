@@ -8,7 +8,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/mixin"
 )
 
 // GoogleWatch tracks one active Google push subscription per (user, kind):
@@ -38,7 +38,7 @@ func (GoogleWatch) Fields() []ent.Field {
 		// account_email mirrors the connection's external_account_id at watch
 		// time; webhook payloads resolve back through it.
 		field.String("account_email").NotEmpty(),
-		// channel_id / resource_id identify Calendar and Drive channels (Rowboat
+		// channel_id / resource_id identify Calendar and Drive channels (Oppulence
 		// mints channel_id with an encoded account and a unique renewal ID);
 		// empty for Gmail.
 		field.String("channel_id").Optional(),

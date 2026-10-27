@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const appRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const committedRoot = path.join(appRoot, "lib/api/generated");
-const temporaryRoot = fs.mkdtempSync(path.join(appRoot, ".rowboat-contracts-"));
+const temporaryRoot = fs.mkdtempSync(path.join(appRoot, ".oppulence-contracts-"));
 const generatedRoot = path.join(temporaryRoot, "generated");
 const orvalBinary = path.join(appRoot, "node_modules/.bin/orval");
 

@@ -13,16 +13,16 @@ import (
 	"time"
 
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipassertion"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipidentity"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipobservation"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipparticipant"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipsourcestatus"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipstatesnapshot"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -791,7 +791,7 @@ func (s *Service) createConfirmedCommitmentAction(
 		SetProposedSubject(actionInput.ProposedSubject).
 		SetProposedMessage(actionInput.ProposedMessage).
 		SetExecutionMode(actionInput.ExecutionMode).
-		SetExecutionOwner(OwnerRowboat).
+		SetExecutionOwner(OwnerOppulence).
 		SetAssignedUserID(u.ID).
 		SetPriorityScore(actionInput.PriorityScore).
 		SetPriorityComponentsJSON(string(priorityJSON))

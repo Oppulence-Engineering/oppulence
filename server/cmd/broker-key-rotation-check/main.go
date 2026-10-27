@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/connectors"
 )
 
 func main() {

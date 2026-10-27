@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/connectors"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
 )
 
 func TestRegistryScopeCatalogFailsClosed(t *testing.T) {
@@ -139,7 +139,7 @@ func TestConsentContextAndAuditUseDurablePendingMetadata(t *testing.T) {
 	internal := auth.WithInternal(context.Background())
 	state := authorizationState(t, start)
 	contextRec := bindConsentForTest(t, h, state, "hydra-consent-challenge", "user_1", []string{"canvas:invoices.read", "canvas:customers.read"})
-	if contextRec.Code != http.StatusOK || !strings.Contains(contextRec.Body.String(), `"display_name":"Rowboat Desktop"`) || !strings.Contains(contextRec.Body.String(), `"tier":"low"`) {
+	if contextRec.Code != http.StatusOK || !strings.Contains(contextRec.Body.String(), `"display_name":"Oppulence Desktop"`) || !strings.Contains(contextRec.Body.String(), `"tier":"low"`) {
 		t.Fatalf("consent context = %d %s", contextRec.Code, contextRec.Body.String())
 	}
 	if strings.Contains(contextRec.Body.String(), "state") || strings.Contains(contextRec.Body.String(), "payload_encrypted") || strings.Contains(contextRec.Body.String(), "owner_org_id") {

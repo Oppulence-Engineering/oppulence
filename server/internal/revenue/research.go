@@ -15,12 +15,12 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/parallel"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/person"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/personattribute"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueworkspace"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/parallel"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/quota"
 )
 
 // Cloud research (RFC 039): enrich a person from the public web through the

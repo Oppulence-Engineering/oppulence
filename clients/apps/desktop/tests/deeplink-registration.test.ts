@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
  * outlives the dev process, and takes the scheme from the user's installed app.
  *
  * What that looks like in practice: an OAuth reconnect deep-links back to
- * `rowboat://oauth/google/done`, macOS routes it to Electron.app, and the user
+ * `oppulence://oauth/google/done`, macOS routes it to Electron.app, and the user
  * gets Electron's welcome window instead of a completed connection — on a
  * machine where someone ran `npm run dev` once, possibly weeks earlier, with
  * nothing on screen connecting the two.

@@ -9,7 +9,7 @@ import { VAD_FILE_NAME } from "./catalog.js";
  * Core stays Electron-free, so the main process injects the resolved path via
  * {@link configureWhisperBinary} at startup (it knows `app.isPackaged` /
  * `process.resourcesPath`). For dev, tests, and the spike script — which run
- * outside Electron — `ROWBOAT_WHISPER_BIN` (absolute path) or `ROWBOAT_WHISPER_DIR`
+ * outside Electron — `OPPULENCE_WHISPER_BIN` (absolute path) or `OPPULENCE_WHISPER_DIR`
  * (directory containing the exe) provide the path. If none resolve to an existing
  * file, `binaryPath()` throws `engine_unavailable`, which the provider resolver
  * turns into a graceful cloud fallback.
@@ -28,8 +28,8 @@ export function configureWhisperBinary(absolutePath: string): void {
 
 function candidatePath(): string | null {
   if (injectedPath) return injectedPath;
-  if (process.env.ROWBOAT_WHISPER_BIN) return process.env.ROWBOAT_WHISPER_BIN;
-  if (process.env.ROWBOAT_WHISPER_DIR) return path.join(process.env.ROWBOAT_WHISPER_DIR, EXE);
+  if (process.env.OPPULENCE_WHISPER_BIN) return process.env.OPPULENCE_WHISPER_BIN;
+  if (process.env.OPPULENCE_WHISPER_DIR) return path.join(process.env.OPPULENCE_WHISPER_DIR, EXE);
   return null;
 }
 

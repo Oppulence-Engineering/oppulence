@@ -10,7 +10,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthpending"
 	"github.com/google/uuid"
 )
 

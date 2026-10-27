@@ -1,7 +1,7 @@
 import { generateObject } from 'ai';
 import type { LanguageModel } from 'ai';
 import { events, PrefixLogger } from '@x/shared';
-import type { RowboatEvent } from '@x/shared/events';
+import type { OppulenceEvent } from '@x/shared/events';
 import { captureLlmUsage } from '../analytics/usage.js';
 import { withUseCase, type UseCase } from '../analytics/use_case.js';
 import type { EventConsumerTarget } from './consumer.js';
@@ -48,7 +48,7 @@ Rules:
 - Return each candidate's id exactly as given.`;
 }
 
-function buildPrompt(event: RowboatEvent, batch: EventConsumerTarget[], entityPlural: string): string {
+function buildPrompt(event: OppulenceEvent, batch: EventConsumerTarget[], entityPlural: string): string {
     const list = batch
         .map((t, i) => `${i + 1}. id: ${t.id}\n   intent: ${t.instructions}\n   matchCriteria: ${t.eventMatchCriteria}`)
         .join('\n\n');
@@ -71,7 +71,7 @@ ${list}`;
  * ids the classifier flagged as relevant. Batched in groups of 20.
  */
 export async function routeBatch(
-    event: RowboatEvent,
+    event: OppulenceEvent,
     targets: EventConsumerTarget[],
     opts: RouteBatchOptions,
 ): Promise<string[]> {

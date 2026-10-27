@@ -27,7 +27,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `ROWBOAT_WWW_API_PROXY_URL=${apiURL} ROWBOAT_WWW_PUBLIC_API_BASE_URL=${apiURL} ROWBOAT_WWW_PUBLIC_APP_URL=http://127.0.0.1:${port} ROWBOAT_WWW_SESSION_SECRET=stack-e2e-rowboat-www-session-secret-0001 npm run start -- --hostname 127.0.0.1 --port ${port}`,
+    command: `OPPULENCE_WWW_API_PROXY_URL=${apiURL} OPPULENCE_WWW_PUBLIC_API_BASE_URL=${apiURL} OPPULENCE_WWW_PUBLIC_APP_URL=http://127.0.0.1:${port} OPPULENCE_WWW_SESSION_SECRET=stack-e2e-rowboat-www-session-secret-0001 npm run start -- --hostname 127.0.0.1 --port ${port}`,
     cwd: appRoot,
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: false,

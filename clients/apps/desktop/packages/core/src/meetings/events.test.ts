@@ -16,7 +16,7 @@ let events: typeof import("./events.js");
 let pendingDir: string;
 
 beforeAll(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-meeting-events-"));
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-meeting-events-"));
   process.env.SOLOMON_WORKDIR = tmpDir;
   vi.resetModules();
   events = await import("./events.js");

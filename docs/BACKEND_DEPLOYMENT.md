@@ -1,4 +1,4 @@
-# Rowboat Backend Deployment and Operations
+# Oppulence Backend Deployment and Operations
 
 This guide covers the deployed RFC 012 connector authorization plane alongside the WorkOS-direct service-plane login defined by RFC 011. WorkOS remains the human identity provider. Ory Hydra runs the authorization-code, consent, refresh, and revocation flow; `oauth-consent` performs login/consent and MFA step-up. Those Hydra consent-plane credentials are exchanged and retained by rowboat-api and are never product MCP bearer tokens. After checking the connection, scopes, and entitlement, rowboat-api mints its own short-lived, audience-bound connector resource token for direct product MCP traffic.
 

@@ -3,7 +3,7 @@ package backgroundtaskruntime
 import (
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
 )
 
 // Limits bounds one run. Breaching any limit fails the run with its specific

@@ -13,27 +13,27 @@ const desktopMainDir = path.join(desktopDir, "apps/main");
 const electronBin = path.join(desktopMainDir, "node_modules/.bin/electron");
 
 const workspaceDir =
-  process.env.ROWBOAT_WWW_SCREENSHOT_WORKSPACE_DIR ||
+  process.env.OPPULENCE_WWW_SCREENSHOT_WORKSPACE_DIR ||
   path.join(repoRoot, ".rowboat-kind/marketing-screenshots/workspace");
 const apiDb =
-  process.env.ROWBOAT_WWW_SCREENSHOT_API_DB ||
-  process.env.ROWBOAT_API_DATABASE_URL ||
+  process.env.OPPULENCE_WWW_SCREENSHOT_API_DB ||
+  process.env.OPPULENCE_API_DATABASE_URL ||
   process.env.DATABASE_URL ||
   path.join(repoRoot, ".rowboat-kind/marketing-screenshots/relationship-demo.db");
 const outputDir =
-  process.env.ROWBOAT_WWW_SCREENSHOT_OUTPUT_DIR || path.join(appDir, "public/marketing");
+  process.env.OPPULENCE_WWW_SCREENSHOT_OUTPUT_DIR || path.join(appDir, "public/marketing");
 const apiUrl = trimTrailingSlash(
-  process.env.ROWBOAT_WWW_SCREENSHOT_API_URL || "http://localhost:18080",
+  process.env.OPPULENCE_WWW_SCREENSHOT_API_URL || "http://localhost:18080",
 );
 const devstackUrl = trimTrailingSlash(
-  process.env.ROWBOAT_WWW_SCREENSHOT_DEVSTACK_URL || "http://localhost:18090",
+  process.env.OPPULENCE_WWW_SCREENSHOT_DEVSTACK_URL || "http://localhost:18090",
 );
-const vitePort = process.env.ROWBOAT_WWW_SCREENSHOT_VITE_PORT || "5173";
-const cdpPort = process.env.ROWBOAT_WWW_SCREENSHOT_CDP_PORT || "9233";
-const keepDesktop = process.env.ROWBOAT_WWW_SCREENSHOT_KEEP_DESKTOP === "1";
-const reuseVite = process.env.ROWBOAT_WWW_SCREENSHOT_REUSE_VITE === "1";
+const vitePort = process.env.OPPULENCE_WWW_SCREENSHOT_VITE_PORT || "5173";
+const cdpPort = process.env.OPPULENCE_WWW_SCREENSHOT_CDP_PORT || "9233";
+const keepDesktop = process.env.OPPULENCE_WWW_SCREENSHOT_KEEP_DESKTOP === "1";
+const reuseVite = process.env.OPPULENCE_WWW_SCREENSHOT_REUSE_VITE === "1";
 const artifactDir =
-  process.env.ROWBOAT_WWW_SCREENSHOT_ARTIFACT_DIR ||
+  process.env.OPPULENCE_WWW_SCREENSHOT_ARTIFACT_DIR ||
   path.join(repoRoot, ".rowboat-kind/marketing-screenshots");
 const logFile = path.join(artifactDir, "desktop.log");
 const relationshipFixture = path.join(
@@ -521,7 +521,7 @@ function getDesktopEnv(): NodeJS.ProcessEnv {
     SOLOMON_WORKDIR: workspaceDir,
     ROWBOAT_WORKDIR: workspaceDir,
     SOLOMON_ELECTRON_REMOTE_DEBUGGING_PORT: cdpPort,
-    ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT: cdpPort,
+    OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT: cdpPort,
   };
 }
 

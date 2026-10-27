@@ -10,7 +10,7 @@ import type {
   ConnectionClaimRequest,
   ConnectionStartRequest,
 } from "@/lib/api/generated/client/model";
-import { rowboatApiURL } from "@/lib/auth/config";
+import { oppulenceApiURL } from "@/lib/auth/config";
 import type { DashboardSessionCookie } from "@/lib/auth/schemas";
 
 function authorizationHeaders(session: DashboardSessionCookie): HeadersInit {
@@ -36,7 +36,7 @@ export async function startHostedConnector(
   session: DashboardSessionCookie,
   signal?: AbortSignal,
 ): Promise<startConnectionResponse> {
-  const response = await fetch(rowboatApiURL(getStartConnectionUrl(name)), {
+  const response = await fetch(oppulenceApiURL(getStartConnectionUrl(name)), {
     method: "POST",
     headers: authorizationHeaders(session),
     body: JSON.stringify(request),
@@ -58,7 +58,7 @@ export async function claimHostedConnector(
   session: DashboardSessionCookie,
   signal?: AbortSignal,
 ): Promise<claimConnectionResponse> {
-  const response = await fetch(rowboatApiURL(getClaimConnectionUrl(name)), {
+  const response = await fetch(oppulenceApiURL(getClaimConnectionUrl(name)), {
     method: "POST",
     headers: authorizationHeaders(session),
     body: JSON.stringify(request),

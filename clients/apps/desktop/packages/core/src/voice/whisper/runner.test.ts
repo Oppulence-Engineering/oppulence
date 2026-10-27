@@ -182,7 +182,7 @@ describe.runIf(posix)("run (fake binary)", () => {
   let dir: string;
 
   beforeAll(async () => {
-    dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-runner-test-"));
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-runner-test-"));
   });
   afterAll(async () => {
     await fs.rm(dir, { recursive: true, force: true });

@@ -1,4 +1,4 @@
-module github.com/Oppulence-Engineering/rowboat/apps/rowboat-api
+module github.com/PlaybookMediaLLC/oppulence/server
 
 go 1.26.10
 
@@ -86,7 +86,7 @@ require (
 
 require (
 	ariga.io/atlas v1.2.0
-	github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go v0.0.0
+	github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server v0.0.0
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -135,4 +135,4 @@ require (
 	modernc.org/memory v1.11.0 // indirect
 )
 
-replace github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go => ./oauth-resource-server
+replace github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server => ./oauth-resource-server

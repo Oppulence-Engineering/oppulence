@@ -201,7 +201,7 @@ async function writeRecentWorkDirs(dirs: RecentWorkDir[]) {
     console.error("Failed to persist recent work directories", err);
   }
   // Notify other mounted chat inputs in this window to re-read.
-  emitRendererEvent("rowboat-chat-recent-work-dirs-changed");
+  emitRendererEvent("oppulence-chat-recent-work-dirs-changed");
 }
 
 function formatRecentWorkDirTime(lastUsedAt: number) {
@@ -329,7 +329,7 @@ function ChatInputInner({
   const [lockedModel, setLockedModel] = useState<SelectedModel | null>(null);
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [searchAvailable, setSearchAvailable] = useState(false);
-  const [isRowboatConnected, setIsRowboatConnected] = useState(false);
+  const [isOppulenceConnected, setIsOppulenceConnected] = useState(false);
   const [codingAgent, setCodingAgent] = useState<"claude" | "codex">("claude");
   const [codeModeEnabled, setCodeModeEnabled] = useState(false);
   const [codeModeFeatureEnabled, setCodeModeFeatureEnabled] = useState(false);
@@ -411,7 +411,7 @@ function ChatInputInner({
       void readRecentWorkDirs().then(setRecentWorkDirs);
     };
     syncRecentWorkDirs();
-    return onRendererEvent("rowboat-chat-recent-work-dirs-changed", syncRecentWorkDirs);
+    return onRendererEvent("oppulence-chat-recent-work-dirs-changed", syncRecentWorkDirs);
   }, []);
 
   // Check Solomon AI sign-in state
@@ -419,9 +419,9 @@ function ChatInputInner({
     window.ipc
       .invoke("oauth:getState", null)
       .then((result) => {
-        setIsRowboatConnected(getProductProviderState(result.config)?.connected ?? false);
+        setIsOppulenceConnected(getProductProviderState(result.config)?.connected ?? false);
       })
-      .catch(() => setIsRowboatConnected(false));
+      .catch(() => setIsOppulenceConnected(false));
   }, [isActive]);
 
   // Update sign-in state when OAuth events fire
@@ -430,9 +430,9 @@ function ChatInputInner({
       window.ipc
         .invoke("oauth:getState", null)
         .then((result) => {
-          setIsRowboatConnected(getProductProviderState(result.config)?.connected ?? false);
+          setIsOppulenceConnected(getProductProviderState(result.config)?.connected ?? false);
         })
-        .catch(() => setIsRowboatConnected(false));
+        .catch(() => setIsOppulenceConnected(false));
     });
     return cleanup;
   }, []);
@@ -441,12 +441,12 @@ function ChatInputInner({
   // Signed-in: gateway model list. Signed-out: providers configured in models.json.
   const loadModelConfig = useCallback(async () => {
     try {
-      if (isRowboatConnected) {
+      if (isOppulenceConnected) {
         const listResult = await window.ipc.invoke("models:list", null);
-        const rowboatProvider = listResult.providers?.find(
+        const oppulenceProvider = listResult.providers?.find(
           (p: { id: string }) => p.id === PRODUCT_PROVIDER_ID,
         );
-        const models: ConfiguredModel[] = (rowboatProvider?.models || []).map(
+        const models: ConfiguredModel[] = (oppulenceProvider?.models || []).map(
           (m: { id: string }) => ({
             provider: PRODUCT_PROVIDER_ID,
             model: m.id,
@@ -488,7 +488,7 @@ function ChatInputInner({
     } catch {
       // No config yet
     }
-  }, [isRowboatConnected]);
+  }, [isOppulenceConnected]);
 
   useEffect(() => {
     loadModelConfig();
@@ -664,7 +664,7 @@ function ChatInputInner({
   // Check search tool availability (exa or signed-in via gateway)
   useEffect(() => {
     const checkSearch = async () => {
-      if (isRowboatConnected) {
+      if (isOppulenceConnected) {
         setSearchAvailable(true);
         return;
       }
@@ -688,7 +688,7 @@ function ChatInputInner({
       setSearchAvailable(available);
     };
     checkSearch();
-  }, [isActive, isRowboatConnected]);
+  }, [isActive, isOppulenceConnected]);
 
   // Selecting a model affects only the *next* run created from this tab.
   // Once a run exists, model is frozen on the run and the dropdown is read-only.
@@ -836,7 +836,7 @@ function ChatInputInner({
   const currentWorkDirPath = workDir ? compactWorkDirPath(workDir) : "";
 
   return (
-    <div className="rowboat-chat-input rounded-none border border-border bg-background shadow-none">
+    <div className="oppulence-chat-input rounded-none border border-border bg-background shadow-none">
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 px-4 pb-1 pt-3">
           {attachments.map((attachment) => {

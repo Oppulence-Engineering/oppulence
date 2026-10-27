@@ -37,7 +37,7 @@ export function TabBar<T>({
   return (
     <div
       className={cn(
-        "rowboat-tabbar flex flex-1 self-stretch min-w-0",
+        "oppulence-tabbar flex flex-1 self-stretch min-w-0",
         layout === "scroll"
           ? "overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           : "overflow-hidden",
@@ -60,7 +60,7 @@ export function TabBar<T>({
               type="button"
               onClick={() => onSwitchTab(tabId)}
               className={cn(
-                "rowboat-tab titlebar-no-drag group/tab relative flex items-center gap-1.5 px-3 self-stretch text-xs transition-colors",
+                "oppulence-tab titlebar-no-drag group/tab relative flex items-center gap-1.5 px-3 self-stretch text-xs transition-colors",
                 layout === "scroll"
                   ? "min-w-[140px] max-w-[240px]"
                   : "min-w-0 max-w-[220px]",

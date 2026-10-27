@@ -70,7 +70,7 @@ export async function synthesizeSpeech(
       "Idempotency-Key": randomUUID(),
     };
     console.log(
-      "[voice] synthesizing speech via Rowboat proxy, text length:",
+      "[voice] synthesizing speech via Oppulence proxy, text length:",
       text.length,
       "voiceId:",
       voiceId,

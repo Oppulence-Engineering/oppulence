@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getAuthRuntimeConfig } from "@/lib/auth/config";
-import { isRowboatApiReady } from "@/lib/bff/readiness";
+import { isOppulenceApiReady } from "@/lib/bff/readiness";
 import { NextResponse } from "next/server";
 
 function notReady() {
@@ -17,7 +17,7 @@ function notReady() {
 export async function GET() {
   try {
     const { apiBaseUrl } = getAuthRuntimeConfig();
-    if (!(await isRowboatApiReady(apiBaseUrl))) return notReady();
+    if (!(await isOppulenceApiReady(apiBaseUrl))) return notReady();
   } catch {
     // Keep configuration details and upstream errors out of the public response.
     return notReady();

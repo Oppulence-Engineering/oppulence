@@ -2048,7 +2048,7 @@ assertion, and deterministic projection rules.
 
 ## 41. Evidence register
 
-### 41.1 Current Rowboat implementation
+### 41.1 Current Oppulence implementation
 
 - `server/internal/connectors/registry.go`
 - `server/internal/connectors/default_connectors.json`

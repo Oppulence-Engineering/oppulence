@@ -11,8 +11,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationprivacyrule"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
 )
 
 // CommunicationPrivacyRuleUpdate is the builder for updating CommunicationPrivacyRule entities.

@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/agentsession"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
 	"github.com/google/uuid"
 )
 
-const slackOwnerScopedToolDenied = "owner-scoped connector tools are not available from Slack channel sessions until the Slack requester is linked to a Rowboat user"
+const slackOwnerScopedToolDenied = "owner-scoped connector tools are not available from Slack channel sessions until the Slack requester is linked to a Oppulence user"
 
 type channelGuardedTool struct {
 	deps  ToolDeps

@@ -14,10 +14,10 @@ function isTraversalSegment(part: string): boolean {
   return decoded === "." || decoded === "..";
 }
 
-export const RowboatProxySegmentSchema = z.string().superRefine((part, ctx) => {
+export const OppulenceProxySegmentSchema = z.string().superRefine((part, ctx) => {
   if (isTraversalSegment(part)) {
     ctx.addIssue({ code: "custom", message: "Invalid proxy path segment." });
   }
 });
 
-export const RowboatProxyPathSchema = z.array(RowboatProxySegmentSchema);
+export const OppulenceProxyPathSchema = z.array(OppulenceProxySegmentSchema);

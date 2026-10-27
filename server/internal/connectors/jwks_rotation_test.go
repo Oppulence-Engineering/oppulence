@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
+	oauthrs "github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server"
 )
 
 type mutableJWKS struct {

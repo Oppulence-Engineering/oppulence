@@ -5,7 +5,7 @@ import {
   redirectBrowserIfUnauthorized,
   toDashboardAPIPath,
 } from "@/lib/auth/dashboard-fetch";
-import { RowboatAPIErrorSchema } from "@/lib/auth/schemas";
+import { OppulenceAPIErrorSchema } from "@/lib/auth/schemas";
 
 export class DashboardRequestError extends Error {
   status: number;
@@ -162,7 +162,7 @@ function shownProblem(raw: string, status: number): string {
 }
 
 function errorMessage(body: unknown, status: number): { message: string; code?: string } {
-  const parsed = RowboatAPIErrorSchema.safeParse(body);
+  const parsed = OppulenceAPIErrorSchema.safeParse(body);
   if (parsed.success) {
     const raw =
       parsed.data.message ||

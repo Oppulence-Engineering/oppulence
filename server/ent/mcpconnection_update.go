@@ -12,8 +12,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mcpconnection"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
 )
 
 // MCPConnectionUpdate is the builder for updating MCPConnection entities.

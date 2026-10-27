@@ -12,12 +12,12 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtask"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskartifact"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskrun"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskrunevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskschedulestate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
 	"github.com/google/uuid"
 )
 

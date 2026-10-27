@@ -4,7 +4,7 @@
 // cross-replica guarantee relies on Postgres `INSERT ... ON CONFLICT DO NOTHING`
 // semantics, which differ from sqlite — so these run only against real Postgres
 // and only under the `pgconcurrency` build tag (the default suite stays on the
-// fast sqlite path). Provide a DSN via ROWBOAT_TEST_PG_DSN; CI starts a Postgres
+// fast sqlite path). Provide a DSN via OPPULENCE_TEST_PG_DSN; CI starts a Postgres
 // service for this job.
 //
 //	go test -tags=pgconcurrency -race ./internal/backgroundscheduler/...
@@ -21,11 +21,11 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtask"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
 	"go.uber.org/zap"
 )
 
@@ -33,9 +33,9 @@ const pgRacers = 64
 
 func pgClient(t *testing.T) *ent.Client {
 	t.Helper()
-	dsn := os.Getenv("ROWBOAT_TEST_PG_DSN")
+	dsn := os.Getenv("OPPULENCE_TEST_PG_DSN")
 	if dsn == "" {
-		t.Skip("ROWBOAT_TEST_PG_DSN not set; skipping Postgres concurrency tests")
+		t.Skip("OPPULENCE_TEST_PG_DSN not set; skipping Postgres concurrency tests")
 	}
 	sqlDB, err := sql.Open("pgx", dsn)
 	if err != nil {

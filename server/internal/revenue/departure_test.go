@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/person"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/personattribute"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
 )
 
 // A departure only matters if it changes what the user is told.

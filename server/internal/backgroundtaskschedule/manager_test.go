@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskworkflow"
 	commonpb "go.temporal.io/api/common/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
@@ -189,7 +189,7 @@ func (c *fakeScheduleClient) List(context.Context, client.ScheduleListOptions) (
 	for id := range c.store {
 		entries = append(entries, &client.ScheduleListEntry{ID: id, Paused: c.paused[id]})
 	}
-	// One non-Rowboat schedule to prove the prefix filter.
+	// One non-Oppulence schedule to prove the prefix filter.
 	entries = append(entries, &client.ScheduleListEntry{ID: "other-system/sched-1"})
 	return &fakeIterator{entries: entries}, nil
 }
@@ -342,7 +342,7 @@ func TestUpsertLostCreateRaceConverges(t *testing.T) {
 	}
 }
 
-func TestListFiltersToRowboatPrefix(t *testing.T) {
+func TestListFiltersToOppulencePrefix(t *testing.T) {
 	sc := newFakeScheduleClient()
 	m := newManager(sc)
 	if _, err := m.UpsertTaskCron(context.Background(), desired()); err != nil {

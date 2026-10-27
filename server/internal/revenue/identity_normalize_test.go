@@ -16,21 +16,21 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/commitment"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationinteraction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/communicationparticipant"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/personattribute"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/consoleresource"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/parallel"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationship"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipidentity"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueaction"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/parallel"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/quota"
 )
 
 func TestNormalizeEmailKeepsTheAddress(t *testing.T) {

@@ -22,16 +22,16 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composioapi"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/composioapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/faculties"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/googleapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/hubspotapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/secrets"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/slackclient"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/websearch"
 )
 
 // Trust tiers (RFC 012). A capability above the auto-execute line requires a

@@ -9,11 +9,11 @@
 | **Created**    | 2026-08-12                                                                                                                                                                     |
 | **Updated**    | 2026-08-21                                                                                                                                                                     |
 | **Depends on** | [RFC 021](./complete-021-semantic-memory-index.md), [RFC 036](./036-relationship-state-engine.md)                                                                              |
-| **Related**    | [RFC 014](./014-live-note-observability-cost-and-provenance.md), [RFC 050](./050-enterprise-controls.md), [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) |
+| **Related**    | [RFC 014](./014-live-note-observability-cost-and-provenance.md), [RFC 050](./050-enterprise-controls.md), [RFC 055](./055-capture-product-boundary-and-oppulence-integration.md) |
 
 ## 1. Decision
 
-Provide an honest local execution path for Rowboat's relationship inference:
+Provide an honest local execution path for Oppulence's relationship inference:
 retrieval, evidence extraction, relationship projection, and low-risk drafting.
 Capture-model installation, transcription engines, and capture-note utilities
 belong to the capture product.
@@ -24,7 +24,7 @@ low-confidence relationship claims or execute external actions.
 
 ## 2. Existing foundation
 
-Rowboat already has:
+Oppulence already has:
 
 - local BM25 and embedding-backed semantic memory under RFC 021;
 - an Ollama model provider;
@@ -76,7 +76,7 @@ location.
 - Verify model hashes and licenses.
 - Start inference services on demand and stop them after inactivity.
 - Enforce one owner for downloads, updates, health checks, and cleanup.
-- Never let Rowboat and the capture product independently download duplicate
+- Never let Oppulence and the capture product independently download duplicate
   large models when a secure, versioned shared-runtime option is available.
 - Treat shared-runtime access as an API boundary, not a shared writable model
   directory.
@@ -84,7 +84,7 @@ location.
 ## 6. Privacy boundary
 
 Local relationship processing consumes only artifacts the user has authorized
-for Rowboat. The existence of local capture data does not grant Rowboat access
+for Oppulence. The existence of local capture data does not grant Oppulence access
 to the capture product's database or raw audio.
 
 If a task falls back from local to cloud, the transition is explicit and shows
@@ -98,4 +98,4 @@ which context will leave the device. Organization policy may forbid fallback.
 - Low-confidence extraction abstains instead of entering graph state.
 - Cloud fallback is explicit, policy-aware, and fail-closed.
 - External actions remain governed identically under local and cloud models.
-- Capture transcription/model management is absent from Rowboat's scope.
+- Capture transcription/model management is absent from Oppulence's scope.

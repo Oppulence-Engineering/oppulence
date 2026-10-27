@@ -6,7 +6,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/mixin"
 )
 
 // TenantEvidenceKey stores one tenant DEK wrapped by the deployment KEK. Raw

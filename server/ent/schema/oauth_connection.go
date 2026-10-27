@@ -9,7 +9,7 @@ import (
 	"entgo.io/ent/schema/index"
 	"github.com/flume/enthistory"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/mixin"
 )
 
 // OAuthConnection holds long-lived third-party OAuth tokens (e.g. Google).
@@ -39,7 +39,7 @@ func (OAuthConnection) Fields() []ent.Field {
 		field.Strings("scopes").Optional(),
 		// external_account_id is the provider-side account key (google: the
 		// account email; slack: the team id). Provider webhooks resolve the
-		// owning Rowboat user through it (RFC 003). Optional: connections made
+		// owning Oppulence user through it (RFC 003). Optional: connections made
 		// before this field exists backfill on their next reconnect.
 		field.String("external_account_id").Optional(),
 	}

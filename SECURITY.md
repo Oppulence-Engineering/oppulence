@@ -2,11 +2,11 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Rowboat (Oppulence Engineering fork) or in the desktop application shipped from this repository, please report it privately.
+If you discover a security vulnerability in Oppulence, Oppulence Engineering's fork of Rowboat or in the desktop application shipped from this repository, please report it privately.
 
 **Preferred channel:** email **admin@solomon-ai.co** with the subject line `SECURITY` and a clear description of the issue. If the issue is sensitive, you may also send a separate follow-up with reproduction steps.
 
-**Alternative channel:** use GitHub's private vulnerability reporting via the [Security tab](https://github.com/Oppulence-Engineering/rowboat/security/advisories/new) of this repository.
+**Alternative channel:** use GitHub's private vulnerability reporting via the [Security tab](https://github.com/PlaybookMediaLLC/oppulence/security/advisories/new) of this repository.
 
 Please do **not** open a public issue, discussion, or pull request for security vulnerabilities.
 

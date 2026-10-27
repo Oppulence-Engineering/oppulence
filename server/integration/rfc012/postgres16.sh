@@ -27,8 +27,8 @@ METRICS3_PORT=$(free_port)
 PRODUCT_PORT=$(free_port)
 CONSENT_PORT=$(free_port)
 CONSENT2_PORT=$(free_port)
-PG_NAME="rowboat-rfc012-${$}"
-REDIS_NAME="rowboat-rfc012-redis-${$}"
+PG_NAME="oppulence-rfc012-${$}"
+REDIS_NAME="oppulence-rfc012-redis-${$}"
 PIDS=()
 
 cleanup() {
@@ -197,7 +197,7 @@ start_api() {
   SSL_CERT_FILE="$SCRATCH/fixture-tls.crt" \
   DB_ENCRYPTION_KEY='rfc012-local-column-encryption-key' \
   OIDC_ISSUER_URL="$OIDC_URL" TOKEN_ISSUER="$OIDC_URL" TOKEN_AUDIENCE=rowboat-api JWKS_URL="$OIDC_URL/.well-known/jwks.json" \
-  ORY_PUBLIC_URL="$OIDC_URL" ORY_BROKER_CLIENT_ID=rowboat-rfc012 ORY_BROKER_CLIENT_SECRET=rfc012-secret \
+  ORY_PUBLIC_URL="$OIDC_URL" ORY_BROKER_CLIENT_ID=oppulence-rfc012 ORY_BROKER_CLIENT_SECRET=rfc012-secret \
   PUBLIC_BASE_URL="$API2_URL" APP_URL="$API2_URL" \
   CONNECTORS_JSON="$CONNECTORS_JSON" \
   CONNECTOR_ENTITLEMENT_URLS_JSON="{\"dev\":\"${PRODUCT_URL}/v1/entitlements\"}" \
@@ -233,7 +233,7 @@ start_consent() {
   local port=$1 log=$2
   env PORT="$port" DATABASE_URL="$DATABASE_URL" COOKIE_SECRET=rfc012-cookie-secret-at-least-32-bytes COOKIE_SECURE=false \
     NODE_EXTRA_CA_CERTS="$SCRATCH/fixture-tls.crt" \
-    ORY_ADMIN_URL="$OIDC_URL" WORKOS_CLIENT_ID=rowboat-rfc012 WORKOS_API_KEY=rfc012-workos-secret WORKOS_ISSUER="$OIDC_URL" \
+    ORY_ADMIN_URL="$OIDC_URL" WORKOS_CLIENT_ID=oppulence-rfc012 WORKOS_API_KEY=rfc012-workos-secret WORKOS_ISSUER="$OIDC_URL" \
     WORKOS_REDIRECT_URI="$CONSENT_URL/callback" WORKOS_STEP_UP_REDIRECT_URI="$CONSENT2_URL/step-up/callback" \
     ROWBOAT_API_URL="$API2_URL" HOOK_HMAC_SECRET=rfc012-hook-secret-at-least-32-bytes \
     node ../clients/apps/oauth-consent/dist/index.js >"$log" 2>&1 & PIDS+=("$!")

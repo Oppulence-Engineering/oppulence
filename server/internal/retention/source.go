@@ -8,12 +8,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/cloudevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/relationshipobservation"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenueevidence"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 )
 
 // observationSources are RelationshipObservation.source values that hold

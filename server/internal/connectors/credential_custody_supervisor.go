@@ -7,7 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectormetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/connectormetrics"
 	"go.uber.org/zap"
 )
 

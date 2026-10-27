@@ -1,4 +1,4 @@
-// rowboat agent — declarative agent authoring CLI (RFC 028 P2).
+// oppulence agent — declarative agent authoring CLI (RFC 028 P2).
 //
 // validate | diff | push | pull over an agent directory (agent.yaml +
 // instructions.md). `validate` runs the structural check offline (the same
@@ -7,7 +7,7 @@
 //
 // Self-contained: node builtins + the `yaml` dependency + global fetch. The
 // cloud API base URL comes from ROWBOAT_API_URL and the bearer from
-// ROWBOAT_API_TOKEN.
+// OPPULENCE_API_TOKEN.
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
@@ -30,7 +30,7 @@ interface ApiOpts {
 function apiOpts(): ApiOpts {
   return {
     baseUrl: process.env.ROWBOAT_API_URL ?? "http://127.0.0.1:8080",
-    token: process.env.ROWBOAT_API_TOKEN ?? "",
+    token: process.env.OPPULENCE_API_TOKEN ?? "",
   };
 }
 

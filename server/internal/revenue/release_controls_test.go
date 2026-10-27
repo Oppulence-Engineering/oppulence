@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/revenuetrustevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
 )
 
 func TestCommunicationIntelligenceDefaultsEnabledForBetaWorkspaces(t *testing.T) {

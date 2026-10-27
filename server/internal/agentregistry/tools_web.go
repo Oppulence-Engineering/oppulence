@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskruntime"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/websearch"
 )
 
 // WebSearchCapability searches the web (read-only). It is backed by a configured

@@ -9,7 +9,7 @@ import type { RevenueWorkspaceMode } from "./revenueWorkspaceMode";
 import type { RevenueWorkspaceStatus } from "./revenueWorkspaceStatus";
 
 /**
- * Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.
+ * Mapping between the Oppulence tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.
  */
 export interface RevenueWorkspace {
   /** Stable UUID primary key. */

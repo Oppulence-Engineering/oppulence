@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/backgroundtaskartifact"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
 )
 
 // BackgroundTaskArtifactDelete is the builder for deleting a BackgroundTaskArtifact entity.

@@ -24,7 +24,7 @@ import {
 let dir: string;
 
 beforeAll(async () => {
-  dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-meetings-transcribe-"));
+  dir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-meetings-transcribe-"));
 });
 
 afterAll(async () => {

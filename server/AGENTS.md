@@ -1,4 +1,4 @@
-# Rowboat API agent contract
+# Oppulence API agent contract
 
 This file is the authoritative entry point for every coding agent working in
 `server`. Read it before making changes. More detailed standards and
@@ -79,7 +79,7 @@ effects, and response/event delivery.
 
 ## Architecture
 
-Rowboat API is a schema-driven Go modular monolith. It uses vertical feature
+Oppulence API is a schema-driven Go modular monolith. It uses vertical feature
 packages, manual dependency injection, direct Ent persistence, Ent-enforced
 tenant isolation, explicit state machines, immutable audit records, idempotent
 distributed operations, and Temporal-backed durable workflows.
@@ -287,7 +287,7 @@ evidence.
 - New enforcement rules **MUST** identify the defect class, include positive and
   negative fixtures where applicable, and start from a clean baseline.
 - Changes to `Makefile`, `.golangci.yml`, `arch-go.yml`, `sgconfig.yml`,
-  `rules/**`, `policy/**`, `tools/rowboatlint/**`, `lefthook.yml`, or the
+  `rules/**`, `policy/**`, `tools/oppulencelint/**`, `lefthook.yml`, or the
   quality workflow are protection-layer changes and require
   `make verify-ci`.
 
@@ -297,7 +297,7 @@ evidence.
 make fmt           # Rewrite handwritten Go with goimports
 make lint          # Run the pinned golangci-lint suite, including gosec
 make architecture  # Run tenant registry and Arch-Go topology checks
-make rowboatlint   # Run typed Rowboat-specific analyzers and fixtures
+make oppulencelint   # Run typed Oppulence-specific analyzers and fixtures
 make ruleguard     # Run custom Go AST rules
 make structural    # Run ast-grep structural policies
 make policy        # Test CI policy and Rego rules

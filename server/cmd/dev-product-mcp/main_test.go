@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
+	oauthrs "github.com/PlaybookMediaLLC/oppulence/server/oauth-resource-server"
 	"github.com/stretchr/testify/require"
 )
 

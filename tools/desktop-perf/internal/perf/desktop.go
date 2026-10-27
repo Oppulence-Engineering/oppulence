@@ -23,7 +23,7 @@ func startDesktop(ctx context.Context, cfg config, logPath string) (*exec.Cmd, e
 		"API_URL="+cfg.APIURL,
 		"ROWBOAT_WORKDIR="+cfg.WorkDir,
 		"SOLOMON_WORKDIR="+cfg.WorkDir,
-		"ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="+strconv.Itoa(cfg.CDPPort),
+		"OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT="+strconv.Itoa(cfg.CDPPort),
 		"SOLOMON_ELECTRON_REMOTE_DEBUGGING_PORT="+strconv.Itoa(cfg.CDPPort),
 	)
 

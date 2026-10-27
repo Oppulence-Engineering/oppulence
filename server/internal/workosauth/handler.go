@@ -19,9 +19,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"

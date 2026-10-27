@@ -10,11 +10,11 @@ import (
 	"github.com/google/uuid"
 	slackgo "github.com/slack-go/slack"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/googleapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/hubspotapi"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
 )
 
 const scopeCalendarEvents = "https://www.googleapis.com/auth/calendar.events"

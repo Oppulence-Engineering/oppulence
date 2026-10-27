@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/agentdefinitionhistory"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/llmusagehistory"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mcpconnectionhistory"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthconnectionhistory"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/subscriptionhistory"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/userhistory"
 )
 
 func (_m *AgentDefinition) History() *AgentDefinitionHistoryQuery {

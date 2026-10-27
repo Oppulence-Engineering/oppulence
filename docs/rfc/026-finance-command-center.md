@@ -195,6 +195,6 @@ Resolved forks (consolidated in [`README.md`](./README.md)):
 
 ### Deferred (post-v1)
 
-- A team/multiplayer cockpit (multiple operators, assignment, roles) on top of the shared graph ([022](./022-unified-entity-graph.md)) + FGA ([015](./015-rowboat-platform-workos-fga-and-widget-auth.md)).
+- A team/multiplayer cockpit (multiple operators, assignment, roles) on top of the shared graph ([022](./022-unified-entity-graph.md)) + FGA ([015](./015-oppulence-platform-workos-fga-and-widget-auth.md)).
 - Policy-tier auto-approval for non-financial routine actions ([023](./023-closed-loop-actions.md) Deferred).
 - Additional planes (Canvas billing, Corinthian) as first-class cockpit surfaces once their seams land ([013](./013-oppulence-product-connector-fabric.md)).

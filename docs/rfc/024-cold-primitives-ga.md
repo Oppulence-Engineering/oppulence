@@ -21,7 +21,7 @@ Four capabilities are **wired but cold** — their plumbing exists but they don'
 | Fact                                                                            | Evidence                                                                                            |
 | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | Slack OAuth + a config repo exist                                               | `clients/apps/desktop/packages/core/src/slack/repo.ts`; `clients/apps/desktop/packages/core/src/auth/slack-backend-oauth.ts`    |
-| …but no Slack **event producer** writes `RowboatEvent`s (unlike Gmail/Calendar) | `clients/apps/desktop/packages/core/src/knowledge/sync_gmail.ts` exists; no `sync_slack.ts`                       |
+| …but no Slack **event producer** writes `OppulenceEvent`s (unlike Gmail/Calendar) | `clients/apps/desktop/packages/core/src/knowledge/sync_gmail.ts` exists; no `sync_slack.ts`                       |
 | Code Mode (ACP) infra exists with a permission registry                         | `clients/apps/desktop/packages/core/src/code-mode/acp/` (`manager`, `permission-registry.ts`, `agents`, `client`) |
 | Agent-schedule has runner/repo/state but no UI surface                          | `clients/apps/desktop/packages/core/src/agent-schedule/runner.ts`, `repo.ts`, `state-repo.ts`                     |
 | Version history store exists but is not surfaced in the editor                  | `clients/apps/desktop/packages/core/src/knowledge/version_history.ts`                                             |
@@ -32,7 +32,7 @@ Four capabilities are **wired but cold** — their plumbing exists but they don'
 
 ## Goals
 
-- **WP1 — Slack event producer**: Slack messages/mentions become `RowboatEvent{source:"slack"}` so live-notes/bg-tasks trigger on them (e.g., "#ar-collections mentions Acme → update the Acme live-note").
+- **WP1 — Slack event producer**: Slack messages/mentions become `OppulenceEvent{source:"slack"}` so live-notes/bg-tasks trigger on them (e.g., "#ar-collections mentions Acme → update the Acme live-note").
 - **WP2 — Code Mode GA**: a defined, gated use case (run a script — reconciliation, ad-hoc model — in a sandbox with explicit permissions), hardened and tested.
 - **WP3 — Agent-Schedule UI**: list / enable / disable / run-now / view history for scheduled agents.
 - **WP4 — Version History**: a note version timeline with diff + one-click restore in the editor.
@@ -60,12 +60,12 @@ Mirror the Gmail Mirror+producer pattern:
 flowchart LR
   S[Slack Socket/Events API] --> SY[sync_slack.ts]
   SY -->|mirror relevant msgs| V[knowledge/Slack/*.md]
-  SY -->|emit| E[RowboatEvent source=slack<br/>type=slack.message.received]
+  SY -->|emit| E[OppulenceEvent source=slack<br/>type=slack.message.received]
   E --> P[events/processor.ts] --> C[live-note + bg-task consumers]
 ```
 
 - New `packages/core/src/knowledge/sync_slack.ts` using `slack/repo.ts` creds; subscribe to messages/mentions in selected channels; dedupe by Slack `ts`.
-- Emit `RowboatEvent{source:"slack", type:"slack.message.received", payload:<markdown gist>, target?}`; the existing processor routes it to consumers (no consumer changes needed — they already fan out by source/criteria).
+- Emit `OppulenceEvent{source:"slack", type:"slack.message.received", payload:<markdown gist>, target?}`; the existing processor routes it to consumers (no consumer changes needed — they already fan out by source/criteria).
 - Optional Mirror to `knowledge/Slack/` for recall ([RFC 021](./complete-021-semantic-memory-index.md)).
 
 ### WP2 — Code Mode GA
@@ -85,7 +85,7 @@ flowchart LR
 
 ## Data model
 
-- **Slack**: reuse `RowboatEvent` (`packages/shared/src/events.ts`) and the `events/pending|done` queue; mirror notes under `knowledge/Slack/`.
+- **Slack**: reuse `OppulenceEvent` (`packages/shared/src/events.ts`) and the `events/pending|done` queue; mirror notes under `knowledge/Slack/`.
 - **Code Mode**: runs/artifacts captured as notes (existing pattern); permissions in the ACP registry.
 - **Schedules**: existing `agent-schedule` repo/state files — UI is read/update only.
 - **Versions**: existing `version_history.ts` store; no schema change, add UI.
@@ -133,7 +133,7 @@ Each WP is independently shippable; suggested order WP4 → WP3 → WP1 → WP2 
 
 1. **WP4** (lowest risk): wire `version_history.ts` to an editor panel + restore IPC; preserve protected frontmatter on restore.
 2. **WP3**: `agent-schedule-view.tsx` cloned from `bg-tasks-view.tsx`; `agent-schedule:*` IPC over `repo.ts`/`state-repo.ts`.
-3. **WP1**: `sync_slack.ts` producer using `slack/repo.ts`; emit `RowboatEvent`; verify consumers fire.
+3. **WP1**: `sync_slack.ts` producer using `slack/repo.ts`; emit `OppulenceEvent`; verify consumers fire.
 4. **WP2**: harden ACP gating; ship a reconciliation recipe; capture output to a note.
 
 ## Security
@@ -153,7 +153,7 @@ Each WP is independently shippable; suggested order WP4 → WP3 → WP1 → WP2 
 
 ## Test plan
 
-- **WP1**: mock Slack event → assert `RowboatEvent{source:slack}` emitted, processed, consumer result recorded; dedupe on repeat `ts`.
+- **WP1**: mock Slack event → assert `OppulenceEvent{source:slack}` emitted, processed, consumer result recorded; dedupe on repeat `ts`.
 - **WP2**: script hitting a denied command/path is blocked; allowed reconciliation produces a captured artifact.
 - **WP3**: list reflects repo/state; disable stops firing; run-now creates a run.
 - **WP4**: restore reverts body, preserves `live:`/identity frontmatter; retention prunes.
@@ -166,14 +166,14 @@ Each WP is independently shippable; suggested order WP4 → WP3 → WP1 → WP2 
 ## Alternatives considered
 
 - **One RFC per primitive** — rejected: each is too small; grouping keeps the "finish what's started" intent legible and lets them ship piecemeal.
-- **Slack as a legacy integration vendor/MCP connector instead of a native producer** — rejected for triggering: the live-note/bg-task event model needs a `RowboatEvent` producer; legacy integration vendor remains available for Slack **actions**.
+- **Slack as a legacy integration vendor/MCP connector instead of a native producer** — rejected for triggering: the live-note/bg-task event model needs a `OppulenceEvent` producer; legacy integration vendor remains available for Slack **actions**.
 - **General code sandbox (containers)** — deferred; the ACP gating is sufficient for the defined finance scripts at desktop scope.
 
 ## Decisions
 
 Resolved forks (consolidated in [`README.md`](./README.md)):
 
-- **Slack is read/trigger via a native `RowboatEvent` producer**, not an action surface (actions go through [RFC 023](./023-closed-loop-actions.md)).
+- **Slack is read/trigger via a native `OppulenceEvent` producer**, not an action surface (actions go through [RFC 023](./023-closed-loop-actions.md)).
 - **Code Mode ships with concrete finance recipes**, not as latent infra; gated deny-by-default.
 - **Schedule UI reuses the `bg-tasks-view` template + `bg-task:*` IPC convention.**
 - **Version restore preserves protected frontmatter.**

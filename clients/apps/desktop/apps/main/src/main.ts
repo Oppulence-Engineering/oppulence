@@ -117,6 +117,14 @@ import {
 import { initializeExecutionEnvironment } from "./execution-environment.js";
 import { disconnectGoogleIfScopesStale } from "./oauth-handler.js";
 
+
+// Developer shells and scripts from before the rename export ROWBOAT_*; the app
+// reads OPPULENCE_*. ROWBOAT_WORKDIR stays its own legacy setting (see branding.ts).
+for (const [name, value] of Object.entries(process.env)) {
+  if (name.startsWith("ROWBOAT_") && name !== "ROWBOAT_WORKDIR") {
+    process.env[name.replace("ROWBOAT_", "OPPULENCE_")] ??= value;
+  }
+}
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -161,7 +169,7 @@ startCrashReporter();
 
 const remoteDebuggingPort = (
   process.env.SOLOMON_ELECTRON_REMOTE_DEBUGGING_PORT ??
-  process.env.ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT
+  process.env.OPPULENCE_ELECTRON_REMOTE_DEBUGGING_PORT
 )?.trim();
 if (remoteDebuggingPort) {
   app.commandLine.appendSwitch("remote-debugging-port", remoteDebuggingPort);
@@ -262,7 +270,7 @@ console.log("preloadPath", preloadPath);
 const rendererPath = app.isPackaged
   ? path.join(__dirname, "../renderer/dist") // Production
   : path.join(__dirname, "../../../renderer/dist"); // Development
-const useBuiltRenderer = app.isPackaged || process.env.ROWBOAT_USE_BUILT_RENDERER === "true";
+const useBuiltRenderer = app.isPackaged || process.env.OPPULENCE_USE_BUILT_RENDERER === "true";
 console.log("rendererPath", rendererPath);
 
 // Register custom protocol for serving built renderer files in production

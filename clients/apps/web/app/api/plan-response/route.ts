@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseJsonBody } from "@/lib/api/routes/parse";
 import { PlanResponseRequestSchema } from "@/lib/api/routes/schemas/plan-response";
 import { streamUpstreamResponse } from "@/lib/bff/upstream-response";
-import { rowboatApiURL } from "@/lib/auth/config";
+import { oppulenceApiURL } from "@/lib/auth/config";
 
 const MAX_BODY_BYTES = 256 * 1024;
 
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   const { token, response } = parsed.data;
   const hasResponse = response != null;
   const upstream = await fetch(
-    rowboatApiURL(
+    oppulenceApiURL(
       hasResponse ? "/v1/public/mutual-action-plan/responses" : "/v1/public/mutual-action-plan",
     ),
     {

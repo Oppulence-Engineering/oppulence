@@ -19,7 +19,7 @@ let queueModule: typeof import("./queue.js");
 let sessionModule: typeof import("./session.js");
 
 beforeAll(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-meetings-queue-"));
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-meetings-queue-"));
   process.env.SOLOMON_WORKDIR = tmpDir;
   vi.resetModules();
   queueModule = await import("./queue.js");

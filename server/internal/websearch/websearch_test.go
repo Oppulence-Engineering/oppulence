@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
 )
 
 func TestNewNilWithoutKey(t *testing.T) {

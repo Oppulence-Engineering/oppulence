@@ -39,7 +39,7 @@ type Policy struct {
 	RetryNonIdempotent bool
 }
 
-// Client is an http.Client with rowboat's vendor-call policy applied.
+// Client is an http.Client with oppulence's vendor-call policy applied.
 type Client struct {
 	*http.Client
 	policy Policy

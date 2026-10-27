@@ -261,7 +261,7 @@ The contract (defined in the run-agent system prompt — `packages/core/src/know
 
 ## Default Note Policy
 
-Rowboat no longer creates a default `Today.md` live dashboard for new users. Live notes are user-created notes with an explicit `live:` frontmatter block.
+Oppulence no longer creates a default `Today.md` live dashboard for new users. Live notes are user-created notes with an explicit `live:` frontmatter block.
 
 **Deprecated Today.md migration** — `packages/core/src/knowledge/deprecate_today_note.ts` runs once per workspace on app start:
 

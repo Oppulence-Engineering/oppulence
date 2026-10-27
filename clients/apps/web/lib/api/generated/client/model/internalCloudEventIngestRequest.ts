@@ -15,6 +15,6 @@ export interface InternalCloudEventIngestRequest {
   dedupeKey: string;
   /** Event source. */
   source: InternalCloudEventIngestRequestSource;
-  /** Rowboat user id (UUID) owning the event. */
+  /** Oppulence user id (UUID) owning the event. */
   userId: string;
 }

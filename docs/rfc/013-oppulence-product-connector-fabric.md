@@ -16,10 +16,10 @@
 
 The cross-portfolio cockpit depends on a base connector fabric before Conduit and
 Eigen can become useful faculties. Canvas, Cadence, and Corinthian own different
-financial systems of record; Rowboat owns the user-owned corpus and agent
+financial systems of record; Oppulence owns the user-owned corpus and agent
 orchestration layer. This RFC defines the connector manifest, MCP mount, mirror,
 event, shared resource, and action-review contracts that let those systems plug
-into Rowboat without blurring product ownership.
+into Oppulence without blurring product ownership.
 
 RFC 008 covers Conduit and Eigen specifically. This RFC covers the base portfolio
 fabric they assume exists.
@@ -35,7 +35,7 @@ migration is planned.
 
 | Plane                                | State                                                                                      |
 | ------------------------------------ | ------------------------------------------------------------------------------------------ |
-| Rowboat relationship plane           | Desktop already syncs Gmail, Calendar, Fireflies/meeting data into a local Markdown vault. |
+| Oppulence relationship plane           | Desktop already syncs Gmail, Calendar, Fireflies/meeting data into a local Markdown vault. |
 | Canvas revenue/AR plane              | Has an MCP server shape in the portfolio.                                                  |
 | Corinthian AR execution/memory plane | Has a standalone MCP server and approval-token patterns.                                   |
 | Cadence AP/spend plane               | Has product APIs and MCP consumer infra, but no canonical MCP server/shim yet.             |
@@ -48,15 +48,15 @@ migration is planned.
   scopes, tenant mapping, MCP URL, events, and audit policy.
 - Mount product MCP servers for Read access.
 - Mirror durable product identity into the local vault as Markdown notes.
-- Route product events into Rowboat for live-note updates and cloud triggers.
+- Route product events into Oppulence for live-note updates and cloud triggers.
 - Keep product write actions behind review and product-owned authorization.
 - Normalize product references without copying product databases.
 
 ## Non-Goals
 
-- Rebuilding Canvas, Cadence, or Corinthian data models in Rowboat.
+- Rebuilding Canvas, Cadence, or Corinthian data models in Oppulence.
 - Direct DB access across products.
-- Storing external-provider tokens such as Plaid in Rowboat.
+- Storing external-provider tokens such as Plaid in Oppulence.
 - Shipping Conduit/Eigen internals; see RFC 008.
 - Co-marketing the products as one suite.
 
@@ -120,7 +120,7 @@ Mirror durable identity into the local vault, not volatile numbers. Examples:
 | Corinthian | customer/case, communication thread identity | next-best-action, current dunning queue         |
 
 Mirrored notes must preserve user edits and `live:` frontmatter. Sync code follows
-the existing `sync_gmail.ts`/`sync_fireflies.ts` pattern and emits `RowboatEvent`
+the existing `sync_gmail.ts`/`sync_fireflies.ts` pattern and emits `OppulenceEvent`
 records after material changes.
 
 ### Watch
@@ -149,7 +149,7 @@ Example:
 ### Act
 
 Write/external-effect tools remain product-owned and product-authorized.
-Rowboat's role is to propose, review, and call the MCP action after approval. The
+Oppulence's role is to propose, review, and call the MCP action after approval. The
 product enforces:
 
 - Required OAuth scopes.
@@ -159,7 +159,7 @@ product enforces:
 
 ## Shared resource model
 
-Rowboat stores lightweight references so agents can reason across products without
+Oppulence stores lightweight references so agents can reason across products without
 copying full databases.
 
 ```text
@@ -268,7 +268,7 @@ Act:
 
 Each connector install must pin:
 
-- Rowboat user id.
+- Oppulence user id.
 - WorkOS user id.
 - Optional WorkOS org id.
 - Product workspace/team/org id.
@@ -276,7 +276,7 @@ Each connector install must pin:
 - Product environment.
 
 The desktop must never blend product tenants into one vault unless the user has
-explicitly connected those tenants to the same Rowboat workspace.
+explicitly connected those tenants to the same Oppulence workspace.
 
 ## Cloud runtime integration
 
@@ -476,7 +476,7 @@ Conflicts are handled by ownership:
 | ------------------------ | ------- | --------------------------------------- |
 | Product canonical fields | Product | Mirror overwrites generated block.      |
 | User commentary          | User    | Sync preserves user block.              |
-| Relationship annotations | Rowboat | Merge by stable relationship id.        |
+| Relationship annotations | Oppulence | Merge by stable relationship id.        |
 | Volatile balances/status | Product | Query live, do not mirror as canonical. |
 | Action approvals         | Product | Display result, do not edit manually.   |
 
@@ -827,7 +827,7 @@ To add a product connector:
 
 ## Decisions
 
-- **Products own data and domain rules.** Rowboat owns orchestration and the
+- **Products own data and domain rules.** Oppulence owns orchestration and the
   user-owned corpus.
 - **Mirror durable identity; query volatile state.** Prevents sync storms and stale
   financial numbers.

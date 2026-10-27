@@ -12,18 +12,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectormetrics"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/retention"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/connectorauditevent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/connectorrevocationjob"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/mcpconnection"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthpending"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/predicate"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/subscription"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/user"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/connectormetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/retention"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -215,7 +215,7 @@ func (h *Handler) PreConsent(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, preConsentResponse{
 		RequestID:   requestID,
 		Subject:     req.WorkOSUserID,
-		Client:      consentClientIdentity{ID: req.HydraClientID, DisplayName: "Rowboat Desktop"},
+		Client:      consentClientIdentity{ID: req.HydraClientID, DisplayName: "Oppulence Desktop"},
 		Connector:   consentConnectorIdentity{ID: conn.Name, DisplayName: conn.DisplayName, Audience: conn.Audience},
 		Scopes:      responseScopes,
 		Entitlement: entitlement,

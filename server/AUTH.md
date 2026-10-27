@@ -37,7 +37,7 @@ Desktop stores tokens; uses access_token as Bearer. rowboat-api verifies it on e
 
 Refresh is brokered the same way (`POST /v1/auth/workos/refresh`). The desktop
 code lives in `clients/apps/desktop/.../auth/workos-backend.ts` + `oauth-handler.ts`
-(`connectRowboatViaBroker`); the rowboat token refresh is in `auth/tokens.ts`.
+(`connectOppulenceViaBroker`); the oppulence token refresh is in `auth/tokens.ts`.
 
 ## rowboat-api endpoints (`internal/workosauth`, public — pre-bearer)
 
@@ -82,7 +82,7 @@ difference is where the secret API key comes from.
 no manual sourcing. The API key is read from the **gitignored root `.env`**,
 which docker compose auto-loads. Chat calls live OpenRouter
 (`OPENROUTER_API_KEY` in that same file); devstack is only the opt-in mock
-(`ROWBOAT_COMPOSE_MOCK_LLM=1`). Click **"Sign in to Rowboat"** in the
+(`OPPULENCE_COMPOSE_MOCK_LLM=1`). Click **"Sign in to Oppulence"** in the
 desktop and it opens the real AuthKit login. See `README.md` → *Local end-to-end
 with the desktop*.
 
@@ -90,6 +90,6 @@ with the desktop*.
 
 Still no code change to the desktop. Deploy `infra/charts/hydra/` + `clients/apps/oauth-consent/`,
 point `OIDC_ISSUER_URL`/`TOKEN_ISSUER`/`JWKS_URL`/`OAUTH_CLIENT_ID` at Hydra, and
-the desktop's openid-client rowboat path (still present for non-broker issuers)
+the desktop's openid-client oppulence path (still present for non-broker issuers)
 takes over. Reintroduce this only when Canvas/Corinthian/Billflow need a
 self-controlled OAuth2 AS with custom audiences, or for a self-hosted tier.

@@ -7,16 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
-	rowboatcrypto "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/connectors"
+	oppulencecrypto "github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
 )
 
 func assertCredentialMaterialAbsent(t *testing.T, client *ent.Client, forbidden ...[]byte) {
 	t.Helper()
 	ctx := auth.WithInternal(t.Context())
-	sealer, err := rowboatcrypto.NewSealer("test-key")
+	sealer, err := oppulencecrypto.NewSealer("test-key")
 	if err != nil {
 		t.Fatalf("create test sealer: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestConnectionHistoryStoresCredentialMetadataOnly(t *testing.T) {
 func TestReconnectDoesNotRetainPriorCredential(t *testing.T) {
 	client, user, _ := setup(t, connectors.DefaultRegistry())
 	userCtx := auth.WithUser(t.Context(), user)
-	sealer, err := rowboatcrypto.NewSealer("test-key")
+	sealer, err := oppulencecrypto.NewSealer("test-key")
 	if err != nil {
 		t.Fatal(err)
 	}

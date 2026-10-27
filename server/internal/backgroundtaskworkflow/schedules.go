@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/backgroundtaskmetrics"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/worker"
@@ -14,7 +14,7 @@ import (
 )
 
 // RFC 005: Temporal Schedules own exact-cron firing for api-target tasks. A
-// Schedule cannot start rowboat.background_tasks.api.v1 directly — every run
+// Schedule cannot start oppulence.background_tasks.api.v1 directly — every run
 // needs a BackgroundTaskRun row to exist first. So the Schedule action starts
 // this thin scheduler workflow, whose single activity routes through the shared
 // run starter (row first, workflow second, one code path with manual/loop runs).

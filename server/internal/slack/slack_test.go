@@ -14,17 +14,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slack"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slacktoken"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthconnection"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/oauthpending"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/appconfig"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/db"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/secrets"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/slack"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/slackclient"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/slacktoken"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -353,7 +353,7 @@ func TestSlackOAuthRejectsWorkspaceOwnedByAnotherUser(t *testing.T) {
 			"team": map[string]any{"id": "T0OWNED", "name": "Owned"},
 		}
 	})
-	h.SetOAuthFlow("https://slack.example/authorize", token.URL, "https://api.example/oauth/slack/callback", "rowboat", "")
+	h.SetOAuthFlow("https://slack.example/authorize", token.URL, "https://api.example/oauth/slack/callback", "oppulence", "")
 	state := startFlow(t, h, u)
 	runCallback(t, h, state)
 	rec := claim(t, h, u, state)

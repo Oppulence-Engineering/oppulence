@@ -29,7 +29,7 @@ rowboatx --agent <agent-name> --input "input" --no-interactive
 **Note**: Multi-agent workflows are just agents that have other agents in their tools. Run the orchestrator agent to trigger the whole workflow.
 
 ## Run monitoring examples
-Operate from ~/.rowboat (Rowboat tools already set this as the working directory). Use executeCommand with the sample Bash snippets below, modifying placeholders as needed.
+Operate from ~/.rowboat (Oppulence tools already set this as the working directory). Use executeCommand with the sample Bash snippets below, modifying placeholders as needed.
 
 Each run file name starts with a timestamp like '2025-11-12T08-02-41Z'. You can use this to filter for date/time ranges.
 
@@ -77,7 +77,7 @@ For scheduling agents to run automatically at specific times.
    
    Example (runs daily at 10 AM):
    \`\`\`bash
-   (crontab -l 2>/dev/null; echo '0 10 * * * cd ~/rowboat-V2/apps/cli && rowboatx --agent podcast_workflow --no-interactive >> ~/.rowboat/logs/podcast.log 2>&1') | crontab -
+   (crontab -l 2>/dev/null; echo '0 10 * * * cd ~/oppulence-V2/apps/cli && rowboatx --agent podcast_workflow --no-interactive >> ~/.rowboat/logs/podcast.log 2>&1') | crontab -
    \`\`\`
 
 3. **Unschedule/remove an agent**

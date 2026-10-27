@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/llm"
 )
 
 // TestRuntimeRequestIDAttemptSeeding: each activity attempt derives distinct

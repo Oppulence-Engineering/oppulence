@@ -3,7 +3,7 @@ import { CheckCircle2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type { Step, OnboardingPath } from "./use-onboarding-state";
 
-export const ROWBOAT_STEPS = [
+export const OPPULENCE_STEPS = [
   { step: 0 as Step, label: "Access" },
   { step: 2 as Step, label: "Sources" },
   { step: 3 as Step, label: "Ready" },
@@ -22,7 +22,7 @@ interface StepIndicatorProps {
 }
 
 export function StepIndicator({ currentStep, path }: StepIndicatorProps) {
-  const steps = path === "byok" ? BYOK_STEPS : ROWBOAT_STEPS;
+  const steps = path === "byok" ? BYOK_STEPS : OPPULENCE_STEPS;
   const currentIndex = steps.findIndex((s) => s.step === currentStep);
 
   return (

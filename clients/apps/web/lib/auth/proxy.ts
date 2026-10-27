@@ -3,8 +3,8 @@ import "server-only";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { RowboatProxyPathSchema } from "@/lib/api/routes/schemas/proxy";
-import { rowboatApiURL } from "@/lib/auth/config";
+import { OppulenceProxyPathSchema } from "@/lib/api/routes/schemas/proxy";
+import { oppulenceApiURL } from "@/lib/auth/config";
 import { clearAuthCookies, readSessionCookie, setSessionCookie } from "@/lib/auth/cookies";
 import { resolveSessionRefresh } from "@/lib/auth/session-refresh";
 import type { DashboardSessionCookie } from "@/lib/auth/schemas";
@@ -118,7 +118,7 @@ function staysUnderV1Prefix(pathname: string): boolean {
  * so the proxy cannot reach unrelated upstream paths.
  */
 export function dashboardProxyPath(path: string[]): string | null {
-  const parsed = RowboatProxyPathSchema.safeParse(path);
+  const parsed = OppulenceProxyPathSchema.safeParse(path);
   if (!parsed.success) return null;
 
   const cleaned = parsed.data.map((part) => encodeURIComponent(part)).join("/");
@@ -126,7 +126,10 @@ export function dashboardProxyPath(path: string[]): string | null {
   return staysUnderV1Prefix(pathname) ? pathname : null;
 }
 
-export async function proxyRowboatAPI(request: NextRequest, path: string[]): Promise<NextResponse> {
+export async function proxyOppulenceAPI(
+  request: NextRequest,
+  path: string[],
+): Promise<NextResponse> {
   const auth = await getAuthorizedSession(request);
   if (!auth.ok) return auth.response;
 
@@ -135,7 +138,7 @@ export async function proxyRowboatAPI(request: NextRequest, path: string[]): Pro
     return NextResponse.json({ error: "invalid proxy path", code: "bad_request" }, { status: 400 });
   }
 
-  const upstreamURL = rowboatApiURL(upstreamPath, request.nextUrl.searchParams);
+  const upstreamURL = oppulenceApiURL(upstreamPath, request.nextUrl.searchParams);
   const headers = dashboardProxyHeaders(request.headers);
   headers.set("Authorization", `${auth.session.tokenType} ${auth.session.accessToken}`);
 

@@ -21,7 +21,7 @@ resolver:
 
 # Bind GraphQL types to the entgql-generated ent types.
 autobind:
-  - github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent
+  - github.com/PlaybookMediaLLC/oppulence/server/ent
 
 models:
   # Primary keys (ID) and uuid fields (UUID) both map to uuid.UUID via the
@@ -29,19 +29,19 @@ models:
   # gqlgen needs (it looks for them in the model's package).
   ID:
     model:
-      - github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/gqlid.UUID
+      - github.com/PlaybookMediaLLC/oppulence/server/internal/gqlid.UUID
   UUID:
     model:
-      - github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/gqlid.UUID
+      - github.com/PlaybookMediaLLC/oppulence/server/internal/gqlid.UUID
   Time:
     model:
       - github.com/99designs/gqlgen/graphql.Time
   Node:
     model:
-      - github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent.Noder
+      - github.com/PlaybookMediaLLC/oppulence/server/ent.Noder
   Cursor:
     model:
-      - github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent.Cursor
+      - github.com/PlaybookMediaLLC/oppulence/server/ent.Cursor
   PageInfo:
     model:
-      - github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent.PageInfo
+      - github.com/PlaybookMediaLLC/oppulence/server/ent.PageInfo

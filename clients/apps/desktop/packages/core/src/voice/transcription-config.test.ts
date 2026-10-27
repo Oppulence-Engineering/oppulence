@@ -14,7 +14,7 @@ let tmpDir: string;
 let voice: typeof import("./voice.js");
 
 beforeAll(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-transcription-test-"));
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-transcription-test-"));
   process.env.SOLOMON_WORKDIR = tmpDir;
   vi.resetModules();
   voice = await import("./voice.js");

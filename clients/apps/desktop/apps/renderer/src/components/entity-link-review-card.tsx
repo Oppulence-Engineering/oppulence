@@ -66,7 +66,7 @@ export function EntityLinkReviewCard() {
             <div className="border-b border-amber-500/30 pb-3">
               <h2 className="text-sm font-semibold">Entity sync needs attention</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                {health.remaining} queued and {health.deadLetters} requiring review. Rowboat will
+                {health.remaining} queued and {health.deadLetters} requiring review. Oppulence will
                 retry temporary failures automatically. Check your connection or sign-in, then
                 review rejected projections if this persists.
               </p>

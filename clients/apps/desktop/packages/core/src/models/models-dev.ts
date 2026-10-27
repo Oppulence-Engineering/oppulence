@@ -112,7 +112,7 @@ async function writeCache(data: unknown): Promise<void> {
 
 async function fetchModelsDev(): Promise<unknown> {
   const response = await fetch("https://models.dev/api.json", {
-    headers: { "User-Agent": "Rowboat" },
+    headers: { "User-Agent": "Oppulence" },
   });
   if (!response.ok) {
     throw new Error(`models.dev fetch failed: ${response.status}`);

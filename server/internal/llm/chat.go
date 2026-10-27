@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/quota"
 	"github.com/google/uuid"
 )
 

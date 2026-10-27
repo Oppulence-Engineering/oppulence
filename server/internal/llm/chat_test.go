@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/credits"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/credits"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/llm"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/pricing"
 	"github.com/google/uuid"
 )
 

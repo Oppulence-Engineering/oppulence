@@ -14,9 +14,9 @@ import (
 	"entgo.io/ent/schema/mixin"
 	"github.com/google/uuid"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/optimistic"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/tenant"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/viewer"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/optimistic"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/schema/tenant"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/viewer"
 )
 
 // BaseMixin gives every schema a UUID primary key and created/updated

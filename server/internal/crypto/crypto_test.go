@@ -7,7 +7,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/crypto"
 )
 
 func TestSealOpenRoundTrip(t *testing.T) {

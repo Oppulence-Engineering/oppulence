@@ -304,7 +304,7 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
   }, [])
 
   // New step flow:
-  // Rowboat path: 0 (welcome) → 2 (connect) → 3 (done)
+  // Oppulence path: 0 (welcome) → 2 (connect) → 3 (done)
   // BYOK path: 0 (welcome) → 1 (llm setup) → 2 (connect) → 3 (done)
   const handleNext = useCallback(() => {
     if (currentStep === 0) {
@@ -545,7 +545,7 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
   }, [integrationApiKeyTarget, refreshIntegrations])
 
   // Switch to Solomon AI path from BYOK inline callout
-  const handleSwitchToRowboat = useCallback(() => {
+  const handleSwitchToOppulence = useCallback(() => {
     setOnboardingPath('rowboat')
     setCurrentStep(0)
   }, [])
@@ -591,7 +591,7 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     handleGoogleClientIdSubmit,
     startConnect,
 
-    // Rowboat integrations
+    // Oppulence integrations
     integrations,
     integrationsLoading,
     integrationConnecting,
@@ -630,7 +630,7 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
     handleNext,
     handleBack,
     handleComplete,
-    handleSwitchToRowboat,
+    handleSwitchToOppulence,
   }
 }
 

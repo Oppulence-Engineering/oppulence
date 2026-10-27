@@ -17,7 +17,7 @@ let list: typeof import("./list.js");
 let session: typeof import("./session.js");
 
 beforeAll(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-meetings-list-"));
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "oppulence-meetings-list-"));
   process.env.SOLOMON_WORKDIR = tmpDir;
   vi.resetModules();
   list = await import("./list.js");

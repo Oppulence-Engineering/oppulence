@@ -10,7 +10,7 @@ This repo's desktop checks are modeled after quality gates used by high-star Ele
 - [signalapp/Signal-Desktop](https://github.com/signalapp/Signal-Desktop): node/electron tests, type checks, oxlint, dependency lint, Storybook tests, release tests, and benchmarks.
 - [mattermost/desktop](https://github.com/mattermost/desktop): type checks, unit tests, E2E, compatibility matrix, CodeQL, Scorecards, SBOM/Snyk, nightly builds, and package matrix checks.
 
-## Rowboat Gates
+## Oppulence Gates
 
 - `Desktop Quality Gates`: PR workflow for `clients/apps/desktop/**` that runs lint, core tests, Electron hardening checks, and TypeScript/build checks.
 - `x Smoke Test`: PR workflow that packages the Linux Electron app and boots it under `xvfb`.

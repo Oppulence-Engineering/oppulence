@@ -1,4 +1,4 @@
-// Package revenue implements the Rowboat side of RFC 030 (Revenue Memory and
+// Package revenue implements the Oppulence side of RFC 030 (Revenue Memory and
 // Outbound Governance): the relationship/action domain, the action-queue
 // lifecycle with its hard invariants, and the client for the OutboundConsole
 // preflight facade.
@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/outbound"
 )
 
 // SchemaVersion is the revenue-integration contract version (RFC 030).
@@ -75,7 +75,7 @@ type EvaluateActor struct {
 }
 
 // PolicyDecision is the facade's immutable answer for one exact action
-// revision. Sub-objects are kept as raw JSON: Rowboat snapshots them for
+// revision. Sub-objects are kept as raw JSON: Oppulence snapshots them for
 // audit but never re-derives policy from their contents.
 type PolicyDecision struct {
 	SchemaVersion string          `json:"schemaVersion"`
@@ -94,7 +94,7 @@ type PolicyDecision struct {
 	EvaluatedAt   time.Time       `json:"evaluatedAt"`
 	ExpiresAt     time.Time       `json:"expiresAt"`
 
-	// ResponseHash is computed by Rowboat over the raw response body so a
+	// ResponseHash is computed by Oppulence over the raw response body so a
 	// stored snapshot can be proven against what the facade returned.
 	ResponseHash string `json:"-"`
 }
@@ -112,7 +112,7 @@ type OutcomeReport struct {
 	OccurredAt          time.Time `json:"occurredAt"`
 }
 
-// FacadeClient is the OutboundConsole revenue facade (RFC 030 WP1). Rowboat
+// FacadeClient is the OutboundConsole revenue facade (RFC 030 WP1). Oppulence
 // calls it for preflight and outcome reporting; it never calls the
 // verification backend (Reacher) directly.
 type FacadeClient interface {

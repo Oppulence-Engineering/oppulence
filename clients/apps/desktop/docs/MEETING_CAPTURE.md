@@ -365,8 +365,8 @@ real input device.
 
 | Purpose                            | File                                                                                                          |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Swift capture helper               | `clients/apps/desktop/vendor/audiocap/Sources/audiocap/`                                                                    |
-| Helper build + toolchain preflight | `clients/apps/desktop/vendor/audiocap/build.sh`                                                                             |
+| Swift capture helper               | `clients/apps/desktop/vendor/audiocap/Sources/audiocap/`                                                      |
+| Helper build + toolchain preflight | `clients/apps/desktop/vendor/audiocap/build.sh`                                                               |
 | Sidecar spawn, NDJSON, permissions | `apps/main/src/meeting-capture.ts`                                                                            |
 | Live session + queue ownership     | `apps/main/src/meeting-controller.ts`                                                                         |
 | Menu-bar item                      | `apps/main/src/tray.ts`                                                                                       |

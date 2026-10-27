@@ -31,7 +31,7 @@ export function LlmSetupStep({ state }: LlmSetupStepProps) {
       footer={
         <button
           type="button"
-          onClick={state.handleSwitchToRowboat}
+          onClick={state.handleSwitchToOppulence}
           className="text-white/46 underline-offset-4 hover:text-white/72 hover:underline"
         >
           Use managed access instead

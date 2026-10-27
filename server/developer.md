@@ -1,6 +1,6 @@
-# Rowboat API implementation patterns
+# Oppulence API implementation patterns
 
-The Rowboat API is a production-oriented **modular monolith**: one repository
+The Oppulence API is a production-oriented **modular monolith**: one repository
 and shared database, split into vertical feature packages, with separate
 server, worker, scheduler, migration, and projection processes. Its strongest
 recurring themes are defense-in-depth authorization, schema-driven

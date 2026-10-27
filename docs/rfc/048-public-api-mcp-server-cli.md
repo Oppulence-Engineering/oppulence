@@ -4,16 +4,16 @@
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **RFC**        | 048                                                                                                                                                                       |
 | **Status**     | Draft — rescoped by RFC 055                                                                                                                                               |
-| **Track**      | Rowboat ecosystem · graph distribution · capture integration                                                                                                              |
+| **Track**      | Oppulence ecosystem · graph distribution · capture integration                                                                                                              |
 | **Owners**     | `server`, `clients/apps/desktop`, SDK/CLI, security                                                                                                                           |
 | **Created**    | 2026-08-12                                                                                                                                                                |
 | **Updated**    | 2026-08-21                                                                                                                                                                |
 | **Depends on** | [RFC 010](./complete-010-rowboat-api-service-plane.md), [RFC 011](./complete-011-identity-and-authorization-plane.md)                                                     |
-| **Related**    | [RFC 020](./020-native-third-party-action-engine.md), [RFC 036](./036-relationship-state-engine.md), [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) |
+| **Related**    | [RFC 020](./020-native-third-party-action-engine.md), [RFC 036](./036-relationship-state-engine.md), [RFC 055](./055-capture-product-boundary-and-oppulence-integration.md) |
 
 ## 1. Decision
 
-Make Rowboat's relationship system programmable through three surfaces:
+Make Oppulence's relationship system programmable through three surfaces:
 
 1. a documented, versioned public API for relationships, evidence,
    recommendations, and governed actions;
@@ -22,8 +22,8 @@ Make Rowboat's relationship system programmable through three surfaces:
 3. a versioned capture-artifact ingestion API implementing RFC 055.
 
 Dictation control, capture-note CRUD, and the local dictation CLI belong to the
-capture product. Rowboat's CLI may inspect graph state and submit or approve
-Rowboat actions, but it does not become a second controller for capture internals.
+capture product. Oppulence's CLI may inspect graph state and submit or approve
+Oppulence actions, but it does not become a second controller for capture internals.
 
 ## 2. Existing foundation
 
@@ -32,7 +32,7 @@ generation, organization/project authorization, relationship objects, evidence,
 background tasks, and governed action proposals. `clients/apps/desktop` already consumes MCP
 servers as a client.
 
-The missing product surfaces are a stable external graph contract, a Rowboat
+The missing product surfaces are a stable external graph contract, a Oppulence
 MCP server, and the explicit capture-ingestion seam.
 
 ## 3. Public relationship API
@@ -73,7 +73,7 @@ RFC 055 and provides:
 - deletion, merge, and correction tombstones.
 
 Continuous sync uses an outbox on the capture side and idempotent acknowledgement
-on the Rowboat side. Neither product reads the other's database.
+on the Oppulence side. Neither product reads the other's database.
 
 ## 6. Security
 
@@ -91,4 +91,4 @@ on the Rowboat side. Neither product reads the other's database.
 - Capture sync is idempotent, retryable, observable, and deletion-aware.
 - Every derived evidence record links to the source artifact and exact span.
 - MCP and CLI writes create proposals rather than bypassing governance.
-- No Rowboat API or CLI reaches into the capture product's local database.
+- No Oppulence API or CLI reaches into the capture product's local database.

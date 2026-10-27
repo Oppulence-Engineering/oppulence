@@ -5,11 +5,11 @@ export const skill = String.raw`
 
 ## CRITICAL: Managed Integrations Take Priority Over Generic MCP
 
-**If a managed Rowboat integration exists for the service the user wants (GitHub, HubSpot, Linear, Notion, Stripe, Canvas, Corinthian, Wispr, etc.), load the \`rowboat-integration\` skill first.** It connects the service, configures the authenticated MCP server, and then uses \`listMcpTools\` / \`executeMcpTool\`. Only fall back to manually configured MCP servers when no managed integration covers the request.
+**If a managed Oppulence integration exists for the service the user wants (GitHub, HubSpot, Linear, Notion, Stripe, Canvas, Corinthian, Wispr, etc.), load the \`rowboat-integration\` skill first.** It connects the service, configures the authenticated MCP server, and then uses \`listMcpTools\` / \`executeMcpTool\`. Only fall back to manually configured MCP servers when no managed integration covers the request.
 
 ## When to Check MCP Tools
 
-**IMPORTANT**: When a user asks for a task that requires external capabilities AND no managed Rowboat integration covers it, check MCP tools:
+**IMPORTANT**: When a user asks for a task that requires external capabilities AND no managed Oppulence integration covers it, check MCP tools:
 
 1. **First check**: Call \`listMcpServers\` to see what's available
 2. **Then list tools**: Call \`listMcpTools\` on relevant servers

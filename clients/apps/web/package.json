@@ -23,7 +23,7 @@
     "lint": "eslint .",
     "security:gitleaks": "node scripts/run-gitleaks.mjs",
     "security:osv": "go run github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.5.1 scan source .",
-    "security:semgrep": "pipx run --spec semgrep==1.174.0 semgrep scan --config config/quality/semgrep.yml --error --metrics=off --no-git-ignore --exclude=node_modules --exclude=.next --exclude='lib/api/generated/**' --exclude='.rowboat-contracts-*' .",
+    "security:semgrep": "pipx run --spec semgrep==1.174.0 semgrep scan --config config/quality/semgrep.yml --error --metrics=off --no-git-ignore --exclude=node_modules --exclude=.next --exclude='lib/api/generated/**' --exclude='.oppulence-contracts-*' .",
     "seed:demo": "tsx scripts/seed-demo-workspace.ts",
     "screenshots:capture": "tsx scripts/capture-marketing-screenshots.ts",
     "test": "vitest run",

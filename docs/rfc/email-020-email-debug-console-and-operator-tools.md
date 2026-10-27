@@ -12,7 +12,7 @@
 
 ## Summary
 
-Build a first-class debug console for email sync, rules, drafts, memories, provider actions, scheduled actions, and external deliveries. Inbox Zero has debug pages for drafts, follow-up, memories, rules, rule history, and reports. Rowboat should adapt this into a desktop operator console because email automation needs trust and repair tools from the start. The console is not just for engineers; it is how power users understand why Rowboat touched mail.
+Build a first-class debug console for email sync, rules, drafts, memories, provider actions, scheduled actions, and external deliveries. Inbox Zero has debug pages for drafts, follow-up, memories, rules, rule history, and reports. Oppulence should adapt this into a desktop operator console because email automation needs trust and repair tools from the start. The console is not just for engineers; it is how power users understand why Oppulence touched mail.
 
 ## Inbox Zero Implementation References
 
@@ -31,7 +31,7 @@ Implementation agents should first read then inspect:
 - `apps/web/utils/reply-tracker/draft-tracking.ts`
 - `apps/web/utils/ai/choose-rule/draft-management.ts`
 
-Use these for debug taxonomy and operator workflows. Rowboat should make this a desktop trust surface, not only an internal route collection.
+Use these for debug taxonomy and operator workflows. Oppulence should make this a desktop trust surface, not only an internal route collection.
 
 ## Goals
 

@@ -16,12 +16,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/captureartifact"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/voiceapikey"
+	"github.com/PlaybookMediaLLC/oppulence/server/ent/voicesyncitem"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/auth"
+	"github.com/PlaybookMediaLLC/oppulence/server/internal/httpx"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -495,7 +495,7 @@ type captureEnvelope struct {
 	Content     json.RawMessage `json:"content"`
 }
 
-// IngestCapture accepts an explicitly consented Rowboat handoff. It validates
+// IngestCapture accepts an explicitly consented Oppulence handoff. It validates
 // the source hash and persists the immutable envelope exactly once.
 func (h *Handler) IngestCapture(w http.ResponseWriter, r *http.Request) {
 	u, ok := auth.UserFromCtx(r.Context())
@@ -597,7 +597,7 @@ func validateCaptureEnvelope(value captureEnvelope, idempotencyKey string) strin
 		return "invalid artifact identity, kind, or operation"
 	}
 	if value.Consent.Basis != "user_opt_in" || value.Consent.Destination != "rowboat" {
-		return "explicit Rowboat consent is required"
+		return "explicit Oppulence consent is required"
 	}
 	if value.Source.DistributionID == "" || value.Source.LocalID == "" || len(value.Content) == 0 {
 		return "source and content are required"
