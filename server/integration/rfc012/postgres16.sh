@@ -86,7 +86,7 @@ go build -o "$SCRATCH/bin/devstack" ./cmd/devstack
 go build -o "$SCRATCH/bin/rowboat-api" ./cmd/server
 go build -o "$SCRATCH/bin/dev-product-mcp" ./cmd/dev-product-mcp
 go build -o "$SCRATCH/bin/rfc012-faultproxy" ./integration/rfc012/faultproxy
-(cd ../oauth-consent && npm ci --no-audit --no-fund && npm run build) >"$SCRATCH/consent-build.log" 2>&1
+(cd ../clients/apps/oauth-consent && npm ci --no-audit --no-fund && npm run build) >"$SCRATCH/consent-build.log" 2>&1
 # Builds can take long enough for an unreserved port selected at script entry to
 # be claimed by another process. Refresh the complete port set immediately
 # before any fixture binds it.
@@ -148,7 +148,7 @@ docker exec "$PG_NAME" pg_isready -h 127.0.0.1 -U postgres -d rowboat_rfc012 >/d
 docker exec "$PG_NAME" psql -U postgres -d rowboat_rfc012 -c 'CREATE EXTENSION IF NOT EXISTS pgcrypto' >/dev/null
 DATABASE_URL="postgres://postgres:postgres@127.0.0.1:${PG_PORT}/rowboat_rfc012?sslmode=disable"
 DATABASE_URL="$DATABASE_URL" AUTO_MIGRATE=false go run ./cmd/migrate apply >"$SCRATCH/migrate.log" 2>&1
-(cd ../oauth-consent && DATABASE_URL="$DATABASE_URL" npm run migrate) >>"$SCRATCH/migrate.log" 2>&1
+(cd ../clients/apps/oauth-consent && DATABASE_URL="$DATABASE_URL" npm run migrate) >>"$SCRATCH/migrate.log" 2>&1
 
 echo 'JCODE_CHECKPOINT {"message":"Starting shared Redis 7 and deterministic acceptance fault proxy"}'
 docker run -d --rm --name "$REDIS_NAME" -p "127.0.0.1:${REDIS_PORT}:6379" redis:7-alpine >/dev/null
@@ -236,7 +236,7 @@ start_consent() {
     ORY_ADMIN_URL="$OIDC_URL" WORKOS_CLIENT_ID=oppulence-rfc012 WORKOS_API_KEY=rfc012-workos-secret WORKOS_ISSUER="$OIDC_URL" \
     WORKOS_REDIRECT_URI="$CONSENT_URL/callback" WORKOS_STEP_UP_REDIRECT_URI="$CONSENT2_URL/step-up/callback" \
     ROWBOAT_API_URL="$API2_URL" HOOK_HMAC_SECRET=rfc012-hook-secret-at-least-32-bytes \
-    node ../oauth-consent/dist/index.js >"$log" 2>&1 & PIDS+=("$!")
+    node ../clients/apps/oauth-consent/dist/index.js >"$log" 2>&1 & PIDS+=("$!")
 }
 echo 'JCODE_CHECKPOINT {"message":"Starting two oauth-consent instances over shared PostgreSQL state"}'
 start_consent "$CONSENT_PORT" "$SCRATCH/consent-1.log"
