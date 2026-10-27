@@ -622,18 +622,15 @@ someone bypasses it.
 Docs alone do not stop agents. The same contract is wired into every surface
 they read and every gate they cannot skip:
 
-1. **Always-on Cursor rule** — `.cursor/rules/rowboat-www-growth-standard.mdc`
-   (`alwaysApply: true`). Every agent session sees “run `npm run gen`; do not
-   invent a parallel layout.”
-2. **Agent playbooks** — root + `clients/apps/web` `AGENTS.md` / `CLAUDE.md`
+1. **Agent playbooks** — root + `clients/apps/web` `AGENTS.md` / `CLAUDE.md`
    open with MUST / MUST NOT, not a suggestion.
-3. **Machine stamp** — every template writes `@oppulence-gen`. WEB029 rejects
+2. **Machine stamp** — every template writes `@oppulence-gen`. WEB029 rejects
    new pages, feature/route components, query hooks, fetch/mutate/prefetch
    modules, and stores that lack it (and, where the kind has one, a sibling
    `*.lit.ts`). Existing files live in
    `config/architecture/generator-baseline.json` `ungeneratedUnits` and cannot
    grow that list.
-4. **Hooks that run without asking** — `npm run gen:check` is in `verify:fast`,
+3. **Hooks that run without asking** — `npm run gen:check` is in `verify:fast`,
    `verify`, and lefthook `rowboat-www-growth-standard` on product globs.
 
 If `gen` cannot express the change, stop and say so. Do not hand-create the
