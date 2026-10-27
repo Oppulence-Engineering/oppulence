@@ -23,7 +23,7 @@ from urllib.request import (
 PUBLIC_URL = os.environ.get("HYDRA_PUBLIC_URL", "http://127.0.0.1:4444")
 ADMIN_URL = os.environ.get("HYDRA_ADMIN_URL", "http://127.0.0.1:4445")
 CLIENT_SECRET = os.environ.get("BROKER_CLIENT_SECRET", "deployment-contract-secret")
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 CONTRACT_PATH = REPO_ROOT / "infra/charts/hydra/contracts/product-resource-servers.json"
 
 

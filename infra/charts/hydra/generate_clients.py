@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 
 from product_approval import approval_manifest_digest, validate_production_approvals
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 REGISTRY_PATH = REPO_ROOT / "server/internal/connectors/default_connectors.json"
 ROWBOAT_VALUES = REPO_ROOT / "infra/charts/rowboat-api"
 OUTPUT_DIR = REPO_ROOT / "infra/charts/hydra/clients"
