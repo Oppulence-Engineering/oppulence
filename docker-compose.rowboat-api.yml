@@ -150,11 +150,7 @@ services:
     # unset), so 127.0.0.1 is refused and the api and worker never start. `$$`
     # keeps compose from interpolating the shell substitution.
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "tctl --address $$(hostname -i):7233 cluster health | grep -q SERVING",
-        ]
+      test: ["CMD-SHELL", "tctl --address $$(hostname -i):7233 cluster health | grep -q SERVING"]
       interval: 10s
       timeout: 20s
       retries: 30
